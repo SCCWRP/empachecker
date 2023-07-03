@@ -317,15 +317,17 @@ def template():
             table.replace("tbl_", ""): pd.DataFrame(
                 columns=
                 [
-                    *['projectid'],
                     *[
                         x for x in pd.read_sql(
-                            f"""
-                                SELECT *  FROM {table} LIMIT 1
-                            """,
+                            """
+                                SELECT {} FROM {} LIMIT 1
+                            """.format(
+                                ','.join(pd.read_sql(f"SELECT column_name FROM column_order WHERE table_name = '{table}' ORDER BY custom_column_position;", eng).column_name.tolist()),
+                                table
+                            ),
                             eng
                         ).columns.to_list()
-                        if x not in system_fields and x != 'projectid'
+                        if x not in system_fields
                     ]
                 ]
             ) for table in tbls
@@ -339,26 +341,26 @@ def template():
         }
     }
 
-    print("Re-ordering columns")
-    column_order = pd.read_sql("SELECT * from column_order", eng)
-    column_order = dict(zip(column_order['table_name'],column_order['column_order']))
-    for table in [f"tbl_{x}" for x in xls.keys() if f"tbl_{x}" in column_order.keys()]:
-        try:
-            print(table)
-            correct_field_order = column_order[table].split(",")
+    # print("Re-ordering columns")
+    # column_order = pd.read_sql("SELECT * from column_order", eng)
+    # column_order = dict(zip(column_order['table_name'],column_order['column_order']))
+    # for table in [f"tbl_{x}" for x in xls.keys() if f"tbl_{x}" in column_order.keys()]:
+    #     try:
+    #         print(table)
+    #         correct_field_order = column_order[table].split(",")
             
-            cols_in_correct_field_order = [x for x in correct_field_order if x in xls[table.replace("tbl_","")].columns]
-            remaining_cols = [x for x in xls[table.replace("tbl_","")].columns if x not in cols_in_correct_field_order]
+    #         cols_in_correct_field_order = [x for x in correct_field_order if x in xls[table.replace("tbl_","")].columns]
+    #         remaining_cols = [x for x in xls[table.replace("tbl_","")].columns if x not in cols_in_correct_field_order]
             
-            xls[table.replace("tbl_","")].columns = [
-                *cols_in_correct_field_order,
-                *remaining_cols
-            ]
+    #         xls[table.replace("tbl_","")].columns = [
+    #             *cols_in_correct_field_order,
+    #             *remaining_cols
+    #         ]
 
-        except Exception as e:
-            print(e)
+    #     except Exception as e:
+    #         print(e)
         
-    print("Done reordering columns")
+    # print("Done reordering columns")
     ############################################################################################################################
     ### Legacy code. I wrote them when I first started SCCWRP and worked on this project. They are not optimized, but still work.
     ### I will improve the code when I have time - Duy 10/11/22
