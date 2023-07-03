@@ -66,4 +66,8 @@ TIMEZONE_MAP = {
     "GMT": "UTC"
 }
 
+SUPPORTED_SENSORTYPES = [
+    'troll','tidbit','minidot','ctd', 'hydrolab'
+]
+
 
