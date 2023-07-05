@@ -1,3 +1,4 @@
+
 (function(){
     
     // const loginForm = document.getElementById("main-login-form");
@@ -146,9 +147,117 @@
 
         buildReport(result);
         
+        if (result.logger_data) {
+            LOGGER_DATA_VISUAL_PARAMS.forEach((param, i) => {
+                btnHTML = `
+                    <button 
+                        id="${param.paramName}-tab-button" 
+                        class="btn btn-primary logger-visual-tab-button ${i === 0 ? 'active' : ''}"
+                        data-parameter="${param.paramName}"
+                        data-parameter-label="${param.paramLabel}"
+                        data-bs-toggle="button"
+                        ${i === 0 ? 'aria-pressed="true"' : ''}
+                    >${param.paramLabel} 
+                    </button>
+                `
+                document.getElementById('logger-visual-button-container').innerHTML += btnHTML;
+            })
+
+           
+            
+            // prep the data
+            const loggerdata = result.logger_data.map(d => {
+                d.samplecollectiontimestamp = d3.timeParse("%Y-%m-%d %H:%M:%S")(d.samplecollectiontimestamp);
+                return d;
+            })
+
+            // plotWidth set to 90% of outer container
+            const plotWidth = document.querySelector('.submission-report-outer-container').getBoundingClientRect().width * 0.9;
+            const plotHeight = plotWidth * (9/16);
+
+            // plotLoggerData('logger-chart', result.logger_data, ['raw_do']);
+            let currentParameter = document.querySelector('.logger-visual-tab-button.active').dataset.parameter;
+            let currentParameterLabel = document.querySelector('.logger-visual-tab-button.active').dataset.parameterLabel;
+            let chartID = 'logger-chart',
+                x = 'samplecollectiontimestamp',
+                y = `raw_${currentParameter}`,
+                xAxisDataType = 'Time',
+                yAxisDataType = 'Numeric',
+                xLabel = 'Timestamp',
+                yLabel = currentParameterLabel,
+                topMarginPct = 0.07,
+                bottomMarginPct = 0.15,
+                leftMarginPct = 0.07,
+                rightMarginPct = 0.07
+
+            plt = new PathPlot(loggerdata, chartID, x = x, y = y);
+            plt.xDataType = xAxisDataType;
+            plt.yDataType = yAxisDataType;
+            plt.margins = {
+                top: Math.round(plotHeight * topMarginPct),
+                bottom: Math.round(plotHeight * bottomMarginPct),
+                left: Math.round(plotWidth * leftMarginPct),
+                right: Math.round(plotWidth * rightMarginPct)
+            }
+            plt.canvasHeight = plotHeight;
+            plt.canvasWidth = plotWidth;
+            plt.init();
+            plt.draw({
+                xAxisLabel : xLabel,
+                yAxisLabel : yLabel
+            })
+                
+            Array.from(document.getElementsByClassName('logger-visual-tab-button')).forEach((btn, i, allButtons) => {
+                btn.addEventListener('click', () => {
+                    allButtons.forEach(b => {
+                        b.classList.remove('active');
+                        b.setAttribute('aria-pressed','false');
+                    });
+                    btn.classList.add('active');
+                    btn.setAttribute('aria-pressed','true');
+
+                    plt.y = `raw_${btn.dataset.parameter}`;
+                    // plt.chartArea.selectAll('text').remove();
+                    // plt.chartArea.selectAll('.tick').remove();
+                    d3.select(`#${chartID}`).selectAll('text').remove()
+                    d3.select(`#${chartID}`).selectAll('.tick').remove()
+                    plt.draw({
+                        xAxisLabel: 'Timestamp',
+                        yAxisLabel: btn.dataset.parameterLabel                    
+                    })
+                    // drawLoggerVisual({y: btn.dataset.parameter, yLabel: btn.dataset.parameterLabel})
+                })
+            })
+
+            window.addEventListener('resize', function(){
+                const activeButton = document.querySelector('.logger-visual-tab-button.active');
+
+                const plotWidth = document.querySelector('.submission-report-outer-container').getBoundingClientRect().width * 0.9;
+                const plotHeight = plotWidth * (9/16);
+                plt.margins = {
+                    top: Math.round(plotHeight * topMarginPct),
+                    bottom: Math.round(plotHeight * bottomMarginPct),
+                    left: Math.round(plotWidth * leftMarginPct),
+                    right: Math.round(plotWidth * rightMarginPct)
+                }
+                plt.canvasHeight = plotHeight;
+                plt.canvasWidth = plotWidth;
+
+                plt.y = `raw_${activeButton.dataset.parameter}`;
+                // plt.chartArea.selectAll('text').remove();
+                // plt.chartArea.selectAll('.tick').remove();
+                d3.select(`#${chartID}`).selectAll('text').remove()
+                d3.select(`#${chartID}`).selectAll('.tick').remove()
+                plt.draw({
+                    xAxisLabel: 'Timestamp',
+                    yAxisLabel: activeButton.dataset.parameterLabel                    
+                })
+            })
+        }
+        
         // we can possibly validate the email address on the python side and return a message in "result"
         // and handle the situation accordingly
-        //document.querySelector(".file-form-container").classList.add("hidden");
+        // document.querySelector(".file-form-container").classList.add("hidden");
 
     })
 

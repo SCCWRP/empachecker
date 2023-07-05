@@ -38,7 +38,7 @@ def main():
         #   but i think we might want to save the file to be able to give to them later
         f = files[0]
         filename = secure_filename(f.filename)
-        file_extension = filename.rsplit('.',1)[-1]
+        file_extension = filename.lower().rsplit('.',1)[-1]
 
         # if file extension is xlsx/xls (hopefully xlsx)
         excel_path = os.path.join( session['submission_dir'], str(filename) )
@@ -60,10 +60,9 @@ def main():
 
 
     # We are assuming filename is an excel file or csv
-    if ('.xls' not in filename) and ('.csv' not in filename):
-        errmsg = f"filename: {filename} appears to not be what we would expect of an excel file or a CSV.\n"
-        errmsg += "As of right now, the application can accept one file at a time.\n"
-        errmsg += "If you are submitting data for multiple tables, they should be separate tabs in the excel file."
+    supported_checker_filetypes = ('xls','csv','txt','xlsx')
+    if file_extension not in supported_checker_filetypes:
+        errmsg = f"filename: {filename} is not a supported file type. Supported file types are {supported_checker_filetypes}"
         return jsonify(user_error_msg=errmsg)
 
     print("DONE uploading files")
@@ -72,38 +71,47 @@ def main():
     
     # Read in the excel file to make a dictionary of dataframes (all_dfs)
 
-    # probably need to check what datatype is being submitted here too - probably different if submitting just raw data files vs raw data + metadata
-    if filename.rsplit('.',1)[-1] == 'csv':
+    # if they are not submitting logger_raw data, this if clock shouldnt get executed as session.get('login_info').get('filetype') should return None
+    print("session.get('login_info').get('login_filetype')")
+    print(session.get('login_info').get('login_filetype'))
+    if session.get('login_info').get('login_filetype') == 'Raw File':
         print("Reformat")
-        excel_path, filename = reformat(session.get('submission_dir'), filename, session.get('login_info'))
+        formatted_data = parse_raw_logger_data(session.get('login_info').get('login_sensortype'), session.get('excel_path'))
         print("Done reformatting")
+        all_dfs = {
+            "tbl_wq_logger_raw": formatted_data
+        }
+
+        # Reset the excel path and filename
+        filename = f"{str(filename)}.xlsx"
+        excel_path = os.path.join( session['submission_dir'], filename )
         session['excel_path'] = excel_path
-    
-    assert isinstance(current_app.excel_offset, int), \
-        "Number of rows to offset in excel file must be an integer. Check__init__.py"
+    else:
+        assert isinstance(current_app.excel_offset, int), \
+            "Number of rows to offset in excel file must be an integer. Check__init__.py"
 
-    # build all_dfs where we will store their data
-    print("building 'all_dfs' dictionary")
-    all_dfs = {
+        # build all_dfs where we will store their data
+        print("building 'all_dfs' dictionary")
+        all_dfs = {
 
-        # Some projects may have descriptions in the first row, which are not the column headers
-        # This is the only reason why the skiprows argument is used.
-        # For projects that do not set up their data templates in this way, that arg should be removed
+            # Some projects may have descriptions in the first row, which are not the column headers
+            # This is the only reason why the skiprows argument is used.
+            # For projects that do not set up their data templates in this way, that arg should be removed
 
-        # Note also that only empty cells will be regarded as missing values
-        sheet: pd.read_excel(
-            excel_path, 
-            sheet_name = sheet,
-            skiprows = current_app.excel_offset,
-            na_values = [''],
-            converters = {"preparationtime":str}
-        )
+            # Note also that only empty cells will be regarded as missing values
+            sheet: pd.read_excel(
+                excel_path, 
+                sheet_name = sheet,
+                skiprows = current_app.excel_offset,
+                na_values = [''],
+                converters = {"preparationtime":str}
+            )
+            
+            for sheet in pd.ExcelFile(excel_path).sheet_names
+            
+            if ((sheet not in current_app.tabs_to_ignore) and (not sheet.startswith('lu_')))
+        }
         
-        for sheet in pd.ExcelFile(excel_path).sheet_names
-        
-        if ((sheet not in current_app.tabs_to_ignore) and (not sheet.startswith('lu_')))
-    }
-    
     assert len(all_dfs) > 0, f"submissionid - {session.get('submissionid')} all_dfs is empty"
     
     for tblname in all_dfs.keys():
@@ -153,12 +161,6 @@ def main():
 
     session['datatype'] = match_dataset
 
-    print("session")
-    print(session)
-
-    print("match_dataset")
-    print(match_dataset)
-
     if match_dataset == "":
         # A tab in their excel file did not get matched with a table
         # return to user
@@ -189,7 +191,10 @@ def main():
     print("preprocessing and cleaning data")
     # We are not sure if we want to do this
     # some projects like bight prohibit this
-    all_dfs = clean_data(all_dfs)
+    if match_dataset != 'logger_raw':
+        # Skip preprocessing for raw logger data
+        # We can probably add an option in the config on a per datatype basis to generalize this
+        all_dfs = clean_data(all_dfs)
     print("DONE preprocessing and cleaning data")
     
     # write all_dfs again to the same excel path
@@ -390,7 +395,6 @@ def main():
 
 
     # These are the values we are returning to the browser as a json
-    # https://pics.me.me/code-comments-be-like-68542608.png
     returnvals = {
         "filename" : filename,
         "marked_filename" : f"{filename.rsplit('.',1)[0]}-marked.{filename.rsplit('.',1)[-1]}",
@@ -404,7 +408,31 @@ def main():
         "all_datasets": list(current_app.datasets.keys()),
         "table_to_tab_map" : session['table_to_tab_map']
     }
-    
+
+    if match_dataset == 'logger_raw':
+        jsondata = all_dfs['tbl_wq_logger_raw']
+        jsondata['samplecollectiontimestamp'] = jsondata['samplecollectiontimestamp'].apply(lambda t: t.strftime("%Y-%m-%d %H:%M:%S") if pd.notnull(t) else '')
+        plotcols = [
+            'samplecollectiontimestamp',
+            'samplecollectiontimezone',
+            'raw_do',
+            'raw_do_unit',
+            'raw_do_pct',
+            'raw_h2otemp',
+            'raw_h2otemp_unit',
+            'raw_conductivity',
+            'raw_conductivity_unit',
+            'raw_turbidity',
+            'raw_turbidity_unit',
+            'raw_salinity',
+            'raw_salinity_unit',
+            'raw_chlorophyll',
+            'raw_chlorophyll_unit',
+            'raw_pressure',
+            'raw_pressure_unit'
+        ]
+        returnvals['logger_data'] = jsondata[plotcols].fillna('').to_dict('records')
+
     #print(returnvals)
 
     print("DONE with upload routine, returning JSON to browser")

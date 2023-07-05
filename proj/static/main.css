@@ -185,3 +185,14 @@ span.table-not-matched {
     background-color: #007ac2;
 }
 
+/* for the d3 plot */
+.legend {
+    font-family: "Arial";
+    font-size: 14px;
+}
+.axis path,
+.axis line {
+    fill: none;
+    stroke: black;
+    shape-rendering: crispEdges;
+}

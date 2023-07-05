@@ -8,6 +8,7 @@
   <!--This helped so much: https://getbootstrap.com/docs/5.0/components/card/-->
   <link rel="stylesheet" href="{{url_for('static', filename='main.css')}}">
   <link rel="stylesheet" href="{{url_for('static', filename='bootstrap.min.css')}}">
+  <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous"> -->
   <script>
     let script_root = {{request.script_root|tojson|safe}};
     script_root = script_root.replace('/','');
@@ -15,6 +16,8 @@
     console.log(script_root);
   </script>
   <script src="{{url_for('static', filename='globals.js')}}"></script>
+  <script src="https://d3js.org/d3.v7.js"></script>
+  <script src="{{url_for('static', filename='plot.js')}}"></script>
 </head>
 <body>
   <main>
@@ -230,6 +233,10 @@
                 <!--For certain projects that want map checks, we can add javascript that can unhide this tab header / tab body-->
                 Map
               </div>
+              <div class="col-sm submission-info-tab-header" id="data-visual-report-header">
+                <!--For certain projects that want map checks, we can add javascript that can unhide this tab header / tab body-->
+                Logger Data Visual
+              </div>
             </div>
 
 
@@ -416,6 +423,16 @@
                 <iframe id="visual-map" width="1100" height="900" src="" ></iframe>
 
               </div>
+              
+              <!--Only for EMPA logger data-->
+              <div id="data-visual-report-body" class="data-visual-report-body-outer-container container submission-info-tab-body">
+                
+                <div id="logger-chart-outer-container">
+                  <div id="logger-visual-button-container"></div>
+                  <div id="logger-chart"></div>
+                </div>
+
+              </div>
 
 
             </div>
@@ -468,6 +485,7 @@
 <!--Load js at the end rather than doing something similar to $('document').ready()-->
 <!--tabs.js has a function called tabs which i plan on using in report.js-->
 <!--main.js needs to be at the bottom-->
+
 <script src="{{url_for('static', filename='tabs.js')}}"></script>
 <script src="{{url_for('static', filename='finalsubmit.js')}}"></script>
 <script src="{{url_for('static', filename='report.js')}}"></script>

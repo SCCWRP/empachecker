@@ -54,10 +54,10 @@ def template():
 
 
     # This was hard-coded before. I didn't want to change it since it is already here, and it works. - Duy
-    if datatype == 'logger_formatted':
+    if datatype == 'logger_raw':
         tbls = [
-            'tbl_protocol_metadata',
-            'tbl_wq_logger_metadata',
+            # 'tbl_protocol_metadata',
+            # 'tbl_wq_logger_metadata',
             # 'tbl_logger_ctd_data',
             # 'tbl_logger_mdot_data',
             # 'tbl_logger_troll_data',
