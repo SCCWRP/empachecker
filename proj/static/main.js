@@ -170,8 +170,7 @@
 
             // plotWidth set to 90% of outer container
             let plotWidth = document.querySelector('.submission-report-outer-container').getBoundingClientRect().width * 0.9;
-            let plotHeight = plotWidth * (9/16);
-            
+            let plotHeight = plotWidth * 0.75;
 
             // plotLoggerData('logger-chart', result.logger_data, ['raw_do']);
             let currentParameter = document.querySelector('.logger-visual-tab-button.active').dataset.parameter;
@@ -190,7 +189,7 @@
                 margins = {
                     top: plotHeight * 0.05, 
                     right: plotWidth * 0.02, 
-                    bottom: plotHeight * 0.10, 
+                    bottom: plotHeight * 0.25, 
                     left: plotWidth * 0.10
                 }
             );
@@ -213,7 +212,7 @@
                     let xVal = 'samplecollectiontimestamp';
                     let yVal = `raw_${btn.dataset.parameter}`;
                     let plotWidth = document.querySelector('.submission-report-outer-container').getBoundingClientRect().width * 0.9;
-                    let plotHeight = plotWidth * (9/16);
+                    let plotHeight = plotWidth * 0.75;
                     createPlot(
                         loggerdata, 
                         xVal, 
@@ -224,7 +223,7 @@
                         margins = {
                             top: plotHeight * 0.05, 
                             right: plotWidth * 0.02, 
-                            bottom: plotHeight * 0.10, 
+                            bottom: plotHeight * 0.25, 
                             left: plotWidth * 0.10
                         }
                     );
@@ -241,7 +240,7 @@
                 let xVal = 'samplecollectiontimestamp';
                 let yVal = `raw_${activeButton.dataset.parameter}`;
                 let plotWidth = document.querySelector('.submission-report-outer-container').getBoundingClientRect().width * 0.9;
-                let plotHeight = plotWidth * (9/16);
+                let plotHeight = plotWidth * 0.75;
                 createPlot(
                     loggerdata, 
                     xVal, 
@@ -252,7 +251,7 @@
                     margins = {
                         top: plotHeight * 0.05, 
                         right: plotWidth * 0.02, 
-                        bottom: plotHeight * 0.10, 
+                        bottom: plotHeight * 0.25, 
                         left: plotWidth * 0.10
                     }
                 );

@@ -18,24 +18,24 @@ class Plot {
     get y() {
         return this._y;
     }
-    
+
 
     set xDataType(dtype) {
-        const acceptableDataTypes = ['Numeric','Time','Categorical'];
+        const acceptableDataTypes = ['Numeric', 'Time', 'Categorical'];
         console.assert(acceptableDataTypes.includes(dtype), `Error in setting datatype in xDataType - must be ${acceptableDataTypes.join(', ')}`)
         this._xDataType = dtype;
     }
-   
+
     get xDataType() {
         return this._xDataType;
     }
-    
+
     set yDataType(dtype) {
-        const acceptableDataTypes = ['Numeric','Time','Categorical'];
+        const acceptableDataTypes = ['Numeric', 'Time', 'Categorical'];
         console.assert(acceptableDataTypes.includes(dtype), `Error in setting datatype in yDataType - must be ${acceptableDataTypes.join(', ')}`)
         this._yDataType = dtype;
     }
-    
+
     get yDataType() {
         return this._yDataType;
     }
@@ -45,24 +45,24 @@ class Plot {
     set margins(margin) {
         this._margins = margin;
     }
-    
+
     get margins() {
         return this._margins;
     }
 
-    set visHeight (height) {
+    set visHeight(height) {
         this._visHeight = height;
     }
-    set visWidth (width) {
+    set visWidth(width) {
         this._visWidth = width;
     }
-    get visHeight () {
-        return this._visHeight ;
+    get visHeight() {
+        return this._visHeight;
     }
-    get visWidth () {
-        return this._visWidth ;
+    get visWidth() {
+        return this._visWidth;
     }
-    
+
     set canvasHeight(height) {
         this._canvasHeight = height;
         this.visHeight = this._canvasHeight - this._margins.bottom - this._margins.top;
@@ -73,7 +73,7 @@ class Plot {
             this.chartArea.attr('height', this._visHeight)
         }
     }
-    
+
     set canvasWidth(width) {
         this._canvasWidth = width;
         this.visWidth = this._canvasWidth - this._margins.left - this._margins.right;
@@ -84,15 +84,15 @@ class Plot {
             this.chartArea.attr('width', this._visWidth)
         }
     }
-    
+
     get canvasHeight() {
         return this._canvasHeight
     }
-    
+
     get canvasWidth() {
         return this._canvasWidth;
     }
-    set xAxisTextRotation(n){
+    set xAxisTextRotation(n) {
         this._xAxisTextRotation = n;
     }
 
@@ -110,7 +110,7 @@ class Plot {
     addTitle(title, fontSize = "1.5rem") {
         const vis = this;
         vis.svg.append('g')
-            .attr('id','plot-main-title')
+            .attr('id', 'plot-main-title')
             .append('text')
             .attr('transform', `translate(${this.visWidth / 2}, ${this.margins.top / 2})`)
             .style('font-size', fontSize)
@@ -140,56 +140,56 @@ class Plot {
         }
 
         xAxisGroup.call(xAxis)
-            .selectAll("text")  
-                .style("text-anchor", "end")
-                .style("font-size",`${xAxisFontSize}px`)
-                .attr("dx", "-1em")
-                .attr("dy", ".2em")
-                .attr("transform", `rotate(${xAxisRotation})` );
-                
-        const yAxisGroup = this.chartArea.append("g")        
+            .selectAll("text")
+            .style("text-anchor", "end")
+            .style("font-size", `${xAxisFontSize}px`)
+            .attr("dx", "-1em")
+            .attr("dy", ".2em")
+            .attr("transform", `rotate(${xAxisRotation})`);
+
+        const yAxisGroup = this.chartArea.append("g")
         yAxisGroup.call(d3.axisLeft(this.yScale))
-            .selectAll("text")  
-                .style("font-size",`${yAxisFontSize}px`)
-                .attr("transform", `rotate(${yAxisRotation})` );
+            .selectAll("text")
+            .style("font-size", `${yAxisFontSize}px`)
+            .attr("transform", `rotate(${yAxisRotation})`);
 
         this.svg.append('g')
-            .attr('class','x-axis-label')
+            .attr('class', 'x-axis-label')
             .append('text')
-            .attr('transform',`translate(${(vis._visWidth / 2) + vis.margins.left},${vis._canvasHeight - vis.margins.bottom / 5})`)
+            .attr('transform', `translate(${(vis._visWidth / 2) + vis.margins.left},${vis._canvasHeight - vis.margins.bottom / 5})`)
             .text(xAxisLabel)
-        
+
         this.svg.append('g')
-            .attr('class','y-axis-label')
+            .attr('class', 'y-axis-label')
             .append('text')
-            .attr('text-anchor','middle')
-            .attr('transform',`rotate(-90) translate(${-(vis.margins.top + (vis._visHeight / 2))}, ${(vis.margins.left * 0.3)})`)
+            .attr('text-anchor', 'middle')
+            .attr('transform', `rotate(-90) translate(${-(vis.margins.top + (vis._visHeight / 2))}, ${(vis.margins.left * 0.3)})`)
             .text(yAxisLabel)
     }
 
     setScale(x, y, xDataType, yDataType, xScaleType = 'Linear', yScaleType = 'Linear', padding = 0.2) {
-        const acceptableDataTypes = ['Numeric','Time','Categorical'];
+        const acceptableDataTypes = ['Numeric', 'Time', 'Categorical'];
         console.assert(acceptableDataTypes.includes(xDataType), `Error in use of PathPlot class draw method - xDataType must be ${acceptableDataTypes.join(', ')}`)
         console.assert(acceptableDataTypes.includes(yDataType), `Error in use of PathPlot class draw method - yDataType must be ${acceptableDataTypes.join(', ')}`)
 
         if (xDataType == 'Time') {
             this.xScale = d3.scaleTime()
                 .domain([d3.min(this.filteredData, d => d[x]), d3.max(this.filteredData, d => d[x])])
-                .range([ 0, this._visWidth ])
+                .range([0, this._visWidth])
         }
         if (yDataType == 'Time') {
             this.yScale = d3.scaleTime()
                 .domain([d3.min(this.filteredData, d => d[y]), d3.max(this.filteredData, d => d[y])])
-                .range([ 0, this._visHeight ])
+                .range([0, this._visHeight])
         }
-        
+
         if (xDataType == 'Categorical') {
             this.xScale = d3.scaleBand()
                 .domain(this.filteredData.map(d => d[x]))
                 .range([0, this._visWidth])
                 .paddingInner(padding)
                 .paddingOuter(padding);
-                
+
         }
         if (yDataType == 'Categorical') {
             this.yScale = d3.scaleBand()
@@ -198,7 +198,7 @@ class Plot {
                 .paddingInner(padding)
                 .paddingOuter(padding);
         }
-        
+
         if (xDataType == 'Numeric') {
             this.xScale = d3.scaleLinear()
                 .domain([d3.min(this.filteredData, d => d[x]), d3.max(this.filteredData, d => d[x])])
@@ -212,18 +212,18 @@ class Plot {
         }
 
     }
-    
+
     init() {
         console.log("init")
-        if (!this._canvasHeight){
+        if (!this._canvasHeight) {
             console.warn("Warning in use of Plot class - canvas height not defined")
             this._canvasHeight = document.getElementById(this.chartID).getBoundingClientRect().height;
         }
-        if (!this._canvasWidth){
+        if (!this._canvasWidth) {
             console.warn("Warning in use of Plot class - canvas width not defined")
             this._canvasWidth = document.getElementById(this.chartID).getBoundingClientRect().width;
         }
-        if (!this._margins){
+        if (!this._margins) {
             console.warn("Warning in use of Plot class - margins not defined")
             this._margins = {
                 top: Math.round(this._canvasHeight * 0.05),
@@ -241,18 +241,18 @@ class Plot {
             .attr('width', this._canvasWidth)
             .attr('height', this._canvasHeight)
             .attr('id', `${this.chartID}-svg`)
-            .style('background-color','white')
+            .style('background-color', 'white')
 
         this.chartArea = this.svg.append('g')
             .attr('width', this._visWidth)
-            .attr('height',this._visHeight)
-            .attr('transform',`translate(${this._margins.left},${this._margins.top})`)
+            .attr('height', this._visHeight)
+            .attr('transform', `translate(${this._margins.left},${this._margins.top})`)
     }
 
     download(filename) {
         const vis = this;
         const svgID = vis.svgID;
-        
+
         const svgElem = document.getElementById(svgID);
         const serializer = new XMLSerializer();
 
@@ -263,7 +263,7 @@ class Plot {
         });
         let DOMURL = window.URL || window.webkitURL || window;
         const url = DOMURL.createObjectURL(svgBlob);
-        
+
         const img = new Image();
         img.onload = () => {
             const canvas = document.createElement('canvas');
@@ -272,11 +272,11 @@ class Plot {
             canvas.height = vis._canvasHeight;
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             DOMURL.revokeObjectURL(url);
-    
+
             const imgURI = canvas
                 .toDataURL('image/png')
                 .replace('image/png', 'image/octet-stream');
-    
+
             //download(imgURI);
             let download = document.createElement('a');
             download.href = imgURI;
@@ -287,7 +287,7 @@ class Plot {
         img.onerror = (e) => {
             console.error('Image not loaded', e);
         };
-        
+
         img.src = url;
     }
 }
@@ -318,10 +318,10 @@ class PathPlot extends Plot {
 
         const vis = this;
 
-        console.assert(this._margins,  "Error in use of PathPlot - Margins are not defined but an attempt to draw was made. Did you call the init() method?")
+        console.assert(this._margins, "Error in use of PathPlot - Margins are not defined but an attempt to draw was made. Did you call the init() method?")
         console.assert(this.xDataType, "Error in use of PathPlot - xDataType is not defined, but an attempt to draw was made.")
         console.assert(this.yDataType, "Error in use of PathPlot - yDataType is not defined, but an attempt to draw was made.")
-        
+
         const margin = this._margins;
         const visWidth = this._visWidth;
         const visHeight = this._visHeight;
@@ -335,10 +335,10 @@ class PathPlot extends Plot {
         const yScale = this.yScale;
 
         const line = d3.line()
-            .x(d => { 
+            .x(d => {
                 return this.xScale(d[this.x]);
             })
-            .y(d => { 
+            .y(d => {
                 return this.yScale(d[this.y]);
             });
 
@@ -367,10 +367,12 @@ class PathPlot extends Plot {
 
 
         this.drawAxes(
-            {xAxisLabel : xAxisLabel, 
-            yAxisLabel : yAxisLabel}
+            {
+                xAxisLabel: xAxisLabel,
+                yAxisLabel: yAxisLabel
+            }
         );
-        
+
 
 
     }
@@ -401,15 +403,15 @@ class CanvasPathPlot extends Plot {
     init() {
         // super.init();
         console.log("init")
-        if (!this._canvasHeight){
+        if (!this._canvasHeight) {
             console.warn("Warning in use of Plot class - canvas height not defined")
             this._canvasHeight = document.getElementById(this.chartID).getBoundingClientRect().height;
         }
-        if (!this._canvasWidth){
+        if (!this._canvasWidth) {
             console.warn("Warning in use of Plot class - canvas width not defined")
             this._canvasWidth = document.getElementById(this.chartID).getBoundingClientRect().width;
         }
-        if (!this._margins){
+        if (!this._margins) {
             console.warn("Warning in use of Plot class - margins not defined")
             this._margins = {
                 top: Math.round(this._canvasHeight * 0.05),
@@ -422,11 +424,11 @@ class CanvasPathPlot extends Plot {
         this.visWidth = this._canvasWidth - this._margins.left - this._margins.right;
         this.visHeight = this._canvasHeight - this._margins.bottom - this._margins.top;
 
-    
+
         // Overlay an SVG for axes drawing on the canvas
         this.svg = d3.select(`#${this.chartID}`)
             .append('svg')
-            .style('background-color',`rgba(255,255,255,0.2)`)
+            .style('background-color', `rgba(255,255,255,0.2)`)
             .attr('width', this._canvasWidth)
             .attr('height', this._canvasHeight)
 
@@ -437,7 +439,7 @@ class CanvasPathPlot extends Plot {
             .style('left', 0)
             .attr('width', this.visWidth)
             .attr('height', this.visHeight)
-            .style('background-color',`rgba(0,0,255,0.2)`)
+            .style('background-color', `rgba(0,0,255,0.2)`)
             .attr('transform', `translate(${this._margins.left},${this._margins.top})`)
             .node();
 
@@ -466,7 +468,7 @@ class CanvasPathPlot extends Plot {
             console.error('x and y values have not been set!');
             return;
         }
-        
+
         // Clear the old drawing
         this.context.clearRect(0, 0, this._canvasWidth, this._canvasHeight);
 
@@ -475,9 +477,9 @@ class CanvasPathPlot extends Plot {
         y = this.y;
         xDataType = this.xDataType;
         yDataType = this.yDataType;
-        
+
         this.setScale(x, y, xDataType, yDataType);
-        
+
         // Start a new path
         this.context.beginPath();
 
@@ -505,19 +507,19 @@ class CanvasPathPlot extends Plot {
     }
 
     drawAxes({
-        xAxisFontSize = 14, 
-        yAxisFontSize = 14, 
-        xAxisLabel = '', 
+        xAxisFontSize = 14,
+        yAxisFontSize = 14,
+        xAxisLabel = '',
         yAxisLabel = '',
         numXTicks = 10,
         numYTicks = 10
     } = {}) {
         const xAxis = d3.axisBottom(this.xScale)
-                        .ticks(numXTicks);
-    
+            .ticks(numXTicks);
+
         const yAxis = d3.axisLeft(this.yScale)
-                        .ticks(numYTicks);
-                        
+            .ticks(numYTicks);
+
         // Append the x and y axes to the SVG
         this.svg.append('g')
             .attr('transform', `translate(0, ${this.visHeight})`)
@@ -528,7 +530,7 @@ class CanvasPathPlot extends Plot {
             .attr('text-anchor', 'end')
             .attr('fill', '#000')
             .text(xAxisLabel);
-    
+
         this.svg.append('g')
             .call(yAxis)
             .append('text')
@@ -537,12 +539,12 @@ class CanvasPathPlot extends Plot {
             .attr('text-anchor', 'end')
             .attr('fill', '#000')
             .text(yAxisLabel);
-    
+
         // Update the CSS for the text elements for the axes
         this.svg.selectAll('text')
             .style('font-size', `${xAxisFontSize}px`);
     }
-    
+
 
     // Other methods remain the same...
 }
@@ -550,63 +552,111 @@ class CanvasPathPlot extends Plot {
 
 
 // The idea is for this function to craete a plot on an HTML5 canvas rather than SVG for performance reasons, and handling larger sets of data
-function createPlot(data, xVal, yVal, canvasId = 'canvas', canvasWidth = 960, canvasHeight = 500, margins = {top: 20, right: 20, bottom: 30, left: 50}) {
+function createPlot(data, xVal, yVal, canvasId = 'canvas', canvasWidth = 960, canvasHeight = 500, margins = { top: 20, right: 20, bottom: 30, left: 50 }) {
     const width = canvasWidth - margins.left - margins.right,
-          height = canvasHeight - margins.top - margins.bottom;
-  
+        height = canvasHeight - margins.top - margins.bottom;
+
     const canvas = d3.select(`#${canvasId}`)
-      .attr("width", width + margins.left + margins.right)
-      .attr("height", height + margins.top + margins.bottom)
-      .node();
-  
+        .attr("width", width + margins.left + margins.right)
+        .attr("height", height + margins.top + margins.bottom)
+        .node();
+
     const context = canvas.getContext('2d');
-  
+
     // Clear the canvas before replotting
     context.clearRect(0, 0, canvas.width, canvas.height);
-  
+
     const x = d3.scaleTime().range([0, width]);
     const y = d3.scaleLinear().range([height, 0]);
-  
+
     const line = d3.line()
-      .x(d => x(new Date(d[xVal])))
-      .y(d => y(d[yVal]))
-      .context(context);
-  
+        .x(d => x(new Date(d[xVal])))
+        .y(d => y(d[yVal]))
+        .context(context);
+
     x.domain(d3.extent(data, d => new Date(d[xVal])));
     y.domain([0, d3.max(data, d => d[yVal])]);
-  
+
     context.translate(margins.left, margins.top);
-  
+
     context.beginPath();
     line(data);
     context.lineWidth = 1.5;
     context.strokeStyle = 'steelblue';
     context.stroke();
-  
+
     // Draw x-axis manually
     context.beginPath();
     context.moveTo(0, height);
     context.lineTo(width, height);
     context.strokeStyle = 'black';
     context.stroke();
-  
+
     // Draw y-axis manually
     context.beginPath();
     context.moveTo(0, 0);
     context.lineTo(0, height);
     context.strokeStyle = 'black';
     context.stroke();
-  
+
+    // previous GPT code before rotation and formatting of x ticks were requested
+    // // Draw x-axis ticks and labels
+    // const xTicks = x.ticks();
+    // const xTickFormat = x.tickFormat();
+    // xTicks.forEach(tick => {
+    //   const xPos = x(tick);
+    //   context.beginPath();
+    //   context.moveTo(xPos, height);
+    //   context.lineTo(xPos, height + 6); // 6 is the length of the tick
+    //   context.stroke();
+    //   context.fillText(xTickFormat(tick), xPos, height + 20); // 20 is the distance from the tick to the label
+    // });
+
+    // Draw x-axis ticks and labels
+    //const xTicksCount = Math.round(width / 75);
+    const xTicks = x.ticks();
+    const xTickFormat = d3.timeFormat("%Y-%m-%d %H:%M:%S");
+    xTicks.forEach(tick => {
+        const xPos = x(tick);
+        context.beginPath();
+        context.moveTo(xPos, height);
+        context.lineTo(xPos, height + 6); // 6 is the length of the tick
+        context.stroke();
+
+        // rotate context, draw label, then unrotate
+        context.save();
+        context.translate(xPos, height + 20);
+        context.rotate(-45 * Math.PI / 180);
+        context.textAlign = 'right';
+        context.textBaseline = 'middle';
+        context.fillText(xTickFormat(tick), 0, 0);
+        context.restore();
+    });
+
+
+    // Draw y-axis ticks and labels
+    const yTicks = y.ticks();
+    const yTickFormat = y.tickFormat();
+    yTicks.forEach(tick => {
+        const yPos = y(tick);
+        context.beginPath();
+        context.moveTo(0, yPos);
+        context.lineTo(-6, yPos); // 6 is the length of the tick
+        context.stroke();
+        // context.fillText(yTickFormat(tick), -10, yPos + 3); // 10 is the distance from the tick to the label, 3 is vertical adjustment
+        context.fillText(yTickFormat(tick), - (margins.left / 5), yPos + 3); // 10 is the distance from the tick to the label, 3 is vertical adjustment
+    });
+
     // text label for the x axis
     context.font = "20px Arial";
     context.textAlign = 'center';
-    context.fillText(xVal, width/2, height + margins.top + 20);
-  
+    context.fillText(xVal, width / 2, height + (margins.bottom / 2) + 10); // increased distance to avoid overlap with x-axis labels
+
     // text label for the y axis
     context.save();
     context.rotate(-Math.PI / 2);
     context.textAlign = 'center';
-    context.fillText(yVal, -height/2, -margins.left / 2);
+    context.fillText(yVal, -height / 2, -margins.left / 2);
     context.restore();
-  }
-  
+}
+
