@@ -384,3 +384,229 @@ class PathPlot extends Plot {
         this.draw()
     }
 }
+
+
+
+/* ------------------------------------------------------------------------------------------------------------------------- */
+
+
+class CanvasPathPlot extends Plot {
+    constructor(data, chartID) {
+        super(data, chartID);
+
+        this.canvas = null;
+        this.context = null;
+    }
+
+    init() {
+        // super.init();
+        console.log("init")
+        if (!this._canvasHeight){
+            console.warn("Warning in use of Plot class - canvas height not defined")
+            this._canvasHeight = document.getElementById(this.chartID).getBoundingClientRect().height;
+        }
+        if (!this._canvasWidth){
+            console.warn("Warning in use of Plot class - canvas width not defined")
+            this._canvasWidth = document.getElementById(this.chartID).getBoundingClientRect().width;
+        }
+        if (!this._margins){
+            console.warn("Warning in use of Plot class - margins not defined")
+            this._margins = {
+                top: Math.round(this._canvasHeight * 0.05),
+                bottom: Math.round(this._canvasHeight * 0.05),
+                left: Math.round(this._canvasWidth * 0.05),
+                right: Math.round(this._canvasWidth * 0.05)
+            }
+        }
+
+        this.visWidth = this._canvasWidth - this._margins.left - this._margins.right;
+        this.visHeight = this._canvasHeight - this._margins.bottom - this._margins.top;
+
+    
+        // Overlay an SVG for axes drawing on the canvas
+        this.svg = d3.select(`#${this.chartID}`)
+            .append('svg')
+            .style('background-color',`rgba(255,255,255,0.2)`)
+            .attr('width', this._canvasWidth)
+            .attr('height', this._canvasHeight)
+
+        this.canvas = d3.select(`#${this.chartID}`)
+            .append('canvas')
+            .style('position', 'absolute')
+            .style('top', 0)
+            .style('left', 0)
+            .attr('width', this.visWidth)
+            .attr('height', this.visHeight)
+            .style('background-color',`rgba(0,0,255,0.2)`)
+            .attr('transform', `translate(${this._margins.left},${this._margins.top})`)
+            .node();
+
+        this.context = this.canvas.getContext('2d');
+    }
+
+    draw(
+        {
+            x = this.x,
+            y = this.y,
+            color = 'black',
+            strokeWidth = 1.5,
+            xDataType = this.xDataType,
+            yDataType = this.yDataType,
+            xScaleType = 'Linear',
+            yScaleType = 'Linear',
+            xAxisLabel = '',
+            yAxisLabel = ''
+        } = {}
+    ) {
+        if (!this.xDataType || !this.yDataType) {
+            console.error('Datatypes have not been set!');
+            return;
+        }
+        if (!this.x || !this.y) {
+            console.error('x and y values have not been set!');
+            return;
+        }
+        
+        // Clear the old drawing
+        this.context.clearRect(0, 0, this._canvasWidth, this._canvasHeight);
+
+
+        x = this.x;
+        y = this.y;
+        xDataType = this.xDataType;
+        yDataType = this.yDataType;
+        
+        this.setScale(x, y, xDataType, yDataType);
+        
+        // Start a new path
+        this.context.beginPath();
+
+        this.filteredData.forEach((d, i) => {
+            // Move to the first point
+            if (i === 0) this.context.moveTo(this.xScale(d[this.x]), this.yScale(d[this.y]));
+            else this.context.lineTo(this.xScale(d[this.x]), this.yScale(d[this.y]));
+        });
+
+        this.context.strokeStyle = 'steelblue';
+        this.context.stroke();
+
+        this.drawAxes({
+            xAxisLabel: xAxisLabel,
+            yAxisLabel: yAxisLabel
+        });
+
+        // If you want to fill the area under the line
+        // this.context.lineTo(this.xScale(this.filteredData[this.filteredData.length - 1][this.x]), this.canvasHeight);
+        // this.context.lineTo(this.xScale(this.filteredData[0][this.x]), this.canvasHeight);
+        // this.context.closePath();
+
+        // this.context.fillStyle = 'rgba(70, 130, 180, 0.4)';  // steelblue with transparency
+        // this.context.fill();
+    }
+
+    drawAxes({
+        xAxisFontSize = 14, 
+        yAxisFontSize = 14, 
+        xAxisLabel = '', 
+        yAxisLabel = '',
+        numXTicks = 10,
+        numYTicks = 10
+    } = {}) {
+        const xAxis = d3.axisBottom(this.xScale)
+                        .ticks(numXTicks);
+    
+        const yAxis = d3.axisLeft(this.yScale)
+                        .ticks(numYTicks);
+                        
+        // Append the x and y axes to the SVG
+        this.svg.append('g')
+            .attr('transform', `translate(0, ${this.visHeight})`)
+            .call(xAxis)
+            .append('text')
+            .attr('y', -10)
+            .attr('x', this.visWidth)
+            .attr('text-anchor', 'end')
+            .attr('fill', '#000')
+            .text(xAxisLabel);
+    
+        this.svg.append('g')
+            .call(yAxis)
+            .append('text')
+            .attr('y', 6)
+            .attr('dy', '0.71em')
+            .attr('text-anchor', 'end')
+            .attr('fill', '#000')
+            .text(yAxisLabel);
+    
+        // Update the CSS for the text elements for the axes
+        this.svg.selectAll('text')
+            .style('font-size', `${xAxisFontSize}px`);
+    }
+    
+
+    // Other methods remain the same...
+}
+
+
+
+// The idea is for this function to craete a plot on an HTML5 canvas rather than SVG for performance reasons, and handling larger sets of data
+function createPlot(data, xVal, yVal, canvasId = 'canvas', canvasWidth = 960, canvasHeight = 500, margins = {top: 20, right: 20, bottom: 30, left: 50}) {
+    const width = canvasWidth - margins.left - margins.right,
+          height = canvasHeight - margins.top - margins.bottom;
+  
+    const canvas = d3.select(`#${canvasId}`)
+      .attr("width", width + margins.left + margins.right)
+      .attr("height", height + margins.top + margins.bottom)
+      .node();
+  
+    const context = canvas.getContext('2d');
+  
+    // Clear the canvas before replotting
+    context.clearRect(0, 0, canvas.width, canvas.height);
+  
+    const x = d3.scaleTime().range([0, width]);
+    const y = d3.scaleLinear().range([height, 0]);
+  
+    const line = d3.line()
+      .x(d => x(new Date(d[xVal])))
+      .y(d => y(d[yVal]))
+      .context(context);
+  
+    x.domain(d3.extent(data, d => new Date(d[xVal])));
+    y.domain([0, d3.max(data, d => d[yVal])]);
+  
+    context.translate(margins.left, margins.top);
+  
+    context.beginPath();
+    line(data);
+    context.lineWidth = 1.5;
+    context.strokeStyle = 'steelblue';
+    context.stroke();
+  
+    // Draw x-axis manually
+    context.beginPath();
+    context.moveTo(0, height);
+    context.lineTo(width, height);
+    context.strokeStyle = 'black';
+    context.stroke();
+  
+    // Draw y-axis manually
+    context.beginPath();
+    context.moveTo(0, 0);
+    context.lineTo(0, height);
+    context.strokeStyle = 'black';
+    context.stroke();
+  
+    // text label for the x axis
+    context.font = "20px Arial";
+    context.textAlign = 'center';
+    context.fillText(xVal, width/2, height + margins.top + 20);
+  
+    // text label for the y axis
+    context.save();
+    context.rotate(-Math.PI / 2);
+    context.textAlign = 'center';
+    context.fillText(yVal, -height/2, -margins.left / 2);
+    context.restore();
+  }
+  

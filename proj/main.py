@@ -3,6 +3,7 @@ from werkzeug.utils import secure_filename
 from gc import collect
 import os
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # custom imports, from local files
 from .preprocess import clean_data
@@ -431,6 +432,23 @@ def main():
             'raw_pressure',
             'raw_pressure_unit'
         ]
+
+        # for param in [p for p in plotcols if not ('unit' in p) or ('samplecollect' in p)]:
+        #     # Create a line plot with a larger figure size
+        #     plt.figure(figsize=(15, 10))
+        #     plt.plot(jsondata['samplecollectiontimestamp'], jsondata[param])
+        #     plt.title(f'Line Plot of {param} over time')
+        #     plt.xlabel('samplecollectiontimestamp')
+        #     ylabel = f"""{param} {','.join(jsondata[f'{param}_unit'].dropna().astype(str).unique())}""" if f'{param}_unit' in jsondata.columns else param
+        #     plt.ylabel(ylabel)
+
+        #     # Rotate x-axis labels
+        #     plt.xticks(rotation=45)
+
+        #     # Save the plot as a PNG file with a higher DPI
+        #     plt.savefig(os.path.join(session.get('submission_dir'), f'{param}.png'), format='png', dpi=300, bbox_inches='tight')
+        #     plt.close()
+
         returnvals['logger_data'] = jsondata[plotcols].fillna('').to_dict('records')
 
     #print(returnvals)

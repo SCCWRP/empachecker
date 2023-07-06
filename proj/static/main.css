@@ -196,3 +196,8 @@ span.table-not-matched {
     stroke: black;
     shape-rendering: crispEdges;
 }
+
+#logger-chart svg {
+    position: relative;
+    box-sizing: border-box;
+}

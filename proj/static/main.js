@@ -166,49 +166,42 @@
            
             
             // prep the data
-            const loggerdata = result.logger_data.map(d => {
-                d.samplecollectiontimestamp = d3.timeParse("%Y-%m-%d %H:%M:%S")(d.samplecollectiontimestamp);
-                return d;
-            })
+            let loggerdata = result.logger_data
 
             // plotWidth set to 90% of outer container
-            const plotWidth = document.querySelector('.submission-report-outer-container').getBoundingClientRect().width * 0.9;
-            const plotHeight = plotWidth * (9/16);
+            let plotWidth = document.querySelector('.submission-report-outer-container').getBoundingClientRect().width * 0.9;
+            let plotHeight = plotWidth * (9/16);
+            
 
             // plotLoggerData('logger-chart', result.logger_data, ['raw_do']);
             let currentParameter = document.querySelector('.logger-visual-tab-button.active').dataset.parameter;
             let currentParameterLabel = document.querySelector('.logger-visual-tab-button.active').dataset.parameterLabel;
-            let chartID = 'logger-chart',
-                x = 'samplecollectiontimestamp',
-                y = `raw_${currentParameter}`,
-                xAxisDataType = 'Time',
-                yAxisDataType = 'Numeric',
-                xLabel = 'Timestamp',
-                yLabel = currentParameterLabel,
-                topMarginPct = 0.07,
-                bottomMarginPct = 0.15,
-                leftMarginPct = 0.07,
-                rightMarginPct = 0.07
+            let chartID = 'logger-canvas';
+            let xVal = 'samplecollectiontimestamp';
+            let yVal = `raw_${currentParameter}`;
 
-            plt = new PathPlot(loggerdata, chartID, x = x, y = y);
-            plt.xDataType = xAxisDataType;
-            plt.yDataType = yAxisDataType;
-            plt.margins = {
-                top: Math.round(plotHeight * topMarginPct),
-                bottom: Math.round(plotHeight * bottomMarginPct),
-                left: Math.round(plotWidth * leftMarginPct),
-                right: Math.round(plotWidth * rightMarginPct)
-            }
-            plt.canvasHeight = plotHeight;
-            plt.canvasWidth = plotWidth;
-            plt.init();
-            plt.draw({
-                xAxisLabel : xLabel,
-                yAxisLabel : yLabel
-            })
-                
+            createPlot(
+                loggerdata, 
+                xVal, 
+                yVal, 
+                canvasId = chartID, 
+                canvasWidth = plotWidth, 
+                canvasHeight = plotHeight, 
+                margins = {
+                    top: plotHeight * 0.05, 
+                    right: plotWidth * 0.02, 
+                    bottom: plotHeight * 0.10, 
+                    left: plotWidth * 0.10
+                }
+            );
+
             Array.from(document.getElementsByClassName('logger-visual-tab-button')).forEach((btn, i, allButtons) => {
                 btn.addEventListener('click', () => {
+                    
+                    // Do nothing if the clicked button is already the active one
+                    if (btn.classList.contains('active')) return;
+
+                    // otherwise change the clicked button to the active one
                     allButtons.forEach(b => {
                         b.classList.remove('active');
                         b.setAttribute('aria-pressed','false');
@@ -216,42 +209,54 @@
                     btn.classList.add('active');
                     btn.setAttribute('aria-pressed','true');
 
-                    plt.y = `raw_${btn.dataset.parameter}`;
-                    // plt.chartArea.selectAll('text').remove();
-                    // plt.chartArea.selectAll('.tick').remove();
-                    d3.select(`#${chartID}`).selectAll('text').remove()
-                    d3.select(`#${chartID}`).selectAll('.tick').remove()
-                    plt.draw({
-                        xAxisLabel: 'Timestamp',
-                        yAxisLabel: btn.dataset.parameterLabel                    
-                    })
-                    // drawLoggerVisual({y: btn.dataset.parameter, yLabel: btn.dataset.parameterLabel})
+                    // draw the new plot based on the active button
+                    let xVal = 'samplecollectiontimestamp';
+                    let yVal = `raw_${btn.dataset.parameter}`;
+                    let plotWidth = document.querySelector('.submission-report-outer-container').getBoundingClientRect().width * 0.9;
+                    let plotHeight = plotWidth * (9/16);
+                    createPlot(
+                        loggerdata, 
+                        xVal, 
+                        yVal, 
+                        canvasId = chartID, 
+                        canvasWidth = plotWidth, 
+                        canvasHeight = plotHeight, 
+                        margins = {
+                            top: plotHeight * 0.05, 
+                            right: plotWidth * 0.02, 
+                            bottom: plotHeight * 0.10, 
+                            left: plotWidth * 0.10
+                        }
+                    );
+
+
+
                 })
             })
 
             window.addEventListener('resize', function(){
                 const activeButton = document.querySelector('.logger-visual-tab-button.active');
 
-                const plotWidth = document.querySelector('.submission-report-outer-container').getBoundingClientRect().width * 0.9;
-                const plotHeight = plotWidth * (9/16);
-                plt.margins = {
-                    top: Math.round(plotHeight * topMarginPct),
-                    bottom: Math.round(plotHeight * bottomMarginPct),
-                    left: Math.round(plotWidth * leftMarginPct),
-                    right: Math.round(plotWidth * rightMarginPct)
-                }
-                plt.canvasHeight = plotHeight;
-                plt.canvasWidth = plotWidth;
+                // draw the new plot based on the active button
+                let xVal = 'samplecollectiontimestamp';
+                let yVal = `raw_${activeButton.dataset.parameter}`;
+                let plotWidth = document.querySelector('.submission-report-outer-container').getBoundingClientRect().width * 0.9;
+                let plotHeight = plotWidth * (9/16);
+                createPlot(
+                    loggerdata, 
+                    xVal, 
+                    yVal,
+                    canvasId = 'logger-canvas', 
+                    canvasWidth = plotWidth, 
+                    canvasHeight = plotHeight, 
+                    margins = {
+                        top: plotHeight * 0.05, 
+                        right: plotWidth * 0.02, 
+                        bottom: plotHeight * 0.10, 
+                        left: plotWidth * 0.10
+                    }
+                );
 
-                plt.y = `raw_${activeButton.dataset.parameter}`;
-                // plt.chartArea.selectAll('text').remove();
-                // plt.chartArea.selectAll('.tick').remove();
-                d3.select(`#${chartID}`).selectAll('text').remove()
-                d3.select(`#${chartID}`).selectAll('.tick').remove()
-                plt.draw({
-                    xAxisLabel: 'Timestamp',
-                    yAxisLabel: activeButton.dataset.parameterLabel                    
-                })
             })
         }
         
