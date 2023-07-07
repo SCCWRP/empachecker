@@ -78,6 +78,22 @@ def main():
     if session.get('login_info').get('login_filetype') == 'Raw File':
         print("Reformat")
         formatted_data = parse_raw_logger_data(session.get('login_info').get('login_sensortype'), session.get('excel_path'))
+        
+        # fill in the columns that should be populated from the data from the login form
+        formatted_data = formatted_data.assign(
+            projectid = session.get('login_info').get('login_project'),
+            siteid = session.get('login_info').get('login_siteid'),
+            estuaryname = session.get('login_info').get('login_siteid'),
+            stationno = session.get('login_info').get('login_stationno'),
+            sensortype = session.get('login_info').get('login_sensortype')
+        )
+
+        # replace siteids with estuary names in the estuary name column
+        estuariesxwalk = pd.read_sql("SELECT siteid, estuary FROM lu_siteid", g.eng) \
+            .set_index('siteid')['estuary'].to_dict()
+        formatted_data.estuaryname = formatted_data.estuaryname.replace(estuariesxwalk)
+
+
         print("Done reformatting")
         all_dfs = {
             "tbl_wq_logger_raw": formatted_data

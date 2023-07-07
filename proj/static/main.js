@@ -148,13 +148,34 @@
         buildReport(result);
         
         if (result.logger_data) {
+            
+            // prep the data
+            // basically by only storing the data in a variable
+            let loggerdata = result.logger_data
+
+            // reset inner HTML for the button container before adding buttons
+            document.getElementById('logger-visual-button-container').innerHTML = '';
             LOGGER_DATA_VISUAL_PARAMS.forEach((param, i) => {
+
+                // dont append button if all data points are empty - most often loggers will not have all the parameters - only certain measurements were taken most times
+                console.log("param")
+                console.log(param)
+                console.log(loggerdata.filter(d => d[`raw_${param.paramName}`] != ''))
+                if (loggerdata.filter(d => d[`raw_${param.paramName}`] != '').length === 0) return;
+                
+                let units = `${[...new Set(loggerdata.map(d => d[`raw_${param.paramName}_unit`]))].join(',')}`
+                
+                // for the data-parameter-label attribute of the button
+                units = units === '' ? units : ` (${units})` ; 
+
+                console.log('units')
+                console.log(units)
                 btnHTML = `
                     <button 
                         id="${param.paramName}-tab-button" 
                         class="btn btn-primary logger-visual-tab-button ${i === 0 ? 'active' : ''}"
                         data-parameter="${param.paramName}"
-                        data-parameter-label="${param.paramLabel}"
+                        data-parameter-label="${param.paramLabel}${units}"
                         data-bs-toggle="button"
                         ${i === 0 ? 'aria-pressed="true"' : ''}
                     >${param.paramLabel} 
@@ -162,45 +183,23 @@
                 `
                 document.getElementById('logger-visual-button-container').innerHTML += btnHTML;
             })
-
-           
             
-            // prep the data
-            let loggerdata = result.logger_data
-
-            // plotWidth set to 90% of outer container
+            // somewhat "global" variables
+            const xAxisParameter = 'samplecollectiontimestamp';
+            const chartID = 'logger-canvas';
+            
+            // plotWidth and plotHeight will be changing with resizing of the window
             let plotWidth = document.querySelector('.submission-report-outer-container').getBoundingClientRect().width * 0.9;
             let plotHeight = plotWidth * 0.75;
 
-            // plotLoggerData('logger-chart', result.logger_data, ['raw_do']);
-            let currentParameter = document.querySelector('.logger-visual-tab-button.active').dataset.parameter;
-            let currentParameterLabel = document.querySelector('.logger-visual-tab-button.active').dataset.parameterLabel;
-            let chartID = 'logger-canvas';
-            let xVal = 'samplecollectiontimestamp';
-            let yVal = `raw_${currentParameter}`;
-            margins = {
-                top: plotHeight * 0.05, 
-                right: plotWidth * 0.02, 
-                bottom: plotHeight * 0.25, 
-                left: plotWidth * 0.10
-            }
+            // technically the resetPlot function should work also when drawing the plot for the first time
+            resetPlot()
 
-            createPlot(
-                loggerdata, 
-                xVal, 
-                yVal, 
-                canvasId = chartID, 
-                canvasWidth = plotWidth, 
-                canvasHeight = plotHeight, 
-                margins = {
-                    top: plotHeight * 0.05, 
-                    right: plotWidth * 0.02, 
-                    bottom: plotHeight * 0.25, 
-                    left: plotWidth * 0.10
-                }
-            );
 
-            brushHandler(loggerdata, chartID, canvasWidth = plotWidth, canvasHeight = plotHeight )
+
+            // Add the event listeners as far as when to reset the plot
+            window.addEventListener('resize', resetPlot)
+            document.getElementById('reset-plot-button').addEventListener('click', resetPlot)
 
             Array.from(document.getElementsByClassName('logger-visual-tab-button')).forEach((btn, i, allButtons) => {
                 btn.addEventListener('click', () => {
@@ -213,47 +212,31 @@
                         b.classList.remove('active');
                         b.setAttribute('aria-pressed','false');
                     });
+
                     btn.classList.add('active');
                     btn.setAttribute('aria-pressed','true');
-
-                    // draw the new plot based on the active button
-                    let xVal = 'samplecollectiontimestamp';
-                    let yVal = `raw_${btn.dataset.parameter}`;
-                    let plotWidth = document.querySelector('.submission-report-outer-container').getBoundingClientRect().width * 0.9;
-                    let plotHeight = plotWidth * 0.75;
-                    createPlot(
-                        loggerdata, 
-                        xVal, 
-                        yVal, 
-                        canvasId = chartID, 
-                        canvasWidth = plotWidth, 
-                        canvasHeight = plotHeight, 
-                        margins = {
-                            top: plotHeight * 0.05, 
-                            right: plotWidth * 0.02, 
-                            bottom: plotHeight * 0.25, 
-                            left: plotWidth * 0.10
-                        }
-                    );
-
-
-
+                    
+                    resetPlot()
                 })
             })
 
-            window.addEventListener('resize', function(){
-                const activeButton = document.querySelector('.logger-visual-tab-button.active');
 
+            // same code to reset the plot was showing up in multiple spots so i decided to put it in a function
+            /* 
+                using a function declaration rather than a function expression since function declarations are hoisted, 
+                    so resetPlot will be found even though it is called above where this function is defined 
+            */
+            function resetPlot(){
+                const activeButton = document.querySelector('.logger-visual-tab-button.active');
                 // draw the new plot based on the active button
-                let xVal = 'samplecollectiontimestamp';
                 let yVal = `raw_${activeButton.dataset.parameter}`;
                 let plotWidth = document.querySelector('.submission-report-outer-container').getBoundingClientRect().width * 0.9;
                 let plotHeight = plotWidth * 0.75;
                 createPlot(
                     loggerdata, 
-                    xVal, 
+                    xAxisParameter, //xAxisParameter defined outside the function
                     yVal,
-                    canvasId = 'logger-canvas', 
+                    canvasId = chartID, //chartID defined outside the function
                     canvasWidth = plotWidth, 
                     canvasHeight = plotHeight, 
                     margins = {
@@ -261,10 +244,10 @@
                         right: plotWidth * 0.02, 
                         bottom: plotHeight * 0.25, 
                         left: plotWidth * 0.10
-                    }
+                    },
+                    yAxisLabel = activeButton.dataset.parameterLabel
                 );
-
-            })
+            }
         }
         
         // we can possibly validate the email address on the python side and return a message in "result"

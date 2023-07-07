@@ -393,11 +393,8 @@ class PathPlot extends Plot {
 
 
 class CanvasPathPlot extends Plot {
-    constructor(data, chartID) {
-        super(data, chartID);
-
-        this.canvas = null;
-        this.context = null;
+    constructor(data, canvasId) {
+        this.canvas = canvasId
     }
 
     init() {
@@ -483,6 +480,8 @@ class CanvasPathPlot extends Plot {
         // Start a new path
         this.context.beginPath();
 
+
+        
         this.filteredData.forEach((d, i) => {
             // Move to the first point
             if (i === 0) this.context.moveTo(this.xScale(d[this.x]), this.yScale(d[this.y]));
@@ -552,7 +551,10 @@ class CanvasPathPlot extends Plot {
 
 
 // The idea is for this function to craete a plot on an HTML5 canvas rather than SVG for performance reasons, and handling larger sets of data
-function createPlot(data, xVal, yVal, canvasId = 'canvas', canvasWidth = 960, canvasHeight = 500, margins = { top: 20, right: 20, bottom: 30, left: 50 }) {
+function createPlot(
+    data, xVal, yVal, canvasId = 'canvas', canvasWidth = 960, canvasHeight = 500, margins = { top: 20, right: 20, bottom: 30, left: 50 }, yAxisLabel = null, xAxisLabel = null
+) {
+    
     const width = canvasWidth - margins.left - margins.right,
         height = canvasHeight - margins.top - margins.bottom;
 
@@ -599,18 +601,6 @@ function createPlot(data, xVal, yVal, canvasId = 'canvas', canvasWidth = 960, ca
     context.strokeStyle = 'black';
     context.stroke();
 
-    // previous GPT code before rotation and formatting of x ticks were requested
-    // // Draw x-axis ticks and labels
-    // const xTicks = x.ticks();
-    // const xTickFormat = x.tickFormat();
-    // xTicks.forEach(tick => {
-    //   const xPos = x(tick);
-    //   context.beginPath();
-    //   context.moveTo(xPos, height);
-    //   context.lineTo(xPos, height + 6); // 6 is the length of the tick
-    //   context.stroke();
-    //   context.fillText(xTickFormat(tick), xPos, height + 20); // 20 is the distance from the tick to the label
-    // });
 
     // Draw x-axis ticks and labels
     //const xTicksCount = Math.round(width / 75);
@@ -648,23 +638,50 @@ function createPlot(data, xVal, yVal, canvasId = 'canvas', canvasWidth = 960, ca
     });
 
     // text label for the x axis
+    xAxisLabel = xAxisLabel ?? xVal;
     context.font = "20px Arial";
     context.textAlign = 'center';
-    context.fillText(xVal, width / 2, height + (margins.bottom / 2) + 10); // increased distance to avoid overlap with x-axis labels
+    context.fillText(xAxisLabel, width / 2, height + (margins.bottom * 0.7) + 10); // increased distance to avoid overlap with x-axis labels
 
     // text label for the y axis
+    yAxisLabel = yAxisLabel ?? yVal;
     context.save();
     context.rotate(-Math.PI / 2);
     context.textAlign = 'center';
-    context.fillText(yVal, -height / 2, -margins.left / 2);
+    context.fillText(yAxisLabel, -height / 2, -margins.left / 2);
     context.restore();
 
-
+    brushHandler({
+        data: data,
+        canvasID : canvasId,
+        canvasWidth : canvasWidth,
+        canvasHeight : canvasHeight
+    }) 
 }
 
 // GPT provided code for a 1D X Axis brush
+// This brush handler gets added every time the plot gets redrawn
+// The reason why is so it can have access to the filtered dataset, otherwise the user's brushing action will filter the original dataset, no matter what the plot is actually displaying
+// To be honest at this point, the code has gotten out of hand and needs refactoring
+// I think it will make a lot more sense to make this canvas D3 plot class based rather than function based
+// However, i have already spent a lot more time on this than i originally intended, and the product will work well enough for what jan and her partners are looking for
+// So probably not worth the time and effort at this particular moment.
+// However, it is something to keep in mind at the very least
 const brushHandler = function (
-    data, canvasID, canvasWidth = 500, canvasHeight = 500, marginsPct = {top: 0.05,  right: 0.02,  bottom: 0.25, left: 0.10}, xVal = 'samplecollectiontimestamp'
+    {
+
+        data = [],
+        canvasID = 'logger-canvas',
+        canvasWidth = 500,
+        canvasHeight = 500,
+        marginsPct = {
+            top: 0.05,
+            right: 0.02,
+            bottom: 0.25,
+            left: 0.10
+        },
+        xVal = 'samplecollectiontimestamp'
+    } = {}
 ) 
 {
 
@@ -685,12 +702,6 @@ const brushHandler = function (
 
     let filteredData = data;
 
-    // very specific to this current app
-    // i think the dataset should maybe just have the actual column name in it. I forgot why it doesnt..
-    const getParam = function(){
-        return `raw_${document.querySelector('.logger-visual-tab-button.active')?.dataset.parameter}`;
-    }
-
 
     // get x and y scales
     console.log("WIDTH")
@@ -699,7 +710,7 @@ const brushHandler = function (
     const x = d3.scaleTime().range([0, width]);
     //const y = d3.scaleLinear().range([height, 0]);
     
-    x.domain(d3.extent(data, d => new Date(d[xVal])));
+    x.domain(d3.extent(filteredData, d => new Date(d[xVal])));
     //y.domain([0, d3.max(data, d => d[yVal])]);
 
     // brushing
@@ -707,8 +718,11 @@ const brushHandler = function (
     let brushStartX = 0;
     let brushEndX = 0;
 
+    canvas.removeEventListener('mousedown', mouseDown);
     canvas.addEventListener('mousedown', mouseDown);
+    canvas.removeEventListener('mousemove', mouseMove);
     canvas.addEventListener('mousemove', mouseMove);
+    canvas.removeEventListener('mouseup', mouseUp);
     canvas.addEventListener('mouseup', mouseUp);
 
     function mouseDown(event) {
@@ -747,7 +761,8 @@ const brushHandler = function (
             return ( (new Date(item[xVal]) > startDate) & (new Date(item[xVal]) < endDate ) ) ;
         })
 
-        createPlot(filteredData, xVal,  getParam(), canvasID, canvasWidth, canvasHeight, margins);
+        const paramInfo = getParam();
+        createPlot(filteredData, xVal, paramInfo.paramName, canvasID, canvasWidth, canvasHeight, margins, yAxisLabel = paramInfo.paramLabel);
 
         // here you might want to update your graph based on the brush extents
     }
@@ -769,4 +784,15 @@ const brushHandler = function (
     //     context.fillStyle = 'rgba(0, 0, 0, 0.1)';
     //     context.fillRect(brushStartX, height, brushEndX - brushStartX, margins.bottom);
     // }
+}
+
+
+// very specific to this current app
+// i think the dataset should maybe just have the actual column name in it. I forgot why it doesnt..
+function getParam(){
+    const activeButton = document.querySelector('.logger-visual-tab-button.active');
+    return {
+        paramName: `raw_${activeButton.dataset.parameter}`,
+        paramLabel: activeButton.dataset.parameterLabel
+    }
 }
