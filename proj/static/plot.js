@@ -736,7 +736,13 @@ const brushHandler = function (
         if (!brushing) return;
         brushing = false;
         brushEndX = event.clientX - canvas.getBoundingClientRect().left - margins.left;
-        endDate = x.invert(brushEndX);
+
+        startpx = d3.min([brushStartX, brushEndX])
+        endpx = d3.max([brushStartX, brushEndX])
+
+        startDate = x.invert(startpx);
+        endDate = x.invert(endpx);
+        
         filteredData = data.filter(item => {
             return ( (new Date(item[xVal]) > startDate) & (new Date(item[xVal]) < endDate ) ) ;
         })
