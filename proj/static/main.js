@@ -1,3 +1,4 @@
+
 (function(){
     
     // const loginForm = document.getElementById("main-login-form");
@@ -146,9 +147,132 @@
 
         buildReport(result);
         
+        if (result.logger_data) {
+            
+            // prep the data
+            // basically by only storing the data in a variable
+            let loggerdata = result.logger_data
+
+            // reset inner HTML for the button container before adding buttons
+            document.getElementById('logger-visual-button-container').innerHTML = '';
+            LOGGER_DATA_VISUAL_PARAMS.forEach((param, i) => {
+
+                // dont append button if all data points are empty - most often loggers will not have all the parameters - only certain measurements were taken most times
+                console.log("param")
+                console.log(param)
+                console.log(loggerdata.filter(d => d[`raw_${param.paramName}`] != ''))
+                if (loggerdata.filter(d => d[`raw_${param.paramName}`] != '').length === 0) return;
+                
+                let units = `${[...new Set(loggerdata.map(d => d[`raw_${param.paramName}_unit`]))].join(',')}`
+                
+                // for the data-parameter-label attribute of the button
+                units = units === '' ? units : ` (${units})` ; 
+
+                console.log('units')
+                console.log(units)
+                btnHTML = `
+                    <button 
+                        id="${param.paramName}-tab-button" 
+                        class="btn btn-primary logger-visual-tab-button ${i === 0 ? 'active' : ''}"
+                        data-parameter="${param.paramName}"
+                        data-parameter-label="${param.paramLabel}${units}"
+                        data-bs-toggle="button"
+                        ${i === 0 ? 'aria-pressed="true"' : ''}
+                    >${param.paramLabel} 
+                    </button>
+                `
+                document.getElementById('logger-visual-button-container').innerHTML += btnHTML;
+            })
+            
+            // somewhat "global" variables
+            const xAxisParameter = 'samplecollectiontimestamp';
+            const chartID = 'logger-canvas';
+            
+            // plotWidth and plotHeight will be changing with resizing of the window
+            let plotWidth = document.querySelector('.submission-report-outer-container').getBoundingClientRect().width * 0.9;
+            let plotHeight = plotWidth * 0.75;
+
+            // technically the resetPlot function should work also when drawing the plot for the first time
+            resetPlot()
+
+
+
+            // Add the event listeners as far as when to reset the plot
+            window.addEventListener('resize', resetPlot)
+            document.getElementById('reset-plot-button').addEventListener('click', resetPlot)
+
+            Array.from(document.getElementsByClassName('logger-visual-tab-button')).forEach((btn, i, allButtons) => {
+                btn.addEventListener('click', () => {
+                    
+                    // Do nothing if the clicked button is already the active one
+                    if (btn.classList.contains('active')) return;
+
+                    // otherwise change the clicked button to the active one
+                    allButtons.forEach(b => {
+                        b.classList.remove('active');
+                        b.setAttribute('aria-pressed','false');
+                    });
+
+                    btn.classList.add('active');
+                    btn.setAttribute('aria-pressed','true');
+                    
+                    resetPlot()
+                })
+            })
+
+
+            // same code to reset the plot was showing up in multiple spots so i decided to put it in a function
+            /* 
+                using a function declaration rather than a function expression since function declarations are hoisted, 
+                    so resetPlot will be found even though it is called above where this function is defined 
+            */
+            function resetPlot(){
+                replaceCanvas();
+                const activeButton = document.querySelector('.logger-visual-tab-button.active');
+                // draw the new plot based on the active button
+                let yVal = `raw_${activeButton.dataset.parameter}`;
+                let plotWidth = document.querySelector('.submission-report-outer-container').getBoundingClientRect().width * 0.9;
+                let plotHeight = plotWidth * 0.75;
+                createPlot(
+                    loggerdata, 
+                    xAxisParameter, //xAxisParameter defined outside the function
+                    yVal,
+                    canvasId = chartID, //chartID defined outside the function
+                    canvasWidth = plotWidth, 
+                    canvasHeight = plotHeight, 
+                    margins = {
+                        top: plotHeight * 0.05, 
+                        right: plotWidth * 0.02, 
+                        bottom: plotHeight * 0.25, 
+                        left: plotWidth * 0.10
+                    },
+                    yAxisLabel = activeButton.dataset.parameterLabel
+                );
+            }
+
+            function replaceCanvas({canvasID = chartID} = {}){
+                // Get the old canvas
+                let oldCanvas = document.getElementById(canvasID);
+
+                // Create a new canvas
+                let newCanvas = document.createElement('canvas');
+
+                // Copy the width and height attributes from the old canvas
+                newCanvas.width = oldCanvas.width;
+                newCanvas.height = oldCanvas.height;
+
+                // Replace the old canvas with the new one
+                oldCanvas.parentNode.replaceChild(newCanvas, oldCanvas);
+
+                // Set the id of the new canvas to the id of the old canvas, if you need to keep it
+                newCanvas.id = oldCanvas.id;
+
+            }
+        }
+        
         // we can possibly validate the email address on the python side and return a message in "result"
         // and handle the situation accordingly
-        //document.querySelector(".file-form-container").classList.add("hidden");
+        // document.querySelector(".file-form-container").classList.add("hidden");
 
     })
 

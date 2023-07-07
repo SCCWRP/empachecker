@@ -53,8 +53,13 @@ def multitask(functions: list, *args):
     while output.qsize() > 0:
         finaloutput.append(output.get())
     print("output from the multitask/mutliprocessing function")
-    print("did this print the finaloutput")
-    print(finaloutput)
+
+    # printing final output caused an error because of ascii encoding
+    # We must be careful to not leave stuff like this uncommented, but rather only print during testing and debugging
+    # then remove after
+    
+    # print("did this print the finaloutput")
+    # print(finaloutput)
     return finaloutput
 
 
@@ -123,6 +128,10 @@ def check_precision(x, precision):
 
 @lru_cache(maxsize=128, typed=True)
 def check_scale(x, scale):
+    if pd.isnull(scale):
+        return True
+    if pd.isnull(x):
+        return True
     try:
         int(x)
     except Exception as e:
@@ -131,9 +140,8 @@ def check_scale(x, scale):
         # thus we return true.
         # if its the wrong datatype it should get picked up by that check
         return True
-    if pd.isnull(scale):
-        return True
     x = abs(x)
+
     if 'e-' in str(x):
         # The idea is if the number comes in in scientific notation
         # it will look like 7e11 or something like that
@@ -146,8 +154,9 @@ def check_scale(x, scale):
         
         if rightdigits: # if its not a NoneType, it found a match
             rightdigits = rightdigits.groups()[0]
-        
-        right = powerof10 + len(rightdigits)
+            right = powerof10 + len(rightdigits)
+        else:
+            right = 0
     else:
         # frac part is zero if there is no decimal place, or if it came in with scientific notation
         # because this else block represents the case where the power was positive
@@ -218,32 +227,17 @@ def get_primary_key(tablename, eng):
     # Copy paste to Navicat, pgadmin, or do a pd.read_sql to see what it gives
     pkey_query = f"""
         SELECT 
-            conrelid::regclass AS table_from, 
-            conname, 
-            pg_get_constraintdef(oid) 
-        FROM pg_constraint 
-        WHERE 
-            contype IN ('f', 'p') 
-            AND connamespace = 'sde'::regnamespace 
-            AND conname LIKE '{tablename}%%' 
-        ORDER BY 
-            conrelid::regclass::text, contype DESC;
+            c.column_name, 
+            c.data_type
+        FROM information_schema.table_constraints tc 
+        JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_name) 
+        JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema
+            AND tc.table_name = c.table_name AND ccu.column_name = c.column_name
+        WHERE constraint_type = 'PRIMARY KEY' and tc.table_name = '{tablename}';
     """
     pkey_df = pd.read_sql(pkey_query, eng)
     
-    pkey = []
-    # sometimes there is no primary key
-    if not pkey_df.empty:
-        # pg_get_constraintdef = postgres get constraint definition
-        # Get the primary key constraint's definition
-        pkey = pkey_df.pg_get_constraintdef.tolist()[0]
-
-        # Remove excess junk to just get the primary key field names
-        # split at the commas to get a nice neat python list
-        pkey = re.sub(r"(PRIMARY\sKEY\s\()|(\))","",pkey).split(',')
-
-        # remove whitespace from the edges
-        pkey = [colname.strip() for colname in pkey]
-        
+    pkey = pkey_df.column_name.tolist() if not pkey_df.empty else []
+    
     return pkey
 

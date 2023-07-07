@@ -33,7 +33,7 @@ div.main-outer-container {
     position: absolute;
     background-color: #f2f2f2;
     left: 30%;
-    top:15%;
+    top: 7%;
     box-shadow: 0.3rem 0.3rem 0.3rem rgba(0, 8, 7, 0.5);
     padding: 0.1rem;
     text-align: center;
@@ -178,4 +178,26 @@ span.table-not-matched {
 
 .warning-alert {
     background-color: #d8f96a;
+}
+
+.custom-button {
+    width: 600px; /* Set the desired width */
+    background-color: #007ac2;
+}
+
+/* for the d3 plot */
+.legend {
+    font-family: "Arial";
+    font-size: 14px;
+}
+.axis path,
+.axis line {
+    fill: none;
+    stroke: black;
+    shape-rendering: crispEdges;
+}
+
+#logger-chart svg {
+    position: relative;
+    box-sizing: border-box;
 }

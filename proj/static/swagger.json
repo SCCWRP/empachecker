@@ -1,0 +1,72 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Logger Download API",
+        "description": "This is an API for EMPA Logger Download",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/checker/getloggerdata": {
+            "post": {
+                "summary": "Please click on Schema next to Example Value to see which format the API expects",
+                "tags": [
+                    "Get EMPA Logger Data"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "start_time": {
+                                        "type": "string",
+                                        "example": "2022-01-01",
+                                        "description": "Required. Need to be in format YYYY-MM-DD"
+                                    },
+                                    "end_time": {
+                                        "example": "2022-01-02",
+                                        "type": "string",
+                                        "description": "Required. Need to be in format YYYY-MM-DD"
+                                    },
+                                    "projectid": {
+                                        "type": "string",
+                                        "example": "'EMPA', 'Baja-rails'",
+                                        "description": "Optional. Separated by commas, each item needs to be wrapped in single quotes"
+                                    },
+                                    "estuaryname": {
+                                        "type": "string",
+                                        "example": "'Ventura River','Laguna Creek'",
+                                        "description": "Optional. Separated by commas, each item needs to be wrapped in single quotes"
+                                    },
+                                    "sensortype": {
+                                        "type": "string",
+                                        "example": "'CTD', 'troll'",
+                                        "description": "Optional. Separated by commas, each item needs to be wrapped in single quotes"
+                                    }
+                                },
+                                "required": [
+                                    "start_time",
+                                    "end_time"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                  "type": "string",
+                                  "format": "binary"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

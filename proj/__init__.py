@@ -1,5 +1,6 @@
 import os, json, re
 from flask import Flask,current_app, g
+#from flask_cors import CORS - disabled paul 9jan23
 from sqlalchemy import create_engine
 import psycopg2
 from psycopg2 import sql
@@ -11,10 +12,10 @@ from .load import finalsubmit
 from .download import download
 from .scraper import scraper
 from .templater import templater # for dynamic lookup lists called into template before output to user
+from .admin import admin
 
 
 CUSTOM_CONFIG_PATH = os.path.join(os.getcwd(), 'proj', 'config')
-
 
 CONFIG_FILEPATH = os.path.join(CUSTOM_CONFIG_PATH, 'config.json')
 assert os.path.exists(CONFIG_FILEPATH), "config.json not found"
@@ -29,8 +30,8 @@ app = Flask(__name__, static_url_path='/static')
 app.debug = True # remove for production
 
 
-# does your application require uploaded filenames to be modified to timestamps or left as is
-app.config['CORS_HEADERS'] = 'Content-Type'
+#CORS(app) - disabled paul 9jan23
+#app.config['CORS_HEADERS'] = 'Content-Type' - disabled paul 9jan23
 
 app.config['MAIL_SERVER'] = CONFIG.get('MAIL_SERVER')
 
@@ -44,7 +45,15 @@ app.config.update(CONFIG)
 # set the database connection string, database, and type of database we are going to point our application at
 #app.eng = create_engine(os.environ.get("DB_CONNECTION_STRING"))
 def connect_db():
-    return create_engine(os.environ.get("DB_CONNECTION_STRING"))
+    kwargs = {
+        # "fast_executemany":True,
+        "pool_pre_ping": True,
+        # "keepalives": 1,
+        # "keepalives_idle": 30,
+        # "keepalives_interval": 5,
+        # "keepalives_count": 5
+    }
+    return create_engine(os.environ.get("DB_CONNECTION_STRING"), **kwargs)
 
 @app.before_request
 def before_request():
@@ -94,50 +103,50 @@ print("Be sure not to prefix the login fields with 'login' in the datasets.json 
 # This we can use for adding the login columns
 
 # It will be better in the future to simply store these in the environment separately
-constring = re.search("postgresql://(\w+):(.+)@(.+):(\d+)/(\w+)", os.environ.get('DB_CONNECTION_STRING')).groups()
-connection = psycopg2.connect(
-    host=constring[2],
-    database=constring[4],
-    user=constring[0],
-    password=constring[1],
-)
+# constring = re.search("postgresql://(\w+):(.+)@(.+):(\d+)/(\w+)", os.environ.get('DB_CONNECTION_STRING')).groups()
+# connection = psycopg2.connect(
+#     host=constring[2],
+#     database=constring[4],
+#     user=constring[0],
+#     password=constring[1],
+# )
 
-connection.set_session(autocommit=True)
+# connection.set_session(autocommit=True)
 
-for datasetname, dataset in app.datasets.items():
-    if CONFIG.get("GLOBAL_LOGIN_FORM"):
-        fields = [f"login_{f.get('fieldname')}" for f in CONFIG.get("GLOBAL_LOGIN_FORM")]
-    else:
-        fields = [f"login_{f.get('fieldname')}" for f in dataset.get('login_fields')]
-    with connection.cursor() as cursor:
-        for fieldname in fields:
-            print("Attempting to add field to submission tracking table")
-            print(fieldname)
-            command = sql.SQL(
-                """
-                ALTER TABLE submission_tracking_table ADD COLUMN IF NOT EXISTS {field} VARCHAR(255);
-                """
-            ).format(
-                field = sql.Identifier(fieldname),
-            )
+# for datasetname, dataset in app.datasets.items():
+#     if CONFIG.get("GLOBAL_LOGIN_FORM"):
+#         fields = [f"login_{f.get('fieldname')}" for f in CONFIG.get("GLOBAL_LOGIN_FORM")]
+#     else:
+#         fields = [f"login_{f.get('fieldname')}" for f in dataset.get('login_fields')]
+#     with connection.cursor() as cursor:
+#         for fieldname in fields:
+#             print("Attempting to add field to submission tracking table")
+#             print(fieldname)
+#             command = sql.SQL(
+#                 """
+#                 ALTER TABLE submission_tracking_table ADD COLUMN IF NOT EXISTS {field} VARCHAR(255);
+#                 """
+#             ).format(
+#                 field = sql.Identifier(fieldname),
+#             )
             
-            cursor.execute(command)
-            print(dataset)
-            for tablename in dataset.get('tables'):
-                print(f"Attempting to add login fields to {tablename}")
-                print(fieldname)
-                command = sql.SQL(
-                    """
-                    ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {field} VARCHAR(255);
-                    """
-                ).format(
-                    field = sql.Identifier(fieldname),
-                    table = sql.Identifier(tablename)
-                )
-                cursor.execute(command)
+#             cursor.execute(command)
+#             print(dataset)
+#             for tablename in dataset.get('tables'):
+#                 print(f"Attempting to add login fields to {tablename}")
+#                 print(fieldname)
+#                 command = sql.SQL(
+#                     """
+#                     ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {field} VARCHAR(255);
+#                     """
+#                 ).format(
+#                     field = sql.Identifier(fieldname),
+#                     table = sql.Identifier(tablename)
+#                 )
+#                 cursor.execute(command)
             
-            # login fields need to be in the system fields list
-            app.system_fields.append(fieldname)
+#             # login fields need to be in the system fields list
+#             app.system_fields.append(fieldname)
 
 
 
@@ -149,5 +158,7 @@ app.register_blueprint(homepage)
 app.register_blueprint(finalsubmit)
 app.register_blueprint(download)
 app.register_blueprint(scraper)
+#app.register_blueprint(templater_old)
 app.register_blueprint(templater)
+app.register_blueprint(admin)
 

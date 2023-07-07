@@ -3,6 +3,7 @@ from werkzeug.utils import secure_filename
 from gc import collect
 import os
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # custom imports, from local files
 from .preprocess import clean_data
@@ -12,6 +13,7 @@ from .core.functions import fetch_meta
 from .utils.generic import save_errors, correct_row_offset
 from .utils.excel import mark_workbook
 from .utils.exceptions import default_exception_handler
+from .utils.reformat import parse_raw_logger_data
 from .custom import *
 
 
@@ -26,42 +28,42 @@ def main():
     # routine to grab the uploaded file
     print("uploading files")
     files = request.files.getlist('files[]')
-    if len(files) > 0:
-        
-        if sum(['xls' in secure_filename(x.filename).rsplit('.',1)[-1] for x in files]) > 1:
-            return jsonify(user_error_msg='You have submitted more than one excel file')
-        
-        for f in files:
-            # i'd like to figure a way we can do it without writing the thing to an excel file
-            f = files[0]
-            filename = secure_filename(f.filename)
-
-            # if file extension is xlsx/xls (hopefully xlsx)
-            excel_path = os.path.join( session['submission_dir'], str(filename) )
-
-            # the user's uploaded excel file can now be read into pandas
-            f.save(excel_path)
-
-            # To be accessed later by the upload routine that loads data to the tables
-            session['excel_path'] = excel_path
-
-            # Put their original filename in the submission tracking table
-            g.eng.execute(
-                f"""
-                UPDATE submission_tracking_table 
-                SET original_filename = '{filename}' 
-                WHERE submissionid = {session.get('submissionid')};
-                """
-            )
-
-    else:
+    if len(files) > 1:
+        return jsonify(user_error_msg='You have submitted more than one file')
+    elif len(files) == 0:
         return jsonify(user_error_msg="No file given")
+    else:
+        # i'd like to figure a way we can do it without writing the thing to an excel file
+        # ... maybe
+        # it would have to be written to a BytesIO object, which is completely possible, 
+        #   but i think we might want to save the file to be able to give to them later
+        f = files[0]
+        filename = secure_filename(f.filename)
+        file_extension = filename.lower().rsplit('.',1)[-1]
 
-    # We are assuming filename is an excel file
-    if '.xls' not in filename:
-        errmsg = f"filename: {filename} appears to not be what we would expect of an excel file.\n"
-        errmsg += "As of right now, the application can accept one excel file at a time.\n"
-        errmsg += "If you are submitting data for multiple tables, they should be separate tabs in the excel file."
+        # if file extension is xlsx/xls (hopefully xlsx)
+        excel_path = os.path.join( session['submission_dir'], str(filename) )
+
+        # the user's uploaded excel file can now be read into pandas
+        f.save(excel_path)
+
+        # To be accessed later by the upload routine that loads data to the tables
+        session['excel_path'] = excel_path
+
+        # Put their original filename in the submission tracking table
+        g.eng.execute(
+            f"""
+            UPDATE submission_tracking_table 
+            SET original_filename = '{filename}' 
+            WHERE submissionid = {session.get('submissionid')};
+            """
+        )
+
+
+    # We are assuming filename is an excel file or csv
+    supported_checker_filetypes = ('xls','csv','txt','xlsx')
+    if file_extension not in supported_checker_filetypes:
+        errmsg = f"filename: {filename} is not a supported file type. Supported file types are {supported_checker_filetypes}"
         return jsonify(user_error_msg=errmsg)
 
     print("DONE uploading files")
@@ -70,35 +72,74 @@ def main():
     
     # Read in the excel file to make a dictionary of dataframes (all_dfs)
 
-    assert isinstance(current_app.excel_offset, int), \
-        "Number of rows to offset in excel file must be an integer. Check__init__.py"
-
-    # build all_dfs where we will store their data
-    print("building 'all_dfs' dictionary")
-    all_dfs = {
-
-        # Some projects may have descriptions in the first row, which are not the column headers
-        # This is the only reason why the skiprows argument is used.
-        # For projects that do not set up their data templates in this way, that arg should be removed
-
-        # Note also that only empty cells will be regarded as missing values
-        sheet: pd.read_excel(
-            excel_path, 
-            sheet_name = sheet,
-            skiprows = current_app.excel_offset,
-            na_values = ['']
+    # if they are not submitting logger_raw data, this if clock shouldnt get executed as session.get('login_info').get('filetype') should return None
+    print("session.get('login_info').get('login_filetype')")
+    print(session.get('login_info').get('login_filetype'))
+    if session.get('login_info').get('login_filetype') == 'Raw File':
+        print("Reformat")
+        formatted_data = parse_raw_logger_data(session.get('login_info').get('login_sensortype'), session.get('excel_path'))
+        
+        # fill in the columns that should be populated from the data from the login form
+        formatted_data = formatted_data.assign(
+            projectid = session.get('login_info').get('login_project'),
+            siteid = session.get('login_info').get('login_siteid'),
+            estuaryname = session.get('login_info').get('login_siteid'),
+            stationno = session.get('login_info').get('login_stationno'),
+            sensortype = session.get('login_info').get('login_sensortype')
         )
+
+        # replace siteids with estuary names in the estuary name column
+        estuariesxwalk = pd.read_sql("SELECT siteid, estuary FROM lu_siteid", g.eng) \
+            .set_index('siteid')['estuary'].to_dict()
+        formatted_data.estuaryname = formatted_data.estuaryname.replace(estuariesxwalk)
+
+
+        print("Done reformatting")
+        all_dfs = {
+            "tbl_wq_logger_raw": formatted_data
+        }
+
+        # Reset the excel path and filename
+        filename = f"{str(filename)}.xlsx"
+        excel_path = os.path.join( session['submission_dir'], filename )
+        session['excel_path'] = excel_path
+    else:
+        assert isinstance(current_app.excel_offset, int), \
+            "Number of rows to offset in excel file must be an integer. Check__init__.py"
+
+        # build all_dfs where we will store their data
+        print("building 'all_dfs' dictionary")
+        all_dfs = {
+
+            # Some projects may have descriptions in the first row, which are not the column headers
+            # This is the only reason why the skiprows argument is used.
+            # For projects that do not set up their data templates in this way, that arg should be removed
+
+            # Note also that only empty cells will be regarded as missing values
+            sheet: pd.read_excel(
+                excel_path, 
+                sheet_name = sheet,
+                skiprows = current_app.excel_offset,
+                na_values = [''],
+                converters = {"preparationtime":str}
+            )
+            
+            for sheet in pd.ExcelFile(excel_path).sheet_names
+            
+            if ((sheet not in current_app.tabs_to_ignore) and (not sheet.startswith('lu_')))
+        }
         
-        for sheet in pd.ExcelFile(excel_path).sheet_names
-        
-        if ((sheet not in current_app.tabs_to_ignore) and (not sheet.startswith('lu_')))
-    }
-    
     assert len(all_dfs) > 0, f"submissionid - {session.get('submissionid')} all_dfs is empty"
     
     for tblname in all_dfs.keys():
         all_dfs[tblname].columns = [x.lower() for x in all_dfs[tblname].columns]
-
+        all_dfs[tblname] = all_dfs[tblname].drop(
+            columns= [
+                x 
+                for x in all_dfs[tblname].columns 
+                if x in current_app.system_fields
+            ]
+        )
     print("DONE - building 'all_dfs' dictionary")
     
 
@@ -115,8 +156,9 @@ def main():
     match_dataset, match_report, all_dfs = match(all_dfs)
     
     print("match(all_dfs)")
-    #print(match(all_dfs))
+    #print(match(all_dfs)) #uncommented to view
 
+    #remember to comment out the block below after edits
     # print("match_dataset")
     # print(match_dataset)
     # print("match_report")
@@ -135,9 +177,6 @@ def main():
     print("DONE - Running match tables routine")
 
     session['datatype'] = match_dataset
-
-    print("match_dataset")
-    print(match_dataset)
 
     if match_dataset == "":
         # A tab in their excel file did not get matched with a table
@@ -169,7 +208,10 @@ def main():
     print("preprocessing and cleaning data")
     # We are not sure if we want to do this
     # some projects like bight prohibit this
-    all_dfs = clean_data(all_dfs)
+    if match_dataset != 'logger_raw':
+        # Skip preprocessing for raw logger data
+        # We can probably add an option in the config on a per datatype basis to generalize this
+        all_dfs = clean_data(all_dfs)
     print("DONE preprocessing and cleaning data")
     
     # write all_dfs again to the same excel path
@@ -224,8 +266,8 @@ def main():
     # debug = False will cause corechecks to run with multiprocessing, 
     # but the logs will not show as much useful information
     print("Right before core runs")
-    #core_output = core(all_dfs, g.eng, dbmetadata, debug = False)
     core_output = core(all_dfs, g.eng, dbmetadata, debug = True)
+    #core_output = core(all_dfs, g.eng, dbmetadata, debug = False)
     print("Right after core runs")
 
     errs.extend(core_output['core_errors'])
@@ -308,15 +350,15 @@ def main():
     # Begin Visual Map Checks:
 
     # Run only if they passed Core Checks
-    if errs == []:
-        # There are visual map checks for SAV, BRUV, Fish and Vegetation:
+    # if errs == []:
+    #     # There are visual map checks for SAV, BRUV, Fish and Vegetation:
 
-        map_func = current_app.datasets.get(match_dataset).get('map_func')
-        if map_func is not None:
-            map_output = map_func(all_dfs, current_app.datasets.get(match_dataset).get('spatialtable'))
-            f = open(os.path.join(session.get('submission_dir'),f'{match_dataset}_map.html'),'w')
-            f.write(map_output._repr_html_())
-            f.close()
+    #     map_func = current_app.datasets.get(match_dataset).get('map_func')
+    #     if map_func is not None:
+    #         map_output = map_func(all_dfs, current_app.datasets.get(match_dataset).get('spatialtable'))
+    #         f = open(os.path.join(session.get('submission_dir'),f'{match_dataset}_map.html'),'w')
+    #         f.write(map_output._repr_html_())
+    #         f.close()
 
     # ---------------------------------------------------------------- #
 
@@ -370,7 +412,6 @@ def main():
 
 
     # These are the values we are returning to the browser as a json
-    # https://pics.me.me/code-comments-be-like-68542608.png
     returnvals = {
         "filename" : filename,
         "marked_filename" : f"{filename.rsplit('.',1)[0]}-marked.{filename.rsplit('.',1)[-1]}",
@@ -384,7 +425,48 @@ def main():
         "all_datasets": list(current_app.datasets.keys()),
         "table_to_tab_map" : session['table_to_tab_map']
     }
-    
+
+    if match_dataset == 'logger_raw':
+        jsondata = all_dfs['tbl_wq_logger_raw']
+        jsondata['samplecollectiontimestamp'] = jsondata['samplecollectiontimestamp'].apply(lambda t: t.strftime("%Y-%m-%d %H:%M:%S") if pd.notnull(t) else '')
+        plotcols = [
+            'samplecollectiontimestamp',
+            'samplecollectiontimezone',
+            'raw_do',
+            'raw_do_unit',
+            'raw_do_pct',
+            'raw_h2otemp',
+            'raw_h2otemp_unit',
+            'raw_conductivity',
+            'raw_conductivity_unit',
+            'raw_turbidity',
+            'raw_turbidity_unit',
+            'raw_salinity',
+            'raw_salinity_unit',
+            'raw_chlorophyll',
+            'raw_chlorophyll_unit',
+            'raw_pressure',
+            'raw_pressure_unit'
+        ]
+
+        # for param in [p for p in plotcols if not ('unit' in p) or ('samplecollect' in p)]:
+        #     # Create a line plot with a larger figure size
+        #     plt.figure(figsize=(15, 10))
+        #     plt.plot(jsondata['samplecollectiontimestamp'], jsondata[param])
+        #     plt.title(f'Line Plot of {param} over time')
+        #     plt.xlabel('samplecollectiontimestamp')
+        #     ylabel = f"""{param} {','.join(jsondata[f'{param}_unit'].dropna().astype(str).unique())}""" if f'{param}_unit' in jsondata.columns else param
+        #     plt.ylabel(ylabel)
+
+        #     # Rotate x-axis labels
+        #     plt.xticks(rotation=45)
+
+        #     # Save the plot as a PNG file with a higher DPI
+        #     plt.savefig(os.path.join(session.get('submission_dir'), f'{param}.png'), format='png', dpi=300, bbox_inches='tight')
+        #     plt.close()
+
+        returnvals['logger_data'] = jsondata[plotcols].fillna('').to_dict('records')
+
     #print(returnvals)
 
     print("DONE with upload routine, returning JSON to browser")

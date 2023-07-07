@@ -1,5 +1,6 @@
 # This file is for various utilities to preprocess data before core checks
 
+import tabnanny
 from flask import current_app, g
 import pandas as pd
 import re
@@ -122,6 +123,88 @@ def fix_case(all_dfs: dict):
 def hardcoded_fixes(all_dfs):
     
     return all_dfs
+'''
+def fill_speciesnames(all_dfs):
+
+    # I don't know why the code below is commented out - DUY 09-28-22
+    # lu_fishspecies = pd.read_sql('SELECT scientificname, commonname FROM lu_fishspecies', g.eng)
+    # names = {
+    #     c: s  for s, c in list(zip(lu_fishspecies.scientificname, lu_fishspecies.commonname))
+    # }
+
+    # # I dont really know how to explain the code with comments to be honest but hopefully it makes sense
+    # all_dfs['tbl_fish_abundance_data']['scientificname'] = all_dfs['tbl_fish_abundance_data'] \
+    #     .apply(
+    #         lambda x:
+    #         names[x['scientificname']] if (pd.isnull(x['commonname']) or x['commonname'] == '') else x['commonname']
+    #         ,
+    #         axis = 1
+    #     )
+    
+    # # here we need to get the key of the dictionary based on the value
+    # all_dfs['tbl_fish_abundance_data']['commonname'] = all_dfs['tbl_fish_abundance_data'] \
+    #     .apply(
+    #         lambda x:
+    #         list(names.keys())[list(names.values()).index(x['scientificname'])] if (pd.isnull(x['scientificname']) or x['scientificname'] == '') else x['scientificname']
+    #         ,
+    #         axis = 1
+    #     )
+    print("begin fill species name")
+    print(all_dfs.keys())
+    lu_list_to_fill = {
+        'tbl_bruv_data': 'lu_fishmacrospecies',
+        'tbl_fish_length_data': 'lu_fishmacrospecies',
+        'tbl_fish_abundance_data': 'lu_fishmacrospecies',
+        'tbl_vegetativecover_data': 'lu_plantspecies',
+        'tbl_crabbiomass_length': 'lu_fishmacrospecies',
+        'tbl_crabfishinvert_abundance': 'lu_fishmacrospecies'
+    }
+    for tab in all_dfs.keys():
+        if tab in lu_list_to_fill.keys():
+            print(tab)
+            lu_list = pd.read_sql(f'SELECT scientificname, commonname, status FROM {lu_list_to_fill.get(tab)}', g.eng)
+            print(lu_list)
+            names = {
+                (x,y): z  for x,y,z in list(
+                    zip(
+                        lu_list.scientificname, 
+                        lu_list.commonname,
+                        lu_list.status
+                    )
+                )
+            }
+            print(names)
+            if not all_dfs[tab].empty:
+                all_dfs[tab]['status'] = all_dfs[tab].apply(
+                    lambda row: names[(row['scientificname'], row['commonname'])]
+                    if ((row['scientificname'], row['commonname']) in names.keys()) and (pd.isnull(row['status']) or row['status'] == '') 
+                    else row['status'] ,
+                    axis=1
+                )
+    print("end fill species name")
+    return all_dfs
+'''
+
+def fix_projectid(all_dfs):
+    '''
+    The function "fix_projectid" takes a dictionary of dataframes, modifies the 'projectid' column in each dataframe 
+    by replacing its value with 'Baja-rails' if the corresponding value in the 'siteid' column is 'Baja-SQ' or 'Baja-PB'. 
+    The final dictionary of modified dataframes is returned.
+    '''
+    for table_name in all_dfs.keys():
+        table_df = all_dfs[table_name] 
+        if 'siteid' not in table_df.columns:
+            continue
+        table_df = table_df.assign(
+            projectid = table_df.apply(
+                lambda row: 'Baja-rails' if row['siteid'] in ['Baja-SQ','Baja-PB']
+                else row['projectid'],
+                axis=1
+            )
+        )
+        all_dfs[table_name] = table_df
+    return all_dfs
+
 
 
 def clean_data(all_dfs):
@@ -135,6 +218,29 @@ def clean_data(all_dfs):
     
     #disabled to test checks -- jk enabled to test submit data
     
+    print("Before fix case")
+    #print(all_dfs['tbl_fish_sample_metadata'][['siteid','estuaryname']])
+    print('\n')
+    all_dfs = fix_case(all_dfs)  # fix for lookup list values too, match to the lookup list value if case insensitivity is the only issue
+    print("After fix case")
+    #print(all_dfs['tbl_fish_sample_metadata'][['siteid','estuaryname']])
+    print('\n')
+
+    print("before filling empty values")
+    #print(all_dfs['tbl_fish_sample_metadata'][['siteid','estuaryname']])
+    print('\n')
+    # all_dfs = fill_empty_cells(all_dfs) # commenting out for now
+
+    # On 12/27/2022, I came here to comment out the function fill_empty_cells per Jan's request.
+    # However, I saw this function had been commented out before this by someone.
+    # As a result, the checker should not fill out primary key values with placeholders from now on - Duy
+
+    print("after filling empty values")
+    #print(all_dfs['tbl_fish_sample_metadata'][['siteid','estuaryname']])
+    print('\n')
+    
+    #all_dfs = clean_speciesnames(all_dfs)
+    #all_dfs = fill_speciesnames(all_dfs)
     print("fix case")
     # fix for lookup list values too, match to the lookup list value if case insensitivity is the only issue
     all_dfs = fix_case(all_dfs)                
@@ -143,4 +249,10 @@ def clean_data(all_dfs):
     all_dfs = hardcoded_fixes(all_dfs)
 
     print('done')
+    
+    print("begin fixing projectid")
+    all_dfs =  fix_projectid(all_dfs)
+    print("end fixing projectid")
+
     return all_dfs
+
