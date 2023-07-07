@@ -227,6 +227,7 @@
                     so resetPlot will be found even though it is called above where this function is defined 
             */
             function resetPlot(){
+                replaceCanvas();
                 const activeButton = document.querySelector('.logger-visual-tab-button.active');
                 // draw the new plot based on the active button
                 let yVal = `raw_${activeButton.dataset.parameter}`;
@@ -247,6 +248,25 @@
                     },
                     yAxisLabel = activeButton.dataset.parameterLabel
                 );
+            }
+
+            function replaceCanvas({canvasID = chartID} = {}){
+                // Get the old canvas
+                let oldCanvas = document.getElementById(canvasID);
+
+                // Create a new canvas
+                let newCanvas = document.createElement('canvas');
+
+                // Copy the width and height attributes from the old canvas
+                newCanvas.width = oldCanvas.width;
+                newCanvas.height = oldCanvas.height;
+
+                // Replace the old canvas with the new one
+                oldCanvas.parentNode.replaceChild(newCanvas, oldCanvas);
+
+                // Set the id of the new canvas to the id of the old canvas, if you need to keep it
+                newCanvas.id = oldCanvas.id;
+
             }
         }
         
