@@ -178,6 +178,12 @@
             let chartID = 'logger-canvas';
             let xVal = 'samplecollectiontimestamp';
             let yVal = `raw_${currentParameter}`;
+            margins = {
+                top: plotHeight * 0.05, 
+                right: plotWidth * 0.02, 
+                bottom: plotHeight * 0.25, 
+                left: plotWidth * 0.10
+            }
 
             createPlot(
                 loggerdata, 
@@ -193,6 +199,8 @@
                     left: plotWidth * 0.10
                 }
             );
+
+            brushHandler(loggerdata, chartID, canvasWidth = plotWidth, canvasHeight = plotHeight )
 
             Array.from(document.getElementsByClassName('logger-visual-tab-button')).forEach((btn, i, allButtons) => {
                 btn.addEventListener('click', () => {

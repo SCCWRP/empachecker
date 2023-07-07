@@ -557,8 +557,8 @@ function createPlot(data, xVal, yVal, canvasId = 'canvas', canvasWidth = 960, ca
         height = canvasHeight - margins.top - margins.bottom;
 
     const canvas = d3.select(`#${canvasId}`)
-        .attr("width", width + margins.left + margins.right)
-        .attr("height", height + margins.top + margins.bottom)
+        .attr("width", canvasWidth)
+        .attr("height", canvasHeight)
         .node();
 
     const context = canvas.getContext('2d');
@@ -658,5 +658,109 @@ function createPlot(data, xVal, yVal, canvasId = 'canvas', canvasWidth = 960, ca
     context.textAlign = 'center';
     context.fillText(yVal, -height / 2, -margins.left / 2);
     context.restore();
+
+
 }
 
+// GPT provided code for a 1D X Axis brush
+const brushHandler = function (
+    data, canvasID, canvasWidth = 500, canvasHeight = 500, marginsPct = {top: 0.05,  right: 0.02,  bottom: 0.25, left: 0.10}, xVal = 'samplecollectiontimestamp'
+) 
+{
+
+    const canvas = document.querySelector(`#${canvasID}`);
+    const canvasd3 = d3.select(`#${canvasID}`).node();
+    const context = canvasd3.getContext('2d');
+
+    
+    let margins = {
+        top: canvasHeight * marginsPct.top,
+        bottom: canvasHeight * marginsPct.bottom,
+        left: canvasWidth * marginsPct.left,
+        right: canvasWidth * marginsPct.right
+    }
+
+    let width = canvasWidth - margins.left - margins.right
+    let height = canvasHeight - margins.top - margins.bottom;
+
+    let filteredData = data;
+
+    // very specific to this current app
+    // i think the dataset should maybe just have the actual column name in it. I forgot why it doesnt..
+    const getParam = function(){
+        return `raw_${document.querySelector('.logger-visual-tab-button.active')?.dataset.parameter}`;
+    }
+
+
+    // get x and y scales
+    console.log("WIDTH")
+    console.log(width)
+
+    const x = d3.scaleTime().range([0, width]);
+    //const y = d3.scaleLinear().range([height, 0]);
+    
+    x.domain(d3.extent(data, d => new Date(d[xVal])));
+    //y.domain([0, d3.max(data, d => d[yVal])]);
+
+    // brushing
+    let brushing = false;
+    let brushStartX = 0;
+    let brushEndX = 0;
+
+    canvas.addEventListener('mousedown', mouseDown);
+    canvas.addEventListener('mousemove', mouseMove);
+    canvas.addEventListener('mouseup', mouseUp);
+
+    function mouseDown(event) {
+        console.log(event)
+        canvas.style.cursor = 'grabbing';
+        brushing = true;
+        brushStartX = event.clientX - canvas.getBoundingClientRect().left - margins.left;
+        brushEndX = brushStartX;
+        startDate = x.invert(brushStartX);
+        
+    }
+
+    function mouseMove(event) {
+        if (!brushing) return;
+        brushEndX = event.clientX - canvas.getBoundingClientRect().left - margins.left;
+        endDate = x.invert(brushEndX);
+        // draw the brush
+        context.fillStyle = 'rgba(0, 0, 100, 0.01)';
+        context.fillRect(brushStartX, 0, brushEndX - brushStartX, canvasHeight);
+    }
+    
+    function mouseUp(event) {
+        console.log(event)
+        canvas.style.cursor = 'auto';
+        if (!brushing) return;
+        brushing = false;
+        brushEndX = event.clientX - canvas.getBoundingClientRect().left - margins.left;
+        endDate = x.invert(brushEndX);
+        filteredData = data.filter(item => {
+            return ( (new Date(item[xVal]) > startDate) & (new Date(item[xVal]) < endDate ) ) ;
+        })
+
+        createPlot(filteredData, xVal,  getParam(), canvasID, canvasWidth, canvasHeight, margins);
+
+        // here you might want to update your graph based on the brush extents
+    }
+
+    // function updatePlot(data, xVal, yVal, canvasId, canvasWidth, canvasHeight, margins) {
+    //     // clear the canvas and redraw everything
+    //     context.clearRect(-margins.left, -margins.top, canvas.width, canvas.height);
+    //     context.save();
+    //     context.translate(margins.left, margins.top);
+    //     createPlot(data, xVal, yVal, canvasId, canvasWidth, canvasHeight, margins);
+    //     context.restore();
+
+        
+    // }
+    
+    // function drawBrush(){
+    //     context.translate(margins.left, margins.top);
+    //     // draw the brush
+    //     context.fillStyle = 'rgba(0, 0, 0, 0.1)';
+    //     context.fillRect(brushStartX, height, brushEndX - brushStartX, margins.bottom);
+    // }
+}
