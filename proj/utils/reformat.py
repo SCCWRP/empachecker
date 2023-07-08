@@ -229,11 +229,11 @@ def parse_raw_logger_data(loggertype: str, filepath: str):
     # Since i'm going to be using these values in eval, i put in the function definition so that nothing outside the function can cause unwanted code to be executed
     # if we add another supported type, we can add here
     SUPPORTED_SENSORTYPES = ['tidbit','troll','ctd','minidot','hydrolab']
-    
+    lowercase_loggertype = str(loggertype).lower()
     assert \
-        loggertype in SUPPORTED_SENSORTYPES, \
-        f"""Logger Type {loggertype} is not (yet) supported. Supported types are: {', '.join(SUPPORTED_SENSORTYPES)}"""
+        lowercase_loggertype in SUPPORTED_SENSORTYPES, \
+        f"""Logger Type {lowercase_loggertype} is not (yet) supported. Supported types are: {', '.join(SUPPORTED_SENSORTYPES)}"""
     
-    return eval(f"read_{loggertype}")(filepath)
+    return eval(f"read_{lowercase_loggertype}")(filepath)
 
 
