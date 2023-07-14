@@ -81,19 +81,19 @@ def template():
         ]
         file_prefix = 'SOP_2_DISCRETE_WQ'
     # SOP 3 Nutrients
-    elif datatype == 'nutrients_field':
+    elif datatype == 'sedchem_field':
         tbls = [
             'tbl_protocol_metadata',
-            'tbl_nutrients_metadata'
+            'tbl_sedchem_metadata'
         ]
-        file_prefix = 'SOP_3_NUTRIENTS_FIELD'
-    elif datatype == 'nutrients_lab':
+        file_prefix = 'SOP_3_SEDCHEM_FIELD'
+    elif datatype == 'sedchem_lab':
         tbls = [
             'tbl_protocol_metadata',
-            'tbl_nutrients_labbatch_data',
-            'tbl_nutrients_data'
+            'tbl_sedchem_labbatch_data',
+            'tbl_sedchem_data'
         ]
-        file_prefix = 'SOP_3_NUTRIENTS_LAB'
+        file_prefix = 'SOP_3_SEDCHEM_LAB'
     # SOP 4 eDNA
     elif datatype == 'edna_field':
         tbls = [
