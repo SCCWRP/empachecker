@@ -538,7 +538,7 @@ def sedchem_translator():
             """SELECT
                     latitude,
                     longitude,
-                    agency AS sampleorganization,
+                    agency AS samplingorganization,
                     concat_ws('-', siteid, stationno) AS stationid,
                     samplereplicate AS grabeventnumber,
                     samplecollectiondate AS sampledate,
@@ -565,7 +565,10 @@ def sedchem_translator():
    
     
     df_grab.insert(8, 'stationwaterdepthunits', 'm')
+    df_grab.insert(20, 'grabfail', 'No')
     df_grab.insert(22, 'debrisdetected', '')
+    df_grab.insert(22, 'penetrationunits', 'cm')
+    df_grab.insert(22, 'penetration', '')
 
     file_path = os.path.join(os.getcwd(), "export", "data", 'grabevent.xlsx')
 
