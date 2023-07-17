@@ -495,3 +495,29 @@ def get_logger_data():
         as_attachment = True, 
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
+
+@download.route('/sedchem_translator', methods = ['GET'])
+def sedchem_translator():
+    eng = g.eng
+    result = pd.read_sql('SELECT siteid, stationno, samplereplicate, sampletype, sampleid FROM tbl_sedchem_metadata', eng).to_dict('records')
+    print(result)
+    return jsonify(res=result)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
