@@ -496,28 +496,81 @@ def get_logger_data():
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 
-@download.route('/sedchem_translator', methods = ['GET'])
+@download.route('/grabevent_translator', methods = ['GET'])
 def sedchem_translator():
     eng = g.eng
-    result = pd.read_sql('SELECT siteid, stationno, samplereplicate, sampletype, sampleid FROM tbl_sedchem_metadata', eng).to_dict('records')
-    print(result)
-    return jsonify(res=result)
+    df_occupation = pd.read_sql(
+            """SELECT 
+                    agency AS samplingorganization,
+                    concat_ws('-', siteid, stationno) AS stationid, 
+                    samplecollectiondate AS occupationdate,
+                    samplecollectiontimezone AS occupationtimezone,
+                    depth_m AS occupationdepth, 
+                    latitude AS occupationlatitude, 
+                    longitude AS occupationlongitude,
+                    datum_latlong AS occupationdatum,
+                    samplecollectiontime AS occupationtime,
+                    samplemetadatanotes AS comments
+                FROM 
+                    tbl_grabevent
+            """, eng)
 
+    df_occupation.insert(4, 'collectiontype', 'Grab')
+    df_occupation.insert(5, 'vessel', 'NR')
+    df_occupation.insert(6, 'navtype', 'GPS')
+    df_occupation.insert(7, 'salinity', -88)
+    df_occupation.insert(8, 'salinityunits', 'psu')
+    df_occupation.insert(9, 'weather', 'NR')
+    df_occupation.insert(10, 'windspeed', 'NR')
+    df_occupation.insert(11, 'windspeedunits', 'kts')
+    df_occupation.insert(12, 'winddirection', 'NR')
+    df_occupation.insert(13, 'swellheight', 'NR')
+    df_occupation.insert(14, 'swellheightunits', 'ft')
+    df_occupation.insert(15, 'swellperiod', -88)
+    df_occupation.insert(16, 'swelldirection', 'NR')
+    df_occupation.insert(17, 'swellperiodunits', 'seconds')
+    df_occupation.insert(18, 'seastate', 'NR')
+    df_occupation.insert(19, 'abandoned', 'No')
+    df_occupation.insert(20, 'stationfail', 'None or No Failure')
+    df_occupation.insert(22, 'occupationdepthunits', 'm')
+    
+    df_grab = pd.read_sql(
+            """SELECT
+                    latitude,
+                    longitude,
+                    agency AS sampleorganization,
+                    concat_ws('-', siteid, stationno) AS stationid,
+                    samplereplicate AS grabeventnumber,
+                    samplecollectiondate AS sampledate,
+                    samplecollectiontime AS sampletime,
+                    depth_m AS stationwaterdepth,
+                    collectionmethod AS gear,
+                    datum_latlong AS datum,
+                    sediment_color AS color,
+                    sediment_composition AS composition,
+                    sediment_odor AS odor,
+                    sediment_shellhash AS shellhash,
+                    benthicinfauna,
+                    sedimentchemistry,
+                    toxicity,
+                    grainsize,
+                    microplastics,
+                    pfas,
+                    samplemetadatanotes AS comments,
+                    pfasfieldblank,
+                    microplasticsfieldblank,
+                    equipmentblank
+                FROM
+                    tbl_grabevent""", eng)
+   
+    
+    df_grab.insert(8, 'stationwaterdepthunits', 'm')
+    df_grab.insert(22, 'debrisdetected', '')
 
+    file_path = os.path.join(os.getcwd(), "export", "data", 'grabevent.xlsx')
 
+    with pd.ExcelWriter(file_path) as writer:
+        df_occupation.to_excel(writer, sheet_name='occupation', index=False)
+        df_grab.to_excel(writer, sheet_name='grab', index=False)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    return send_file( file_path, as_attachment = True, download_name = 'grabevent.xlsx' )
