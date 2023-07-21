@@ -212,6 +212,13 @@ def template():
             'tbl_benthiclarge_abundance'
         ]
         file_prefix = 'SOP_6_BENTHICINFAUNA_LARGE'
+    elif datatype == 'grab_field':
+        tbls = [
+            'tbl_protocol_metadata',
+            'tbl_grabevent',
+            'tbl_grabevent_details'
+        ]
+        file_prefix = 'SOP_14_GRAB_FIELD'
     else:
         tbls = []
 
