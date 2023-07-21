@@ -94,7 +94,7 @@ def fix_case(all_dfs: dict):
             ]  
             for x in lu_info.column_name
         }
-        
+        print(f"foreignkeys_rawvalues = {foreignkeys_rawvalues}")
         # Remove the empty lists in the dictionary's values. 
         # Empty lists indicate there are values that are not in the lu list for a certain column
         # This will be taken care of by core check.
@@ -117,12 +117,55 @@ def fix_case(all_dfs: dict):
     return all_dfs
 
 
+#Ayah added a hardcodded check to the function below 07/19/2023
 
 # because every project will have those non-generalizable, one off, "have to hard code" kind of fixes
 # and this project is no exception
 def hardcoded_fixes(all_dfs):
+    #fill in daubenmiremidpoint values if estimatedcover and percent cover code match in the table and lookup list
+
+    lu_estimatedcover = pd.read_sql('SELECT * from lu_estimatedcover', g.eng)
+    df_lu_merge = pd.merge( all_dfs['tbl_vegetativecover_data'],lu_estimatedcover, how="left", on=['percentcovercode'])
+
+    all_dfs['tbl_vegetativecover_data']['daubenmiremidpoint'] = df_lu_merge.apply(lambda row: row['daubenmiremidpoint_y'] \
+    if ((row['daubenmiremidpoint_x'] == -88) & (row['estimatedcover_min'] <= row['estimatedcover_x']) & \
+    (row['estimatedcover_x'] < row['estimatedcover_max'])) else row['daubenmiremidpoint_x'], axis = 1)
+
+
+    lu_dict = {
+    (a,b): (c,d) 
+    for a,b,c,d in zip(
+        lu_estimatedcover['estimatedcover_min'],
+        lu_estimatedcover['estimatedcover_max'],
+        lu_estimatedcover['percentcovercode'],
+        lu_estimatedcover['daubenmiremidpoint']
+        )
+    }
+
+    def get_correct_key(value, lu_dict):
+        inx = int(np.where([ tup[0] <= value < tup[1] for tup in lu_dict.keys()])[0])
+        return list(lu_dict.keys())[inx]
+
+    all_dfs['tbl_vegetativecover_data'] = all_dfs['tbl_vegetativecover_data'].assign(
+        percentcovercode = all_dfs['tbl_vegetativecover_data'].apply(
+        lambda row: lu_dict.get(get_correct_key(row['estimatedcover'], lu_dict))[0] #in dict: (min,max)): (% covercode [0], daubenmiremidpointe[1])
+            if int(row['percentcovercode']) == -88 
+            else row['percentcovercode'],
+            axis=1
+        ),
+        daubenmiremidpoint = all_dfs['tbl_vegetativecover_data'].apply(
+        lambda row: lu_dict.get(get_correct_key(row['estimatedcover'], lu_dict))[1] #in dict: (min,max)): (% covercode [0], daubenmiremidpointe[1])
+            if int(row['daubenmiremidpoint']) == -88 
+            else row['daubenmiremidpoint'],
+        axis=1
+        )
+    )
+
     
     return all_dfs
+
+
+
 '''
 def fill_speciesnames(all_dfs):
 
