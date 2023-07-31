@@ -498,82 +498,181 @@ def get_logger_data():
 
 @download.route('/grabevent_translator', methods = ['GET'])
 def sedchem_translator():
+    
     eng = g.eng
-    df_occupation = pd.read_sql(
+    
+    df_sql = pd.read_sql(
+            """ SELECT
+            tbl_grabevent.agency AS samplingorganization, 
+            concat_ws('-', tbl_grabevent.siteid, tbl_grabevent.stationno) AS stationid,
+            tbl_grabevent.latitude AS occupationlatitude,
+            tbl_grabevent.longitude AS occupationlongitude,
+            tbl_grabevent.datum_latlong AS datum,
+            tbl_grabevent_details.samplecollectiondate AS occupationdate,
+            tbl_grabevent_details.samplecollectiontime AS sampletime,
+            tbl_grabevent_details.samplecollectiontimezone AS sampletimezone,
+            tbl_grabevent_details.samplereplicate AS grabeventnumber,
+            tbl_grabevent_details.matrix,
+            tbl_grabevent_details.collectionmethod AS gear,
+            tbl_grabevent_details.sampletype,
+            tbl_grabevent_details.sampleid,
+            tbl_grabevent_details.sieve_or_depth,
+            tbl_grabevent_details.sieve_or_depthunits,
+            tbl_grabevent_details.coresizedepth,
+            tbl_grabevent_details.coresizedepthunits,
+            tbl_grabevent_details.color,
+            tbl_grabevent_details.composition,
+            tbl_grabevent_details.odor,
+            tbl_grabevent_details.shellhash,
+            tbl_grabevent.chemistry,
+            tbl_grabevent.toxicity,
+            tbl_grabevent.infauna,
+            tbl_grabevent.grainsize,
+            tbl_grabevent.microplastics,
+            tbl_grabevent.microplasticsfieldblank,
+            tbl_grabevent.pfas,
+            tbl_grabevent.pfasfieldblank,
+            tbl_grabevent.equipmentblank,
+            tbl_grabevent.comments
+            FROM
+            tbl_grabevent_details
+            LEFT JOIN
+            tbl_grabevent
+            ON
+            tbl_grabevent_details.projectid = tbl_grabevent.projectid AND
+            tbl_grabevent_details.siteid = tbl_grabevent.siteid AND
+            tbl_grabevent_details.stationno = tbl_grabevent.stationno AND
+            tbl_grabevent_details.latitude = tbl_grabevent.latitude AND
+            tbl_grabevent_details.longitude = tbl_grabevent.longitude AND 
+            tbl_grabevent_details.samplecollectiondate = tbl_grabevent.samplecollectiondate AND
+            tbl_grabevent_details.samplereplicate = tbl_grabevent.samplereplicate
+            GROUP BY
+            samplingorganization,
+            stationid,
+            occupationlatitude,
+            occupationlongitude,
+            datum,
+            occupationdate,
+            sampletime,
+            sampletimezone,
+            grabeventnumber,
+            tbl_grabevent_details.matrix,
+            gear,
+            tbl_grabevent_details.sampletype,
+            tbl_grabevent_details.sampleid,
+            tbl_grabevent_details.sieve_or_depth,
+            tbl_grabevent_details.sieve_or_depthunits,
+            tbl_grabevent_details.coresizedepth,
+            tbl_grabevent_details.coresizedepthunits,
+            tbl_grabevent_details.color,
+            tbl_grabevent_details.composition,
+            tbl_grabevent_details.odor,
+            tbl_grabevent_details.shellhash,
+            tbl_grabevent.chemistry,
+            tbl_grabevent.toxicity,
+            tbl_grabevent.infauna,
+            tbl_grabevent.grainsize,
+            tbl_grabevent.microplastics,
+            tbl_grabevent.microplasticsfieldblank,
+            tbl_grabevent.pfas,
+            tbl_grabevent.pfasfieldblank,
+            tbl_grabevent.equipmentblank,
+            tbl_grabevent.comments
+            ORDER BY
+            samplingorganization,
+            stationid,
+            occupationlatitude,
+            occupationlongitude,
+            datum,
+            occupationdate,
+            sampletime,
+            sampletimezone,
+            grabeventnumber,
+            tbl_grabevent_details.matrix,
+            gear,
+            tbl_grabevent_details.matrix,
+            tbl_grabevent_details.sampletype,
+            tbl_grabevent_details.sampleid,
+            tbl_grabevent_details.sieve_or_depth,
+            tbl_grabevent_details.sieve_or_depthunits,
+            tbl_grabevent_details.coresizedepth,
+            tbl_grabevent_details.coresizedepthunits,
+            tbl_grabevent_details.color,
+            tbl_grabevent_details.composition,
+            tbl_grabevent_details.odor,
+            tbl_grabevent_details.shellhash,
+            tbl_grabevent.chemistry,
+            tbl_grabevent.toxicity,
+            tbl_grabevent.infauna,
+            tbl_grabevent.grainsize,
+            tbl_grabevent.microplastics,
+            tbl_grabevent.microplasticsfieldblank,
+            tbl_grabevent.pfas,
+            tbl_grabevent.pfasfieldblank,
+            tbl_grabevent.equipmentblank
+        """, eng)
+    
+    df_grab = df_sql.filter(['samplingorganization', 'stationid', 'occupationdate', 'occupationlatitude', 'occupationlongitude', 'grabeventnumber', 'sampletime', 'sieve_or_depth', 'gear', 'datum', 'color', 'composition', 'odor', 'shellhash', 'toxicity', 'grainsize', 'microplastics', 'infauna', 'chemistry', 'pfas', 'pfasfieldblank', 'microplasticsfieldblank', 'equipmentblank', 'comments'], axis=1)
+
+    df_occupation = df_sql.filter(['samplingorganization', 'stationid', 'sampletime', 'occupationdate', 'sampletimezone', 'sieve_or_depth', 'occupationlatitude', 'occupationlongitude', 'datum', 'comments'], axis=1)
+
+    old_df_occupation = pd.read_sql(
             """SELECT 
                     agency AS samplingorganization,
                     concat_ws('-', siteid, stationno) AS stationid, 
                     samplecollectiondate AS occupationdate,
-                    samplecollectiontimezone AS occupationtimezone,
-                    depth_m AS occupationdepth, 
                     latitude AS occupationlatitude, 
                     longitude AS occupationlongitude,
-                    datum_latlong AS occupationdatum,
-                    samplecollectiontime AS occupationtime,
-                    samplemetadatanotes AS comments
-                FROM 
-                    tbl_grabevent
-            """, eng)
-
-    df_occupation.insert(4, 'collectiontype', 'Grab')
-    df_occupation.insert(5, 'vessel', 'NR')
-    df_occupation.insert(6, 'navtype', 'GPS')
-    df_occupation.insert(7, 'salinity', -88)
-    df_occupation.insert(8, 'salinityunits', 'psu')
-    df_occupation.insert(9, 'weather', 'NR')
-    df_occupation.insert(10, 'windspeed', 'NR')
-    df_occupation.insert(11, 'windspeedunits', 'kts')
-    df_occupation.insert(12, 'winddirection', 'NR')
-    df_occupation.insert(13, 'swellheight', 'NR')
-    df_occupation.insert(14, 'swellheightunits', 'ft')
-    df_occupation.insert(15, 'swellperiod', -88)
-    df_occupation.insert(16, 'swelldirection', 'NR')
-    df_occupation.insert(17, 'swellperiodunits', 'seconds')
-    df_occupation.insert(18, 'seastate', 'NR')
-    df_occupation.insert(19, 'abandoned', 'No')
-    df_occupation.insert(20, 'stationfail', 'None or No Failure')
-    df_occupation.insert(22, 'occupationdepthunits', 'm')
-    
-    df_grab = pd.read_sql(
-            """SELECT
-                    latitude,
-                    longitude,
-                    agency AS samplingorganization,
-                    concat_ws('-', siteid, stationno) AS stationid,
-                    samplereplicate AS grabeventnumber,
-                    samplecollectiondate AS sampledate,
-                    samplecollectiontime AS sampletime,
-                    depth_m AS stationwaterdepth,
-                    collectionmethod AS gear,
-                    datum_latlong AS datum,
-                    sediment_color AS color,
-                    sediment_composition AS composition,
-                    sediment_odor AS odor,
-                    sediment_shellhash AS shellhash,
-                    benthicinfauna,
-                    sedimentchemistry,
+                    chemistry,
                     toxicity,
+                    infauna,
                     grainsize,
                     microplastics,
-                    pfas,
-                    samplemetadatanotes AS comments,
-                    pfasfieldblank,
                     microplasticsfieldblank,
-                    equipmentblank
-                FROM
-                    tbl_grabevent""", eng)
-   
+                    pfas,
+                    pfasfieldblank,
+                    equipmentblank,
+                    comments
+                FROM 
+                    tbl_grabevent
+                WHERE projectid = 'EMPA'
+            """, eng)
+            #needs to be changed to BIGHT instead of EMPA
+
+    df_occupation.insert(5, 'collectiontype', 'Grab')
+    df_occupation.insert(6, 'vessel', 'NR')
+    df_occupation.insert(7, 'navtype', 'GPS')
+    df_occupation.insert(8, 'salinity', -88)
+    df_occupation.insert(9, 'salinityunits', 'psu')
+    df_occupation.insert(10, 'weather', 'NR')
+    df_occupation.insert(11, 'windspeed', 'NR')
+    df_occupation.insert(12, 'windspeedunits', 'kts')
+    df_occupation.insert(13, 'winddirection', 'NR')
+    df_occupation.insert(14, 'swellheight', 'NR')
+    df_occupation.insert(15, 'swellheightunits', 'ft')
+    df_occupation.insert(16, 'swellperiod', -88)
+    df_occupation.insert(17, 'swelldirection', 'NR')
+    df_occupation.insert(18, 'swellperiodunits', 'seconds')
+    df_occupation.insert(19, 'seastate', 'NR')
+    df_occupation.insert(20, 'abandoned', 'No')
+    df_occupation.insert(21, 'stationfail', 'None or No Failure')
+    df_occupation.insert(23, 'occupationdepthunits', 'm')
     
-    df_grab.insert(8, 'stationwaterdepthunits', 'm')
-    df_grab.insert(20, 'grabfail', 'No')
-    df_grab.insert(22, 'debrisdetected', '')
-    df_grab.insert(22, 'penetrationunits', 'cm')
-    df_grab.insert(22, 'penetration', '')
+    df_occupation.rename(columns={"sieve_or_depth": "occupationdepth", 'sampletimezone': 'occupationtimezone', 'sampletime': 'occupationtime', 'datum': 'occupationdatum'}, inplace=True)
+
+    df_grab.insert(9, 'stationwaterdepthunits', 'm')
+    df_grab.insert(19, 'grabfail', 'No')
+    df_grab.insert(19, 'debrisdetected', '')
+    df_grab.insert(11, 'penetrationunits', 'cm')
+    df_grab.insert(11, 'penetration', '')
+
+    df_grab.rename(columns={'occupationlatitude': 'latitude', 'occupationlongitude': 'longitude', 'occupationdate': 'sampledate', 'sieve_or_depth': 'stationwaterdepth', 'chemistry': 'sedimentchemistry', 'infauna': 'benthicinfauna'}, inplace=True)
 
     file_path = os.path.join(os.getcwd(), "export", "data", 'grabevent.xlsx')
 
     with pd.ExcelWriter(file_path) as writer:
         df_occupation.to_excel(writer, sheet_name='occupation', index=False)
         df_grab.to_excel(writer, sheet_name='grab', index=False)
+        #df_sql.to_excel(writer, sheet_name='test', index=False)
 
     return send_file( file_path, as_attachment = True, download_name = 'grabevent.xlsx' )
