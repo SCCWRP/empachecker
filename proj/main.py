@@ -4,6 +4,7 @@ from gc import collect
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 # custom imports, from local files
 from .preprocess import clean_data
@@ -99,7 +100,6 @@ def main():
             .set_index('siteid')['estuary'].to_dict()
         formatted_data.estuaryname = formatted_data.estuaryname.replace(estuariesxwalk)
 
-
         print("Done reformatting")
         all_dfs = {
             "tbl_wq_logger_raw": formatted_data
@@ -109,6 +109,9 @@ def main():
         filename = f"{str(filename)}.xlsx"
         excel_path = os.path.join( session['submission_dir'], filename )
         session['excel_path'] = excel_path
+    
+    elif (session.get('login_info').get('login_filetype') == 'formatted-template') and (Path(session.get('excel_path')).suffix != '.xlsx'):
+        return jsonify(user_error_msg='Formatted Template was selected as filetype in the Session Login Information but you submitted a Raw File')
     else:
         assert isinstance(current_app.excel_offset, int), \
             "Number of rows to offset in excel file must be an integer. Check__init__.py"

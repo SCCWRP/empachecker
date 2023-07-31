@@ -1,7 +1,7 @@
 #!/bin/bash
 if [ -z "$1" ]
     then 
-        editor="admin"
+        editor="www-data"
 else
     editor=$1
 fi
