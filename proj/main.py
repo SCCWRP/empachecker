@@ -72,12 +72,18 @@ def main():
     
     # Read in the excel file to make a dictionary of dataframes (all_dfs)
 
-    # if they are not submitting logger_raw data, this if clock shouldnt get executed as session.get('login_info').get('filetype') should return None
+    # if they are not submitting logger_raw data, this if block shouldnt get executed, because session.get('login_info').get('login_filetype') should return None
+    # raw-file or formatted-template are the two possible values (from config.json)
     print("session.get('login_info').get('login_filetype')")
-    print(session.get('login_info').get('login_filetype'))
-    if session.get('login_info').get('login_filetype') == 'Raw File':
+    print(session.get('login_info').get('login_filetype')) 
+    if session.get('login_info').get('login_filetype') == 'raw-file':
         print("Reformat")
-        formatted_data = parse_raw_logger_data(session.get('login_info').get('login_sensortype'), session.get('excel_path'))
+        try:
+            formatted_data = parse_raw_logger_data(session.get('login_info').get('login_sensortype'), session.get('excel_path'))
+        except Exception as e:
+            print(e)
+            errmsg = f"Could not read raw logger file {filename}. Check the submission file type, and try again."
+            return jsonify(user_error_msg=errmsg)
         
         # fill in the columns that should be populated from the data from the login form
         formatted_data = formatted_data.assign(

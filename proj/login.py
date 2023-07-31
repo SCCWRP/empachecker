@@ -85,6 +85,18 @@ def login_values():
     return jsonify(data = data)
 
 
+#route for checking the file type (raw or template file) from client
+@homepage.route('/filetype', methods = ['POST'])
+def update_file_type():
+    session.modified = False
+    if request.form["filetype"] not in ["raw-file", "formatted-template"]:
+        return jsonify({"result": "invalid type"})
+    print("before update", session['login_info'])
+    session['login_info']['login_filetype'] = request.form["filetype"]
+    print("after update", session['login_info'])
+    session.modified = True
+    return jsonify({"result": "Success"})
+
 @homepage.route('/login', methods = ['GET','POST'])
 def login():
     

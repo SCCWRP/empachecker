@@ -128,7 +128,7 @@
                     >
                     {% if field.static_options %}
                     {% for opt in field.static_options %}
-                      <option value="{{opt}}">{{opt}}</option>
+                      <option value="{{opt.value}}">{{opt.label}}</option>
                     {% endfor %}
                     {%endif%}
                   </select>
@@ -170,7 +170,21 @@
             </div>
             {% for k, v in login_info.items() %}
             <div class="row container login-info-container">
-              <div class="col-md-4 login-info-container login-info-key">{{k}}:</div><div class="col-md-8 login-info-container login-info-value">{{v}}</div>
+              <div class="col-md-4 login-info-container login-info-key">{{k}}:</div>
+
+              {# This is only for the logger data - let the user select if they are giving a raw file or a formatted template, so they dont have to re-enter login information #}
+              {% if k.lower() == 'filetype' %}
+                <div class="col-md-8 login-info-container login-info-value">
+                  <!-- <form id="filetype-form"> -->
+                    <input type="radio" name="filetype-selection" class="filetype-select-radio" id="rawfile-radio-btn" value="raw-file" checked>
+                    <label for="rawfile-radio-btn">Raw File</label>
+                    <input type="radio" name="filetype-selection" class="filetype-select-radio" id="formatted-template-radio-btn" value="formatted-template">
+                    <label for="formatted-template-radio-btn">Formatted Template</label>
+                  <!-- </form> -->
+                </div>
+              {% else %}
+                <div class="col-md-8 login-info-container login-info-value">{{v}}</div>
+              {% endif %}
             </div>
             {% endfor %}
             <br>
@@ -500,5 +514,51 @@
 <script src="{{url_for('static', filename='login.js')}}"></script>
 <script src="{{url_for('static', filename='alterform.js')}}"></script>
 <script src="{{url_for('static', filename='main.js')}}"></script>
+<script>
+  if (document.querySelector('input[name="filetype-selection"]') != null){
+    updateSession()
+    Array.from(document.getElementsByClassName('filetype-select-radio')).forEach(btn => {
+      btn.addEventListener('input', updateSession)
+      // maybe add additional event listener here to grab default radio button value somehow??
+      // running into issue where uploading an incorrect filetype (i.e. raw file when Formatted Template is selected),
+      // reloading the page, input reverts back to Raw File, but session on flask side still says formatted-template
+    })
+  }
+
+  function updateSession(){
+    const filetypeForm = new FormData();
+    filetypeForm.append("filetype", document.querySelector('input[name="filetype-selection"]:checked').value)
+    console.log(filetypeForm.get('filetype'))
+    const update_file_type = fetch(`/${script_root}/filetype`, {
+      method: 'post',
+      body: filetypeForm
+    })
+    .then(response => response.json())
+    .then(data => console.log(data));
+  }
+  
+
+//   Array.from(document.getElementsByClassName('filetype-select-radio')).forEach(btn => {
+//     btn.addEventListener('change', function(){
+
+//       // 0. set up a route on the server to handle these async requests 
+//       // 1. get the value of the radio button group
+//       // 2. send that to the server
+//       // 3. in the route on the server, grab that value and update session['login_info']['login_filetype']
+
+//       /*
+//        fetch('/...', {
+//         methosL post,
+//         body: {
+//             'filetype': <the value of the thing>
+//           }
+//        })
+//         .then( response => response.json() )
+//         .then(data => data.json())
+//       */
+      
+//     })
+// })
+</script>
 
 </html>

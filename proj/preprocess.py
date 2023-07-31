@@ -126,12 +126,15 @@ def fix_case(all_dfs: dict):
 def hardcoded_fixes(all_dfs):
     #fill in daubenmiremidpoint values if estimatedcover and percent cover code match in the table and lookup list
     
+
+    
     
     # Duy - only hardcoded fix if we see tbl_vegetativecover_data being submitted
     if 'tbl_vegetativecover_data' in all_dfs.keys():
+
         lu_estimatedcover = pd.read_sql('SELECT * from lu_estimatedcover', g.eng)
         df_lu_merge = pd.merge( all_dfs['tbl_vegetativecover_data'],lu_estimatedcover, how="left", on=['percentcovercode'])
-
+        
         all_dfs['tbl_vegetativecover_data']['daubenmiremidpoint'] = df_lu_merge.apply(lambda row: row['daubenmiremidpoint_y'] \
         if ((row['daubenmiremidpoint_x'] == -88) & (row['estimatedcover_min'] <= row['estimatedcover_x']) & \
         (row['estimatedcover_x'] < row['estimatedcover_max'])) else row['daubenmiremidpoint_x'], axis = 1)

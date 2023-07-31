@@ -25,7 +25,7 @@ def read_tidbit(tidbit_path):
 
     tidbit_data['raw_h2otemp'] = tidbit_data.iloc[:, 1]
     # search in temperature column for degree symbol, use single character after that
-    tidbit_data['raw_h2otemp_unit'] = re.search(r"(?<=°).", tidbit_data.iloc[:, 1].name, flags=re.UNICODE)[0]
+    tidbit_data['raw_h2otemp_unit'] = re.search(r"(?<=\N{DEGREE SIGN}).", tidbit_data.iloc[:, 1].name, flags=re.UNICODE)[0]
     tidbit_data['sensorid'] = tidbit_serial_num
 
     tidbit_data = tidbit_data[TEMPLATE_COLUMNS]
@@ -33,7 +33,7 @@ def read_tidbit(tidbit_path):
 
 def read_minidot(minidot_path):
     # read csv header, get serial number/sensor ID from first two lines of header
-    with open(minidot_path) as minidot_file:
+    with open(minidot_path, encoding='utf-8') as minidot_file:
         minidot_reader = csv.reader(minidot_file, delimiter = ':') # splitting on ':' puts sensor ID in standard position on second line
         minidot_reader.__next__() # read first line, do nothing with it
         minidot_serial_num = minidot_reader.__next__()[1].strip() # read second line, get second item in list, which is sensor ID, strip out any whitespace
@@ -42,7 +42,7 @@ def read_minidot(minidot_path):
     # tab separated, but can sometimes be more than one tab
     # since regex, this uses python engine to parse through csv, which may be slow
     # tested, 3 times slower than c engine, but files won't be large enough for this to matter, I think
-    minidot_data = pd.read_csv(minidot_path, header = 5, usecols = [1,3,4,5,6], sep = '\t+', engine = 'python')
+    minidot_data = pd.read_csv(minidot_path, header = 5, usecols = [1,3,4,5,6], sep = '\t+', engine = 'python', encoding='utf-8')
     minidot_data.columns = [column.strip() for column in minidot_data.columns]
     minidot_data = pd.concat([minidot_data, pd.DataFrame(columns=TEMPLATE_COLUMNS)])
 
