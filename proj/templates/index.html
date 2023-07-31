@@ -515,6 +515,13 @@
 <script src="{{url_for('static', filename='alterform.js')}}"></script>
 <script src="{{url_for('static', filename='main.js')}}"></script>
 <script>
+  
+  let datatypeSelect = document.getElementById('datatype-select').value
+  
+  if ( !['logger_meta', 'logger_raw'].includes(datatypeSelect) ){
+    document.getElementById('data-visual-report-header').classList.add('hidden')
+  }
+  
   if (document.querySelector('input[name="filetype-selection"]') != null){
     updateSession()
     Array.from(document.getElementsByClassName('filetype-select-radio')).forEach(btn => {
