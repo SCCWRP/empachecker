@@ -80,13 +80,7 @@ def template():
             'tbl_waterquality_data'
         ]
         file_prefix = 'SOP_2_DISCRETE_WQ'
-    # SOP 3 Nutrients
-    elif datatype == 'sedchem_field':
-        tbls = [
-            'tbl_protocol_metadata',
-            'tbl_sedchem_metadata'
-        ]
-        file_prefix = 'SOP_3_SEDCHEM_FIELD'
+    # SOP 3 Nutrient
     elif datatype == 'sedchem_lab':
         tbls = [
             'tbl_protocol_metadata',
@@ -95,12 +89,6 @@ def template():
         ]
         file_prefix = 'SOP_3_SEDCHEM_LAB'
     # SOP 4 eDNA
-    elif datatype == 'edna_field':
-        tbls = [
-            'tbl_protocol_metadata',
-            'tbl_edna_metadata'
-        ]
-        file_prefix = 'SOP_4_EDNA_FIELD'
     elif datatype == 'edna_lab':
         tbls = [
             'tbl_protocol_metadata',
@@ -110,12 +98,6 @@ def template():
         ]
         file_prefix = 'SOP_4_EDNA_LAB'
     # SOP 5 Sediment Grain Size
-    elif datatype == 'sedimentgrainsize_field':
-        tbls = [
-            'tbl_protocol_metadata',
-            'tbl_sedgrainsize_metadata'
-        ]
-        file_prefix = 'SOP_5_SEDIMENTGRAINSIZE_FIELD'
     elif datatype == 'sedimentgrainsize_lab':
         tbls = [
             'tbl_protocol_metadata',
@@ -124,12 +106,6 @@ def template():
         ]
         file_prefix = 'SOP_5_SEDIMENTGRAINSIZE_LAB'
     # SOP 6 Benthic Infauna
-    elif datatype == 'benthicinfauna_field':
-        tbls = [
-            'tbl_protocol_metadata',
-            'tbl_benthicinfauna_metadata'
-        ]
-        file_prefix = 'SOP_6_BENTHICINFAUNA_FIELD'
     elif datatype == 'benthicinfauna_lab':
         tbls = [
             'tbl_protocol_metadata',
@@ -138,6 +114,22 @@ def template():
             'tbl_benthicinfauna_biomass'
         ]
         file_prefix = 'SOP_6_BENTHICINFAUNA_LAB'
+    # SOP 6  Benthic Infauna Large
+    elif datatype == 'benthiclarge':
+        tbls = [
+            'tbl_protocol_metadata',
+            'tbl_benthiclarge_metadata',
+            'tbl_benthiclarge_abundance'
+        ]
+        file_prefix = 'SOP_6_BENTHICINFAUNA_LARGE'
+    # SOP 7 SAV
+    elif datatype == 'sav':
+        tbls = [
+            'tbl_protocol_metadata',
+            'tbl_sav_metadata',
+            'tbl_savpercentcover_data'
+        ]
+        file_prefix = 'SOP_7_SAV'
     # SOP 7 Macroalgae
     elif datatype == 'macroalgae':
         tbls = [
@@ -147,14 +139,6 @@ def template():
             'tbl_floating_data'
         ]
         file_prefix = 'SOP_7_MACROALGAE'
-    # SOP 7 SAV
-    elif datatype == 'sav':
-        tbls = [
-            'tbl_protocol_metadata',
-            'tbl_sav_metadata',
-            'tbl_savpercentcover_data'
-        ]
-        file_prefix = 'SOP_7_SAV'
     # SOP 8 BRUV
     elif datatype == 'bruv_field':
         tbls = [
@@ -204,21 +188,13 @@ def template():
             'tbl_feldspar_data'
         ]
         file_prefix = 'SOP_13_FELDSPAR'
-    # SOP 6  Benthic Infauna Large
-    elif datatype == 'benthiclarge':
-        tbls = [
-            'tbl_protocol_metadata',
-            'tbl_benthiclarge_metadata',
-            'tbl_benthiclarge_abundance'
-        ]
-        file_prefix = 'SOP_6_BENTHICINFAUNA_LARGE'
     elif datatype == 'grab_field':
         tbls = [
             'tbl_protocol_metadata',
             'tbl_grabevent',
             'tbl_grabevent_details'
         ]
-        file_prefix = 'SOP_14_GRAB_FIELD'
+        file_prefix = 'SOP_15_GRAB_FIELD'
     else:
         tbls = []
 
