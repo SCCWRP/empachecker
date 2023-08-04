@@ -217,10 +217,10 @@ def main():
     print("preprocessing and cleaning data")
     # We are not sure if we want to do this
     # some projects like bight prohibit this
-    if match_dataset != 'logger_raw':
-        # Skip preprocessing for raw logger data
-        # We can probably add an option in the config on a per datatype basis to generalize this
-        all_dfs = clean_data(all_dfs)
+    # if match_dataset != 'logger_raw':
+    #     # Skip preprocessing for raw logger data
+    #     # We can probably add an option in the config on a per datatype basis to generalize this
+    #     all_dfs = clean_data(all_dfs)
     print("DONE preprocessing and cleaning data")
     
     # write all_dfs again to the same excel path
