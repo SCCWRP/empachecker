@@ -256,51 +256,39 @@ def fix_projectid(all_dfs):
 
 
 def clean_data(all_dfs):
-    print("preprocessing")
-    print("strip whitespace")
-    #print(all_dfs['tbl_fish_sample_metadata'][['siteid','estuaryname']])
-    #rint('\n')
+    print("begin preprocessing")
+    
+    print("before strip_whitespace")
     all_dfs = strip_whitespace(all_dfs)
-    #print(all_dfs['tbl_fish_sample_metadata'][['siteid','estuaryname']])
-    #print('\n')
-    
-    #disabled to test checks -- jk enabled to test submit data
-    
-    print("Before fix case")
-    #print(all_dfs['tbl_fish_sample_metadata'][['siteid','estuaryname']])
-    print('\n')
+    print("after strip_whitespace")
+
+    print("before fix case")
     all_dfs = fix_case(all_dfs)  # fix for lookup list values too, match to the lookup list value if case insensitivity is the only issue
-    print("After fix case")
-    #print(all_dfs['tbl_fish_sample_metadata'][['siteid','estuaryname']])
-    print('\n')
+    print("after fix case")
 
-    print("before filling empty values")
-    #print(all_dfs['tbl_fish_sample_metadata'][['siteid','estuaryname']])
-    print('\n')
+    print("before fill_empty_cells")
     # all_dfs = fill_empty_cells(all_dfs) # commenting out for now
-
     # On 12/27/2022, I came here to comment out the function fill_empty_cells per Jan's request.
     # However, I saw this function had been commented out before this by someone.
     # As a result, the checker should not fill out primary key values with placeholders from now on - Duy
+    print("after fill_empty_cells")
 
-    print("after filling empty values")
-    #print(all_dfs['tbl_fish_sample_metadata'][['siteid','estuaryname']])
-    print('\n')
     
     #all_dfs = clean_speciesnames(all_dfs)
     #all_dfs = fill_speciesnames(all_dfs)
-    print("fix case")
+    print("before fix_case")
     # fix for lookup list values too, match to the lookup list value if case insensitivity is the only issue
     all_dfs = fix_case(all_dfs)                
-    
+    print("after fix_case")
 
+    print("before hardcoded_fixes")
     all_dfs = hardcoded_fixes(all_dfs)
+    print("after hardcoded_fixes")
 
-    print('done')
-    
-    print("begin fixing projectid")
+    print("before fixing projectid")
     all_dfs =  fix_projectid(all_dfs)
-    print("end fixing projectid")
+    print("after fixing projectid")
 
+    print("end preprocessing")
     return all_dfs
 

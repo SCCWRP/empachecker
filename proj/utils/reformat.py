@@ -70,7 +70,7 @@ def read_minidot(minidot_path):
         lambda x: re.search(r"(?<=\().+?(?=\))", minidot_data[x.name[:-5]][0])[0] 
     )
 
-    minidot_data['raw_h2otemp_unit'] = minidot_data['raw_h2otemp_unit'].str.replace("deg ", "")
+    # minidot_data['raw_h2otemp_unit'] = minidot_data['raw_h2otemp_unit']
 
     minidot_data.drop(0, inplace = True) # drop first row, which is just units for each column
 

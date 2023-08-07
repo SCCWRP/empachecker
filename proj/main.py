@@ -43,7 +43,7 @@ def main():
         file_extension = filename.lower().rsplit('.',1)[-1]
 
         # if file extension is xlsx/xls (hopefully xlsx)
-        excel_path = os.path.join( session['submission_dir'], str(filename) )
+        excel_path = os.path.join(session['submission_dir'], str(filename))
 
         # the user's uploaded excel file can now be read into pandas
         f.save(excel_path)
@@ -163,17 +163,6 @@ def main():
     # if the tab didnt match any table it will not alter that item in the all_dfs dictionary
     print("Running match tables routine")
     match_dataset, match_report, all_dfs = match(all_dfs)
-    
-    print("match(all_dfs)")
-    #print(match(all_dfs)) #uncommented to view
-
-    #remember to comment out the block below after edits
-    # print("match_dataset")
-    # print(match_dataset)
-    # print("match_report")
-    # print(match_report)
-    # print("all_dfs")
-    # print(all_dfs)
 
     #NOTE if all tabs in all_dfs matched a database table, but there is still no match_dataset
     # then the problem probably lies in __init__.py
@@ -217,10 +206,10 @@ def main():
     print("preprocessing and cleaning data")
     # We are not sure if we want to do this
     # some projects like bight prohibit this
-    # if match_dataset != 'logger_raw':
-    #     # Skip preprocessing for raw logger data
-    #     # We can probably add an option in the config on a per datatype basis to generalize this
-    #     all_dfs = clean_data(all_dfs)
+    if match_dataset != 'logger_raw':
+        # Skip preprocessing for raw logger data
+        # We can probably add an option in the config on a per datatype basis to generalize this
+        all_dfs = clean_data(all_dfs)
     print("DONE preprocessing and cleaning data")
     
     # write all_dfs again to the same excel path
