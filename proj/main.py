@@ -10,7 +10,7 @@ from pathlib import Path
 from .preprocess import clean_data
 from .match import match
 from .core.core import core
-from .core.functions import fetch_meta
+from .core.functions import fetch_meta, check_time_format
 from .utils.generic import save_errors, correct_row_offset
 from .utils.excel import mark_workbook
 from .utils.exceptions import default_exception_handler
@@ -284,9 +284,14 @@ def main():
 
     # clear up some memory space, i never wanted to store the core checks output in memory anyways 
     # other than appending it to the errors/warnings list
+
+    # 08/07/2023 - Duy
+    extended_core_output = check_time_format(all_dfs)
+    errs.extend(extended_core_output['core_errors'])
+
     del core_output
     collect()
-
+    
     print("DONE - Core Checks")
 
 

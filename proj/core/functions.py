@@ -241,3 +241,38 @@ def get_primary_key(tablename, eng):
     
     return pkey
 
+def check_time_format(all_dfs):
+    """
+        This function checks if the time columns inside the data frame is in the correct format (HH:MM:SS or HH:MM).
+        The way we use to determine if the column is time-column or not is we look if the name ends with time.
+    """
+    output = {'core_errors': []}
+    for key in all_dfs.keys():
+        df = all_dfs[key]
+        df['tmp_row'] = df.index
+        for col in df.columns:
+            if col.endswith('time'):
+                badrows = df[df[col].apply(
+                    lambda val: check_bad_time_format(val)
+                )].tmp_row.tolist()
+                if len(badrows) > 0:
+                    tmp = {
+                        'table': key,
+                        'rows': badrows,
+                        'columns': col,
+                        'error_type': 'Time Format Error',
+                        'is_core_error': True,
+                        'error_message': 'Time should be entered as 24-hour format HH:MM or HH:MM:SS'
+                    }
+                    output['core_errors'].append(tmp)
+    return output
+
+
+def check_bad_time_format(value):
+    """
+        Check if a value is in the format HH:MM or HH:MM:SS 24-hour
+    """
+    correct_time_format =  r'^(0?[0-9]|1\d|2[0-3]):([0-5]\d)(:([0-5]\d))?$'
+    return not bool(re.match(correct_time_format, str(value)))
+
+
