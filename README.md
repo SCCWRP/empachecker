@@ -1,4 +1,4 @@
-# Data Checker
+# EMPA Data Checker
 
 This checker application is basically a refactoring of the original checker application developed by SCCWRP for Bight 2018 and the SMC regional monitoring programs.  
 (That repository is private)   
