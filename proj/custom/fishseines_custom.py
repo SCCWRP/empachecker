@@ -301,21 +301,20 @@ def fishseines(all_dfs):
 
     badrows = multicol_lookup_check(fishdata, lu_species, check_cols, lookup_cols)
 
-    # # merged[(merged['abundance'] != 0) & (merged['catch'].apply(lambda x: str(x).lower().strip()) == 'no' )].tmp_row.tolist()
     #check 9: If abundance > 0, then there must be a corresponding record in length data (sort of a logic check)
     print("Start custom check 9") 
-    
-    # groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'samplelocation', 'scientificname', 'fieldreplicate', 'projectid']
-    # args.update({
-    #     "dataframe": fishabud,
-    #     "tablename": "tbl_fish_abundance_data",
-    #     "badrows": fishabud[(fishabud["abundance"] > 0)].tmp_row.tolist(),
-    #     # & (mismatch(fishabud, fishdata, groupcols)),
-    #     "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, samplelocation, scientificname, fieldreplicate, projectid",
-    #     "error_type": "Logic Error",
-    #     "error_message": "If fishabud > 0, then Records in fishabud must have corresponding records in fishdata. Missing records in fishdata."
-    # })
-    # errs = [*errs, checkData(**args)]
+    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'scientificname', 'surveytype', 'netreplicate', 'projectid']
+    fishabud_filtered = fishabud[fishabud["abundance"] > 0]
+
+    args.update({
+        "dataframe": fishabud,
+        "tablename": "tbl_fish_abundance_data",
+        "badrows" : mismatch(fishabud_filtered, fishdata, groupcols),
+        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, scientificname, surveytype, netreplicate, projectid",
+        "error_type": "Logic Error",
+        "error_message": "If fishabud > 0, then Records in fishabud must have corresponding records in fishdata. Missing records in fishdata."
+    })
+    errs = [*errs, checkData(**args)]
 
     print("check ran 9 - If abundance > 0, then there must be a corresponding record in length data") 
 
@@ -336,7 +335,7 @@ def fishseines(all_dfs):
     errs = [*errs, checkData(**args)]
     print("check ran 10 - fish_length_metadata - multicol species") 
 
-    #Check 11: If If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Time_Ele is required
+    #Check 11: If If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Time is required
     print("Check 11 fish seines begin:")
     args.update({
         "dataframe": fishmeta,
