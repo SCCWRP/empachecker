@@ -10,7 +10,7 @@ from pathlib import Path
 from .preprocess import clean_data
 from .match import match
 from .core.core import core
-from .core.functions import fetch_meta
+from .core.functions import fetch_meta, check_time_format
 from .utils.generic import save_errors, correct_row_offset
 from .utils.excel import mark_workbook
 from .utils.exceptions import default_exception_handler
@@ -273,9 +273,14 @@ def main():
 
     # clear up some memory space, i never wanted to store the core checks output in memory anyways 
     # other than appending it to the errors/warnings list
+
+    # 08/07/2023 - Duy
+    extended_core_output = check_time_format(all_dfs)
+    errs.extend(extended_core_output['core_errors'])
+
     del core_output
     collect()
-
+    
     print("DONE - Core Checks")
 
 
@@ -366,7 +371,6 @@ def main():
     # instead we can just dump it to a json file
     save_errors(warnings, os.path.join( session['submission_dir'], "warnings.json" ))
     save_errors(errs, os.path.join( session['submission_dir'], "errors.json" ))
-    print("ASDF")
     # Later we will need to have a way to map the dataframe column names to the column indices
     # This is one of those lines of code where i dont know why it is here, but i have a feeling it will
     #   break things if i delete it
