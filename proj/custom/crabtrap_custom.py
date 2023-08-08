@@ -302,10 +302,10 @@ def crabtrap(all_dfs):
 
     #Check 13 If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_units is required
    
-    print("begin check 13 vegetation")
+    print("begin check 13 ")
     args.update({
-        "dataframe": carbmeta,
-        "tablename": "tbl_vegetation_sample_metadata",
+        "dataframe": crabmeta,
+        "tablename": "tbl_crabtrap_metadata",
         "badrows":crabmeta[(crabmeta['elevation_ellipsoid'].notna() | crabmeta['elevation_orthometric'].notna()) & ( crabmeta['elevation_units'].isna() | (crabmeta['elevation_units'] == -88))].tmp_row.tolist(),
         "badcolumn": "elevation_units",
         "error_type": "Empty value",
@@ -319,7 +319,7 @@ def crabtrap(all_dfs):
     print('beging check 13 fishsienes:')
     args.update({
         "dataframe": crabmeta,
-        "tablename": "tbl_vegetation_sample_metadata",
+        "tablename": "tbl_crabtrap_metadata",
         "badrows":crabmeta[(crabmeta['elevation_ellipsoid'].notna() | crabmeta['elevation_orthometric'].notna()) & ( crabmeta['elevation_corr'].isna() | (crabmeta['elevation_corr'] == -88))].tmp_row.tolist(),
         "badcolumn": "elevation_corr",
         "error_type": "Empty value",
@@ -329,10 +329,10 @@ def crabtrap(all_dfs):
     print('check 15 ran - ele_corr required when ele_ellip and ele_ortho are reported')
 
     #Check 15: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Datum is required
-    print('begin check 16 vegetation:')
+    print('begin check 15:')
     args.update({
         "dataframe": crabmeta,
-        "tablename": "tbl_fish_sample_metadata",
+        "tablename": "tbl_crabtrap_metadata",
         "badrows":crabmeta[(~crabmeta['elevation_ellipsoid'].isna() | ~crabmeta['elevation_orthometric'].isna()) & ( crabmeta['elevation_datum'].isna() | (crabmeta['elevation_datum'] == -88))].tmp_row.tolist(),
         "badcolumn": "elevation_datum",
         "error_type": "Empty value",
@@ -404,21 +404,20 @@ def crabtrap(all_dfs):
     print("check 11 ran - crabbiomass_length - multicol species") 
 
     # #Check 10: if abundance >0 then there needs to be a corresponding record in length:
-    # del badrows 
-    # print("Start custom check 10") 
-    
-    # groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'samplelocation', 'scientificname', 'fieldreplicate', 'projectid']
-    # args.update({
-    #     "dataframe": crabinvert,
-    #     "tablename": "tbl_crabfishinvert_abundance",
-    #     "badrows": crabinvert[(crabinvert["abundance"] > 0)] & (mismatch(crabinvert, Check 10, groupcols))
-    #     "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, samplelocation, scientificname, fieldreplicate, projectid",
-    #     "error_type": "Logic Error",
-    #     "error_message": "If fishabud > 0, then Records in fishabud must have corresponding records in fishdata. Missing records in fishdata."
-    # })
-    # errs = [*errs, checkData(**args)]
+    print("Start check custom 10")
+    groupcols = ['siteid', 'estuaryname', 'stationno', 'traptype', 'samplecollectiondate', 'scientificname', 'traplocation', 'replicate', 'projectid']
+    crabinvert_filtered = crabinvert[crabinvert["abundance"] > 0]
 
-    # print("check ran 10 - If abundance > 0, then there must be a corresponding record in length data")
+    args.update({
+        "dataframe": crabinvert,
+        "tablename": "tbl_crabfishinvert_abundance",
+        "badrows" : mismatch(crabinvert_filtered, crabmass, groupcols),
+        "badcolumn": "siteid, estuaryname, stationno, traptype, samplecollectiondate, scientificname, traplocation, replicate, projectid",
+        "error_type": "Logic Error",
+        "error_message": "If fishabud > 0, then Records in crabinvert must have corresponding records in crabmass. Missing records in crabmass."
+    })
+    errs = [*errs, checkData(**args)]
+    print("check ran 10 - If abundance > 0, then there must be a corresponding record in length data")
     
 
     # Disabling Time Check for Crab Trap to submit data.
