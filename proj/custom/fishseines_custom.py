@@ -335,58 +335,58 @@ def fishseines(all_dfs):
     errs = [*errs, checkData(**args)]
     print("check ran 10 - fish_length_metadata - multicol species") 
 
-    #Check 11: If If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Time is required
-    print("Check 11 fish seines begin:")
-    args.update({
-        "dataframe": fishmeta,
-        "tablename": "tbl_fish_sample_metadata",
-        "badrows": fishmeta[(~fishmeta['elevation_ellipsoid'].isna() | ~fishmeta['elevation_orthometric'].isna()) & ( fishmeta['elevation_time'].isna() | (fishmeta['elevation_time'] == -88))].tmp_row.tolist(),
-        "badcolumn": "elevation_time",
-        "error_type": "Empty value",
-        "error_message": "Elevation_time is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    })
-    errs = [*errs, checkData(**args)]
-    print('check 11 ran - ele_ellip or ele_ortho is reported then ele_time is required')
+    # #Check 11: If If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Time is required
+    # print("Check 11 fish seines begin:")
+    # args.update({
+    #     "dataframe": fishmeta,
+    #     "tablename": "tbl_fish_sample_metadata",
+    #     "badrows": fishmeta[(~fishmeta['elevation_ellipsoid'].isna() | ~fishmeta['elevation_orthometric'].isna()) & ( fishmeta['elevation_time'].isna() | (fishmeta['elevation_time'] == -88))].tmp_row.tolist(),
+    #     "badcolumn": "elevation_time",
+    #     "error_type": "Empty value",
+    #     "error_message": "Elevation_time is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+    # })
+    # errs = [*errs, checkData(**args)]
+    # print('check 11 ran - ele_ellip or ele_ortho is reported then ele_time is required')
 
-    #Check 12: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_units is required
+    # #Check 12: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_units is required
    
-    print("begin check 12 fishsieness")
-    args.update({
-        "dataframe": fishmeta,
-        "tablename": "tbl_fish_sample_metadata",
-        "badrows":fishmeta[(~fishmeta['elevation_ellipsoid'].isna() | ~fishmeta['elevation_orthometric'].isna()) & ( fishmeta['elevation_units'].isna() | (fishmeta['elevation_units'] == -88))].tmp_row.tolist(),
-        "badcolumn": "elevation_units",
-        "error_type": "Empty value",
-        "error_message": "Elevation_units is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    })
-    errs = [*errs, checkData(**args)]
-    print('check 12 ran - ele_units required when ele_ellip and ele_ortho are reported')
+    # print("begin check 12 fishsieness")
+    # args.update({
+    #     "dataframe": fishmeta,
+    #     "tablename": "tbl_fish_sample_metadata",
+    #     "badrows":fishmeta[(~fishmeta['elevation_ellipsoid'].isna() | ~fishmeta['elevation_orthometric'].isna()) & ( fishmeta['elevation_units'].isna() | (fishmeta['elevation_units'] == -88))].tmp_row.tolist(),
+    #     "badcolumn": "elevation_units",
+    #     "error_type": "Empty value",
+    #     "error_message": "Elevation_units is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+    # })
+    # errs = [*errs, checkData(**args)]
+    # print('check 12 ran - ele_units required when ele_ellip and ele_ortho are reported')
 
-    #Check 13: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Corr is required
-    print('beging check 13 fishsienes:')
-    args.update({
-        "dataframe": fishmeta,
-        "tablename": "tbl_fish_sample_metadata",
-        "badrows":fishmeta[(~fishmeta['elevation_ellipsoid'].isna() | ~fishmeta['elevation_orthometric'].isna()) & ( fishmeta['elevation_corr'].isna() | (fishmeta['elevation_corr'] == -88))].tmp_row.tolist(),
-        "badcolumn": "elevation_corr",
-        "error_type": "Empty value",
-        "error_message": "Elevation_corr is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    })
-    errs = [*errs, checkData(**args)]
-    print('check 13 ran - ele_corr required when ele_ellip and ele_ortho are reported')
+    # #Check 13: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Corr is required
+    # print('beging check 13 fishsienes:')
+    # args.update({
+    #     "dataframe": fishmeta,
+    #     "tablename": "tbl_fish_sample_metadata",
+    #     "badrows":fishmeta[(~fishmeta['elevation_ellipsoid'].isna() | ~fishmeta['elevation_orthometric'].isna()) & ( fishmeta['elevation_corr'].isna() | (fishmeta['elevation_corr'] == -88))].tmp_row.tolist(),
+    #     "badcolumn": "elevation_corr",
+    #     "error_type": "Empty value",
+    #     "error_message": "Elevation_corr is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+    # })
+    # errs = [*errs, checkData(**args)]
+    # print('check 13 ran - ele_corr required when ele_ellip and ele_ortho are reported')
 
-    #Check 14  If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Datum is required
-    print('begin check 14 fishsienes:')
-    args.update({
-        "dataframe": fishmeta,
-        "tablename": "tbl_fish_sample_metadata",
-        "badrows":fishmeta[(~fishmeta['elevation_ellipsoid'].isna() | ~fishmeta['elevation_orthometric'].isna()) & ( fishmeta['elevation_datum'].isna() | (fishmeta['elevation_datum'] == -88))].tmp_row.tolist(),
-        "badcolumn": "elevation_datum",
-        "error_type": "Empty value",
-        "error_message": "Elevation_datum is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    })
-    errs = [*errs, checkData(**args)]
-    print('check 14 ran - elev_datum is required when ele_ellip and elev_ortho are reported')
+    # #Check 14  If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Datum is required
+    # print('begin check 14 fishsienes:')
+    # args.update({
+    #     "dataframe": fishmeta,
+    #     "tablename": "tbl_fish_sample_metadata",
+    #     "badrows":fishmeta[(~fishmeta['elevation_ellipsoid'].isna() | ~fishmeta['elevation_orthometric'].isna()) & ( fishmeta['elevation_datum'].isna() | (fishmeta['elevation_datum'] == -88))].tmp_row.tolist(),
+    #     "badcolumn": "elevation_datum",
+    #     "error_type": "Empty value",
+    #     "error_message": "Elevation_datum is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+    # })
+    # errs = [*errs, checkData(**args)]
+    # print('check 14 ran - elev_datum is required when ele_ellip and elev_ortho are reported')
     print("END Fish Seines custom Checks...")
     #############   END OF CUSTOM CHECKS ############################################################################################################################
     

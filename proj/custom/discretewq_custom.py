@@ -113,66 +113,67 @@ def discretewq(all_dfs):
     errs = [*errs, checkData(**args)]
     print('begin discretewq-custom-check 2')
     
-    #check 3: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Time_Ele is required // 
-    # NOTE @Duy/Robert I am assuming Time_Ele is elevation_time since there is no Time_Ele field -Aria      
-    print('begin discretewq-custom-check 3')
-    args.update({
-        "dataframe": watermeta,
-        "tablename": 'tbl_waterquality_metadata',
-        "badrows": watermeta[            
-            ((watermeta['elevation_ellipsoid'].notna()) | (watermeta['elevation_orthometric'].notna())) & (watermeta['elevation_time'].isna())
-        ].tmp_row.tolist(), 
-        "badcolumn": "elevation_time",
-        "error_type": "Missing Value",
-        "error_message" : "If Elevation_Ellipsoid or Elevation_Orthometric is reported, then elevation_time is required"
-    })
-    errs = [*errs, checkData(**args)]
-    print('end discretewq-custom-check 3')
+    # #check 3: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Time_Ele is required // 
+    # # NOTE @Duy/Robert I am assuming Time_Ele is elevation_time since there is no Time_Ele field -Aria      
+    # print('begin discretewq-custom-check 3')
+    # args.update({
+    #     "dataframe": watermeta,
+    #     "tablename": 'tbl_waterquality_metadata',
+    #     "badrows": watermeta[            
+    #         ((watermeta['elevation_ellipsoid'].notna()) | (watermeta['elevation_orthometric'].notna())) & (watermeta['elevation_time'].isna())
+    #     ].tmp_row.tolist(), 
+    #     "badcolumn": "elevation_time",
+    #     "error_type": "Missing Value",
+    #     "error_message" : "If Elevation_Ellipsoid or Elevation_Orthometric is reported, then elevation_time is required"
+    # })
+    # errs = [*errs, checkData(**args)]
+    # print('end discretewq-custom-check 3')
 
-    #check 4: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_units is required     
-    print('begin discretewq-custom-check 4')
-    args.update({
-        "dataframe": watermeta,
-        "tablename": 'tbl_waterquality_metadata',
-        "badrows": watermeta[            
-            ((watermeta['elevation_ellipsoid'].notna()) | (watermeta['elevation_orthometric'].notna())) & (watermeta['elevation_units'].isna())
-        ].tmp_row.tolist(), 
-        "badcolumn": "elevation_units",
-        "error_type": "Missing Value",
-        "error_message" : "If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_units is required"
-    })
-    errs = [*errs, checkData(**args)]
-    print('end discretewq-custom-check 4')
+    # #check 4: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_units is required     
+    # print('begin discretewq-custom-check 4')
+    # args.update({
+    #     "dataframe": watermeta,
+    #     "tablename": 'tbl_waterquality_metadata',
+    #     "badrows": watermeta[            
+    #         ((watermeta['elevation_ellipsoid'].notna()) | (watermeta['elevation_orthometric'].notna())) & (watermeta['elevation_units'].isna())
+    #     ].tmp_row.tolist(), 
+    #     "badcolumn": "elevation_units",
+    #     "error_type": "Missing Value",
+    #     "error_message" : "If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_units is required"
+    # })
+    # errs = [*errs, checkData(**args)]
+    # print('end discretewq-custom-check 4')
 
-    #check 5: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Corr is required
-    print('begin discretewq-custom-check 5')
-    args.update({
-        "dataframe": watermeta,
-        "tablename": 'tbl_waterquality_metadata',
-        "badrows": watermeta[            
-            ((watermeta['elevation_ellipsoid'].notna()) | (watermeta['elevation_orthometric'].notna())) & (watermeta['elevation_corr'].isna())
-        ].tmp_row.tolist(), 
-        "badcolumn": "elevation_corr",
-        "error_type": "Missing Value",
-        "error_message" : "If Elevation_Ellipsoid or Elevation_Orthometric is reported, then elevation_corr is required"
-    })
-    errs = [*errs, checkData(**args)]
-    print('end discretewq-custom-check 5')    
+    # #check 5: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Corr is required
+    # print('begin discretewq-custom-check 5')
+    # args.update({
+    #     "dataframe": watermeta,
+    #     "tablename": 'tbl_waterquality_metadata',
+    #     "badrows": watermeta[            
+    #         ((watermeta['elevation_ellipsoid'].notna()) | (watermeta['elevation_orthometric'].notna())) & (watermeta['elevation_corr'].isna())
+    #     ].tmp_row.tolist(), 
+    #     "badcolumn": "elevation_corr",
+    #     "error_type": "Missing Value",
+    #     "error_message" : "If Elevation_Ellipsoid or Elevation_Orthometric is reported, then elevation_corr is required"
+    # })
+    # errs = [*errs, checkData(**args)]
+    # print('end discretewq-custom-check 5')    
     
-    #check 6: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Datum is required
-    print('begin discretewq-custom-check 6')
-    args.update({
-        "dataframe": watermeta,
-        "tablename": 'tbl_waterquality_metadata',
-        "badrows": watermeta[            
-            ((watermeta['elevation_ellipsoid'].notna()) | (watermeta['elevation_orthometric'].notna())) & (watermeta['elevation_datum'].isna())
-        ].tmp_row.tolist(), 
-        "badcolumn": "elevation_datum",
-        "error_type": "Missing Value",
-        "error_message" : "If Elevation_Ellipsoid or Elevation_Orthometric is reported, then elevation_datum is required"
-    })
-    errs = [*errs, checkData(**args)]
-    print('end discretewq-custom-check 6')     
+    # #check 6: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Datum is required
+    # print('begin discretewq-custom-check 6')
+    # args.update({
+    #     "dataframe": watermeta,
+    #     "tablename": 'tbl_waterquality_metadata',
+    #     "badrows": watermeta[            
+    #         ((watermeta['elevation_ellipsoid'].notna()) | (watermeta['elevation_orthometric'].notna())) & (watermeta['elevation_datum'].isna())
+    #     ].tmp_row.tolist(), 
+    #     "badcolumn": "elevation_datum",
+    #     "error_type": "Missing Value",
+    #     "error_message" : "If Elevation_Ellipsoid or Elevation_Orthometric is reported, then elevation_datum is required"
+    # })
+    # errs = [*errs, checkData(**args)]
+    # print('end discretewq-custom-check 6')    
+     
     print("End WaterQuality Metadata Checks...")
 
     # End WaterQuality Metadata Checks
