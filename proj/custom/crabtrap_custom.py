@@ -285,61 +285,7 @@ def crabtrap(all_dfs):
         "error_message": "If catch = Yes in crab_meta, then abundance should be a non-zero integer in abundance tab."
     })
     errs = [*errs, checkData(**args)]
-    print("End Check 7: If catch = Yes in crab_meta, then abundance should be a non-zero integer in abundance tab. ")
-
-    #Check 12: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Time_Ele is required. 
-    print("Check 12 crabtrap begin:")
-    args.update({
-        "dataframe": crabmeta,
-        "tablename": "tbl_crabtrap_metadata",
-        "badrows": crabmeta[(crabmeta['elevation_ellipsoid'].notna() | crabmeta['elevation_orthometric'].notna()) & ( crabmeta['elevation_time'].isna() | (crabmeta['elevation_time'] == -88))].tmp_row.tolist(),
-        "badcolumn": "elevation_time",
-        "error_type": "Empty value",
-        "error_message": "Elevation_time is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    })
-    errs = [*errs, checkData(**args)]
-    print('check 12 ran - ele_ellip or ele_ortho is reported then ele_time is required')
-
-    #Check 13 If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_units is required
-   
-    print("begin check 13 ")
-    args.update({
-        "dataframe": crabmeta,
-        "tablename": "tbl_crabtrap_metadata",
-        "badrows":crabmeta[(crabmeta['elevation_ellipsoid'].notna() | crabmeta['elevation_orthometric'].notna()) & ( crabmeta['elevation_units'].isna() | (crabmeta['elevation_units'] == -88))].tmp_row.tolist(),
-        "badcolumn": "elevation_units",
-        "error_type": "Empty value",
-        "error_message": "Elevation_units is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    })
-    errs = [*errs, checkData(**args)]
-    print('check 13 ran - ele_units required when ele_ellip and ele_ortho are reported') 
-
-    #Check 14: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Corr is required
-
-    print('beging check 13 fishsienes:')
-    args.update({
-        "dataframe": crabmeta,
-        "tablename": "tbl_crabtrap_metadata",
-        "badrows":crabmeta[(crabmeta['elevation_ellipsoid'].notna() | crabmeta['elevation_orthometric'].notna()) & ( crabmeta['elevation_corr'].isna() | (crabmeta['elevation_corr'] == -88))].tmp_row.tolist(),
-        "badcolumn": "elevation_corr",
-        "error_type": "Empty value",
-        "error_message": "Elevation_corr is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    })
-    errs = [*errs, checkData(**args)]
-    print('check 15 ran - ele_corr required when ele_ellip and ele_ortho are reported')
-
-    #Check 15: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Datum is required
-    print('begin check 15:')
-    args.update({
-        "dataframe": crabmeta,
-        "tablename": "tbl_crabtrap_metadata",
-        "badrows":crabmeta[(~crabmeta['elevation_ellipsoid'].isna() | ~crabmeta['elevation_orthometric'].isna()) & ( crabmeta['elevation_datum'].isna() | (crabmeta['elevation_datum'] == -88))].tmp_row.tolist(),
-        "badcolumn": "elevation_datum",
-        "error_type": "Empty value",
-        "error_message": "Elevation_datum is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    })
-    errs = [*errs, checkData(**args)]
-    print('check 15 ran - elev_datum is required when ele_ellip and elev_ortho are reported')
+    print("End Check 7: If catch = Yes in crab_meta, then abundance should be a non-zero integer in abundance tab. ") 
 
     #lookup lists
     print("before multicol check")
