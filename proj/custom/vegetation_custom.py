@@ -59,7 +59,7 @@ def vegetation(all_dfs):
 
     # Logic Check 1a: vegmeta records not found in vegdata
     print("begin logic check 1a sample_metadata records not found in vegetationcover_data ")
-    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'transectreplicate', 'habitat', 'projectid']
+    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'transectreplicate', 'projectid']
     args.update({
         "dataframe": vegmeta,
         "tablename": "tbl_vegetation_sample_metadata",
@@ -74,13 +74,14 @@ def vegetation(all_dfs):
 
     # Logic Check 1b: vegmeta records missing for records provided by vegdata
     # Note: checkLogic() did not output badrows properly for Logic Check 1b. 
+    #Note:  pkey do not include habitat anymore so it has been removedthat the groupcols // Ayah 08/08/2023
     print("begin logic check 1b: sample_metadata records missing for records provided in vegetationcover_data")
-    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'transectreplicate', 'habitat', 'projectid']
+    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'transectreplicate', 'projectid']
     args.update({
         "dataframe": vegdata,
         "tablename": "tbl_vegetativecover_data",
         "badrows": mismatch(vegdata, vegmeta, groupcols), 
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, transectreplicate, habitat, projectid",
+        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, transectreplicate,  projectid",
         "error_type": "Logic Error",
         "error_message": "Records in vegetationcover_data must have corresponding records in sample_metadata."
     })
