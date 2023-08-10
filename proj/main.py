@@ -10,7 +10,7 @@ from pathlib import Path
 from .preprocess import clean_data
 from .match import match
 from .core.core import core
-from .core.functions import fetch_meta, check_time_format
+from .core.functions import fetch_meta, check_time_format, check_elevation_fields
 from .utils.generic import save_errors, correct_row_offset
 from .utils.excel import mark_workbook
 from .utils.exceptions import default_exception_handler
@@ -217,10 +217,10 @@ def main():
     print("preprocessing and cleaning data")
     # We are not sure if we want to do this
     # some projects like bight prohibit this
-    # if match_dataset != 'logger_raw':
-    #     # Skip preprocessing for raw logger data
-    #     # We can probably add an option in the config on a per datatype basis to generalize this
-    #     all_dfs = clean_data(all_dfs)
+    if match_dataset != 'logger_raw':
+        # Skip preprocessing for raw logger data
+        # We can probably add an option in the config on a per datatype basis to generalize this
+        all_dfs = clean_data(all_dfs)
     print("DONE preprocessing and cleaning data")
     
     # write all_dfs again to the same excel path
@@ -289,8 +289,15 @@ def main():
     extended_core_output = check_time_format(all_dfs)
     errs.extend(extended_core_output['core_errors'])
 
+    #Ayah 08/09/2021:
+    extended_core_output = check_elevation_fields(all_dfs)
+    errs.extend(extended_core_output['custom_errors'])
+
+
     del core_output
     collect()
+    
+    
     
     print("DONE - Core Checks")
 
