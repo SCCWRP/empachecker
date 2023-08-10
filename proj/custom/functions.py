@@ -77,3 +77,4 @@ def mismatch(df1, df2, mergecols):
 
     badrows = tmp[isnull(tmp.present)].index.tolist()
     return badrows
+
