@@ -285,15 +285,6 @@ def main():
     # clear up some memory space, i never wanted to store the core checks output in memory anyways 
     # other than appending it to the errors/warnings list
 
-    # 08/07/2023 - Duy
-    extended_core_output = check_time_format(all_dfs)
-    errs.extend(extended_core_output['core_errors'])
-
-    #Ayah 08/09/2021:
-    extended_core_output = check_elevation_fields(all_dfs)
-    errs.extend(extended_core_output['custom_errors'])
-
-
     del core_output
     collect()
     
