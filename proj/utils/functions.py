@@ -1,3 +1,5 @@
+import re
+
 def check_time_format(all_dfs):
     """
         This function checks if the time columns inside the data frame is in the correct format (HH:MM:SS or HH:MM).
