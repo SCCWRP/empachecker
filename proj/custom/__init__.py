@@ -10,3 +10,4 @@ from .macroalgae_custom import macroalgae
 from .sav_custom import sav
 from .sedimentgrainsize_custom import sedimentgrainsize_field, sedimentgrainsize_lab
 from .vegetation_custom import vegetation
+from .grab_field import grab_field

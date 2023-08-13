@@ -108,13 +108,13 @@ def grab_field(all_dfs):
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
         "badrows":grabeventdet[ 
-            (grabeventdet['matrix'].isin(['sediment','eDNA benthic core sediment','eDNA sediment'])) & 
-            ( (grabeventdet['coresizediameter'] == -88) | (grabeventdet['coresizediameter'].isna()) )
+            (grabeventdet['matrix'] == 'sediment') & 
+            (grabeventdet['coresizediameter'] == 'Not Recorded')
         ].tmp_row.tolist(),
         "badcolumn": "coresizediameter",
         "error_type": "empty value",
         "is_core_error": False,
-        "error_message": "Since Matrix is sediment related, CoreSizeDiameter cannot be null value or -88"
+        "error_message": "Since Matrix is sediment, CoreSizeDiameter is required"
     })
     errs = [*errs, checkData(**args)]
     print('check ran - error check for matrix and coresizediameter')
@@ -124,13 +124,13 @@ def grab_field(all_dfs):
     args = {
             "dataframe":grabeventdet,
             "tablename":'tbl_grabevent_details',
-            "badrows":grabeventdet[(grabeventdet['matrix'].isin(['sediment','eDNA benthic core sediment','eDNA sediment'])) &
-                ((grabeventdet['coresizedepth']== -88)| (grabeventdet['coresizedepth'].isna())) 
+            "badrows":grabeventdet[(grabeventdet['matrix'] == 'sediment') &
+                ((grabeventdet['coresizedepth']== 'Not Recorded')) 
                 ].tmp_row.tolist(),
             "badcolumn": "coresizedepth",
             "error_type": "empty value",
             "is_core_error": False,
-            "error_message": "Since Matrix is sediment related, CoreSizeDepth cannot be null value or -88"
+            "error_message": "Since Matrix is sediment, CoreSizeDepth is required"
     }
     errs = [*errs, checkData(**args)]
     print('check ran - error check for matrix  and coresizedepth')
@@ -142,12 +142,12 @@ def grab_field(all_dfs):
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
         "badrows":grabeventdet[(grabeventdet['matrix'].isin(['blankwater','labwater','saltwater','freshwater'])) & (
-            (grabeventdet['sieve_or_depth']== -88) | (grabeventdet['sieve_or_depth'].isna())) 
+            (grabeventdet['sieve_or_depth'] == 'Not Recorded')) 
             ].tmp_row.tolist(),
         "badcolumn": "sieve_or_depth",
         "error_type": "empty value",
         "is_core_error": False,
-        "error_message": "Since Matrix is water related, Sieve_or_Depth cannot be null value or -88"
+        "error_message": "Since Matrix is water, Sieve_or_Depth is required'"
     }
     errs = [*errs, checkData(**args)]
     print('check ran - error check for matrix  and sieve_or_depth')
@@ -158,12 +158,12 @@ def grab_field(all_dfs):
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
         "badrows":grabeventdet[(grabeventdet['matrix'].isin(['blankwater','labwater','saltwater','freshwater'])) &
-            ((grabeventdet['composition'] == -88) | (grabeventdet['composition'].isna())) 
+            (grabevent['composition'] != 'Not Recorded' ) 
             ].tmp_row.tolist(),
         "badcolumn": "composition",
         "error_type": "empty value",
         "is_core_error": False,
-        "error_message": "Since Matrix is water related, composition cannot be null value"
+        "error_message": "Since matrix is water, composition should be 'Not Recorded'"
     }
     errs = [*errs, checkData(**args)]
     print('check ran error check for matrix  and grab')
@@ -174,12 +174,12 @@ def grab_field(all_dfs):
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
         "badrows":grabeventdet[(grabeventdet['matrix'].isin(['blankwater','labwater','saltwater','freshwater'])) & 
-            ((grabeventdet['color']== -88) | (grabeventdet['color'].isna()))
+            (grabeventdet['color'] != 'Not Recorded')
             ].tmp_row.tolist(),
         "badcolumn": "color",
         "error_type": "empty value",
         "is_core_error": False,
-        "error_message": "Since Matrix is water related, color cannot be a null value or -88"
+        "error_message": "Since matrix is water related, color should be 'Not Recorded'"
     }
     errs = [*errs, checkData(**args)]
     print('check ran - error check for matrix  and grab')
@@ -190,11 +190,11 @@ def grab_field(all_dfs):
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
         "badrows":grabeventdet[(grabeventdet['matrix'].isin(['blankwater','labwater','saltwater','freshwater']))
-        & ((grabeventdet['odor'] == -88) | (grabeventdet['odor'].isna()))].tmp_row.tolist(),
+        & ((grabeventdet['odor'] == 'Not Recorded'))].tmp_row.tolist(),
         "badcolumn": "odor",
         "error_type": "empty value",
         "is_core_error": False,
-        "error_message": "Since Matrix is water related, odor cannot be a null value or -88"
+        "error_message": "Since matrix is water, odor should be 'Not Recorded'"
     }
     errs = [*errs, checkData(**args)]
     print('check ran - error check for matrix  and grab')

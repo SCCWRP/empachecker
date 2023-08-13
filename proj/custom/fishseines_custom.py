@@ -73,9 +73,9 @@ def fishseines(all_dfs):
         "dataframe": fishmeta,
         "tablename": "tbl_fish_sample_metadata",
         "badrows": mismatch(fishmeta, fishabud, groupcols), 
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, surveytype, netreplicate",
+        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, surveytype, netreplicate, projectid",
         "error_type": "Logic Error",
-        "error_message": "Records in sample_metadata must have corresponding records in abundance_data."
+        "error_message": "These are the records in tbl_fish_sample_metadata but they are not in tbl_fish_abundance_data."
     })
     errs = [*errs, checkData(**args)]
     print("check 1a ran - logic - sample_metadata records not found in abundance_data") 
@@ -88,7 +88,7 @@ def fishseines(all_dfs):
         "badrows": mismatch(fishabud, fishmeta, groupcols),
         "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, surveytype, netreplicate",
         "error_type": "Logic Error",
-        "error_message": "Records in abundance_data must have corresponding records in sample_metadata."
+        "error_message": "These are the records in tbl_fish_abundance_data but they are not in tbl_fish_sample_metadata."
     })
     errs = [*errs, checkData(**args)]
     print("check 1b ran - logic - sample_metadata records missing for records provided in abundance_data") 
