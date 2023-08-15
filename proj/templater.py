@@ -149,8 +149,8 @@ def template():
     elif datatype == 'bruv_lab':
         tbls = [
             'tbl_protocol_metadata',
-            'tbl_bruv_data',
-            'tbl_bruv_videolog'
+            'tbl_bruv_videolog',
+            'tbl_bruv_data'
         ]
         file_prefix = 'SOP_8_BRUV_LAB'
     # SOP 9 Fish Seines
@@ -195,6 +195,14 @@ def template():
             'tbl_grabevent_details'
         ]
         file_prefix = 'SOP_15_GRAB_FIELD'
+    elif datatype == 'toxicity':
+        tbls = [
+            'tbl_protocol_metadata',
+            'tbl_toxicitysummary',
+            'tbl_toxicitybatch',
+            'tbl_toxicityresults'
+        ]
+        file_prefix = 'SOP_16_TOXICITY'
     else:
         tbls = []
 
@@ -320,7 +328,7 @@ def template():
         },
         **{
             lu_name: pd.read_sql(f"SELECT * from {lu_name}", eng).drop(columns=['objectid'])
-            for lu_name in list(set(list_lu_needed))
+            for lu_name in [*['lu_protocolname','lu_protocolversion'],*list(set(list_lu_needed))]
         }
     }
 

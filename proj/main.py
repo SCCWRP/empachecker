@@ -10,7 +10,8 @@ from pathlib import Path
 from .preprocess import clean_data
 from .match import match
 from .core.core import core
-from .core.functions import fetch_meta, check_time_format, check_elevation_fields
+from .core.functions import fetch_meta
+from .utils.functions import check_time_format, check_elevation_fields
 from .utils.generic import save_errors, correct_row_offset
 from .utils.excel import mark_workbook
 from .utils.exceptions import default_exception_handler
