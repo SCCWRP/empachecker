@@ -64,10 +64,12 @@ def fishseines(all_dfs):
     
     ############################### --Start of Logic Checks -- #############################################################
     print("Begin Fish Seines Logic Checks...")
-    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'surveytype', 'netreplicate', 'projectid']
-
     # Logic Check 1: fish_sample_metadata & fish_abundance_data
     # Logic Check 1a: fishmeta records not found in fishabud
+
+    #columns fishemeta and fishabud should match on:
+    groupcols = ['projectid', 'siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'surveytype', 'netreplicate']
+ 
     print("Start logic check 1a")
     args.update({
         "dataframe": fishmeta,
@@ -75,7 +77,7 @@ def fishseines(all_dfs):
         "badrows": mismatch(fishmeta, fishabud, groupcols), 
         "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, surveytype, netreplicate, projectid",
         "error_type": "Logic Error",
-        "error_message": "These are the records in tbl_fish_sample_metadata but they are not in tbl_fish_abundance_data."
+        "error_message": "These records are in tbl_fish_sample_metadata but they are not in tbl_fish_abundance_data."
     })
     errs = [*errs, checkData(**args)]
     print("check 1a ran - logic - sample_metadata records not found in abundance_data") 
@@ -86,9 +88,9 @@ def fishseines(all_dfs):
         "dataframe": fishabud,
         "tablename": "tbl_fish_abundance_data",
         "badrows": mismatch(fishabud, fishmeta, groupcols),
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, surveytype, netreplicate",
+        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, surveytype, netreplicate,projectid",
         "error_type": "Logic Error",
-        "error_message": "These are the records in tbl_fish_abundance_data but they are not in tbl_fish_sample_metadata."
+        "error_message": "These records are in  tbl_fish_abundance_data but they are not in tbl_fish_sample_metadata."
     })
     errs = [*errs, checkData(**args)]
     print("check 1b ran - logic - sample_metadata records missing for records provided in abundance_data") 
@@ -108,15 +110,16 @@ def fishseines(all_dfs):
  
     # Logic Check 2: fishabud records missing for records provided by fishdata
     print("Start logic check 2")
+    #columns fishabud and fishdata should match on
     groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'surveytype', 'netreplicate', 'scientificname','projectid']
     
     args.update({
         "dataframe": fishdata,
         "tablename": "tbl_fish_length_data",
         "badrows": mismatch(fishdata, fishabud, groupcols),
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, surveytype, netreplicate, scientificname",
+        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, surveytype, netreplicate, scientificname,projectid",
         "error_type": "Logic Error",
-        "error_message": "Records in length_data must have corresponding records in abundance_data."
+        "error_message": "These records in tbl_fish_length_data but are not in tbl_fish_abundance data."
     })
     errs = [*errs, checkData(**args)]
     print("check 2 ran - logic - abundance_data records missing for records provided in length_data") 

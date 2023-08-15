@@ -70,7 +70,7 @@ def discretewq(all_dfs):
         "dataframe": watermeta,
         "tablename": "tbl_waterquality_metadata",
         "badrows": mismatch(watermeta, waterdata, groupcols),
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, samplecollectiontime, profile, depth_m, 'projectid'",
+        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, samplecollectiontime, profile, depth_m, projectid",
         "error_type": "Logic Error",
         "error_message": "Each record in WQ_metadata must have a corresponding record in WQ_data."
     })
