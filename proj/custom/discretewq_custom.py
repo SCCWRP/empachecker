@@ -272,7 +272,7 @@ def discretewq(all_dfs):
         "tablename": 'tbl_waterquality_data',
         "badrows": waterdata[
             (waterdata['do_mgl'] != -88) & 
-            (waterdata['do_units'] == 'mg/l') &
+            (waterdata['do_units'].str.lower() == 'mg/l') &
             (~waterdata['do_mgl'].between(0, 20))
         ].tmp_row.tolist(),
         "badcolumn": "do_mgl",
@@ -289,7 +289,7 @@ def discretewq(all_dfs):
         "tablename": 'tbl_waterquality_data',
         "badrows": waterdata[
             (waterdata['airtemp'] != -88) &
-            (waterdata['airtemp_units'] == 'C') &
+            (waterdata['airtemp_units'].str.lower() == 'deg c') &
             (~waterdata['airtemp'].between(0, 50))
         ].tmp_row.tolist(),
         "badcolumn": "airtemp",
@@ -306,7 +306,7 @@ def discretewq(all_dfs):
         "tablename": 'tbl_waterquality_data',
         "badrows": waterdata[
             (waterdata['h2otemp'] != -88) &
-            (waterdata['h2otemp_units'] == 'C') &
+            (waterdata['h2otemp_units'].str.lower()== 'deg c') &
             (~waterdata['h2otemp'].between(0, 50))
         ].tmp_row.tolist(),
         "badcolumn": "h2otemp",
