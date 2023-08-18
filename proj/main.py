@@ -223,7 +223,11 @@ def main():
         # We can probably add an option in the config on a per datatype basis to generalize this
         all_dfs = clean_data(all_dfs)
     print("DONE preprocessing and cleaning data")
-    
+    # ----------------------------------------- #
+
+
+
+
     # write all_dfs again to the same excel path
     # Later, if the data is clean, the loading routine will use the tab names to load the data to the appropriate tables
     #   There is an assert statement (in load.py) which asserts that the tab names of the excel file match a table in the database
