@@ -1,5 +1,5 @@
 import json, os
-from pandas import isnull, DataFrame, read_sql
+from pandas import isnull, DataFrame, read_sql, merge
 
 def checkData(dataframe, tablename, badrows, badcolumn, error_type, is_core_error = False, error_message = "Error", errors_list = [], q = None):
     
@@ -128,3 +128,18 @@ def get_primary_key(tablename, eng):
     pkey = pkey_df.column_name.tolist() if not pkey_df.empty else []
     
     return pkey
+
+def multicol_lookup_check(df_to_check, lookup_df, check_cols, lookup_cols):
+    assert set(check_cols).issubset(set(df_to_check.columns)), "columns do not exists in the dataframe"
+    assert isinstance(lookup_cols, list), "lookup columns is not a list"
+
+    lookup_df = lookup_df.assign(match="yes")
+    
+    for c in check_cols:
+        df_to_check[c] = df_to_check[c].apply(lambda x: str(x).lower().strip())
+    for c in lookup_cols:
+        lookup_df[c] = lookup_df[c].apply(lambda x: str(x).lower().strip())
+
+    merged = pd.merge(df_to_check, lookup_df, how="left", left_on=check_cols, right_on=lookup_cols)
+    badrows = merged[pd.isnull(merged.match)].tmp_row.tolist()
+    return(badrows)
