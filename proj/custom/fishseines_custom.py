@@ -190,81 +190,7 @@ def fishseines(all_dfs):
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 6")
 
-    
-    print("# CHECK - 7")
-    # Description: Each length data data must include corresponding abundance data (🛑 ERROR 🛑)
-    # Created Coder: Zaib(?)
-    # Created Date: 2021
-    # Last Edited Date: 08/17/2023
-    # Last Edited Coder: Duy Nguyen
-    # NOTE (08/17/23): Duy adjusts the code so it follows the coding standard.
-    args.update({
-        "dataframe": fishdata,
-        "tablename": "tbl_fish_abundance_data",
-        "badrows": mismatch(fishdata, fishabud, fishabud_fishdata_shared_pkey), 
-        "badcolumn": ','.join(fishabud_fishdata_shared_pkey),
-        "error_type": "Logic Error",
-        "error_message": "Each length data data must include corresponding abundance data"
-    })
-    errs = [*errs, checkData(**args)]
-    print("# END OF CHECK - 7")
 
-
-    ######################################################################################################################
-    # ------------------------------------------------------------------------------------------------------------------ #
-    # --------------------------------------------- END OF Fish Logic Checks --------------------------------------------#
-    # ------------------------------------------------------------------------------------------------------------------ #
-    ######################################################################################################################
-
-
-
-
-    # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ #
-
-
-
-
-    ######################################################################################################################################
-    # ---------------------------------------------------------------------------------------------------------------------------------- #
-    # ------------------------------------------------------ Sample Metadata Checks ---------------------------------------------------- #
-    # ---------------------------------------------------------------------------------------------------------------------------------- #
-    ######################################################################################################################################
-
-    print("# CHECK - 6")
-    # Description: Each length data data must include corresponding abundance data (🛑 ERROR 🛑)
-    # Created Coder: Zaib(?)
-    # Created Date: 2021
-    # Last Edited Date: 08/17/2023
-    # Last Edited Coder: Duy Nguyen
-    # NOTE (08/17/23): Duy adjusts the code so it follows the coding standard.
-    args.update({
-        "dataframe": fishdata,
-        "tablename": "tbl_fish_abundance_data",
-        "badrows": mismatch(fishdata, fishabud, fishabud_fishdata_shared_pkey), 
-        "badcolumn": ','.join(fishabud_fishdata_shared_pkey),
-        "error_type": "Logic Error",
-        "error_message": "Each length data data must include corresponding abundance data"
-    })
-    errs = [*errs, checkData(**args)]
-    print("# END OF CHECK - 6")
-
-    print("# CHECK - 6")
-    # Description: Each length data data must include corresponding abundance data (🛑 ERROR 🛑)
-    # Created Coder: Zaib(?)
-    # Created Date: 2021
-    # Last Edited Date: 08/17/2023
-    # Last Edited Coder: Duy Nguyen
-    # NOTE (08/17/23): Duy adjusts the code so it follows the coding standard.
-    args.update({
-        "dataframe": fishdata,
-        "tablename": "tbl_fish_abundance_data",
-        "badrows": mismatch(fishdata, fishabud, fishabud_fishdata_shared_pkey), 
-        "badcolumn": ','.join(fishabud_fishdata_shared_pkey),
-        "error_type": "Logic Error",
-        "error_message": "Each length data data must include corresponding abundance data"
-    })
-    errs = [*errs, checkData(**args)]
-    print("# END OF CHECK - 6")
 
     print("# CHECK - 7")
     # Description: The number of records in abundance should match with the number of records in length only if abundance number is between 1-10. 
@@ -277,10 +203,18 @@ def fishseines(all_dfs):
 
     print("# END OF CHECK - 7")
 
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # --------------------------------------------- END OF Fish Logic Checks --------------------------------------------#
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
 
     ######################################################################################################################################
     # ---------------------------------------------------------------------------------------------------------------------------------- #
-    # ------------------------------------------------------End of Sample Metadata Checks ---------------------------------------------- #
+    # ------------------------------------------------------ Sample Metadata Checks ---------------------------------------------- #
     # ---------------------------------------------------------------------------------------------------------------------------------- #
     ######################################################################################################################################
     print("# CHECK - 8")
@@ -317,6 +251,10 @@ def fishseines(all_dfs):
 
     print("# END OF CHECK - 10")
 
+    ######################################################################################################################################
+    # ---------------------------------------------------------------------------------------------------------------------------------- #
+    # ------------------------------------------------------ ENd of Sample Metadata Checks ---------------------------------------------- #
+    # ---------------------------------------------------------------------------------------------------------------------------------- #
 
 
 
@@ -343,8 +281,8 @@ def fishseines(all_dfs):
     # Created Date: 
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE (MM/DD/YY): 
-
+    # NOTE (08/17/23): 
+    
     print("# END OF CHECK - 12")
 
 
