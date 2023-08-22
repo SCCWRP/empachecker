@@ -11,7 +11,9 @@ from .core.functions import get_primary_key
 templater = Blueprint('templater', __name__)
 @templater.route('/templater', methods = ['GET', 'POST'])
 def template():
-    print
+    
+    print("Begin Templater")
+    
     eng = g.eng
     system_fields = current_app.system_fields
     datatype = request.args.get("datatype")
@@ -232,6 +234,9 @@ def template():
     ######################################################################################################################################
     ########################################   END EXPORTING FORMATTING   ################################################################
     ######################################################################################################################################
+
+
+    print("End Templater")
     return send_file(f"{os.getcwd()}/export/routine/{file_prefix}-TEMPLATE.xlsx", as_attachment=True, download_name=f'{file_prefix}-TEMPLATE.xlsx')
     
 
