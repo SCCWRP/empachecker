@@ -151,7 +151,7 @@ def template():
     all_pkeys = list(chain(*[get_primary_key(x, eng) for x in  tables]))
     all_fkeys = list(lookup_df.column_name)
 
-    column_comment = pd.read_sql(
+    column_comment_df = pd.read_sql(
         """
             SELECT
                 cols.COLUMN_NAME AS column_name,
@@ -168,12 +168,14 @@ def template():
                 information_schema.COLUMNS cols 
             WHERE 
                 cols.table_name IN ('{}')
-            GROUP BY COLUMN_NAME, column_comment
+            GROUP BY column_name, column_comment
         """.format("','".join(tables)),
         eng
     )
-    column_comment = column_comment.set_index('column_name')['column_comment'].to_dict()
-
+    
+    # fill missing descriptions with N/A
+    column_comment_df['column_comment'] = column_comment_df['column_comment'].fillna("N/A")
+    column_comment = {x:y for x,y in zip(column_comment_df['column_name'], column_comment_df['column_comment'])}
 
     excel_file_path = f"{os.getcwd()}/export/routine/{file_prefix}-TEMPLATE.xlsx"
 
@@ -215,19 +217,20 @@ def template():
                 print(col_num, col_name)
                 if (col_name in all_pkeys) and (col_name not in all_fkeys):
                     worksheet.write(0, col_num, col_name, format_pkey)
-                    worksheet.write_comment(0, col_num, column_comment.get(col_name, 'None'), options)
+                    worksheet.write_comment(0, col_num, column_comment.get(col_name, 'N/A'), options)
                     worksheet.set_row(0, 170)
                 elif (col_name in all_fkeys) and (col_name not in all_pkeys):
                     worksheet.write(0, col_num, col_name, format_fkey)
-                    worksheet.write_comment(0, col_num, column_comment.get(col_name, 'None'), options)
+                    worksheet.write_comment(0, col_num, column_comment.get(col_name, 'N/A'), options)
                     worksheet.set_row(0, 170)
                 elif (col_name in all_fkeys) and (col_name in all_pkeys):
+                    print(column_comment.get(col_name, 'N/A'))
                     worksheet.write(0, col_num, col_name, format_pkey_fkey)
-                    worksheet.write_comment(0, col_num, column_comment.get(col_name, 'None'), options)
+                    worksheet.write_comment(0, col_num, column_comment.get(col_name, 'N/A'), options)
                     worksheet.set_row(0, 170)            
                 else:
                     worksheet.write(0, col_num, col_name, format_othercols)
-                    worksheet.write_comment(0, col_num, column_comment.get(col_name, 'None'), options)
+                    worksheet.write_comment(0, col_num, column_comment.get(col_name, 'N/A'), options)
                     worksheet.set_row(0, 170)      
 
 
