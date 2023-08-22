@@ -311,7 +311,8 @@ def fishseines(all_dfs):
         "dataframe": fishabud,
         "tablename": "tbl_fish_abundance_data",
         "badrows": merged[
-            ( merged['method_meta'] == 'count' & (merged['catch'] == 'yes' ) ) &
+            ( merged['method_meta'] == 'count' ) & 
+            ( merged['catch'] == 'yes' )  &
             ( merged['abundance'] <= 0)
         ].tmp_row.tolist(),
         "badcolumn": "abundance",
@@ -334,8 +335,10 @@ def fishseines(all_dfs):
         "dataframe": fishabud,
         "tablename": "tbl_fish_abundance_data",
         "badrows": merged[
-            ( merged['method_meta'] == 'pa' & (merged['catch'] == 'yes') ) &
-            ( merged['abundance'] != -88 & merged['abundance'] <= 0) 
+            ( merged['method_meta'] == 'pa') & 
+            ( merged['catch'] == 'yes')  &
+            ( merged['abundance'] != -88 ) & 
+            ( merged['abundance'] <= 0 ) 
         ].tmp_row.tolist(),
         "badcolumn": "abundance",
         "error_type": "Logic Error",

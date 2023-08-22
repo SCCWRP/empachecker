@@ -138,7 +138,7 @@ def main():
             
             if ((sheet not in current_app.tabs_to_ignore) and (not sheet.startswith('lu_')))
         }
-        
+    print(all_dfs)
     assert len(all_dfs) > 0, f"submissionid - {session.get('submissionid')} all_dfs is empty"
     
     for tblname in all_dfs.keys():
