@@ -43,6 +43,7 @@ def strip_whitespace(all_dfs: dict):
 def fix_case(all_dfs: dict):
     print("BEGIN fix_case function")
     for table_name in all_dfs.keys():
+        print(table_name)
         table_df = all_dfs[f'{table_name}'] 
     #Among all the varchar cols, only get the ones tied to the lookup list -- modified to only find lu_lists that are not of numeric types
         lookup_sql = f"""
@@ -162,8 +163,9 @@ def fix_projectid(all_dfs):
     The final dictionary of modified dataframes is returned.
     '''
     for table_name in all_dfs.keys():
+        print(table_name)
         table_df = all_dfs[table_name] 
-        if 'siteid' not in table_df.columns:
+        if ('siteid' not in table_df.columns) | ('projectid' not in table_df.columns):
             continue
         table_df = table_df.assign(
             projectid = table_df.apply(
