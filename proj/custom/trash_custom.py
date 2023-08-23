@@ -233,7 +233,18 @@ def trash(all_dfs):
             )
         )
 
-    #check 4: If debriscategory contains Other then comment is required
+    print("# END CHECK - 3")
+
+
+    # Description: If debriscategory contains Other then comment is required
+    # Created Coder: Unknown
+    # Created Date: Unknown
+    # Last Edited Date: 08/23/23
+    # Last Edited Coder: Caspian Thackeray
+    # NOTE (08/23/23): Copied from SMC and added formatting comments
+    
+    print("# CHECK - 4")
+    
     errs.append(
         checkData(
             'tbl_trashtally',
@@ -243,6 +254,18 @@ def trash(all_dfs):
             'debriscategory field is Other (comment required). Comments field is required.'
             )
     )
+
+    print("# END CHECK - 4")
+
+    # Description: If debriscategory contains Other then comment is required
+    # Created Coder: Unknown
+    # Created Date: Unknown
+    # Last Edited Date: 08/23/23
+    # Last Edited Coder: Caspian Thackeray
+    # NOTE (08/23/23): Copied from SMC and added formatting comments
+    
+    print("# CHECK - 5")
+    
 
     #check 5: If debriscategory is Plastic then debrisitem is in lu_trashplastic
     lu_trashplastic = pd.read_sql("SELECT plastic FROM lu_trashplastic",g.eng).plastic.tolist()
