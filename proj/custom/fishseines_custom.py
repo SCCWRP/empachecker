@@ -73,8 +73,8 @@ def fishseines(all_dfs):
 
     print("# CHECK - 1")
     # Description: Each sample metadata must include corresponding abundance data (🛑 ERROR 🛑)
-    # Created Coder: Zaib(?)
-    # Created Date: 2021
+    # Created Coder: NA
+    # Created Date: NA
     # Last Edited Date: 08/17/23
     # Last Edited Coder: Duy Nguyen
     # NOTE (08/17/23): Duy adjusts the format so it follows the coding standard.
@@ -121,7 +121,7 @@ def fishseines(all_dfs):
     # NOTE (08/17/23): Duy adjusts the format so it follows the coding standard.
     args.update({
         "dataframe": fishmeta,
-        "tablename": "tbl_fish_abundance_data",
+        "tablename": "tbl_fish_sample_metadata",
         "badrows": mismatch(fishmeta, fishdata, fishmeta_fishdata_shared_pkey), 
         "badcolumn": ','.join(fishmeta_fishdata_shared_pkey),
         "error_type": "Logic Error",
@@ -141,7 +141,7 @@ def fishseines(all_dfs):
     # NOTE (08/17/23): Duy adjusts the format so it follows the coding standard.
     args.update({
         "dataframe": fishdata,
-        "tablename": "tbl_fish_abundance_data",
+        "tablename": "tbl_fish_length_data",
         "badrows": mismatch(fishdata, fishmeta, fishmeta_fishdata_shared_pkey), 
         "badcolumn": ','.join(fishmeta_fishdata_shared_pkey),
         "error_type": "Logic Error",
@@ -181,7 +181,7 @@ def fishseines(all_dfs):
     # NOTE (08/17/23): Duy adjusts the format so it follows the coding standard.
     args.update({
         "dataframe": fishdata,
-        "tablename": "tbl_fish_abundance_data",
+        "tablename": "tbl_fish_length_data",
         "badrows": mismatch(fishdata, fishabud, fishabud_fishdata_shared_pkey), 
         "badcolumn": ','.join(fishabud_fishdata_shared_pkey),
         "error_type": "Logic Error",
@@ -195,12 +195,52 @@ def fishseines(all_dfs):
     print("# CHECK - 7")
     # Description: The number of records in abundance should match with the number of records in length only if abundance number is between 1-10. 
     # If abundance number > 10, then the number of matching records in length should be the minimum of 10. (🛑 ERROR 🛑)
-    # Created Coder: 
-    # Created Date: 
+    # Created Coder: Duy Nguyen
+    # Created Date: 8/23/23
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE (MM/DD/YY):
+    # NOTE (8/23/23): Duy wrote this check but has not tested it
+    
+    # merge the two dataframes
+    merged_data = pd.merge(
+        fishabud,
+        fishdata,
+        on=fishabud_fishdata_shared_pkey,
+        how='inner'
+    )
+    
+    # count the matching records and store the result in a column called num_matching_recs
+    counted_records = merged_data.groupby(fishabud_fishdata_shared_pkey).size().reset_index(name='num_matching_recs')
 
+    # merge the result back to the fish abundance table to compare num_matching_recs with the abundance column
+    merged_tmp = pd.merge(
+        fishabud,
+        counted_records,
+        on=fishabud_fishdata_shared_pkey,
+        how='left'
+    ).filter(items=[*fishabud_fishdata_shared_pkey,*['abundance','num_matching_recs','tmp_row']])
+
+    badrows = merged_tmp[
+        (   
+            (merged_tmp['abundance'] > 0) &
+            (merged_tmp['abundance'] <= 10) &
+            (merged_tmp['abundance'] != merged_tmp['num_matching_recs'])
+        ) | 
+        (
+            (merged_tmp['abundance'] > 10) &
+            (merged_tmp['num_matching_recs'] < 10)
+        )
+    ].tmp_row.tolist()
+    
+    args.update({
+        "dataframe": fishabud,
+        "tablename": "tbl_fish_abundance_data",
+        "badrows": badrows, 
+        "badcolumn": 'abundance',
+        "error_type": "Logic Error",
+        "error_message": "The number of records in abundance should match with the number of records in length only if abundance number is between 1-10. If abundance number > 10, then the number of matching records in length should be the minimum of 10."
+    })
+    errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 7")
 
     ######################################################################################################################
@@ -222,37 +262,57 @@ def fishseines(all_dfs):
     ######################################################################################################################################
     print("# CHECK - 8")
     # Description: Netreplicate must be consecutive within a projectid,siteid,estuaryname,stationno,samplecollectiondate,surveytype group (🛑 ERROR 🛑)
-    # Created Coder: 
-    # Created Date: 
+    # Created Coder: Duy Nguyen
+    # Created Date: 8/23/23
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE (MM/DD/YY): 
+    # NOTE (8/23/23): Duy wrote this check but did not test it
+    badrows = []
+    for _, subdf in fishmeta.groupby([x for x in fishmeta_pkey if x != 'netreplicate']):
+        df = subdf.filter(items=[*fishmeta_pkey,*['tmp_row']])
+        df = df.sort_values(by='netreplicate').fillna(0)
+        rep_diff = df['netreplicate'].diff().dropna()
+        all_values_are_one = (rep_diff == 1).all()
+        if not all_values_are_one:
+            badrows.extend(df.tmp_row.tolist())
+    
+    args.update({
+        "dataframe": fishmeta,
+        "tablename": "tbl_fish_sample_metadata",
+        "badrows": badrows, 
+        "badcolumn": 'netreplicate',
+        "error_type": "Custom Error",
+        "error_message": " Netreplicate must be consecutive within a projectid,siteid,estuaryname,stationno,samplecollectiondate,surveytype group"
+    })
+    errs = [*errs, checkData(**args)]
+
     print("# END OF CHECK - 8")
 
 
 
     print("# CHECK - 9")
     # Description: area_m2 = seinelength_m x seinedistance_m. Mark the records as errors if any calculation is incorrect (🛑 ERROR 🛑)
-    # Created Coder: 
-    # Created Date: 
+    # Created Coder: Duy Nguyen
+    # Created Date: 8/23/23
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE (MM/DD/YY): 
+    # NOTE (8/23/23): Duy wrote this check but did not test it
+    args.update({
+        "dataframe": fishmeta,
+        "tablename": "tbl_fish_sample_metadata",
+        "badrows": fishmeta[
+            round(fishmeta['area_m2'], 2) != round((fishmeta['seinelength_m'] * fishmeta['seinedistance_m']), 2)
+        ].tmp_row.tolist(), 
+        "badcolumn": 'area_m2',
+        "error_type": "Custom Error",
+        "error_message": "area_m2 does not equal to seinelength_m x seinedistance_m."
+    })
+    errs = [*errs, checkData(**args)]
 
     print("# END OF CHECK - 9")
 
 
 
-
-    print("# CHECK - 10")
-    # Description: starttime must be before endtime (🛑 ERROR 🛑)
-    # Created Coder: 
-    # Created Date: 
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (MM/DD/YY): 
-
-    print("# END OF CHECK - 10")
 
     ######################################################################################################################################
     # ---------------------------------------------------------------------------------------------------------------------------------- #
@@ -281,12 +341,16 @@ def fishseines(all_dfs):
         "dataframe": fishabud,
         "tablename": "tbl_fish_abundance_data",
         "badrows":fishabud[
-            ( (fishabud['abundance'] < 0) | (fishabud['abundance'] > 5000) ) & 
-            ( fishabud['abundance'] != -88 )
+            (
+                fishabud['abundance'] != -88
+            ) &
+            (
+                (fishabud['abundance'] < 0) | (fishabud['abundance'] > 5000)
+            )
         ].tmp_row.tolist(),
         "badcolumn": "abundance",
         "error_type" : "Value out of range",
-        "error_message" : "Your abundance value must be between 0 to 5000."
+        "error_message" : "Range for abundance should be between [0, 5000] or -88 (empty)"
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 11")
@@ -311,9 +375,9 @@ def fishseines(all_dfs):
         "dataframe": fishabud,
         "tablename": "tbl_fish_abundance_data",
         "badrows": merged[
-            ( merged['method_meta'] == 'count' ) & 
-            ( merged['catch'] == 'yes' )  &
-            ( merged['abundance'] <= 0)
+            (merged['method_meta'] == 'count') & 
+            (merged['catch'] == 'yes')  &
+            (merged['abundance'] <= 0)
         ].tmp_row.tolist(),
         "badcolumn": "abundance",
         "error_type": "Logic Error",
@@ -335,10 +399,10 @@ def fishseines(all_dfs):
         "dataframe": fishabud,
         "tablename": "tbl_fish_abundance_data",
         "badrows": merged[
-            ( merged['method_meta'] == 'pa') & 
-            ( merged['catch'] == 'yes')  &
-            ( merged['abundance'] != -88 ) & 
-            ( merged['abundance'] <= 0 ) 
+            (merged['method_meta'] == 'pa') & 
+            (merged['catch'] == 'yes')  &
+            (merged['abundance'] != -88) & 
+            (merged['abundance'] <= 0) 
         ].tmp_row.tolist(),
         "badcolumn": "abundance",
         "error_type": "Logic Error",
@@ -360,8 +424,8 @@ def fishseines(all_dfs):
         "dataframe": fishabud,
         "tablename": "tbl_fish_abundance_data",
         "badrows": merged[
-            ( merged['catch'] == 'no' ) &
-            ( merged['abundance'] != 0 ) 
+            (merged['catch'] == 'no') &
+            (merged['abundance'] != 0) 
         ].tmp_row.tolist(),
         "badcolumn": "abundance",
         "error_type": "Logic Error",
@@ -406,8 +470,8 @@ def fishseines(all_dfs):
         "dataframe": fishdata,
         "tablename": "tbl_fish_length_data",
         "badrows": merged[
-            ( merged['catch'] == 'no' )  &
-            ( merged['length_mm'] != -88)
+            (merged['catch'] == 'no') &
+            (merged['length_mm'] != -88)
         ].tmp_row.tolist(),
         "badcolumn": "length_mm",
         "error_type": "Logic Error",
@@ -420,11 +484,28 @@ def fishseines(all_dfs):
 
     print("# CHECK - 16")
     # Description: Replicate must be consecutive within a projectid,siteid,estuaryname,stationno,samplecollectiondate,surveytype,netreplicate,scientificname group (🛑 ERROR 🛑)
-    # Created Coder: 
-    # Created Date: 
+    # Created Coder: Duy Nguyen
+    # Created Date: 8/23/23
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE (MM/DD/YY): 
+    # NOTE (8/23/23): Duy wrote this check but did not test it
+    badrows = []
+    for _, subdf in fishdata.groupby([x for x in fishdata_pkey if x != 'replicate']):
+        df = subdf.filter(items=[*fishdata_pkey,*['tmp_row']])
+        df = df.sort_values(by='replicate').fillna(0)
+        rep_diff = df['replicate'].diff().dropna()
+        all_values_are_one = (rep_diff == 1).all()
+        if not all_values_are_one:
+            badrows = [*badrows, *df.tmp_row.tolist()]
+    args.update({
+        "dataframe": fishdata,
+        "tablename": "tbl_fish_length_data",
+        "badrows": badrows,
+        "badcolumn": "replicate",
+        "error_type": "Custom Error",
+        "error_message": "Replicate must be consecutive within a projectid,siteid,estuaryname,stationno,samplecollectiondate,surveytype,netreplicate,scientificname group"
+    })
+    errs = [*errs, checkData(**args)]
 
     print("# END OF CHECK - 16")
 
