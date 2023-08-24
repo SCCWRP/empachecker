@@ -361,9 +361,10 @@ def fishseines(all_dfs):
     # Description: If method is "count" and catch is "yes" then abundance should be a positive integer in fish abundance (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 8/18/23
+    # Last Edited Date: 08/23/23
     # Last Edited Coder: Duy Nguyen
     # NOTE (08/17/23): Duy adjusts the format so it follows the coding standard
+    # NOTE (08/23/23): Duy changed merged['catch'] == 'yes' to merged['catch'] == 'Yes' since the code fixed case. 
     merged = pd.merge(
         fishabud,
         fishmeta, 
