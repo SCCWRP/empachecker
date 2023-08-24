@@ -358,7 +358,7 @@ def fishseines(all_dfs):
 
 
     print("# CHECK - 12")
-    # Description: If method is "count" and catch is "yes" then abundance should be non zero integer in fish abundance (🛑 ERROR 🛑)
+    # Description: If method is "count" and catch is "yes" then abundance should be a positive integer in fish abundance (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
     # Last Edited Date: 8/18/23
@@ -367,7 +367,7 @@ def fishseines(all_dfs):
     merged = pd.merge(
         fishabud,
         fishmeta, 
-        how='left',
+        how='inner',
         suffixes=('', '_meta'),
         on=fishmeta_fishabud_shared_pkey
     )
@@ -376,12 +376,12 @@ def fishseines(all_dfs):
         "tablename": "tbl_fish_abundance_data",
         "badrows": merged[
             (merged['method_meta'] == 'count') & 
-            (merged['catch'] == 'yes')  &
+            (merged['catch'] == 'Yes')  &
             (merged['abundance'] <= 0)
         ].tmp_row.tolist(),
         "badcolumn": "abundance",
         "error_type": "Logic Error",
-        "error_message": "If method = count, catch = yes in fish_meta, then abundance should be non zero integer in fish_abundance"
+        "error_message": "If method is 'count' and catch is 'Yes' then abundance should be a positive integer in fish abundance"
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 12")
