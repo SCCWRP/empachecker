@@ -388,9 +388,8 @@ def main():
     # Later we will need to have a way to map the dataframe column names to the column indices
     # This is one of those lines of code where i dont know why it is here, but i have a feeling it will
     #   break things if i delete it
-    # Even though i'm the one that put it here... -Robert
+    # Even though i'm the one that put it here... -Robert <- classic programmer moment -Cas
     session['col_indices'] = {tbl: {col: df.columns.get_loc(col) for col in df.columns} for tbl, df in all_dfs.items() }
-
 
     # ---------------------------------------------------------------- #
 

@@ -1,7 +1,7 @@
 import json, os
 from pandas import isnull, DataFrame, read_sql, merge
 
-def checkData(dataframe, tablename, badrows, badcolumn, error_type, is_core_error = False, error_message = "Error", errors_list = [], q = None):
+def checkData(tablename, badrows, badcolumn, error_type, is_core_error = False, error_message = "Error", errors_list = [], q = None, **kwargs):
     
     # See comments on the get_badrows function
     # doesnt have to be used but it makes it more convenient to plug in a check
