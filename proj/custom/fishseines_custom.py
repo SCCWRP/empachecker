@@ -197,9 +197,10 @@ def fishseines(all_dfs):
     # If abundance number > 10, then the number of matching records in length should be the minimum of 10. (🛑 ERROR 🛑)
     # Created Coder: Duy Nguyen
     # Created Date: 8/23/23
-    # Last Edited Date: 
-    # Last Edited Coder: 
+    # Last Edited Date: 8/25/23
+    # Last Edited Coder: 8/25/23
     # NOTE (8/23/23): Duy wrote this check but has not tested it
+    # NOTE (8/25/23): Duy tested it. The code worked as expected.
     
     # merge the two dataframes
     merged_data = pd.merge(
@@ -217,7 +218,7 @@ def fishseines(all_dfs):
         fishabud,
         counted_records,
         on=fishabud_fishdata_shared_pkey,
-        how='left'
+        how='inner'
     ).filter(items=[*fishabud_fishdata_shared_pkey,*['abundance','num_matching_recs','tmp_row']])
 
     badrows = merged_tmp[
@@ -264,9 +265,10 @@ def fishseines(all_dfs):
     # Description: Netreplicate must be consecutive within a projectid,siteid,estuaryname,stationno,samplecollectiondate,surveytype group (🛑 ERROR 🛑)
     # Created Coder: Duy Nguyen
     # Created Date: 8/23/23
-    # Last Edited Date: 
-    # Last Edited Coder: 
+    # Last Edited Date: 8/25/23
+    # Last Edited Coder: Duy Nguyen
     # NOTE (8/23/23): Duy wrote this check but did not test it
+    # NOTE (8/25/23): Duy tested the code.
     badrows = []
     for _, subdf in fishmeta.groupby([x for x in fishmeta_pkey if x != 'netreplicate']):
         df = subdf.filter(items=[*fishmeta_pkey,*['tmp_row']])
@@ -294,9 +296,10 @@ def fishseines(all_dfs):
     # Description: area_m2 = seinelength_m x seinedistance_m. Mark the records as errors if any calculation is incorrect (🛑 ERROR 🛑)
     # Created Coder: Duy Nguyen
     # Created Date: 8/23/23
-    # Last Edited Date: 
-    # Last Edited Coder: 
+    # Last Edited Date: 8/25/23
+    # Last Edited Coder: Duy Nguyen
     # NOTE (8/23/23): Duy wrote this check but did not test it
+    # NOTE (8/25/23): Duy tested the code.
     args.update({
         "dataframe": fishmeta,
         "tablename": "tbl_fish_sample_metadata",
@@ -387,33 +390,6 @@ def fishseines(all_dfs):
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 12")
 
-
-
-    print("# CHECK - 13")
-    # Description: If method is "pa" and catch is "yes" in sample metadata then abundance should be -88 or a positive number (🛑 ERROR 🛑)
-    # Created Coder: NA
-    # Created Date: NA
-    # Last Edited Date: 8/18/23 
-    # Last Edited Coder: Duy Nguyen
-    # NOTE (8/18/23): Duy adjusts the format so it follows the coding standard
-    args.update({
-        "dataframe": fishabud,
-        "tablename": "tbl_fish_abundance_data",
-        "badrows": merged[
-            (merged['method_meta'] == 'pa') & 
-            (merged['catch'] == 'yes')  &
-            (merged['abundance'] != -88) & 
-            (merged['abundance'] <= 0) 
-        ].tmp_row.tolist(),
-        "badcolumn": "abundance",
-        "error_type": "Logic Error",
-        "error_message": "If method is pa and catch is yes in sample metadata then abundance should be -88 or a positive number"
-    })
-    errs = [*errs, checkData(**args)]
-    print("# END OF CHECK - 13")
-
-
-
     print("# CHECK - 14")
     # Description: If catch is "no" in sample metadata then abundance should be 0 (🛑 ERROR 🛑)
     # Created Coder: NA
@@ -425,12 +401,12 @@ def fishseines(all_dfs):
         "dataframe": fishabud,
         "tablename": "tbl_fish_abundance_data",
         "badrows": merged[
-            (merged['catch'] == 'no') &
+            (merged['catch'] == 'No') &
             (merged['abundance'] != 0) 
         ].tmp_row.tolist(),
         "badcolumn": "abundance",
         "error_type": "Logic Error",
-        "error_message": "If catch is no in sample metadata then abundance should be 0"
+        "error_message": "If catch is 'No' in sample metadata then abundance should be 0"
     })
     errs = [*errs, checkData(**args)]    
     print("# END OF CHECK - 14")
@@ -457,9 +433,10 @@ def fishseines(all_dfs):
     # Description: If catch is "no" in sample metadata then length_mm should be -88 (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 8/18/23 
+    # Last Edited Date: 8/25/23 
     # Last Edited Coder: Duy Nguyen
     # NOTE (8/18/23): Duy adjusts the format so it follows the coding standard
+    # NOTE (8/25/23): Duy changed from merged['catch'] == 'no' to merged['catch'] == 'No' to match the value in catch column. Tested and worked.
     merged = pd.merge(
         fishdata,
         fishmeta, 
@@ -471,7 +448,7 @@ def fishseines(all_dfs):
         "dataframe": fishdata,
         "tablename": "tbl_fish_length_data",
         "badrows": merged[
-            (merged['catch'] == 'no') &
+            (merged['catch'] == 'No') &
             (merged['length_mm'] != -88)
         ].tmp_row.tolist(),
         "badcolumn": "length_mm",
@@ -487,9 +464,10 @@ def fishseines(all_dfs):
     # Description: Replicate must be consecutive within a projectid,siteid,estuaryname,stationno,samplecollectiondate,surveytype,netreplicate,scientificname group (🛑 ERROR 🛑)
     # Created Coder: Duy Nguyen
     # Created Date: 8/23/23
-    # Last Edited Date: 
-    # Last Edited Coder: 
+    # Last Edited Date: Duy Nguyen  
+    # Last Edited Coder: 8/25/23
     # NOTE (8/23/23): Duy wrote this check but did not test it
+    # NOTE (8/25/23): Duy tested the code.
     badrows = []
     for _, subdf in fishdata.groupby([x for x in fishdata_pkey if x != 'replicate']):
         df = subdf.filter(items=[*fishdata_pkey,*['tmp_row']])
