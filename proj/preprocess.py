@@ -152,8 +152,6 @@ def fill_daubenmiremidpoint(all_dfs):
         )
         all_dfs['tbl_vegetativecover_data'] = df
 
-
-    print('end hardcoded fixes')
     return all_dfs
 
 def fix_projectid(all_dfs):
