@@ -215,14 +215,14 @@ def main():
     #  We want to limit the manual cleaning of the data that the user has to do
     #  This function will strip whitespace on character fields and fix columns to match lookup lists if they match (case insensitive)
 
-    print("preprocessing and cleaning data")
+    print("begin preprocessing")
     # We are not sure if we want to do this
     # some projects like bight prohibit this
     if match_dataset != 'logger_raw':
         # Skip preprocessing for raw logger data
         # We can probably add an option in the config on a per datatype basis to generalize this
         all_dfs = clean_data(all_dfs)
-    print("DONE preprocessing and cleaning data")
+    print("end preprocessing ")
     # ----------------------------------------- #
 
 
@@ -329,6 +329,36 @@ def main():
         # match_dataset is a string, which should also be the same as one of the function names imported from custom, so we can "eval" it
         try:
             custom_output = eval(match_dataset)(all_dfs)
+            
+            # we define global custom checks are the checks that apply to multiple datatype.
+            # the goal is to extend the custom output dictionnary
+            # the output of global custom should look something like this
+            '''
+                global_custom_output = {
+                    'errors': 
+                        [
+                            {
+                                'table': 'tbl_fish_sample_metadata',
+                                'rows': [7],
+                                'columns': 'starttime,endtime',
+                                'error_type': 'Logic Error', 
+                                'is_core_error': False, 
+                                'error_message': 'StartTime/Endtime does not follow 24-hour format'
+                            },
+                        ],
+                    'warnings': []
+                }
+            '''
+            # Then we can do custom_output.get('errors').extend(global_custom_output.get('errors))
+            # and custom_output.get('warnings').extend(global_custom_output.get('warnings))
+            global_custom_output = global_custom(all_dfs)
+
+            # extend the custom output
+            custom_output.get('errors').extend(global_custom_output.get('errors'))
+            custom_output.get('warnings').extend(global_custom_output.get('warnings'))
+            
+
+
         except NameError as err:
             print("Error with custom checks")
             print(err)
@@ -354,11 +384,6 @@ def main():
         errs = [e for e in errs if len(e) > 0]
         warnings = [w for w in warnings if len(w) > 0]
 
-        # commenting out errs and warnings print statements
-        #print("errs")
-        #print(errs)
-        #print("warnings")
-        #print(warnings)
 
         print("DONE - Custom Checks")
 

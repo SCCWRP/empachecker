@@ -12,3 +12,4 @@ from .sedimentgrainsize_custom import sedimentgrainsize_field, sedimentgrainsize
 from .vegetation_custom import vegetation
 from .grab_field_custom import grab_field
 from .trash_custom import trash
+from .global_custom import global_custom

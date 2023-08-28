@@ -246,6 +246,43 @@ def clean_data(all_dfs):
     # NOTE (08/17/23): Duy adjusts the format so it follows the coding standard.
     all_dfs = fill_daubenmiremidpoint(all_dfs)
     print("# end data filling - 1")
+    
+    
+    
+    
+    
+    print("# begin data filling - 2")
+    # Description: fill commonname based on scientificname from appropriate lookup list
+    # Created Coder:  
+    # Created Date:  
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (08/17/23): 
+    print("# end data filling - 2")
+    
+    
+    
+    
+    print("# begin data filling - 3")
+    # Description: fill status based on scienticficname,commonname from appropriate lookup lists
+    # Created Coder:  
+    # Created Date:  
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (08/17/23): 
+    print("# end data filling - 3")
+    
+    
+    
+    
+    print("# begin data filling - 4")
+    # Description: fill the area_m2 column if it is empty. Formula: area_m2 = seinelength_m x seinedistance_m
+    # Created Coder:  
+    # Created Date:  
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (08/17/23): 
+    print("# end data filling - 4")
 
 
     
