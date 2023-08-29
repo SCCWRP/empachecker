@@ -154,7 +154,6 @@ def fill_daubenmiremidpoint(all_dfs):
     return all_dfs
 
 def fill_commonname(all_dfs):
-    print("### IN FILL COMMONNAME ###")
     fishmacro_tbls = ['tbl_bruv_data',
                       'tbl_crabbiomass_length',
                       'tbl_crabfishinvert_abundance',
@@ -165,22 +164,37 @@ def fill_commonname(all_dfs):
                   'tbl_floating_data',
                   'tbl_savpercentcover_data',
                   'tbl_vegetativecover_data']
-    benthic_tbls = ['tbl_benthicinfauna_abundance',
-                    'tbl_benthicinfauna_biomass',
-                    'tbl_benthiclarge_abundance']
-    if 'tbl_fish_abundance_data' in all_dfs.keys():
-        df = all_dfs['tbl_fish_abundance_data']
-        lu_fishmacrospecies = pd.read_sql('SELECT commonname, scientificname FROM lu_fishmacrospecies', g.eng)
+    # benthic_tbls = ['tbl_benthicinfauna_abundance',
+    #                 'tbl_benthicinfauna_biomass',
+    #                 'tbl_benthiclarge_abundance']
+    
+    all_tbls = {
+        'fishmacro_tbls': {
+            'tbls': fishmacro_tbls,
+            'lu_list': 'lu_fishmacrospecies'
+            },
+        'plant_tbls': {
+            'tbls': plant_tbls,
+            'lu_list': 'lu_plantspecies'
+            },
+    }
 
-        for index, row in df.iterrows():
-            if type(row['commonname']) != str:
-                sci_name = row['scientificname']
-                common_name = pd.read_sql(f"SELECT commonname FROM lu_fishmacrospecies WHERE scientificname = '{sci_name}'", g.eng).values.tolist()[0]
-                print(f'Corrected commonname: {common_name}')
-            else:
-                print(row['commonname'])
-
-        print("### FILL COMMONNAME DONE ###")
+    for _, tbl_arr in all_tbls.items():
+        lu_list = tbl_arr['lu_list']
+        for tbl in tbl_arr['tbls']:
+            if tbl in all_dfs.keys():
+                df = all_dfs[tbl]
+                for label, row in df.iterrows():
+                    sci_name = row['scientificname']
+                    com_name = row['commonname']
+                    # couldn't find a good way to check for nulls here so I went for a type check. I can't think of an edge case where this wouldn't work.
+                    # checks if commonname is empty and if scientific name has a value. skips if not. blank scientific name is caught by another check.
+                    if type(com_name) != str and type(sci_name) == str:
+                        common_name_df = pd.read_sql(f"SELECT commonname FROM {lu_list} WHERE scientificname = '{sci_name}'", g.eng)
+                        new_common_name = str(common_name_df.iat[0,0])
+                        df.loc[label, 'commonname'] = new_common_name
+                        all_dfs[tbl] = df
+                        print(f'filled common name for {sci_name} with {new_common_name}')
     return all_dfs
     
 
@@ -285,9 +299,10 @@ def clean_data(all_dfs):
     # Description: fill commonname based on scientificname from appropriate lookup list
     # Created Coder: Caspian Thackeray
     # Created Date:  08/28/23
-    # Last Edited Date: 08/28/23
+    # Last Edited Date: 08/29/23
     # Last Edited Coder: Caspian Thackeray
-    # NOTE (08/17/23): Begin writing this check
+    # NOTE (08/28/23): Begin writing this check
+    # NOTE (08/29/23): Finished writing this check
     all_dfs = fill_commonname(all_dfs)
     print("# end data filling - 2")
     
