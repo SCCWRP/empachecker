@@ -1,7 +1,7 @@
 from inspect import currentframe
 from flask import current_app, g
 import pandas as pd
-from .functions import checkData, checkLogic, mismatch
+from .functions import checkData, checkLogic, mismatch, get_primary_key
 import re
 
 def crabtrap(all_dfs):
@@ -37,7 +37,6 @@ def crabtrap(all_dfs):
 
     # Alter this args dictionary as you add checks and use it for the checkData function
     # for errors that apply to multiple columns, separate them with commas
-    #commented out since df is a placeholder variable for DataFrame
 
     args = {
         "dataframe": pd.DataFrame({}),
@@ -48,7 +47,387 @@ def crabtrap(all_dfs):
         "is_core_error": False,
         "error_message": ""
     }
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ Crab Logic Checks ----------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
     
+    crabmeta_pkey = get_primary_key('tbl_crabtrap_metadata', g.eng)
+    crabinvert_pkey = get_primary_key('tbl_crabfishinvert_abundance', g.eng)
+    crabmass_pkey = get_primary_key('tbl_crabbiomass_length', g.eng)
+
+    crabmeta_crabinvert_shared_pkey = list(set(crabmeta_pkey).intersection(set(crabinvert_pkey)))
+    crabmeta_crabmass_shared_pkey = list(set(crabmeta_pkey).intersection(set(crabmass_pkey)))
+    crabinvert_crabmass_shared_pkey = list(set(crabinvert_pkey).intersection(set(crabmass_pkey)))
+    print(f"crabmeta_crabinvert_shared_pkey: {crabmeta_crabinvert_shared_pkey}")
+    print(f"crabmeta_crabmass_shared_pkey: {crabmeta_crabmass_shared_pkey}")
+    print(f"crabinvert_crabmass_shared_pkey: {crabinvert_crabmass_shared_pkey}")
+
+    print("# CHECK - 1")
+    # Description: Each metadata must include corresponding abundance data (🛑 ERROR 🛑)
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 08/29/23
+    # Last Edited Coder: Zaib Quraishi
+    # NOTE (08/29/23): Zaib adjusts the format so it follows the coding standard.
+    args.update({
+        "dataframe": crabmeta,
+        "tablename": "tbl_crabtrap_metadata",
+        "badrows": mismatch(crabmeta, crabinvert, crabmeta_crabinvert_shared_pkey), 
+        "badcolumn": ','.join(crabmeta_crabinvert_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Each metadata must include corresponding abundance data"
+    })
+    errs = [*errs, checkData(**args)]
+    # END OF CHECK - Each sample metadata must include corresponding abundance data (🛑 ERROR 🛑)
+    print("# END OF CHECK - 1")
+
+
+
+    print("# CHECK - 2")
+    # Description: Each abundance data must include corresponding metadata (🛑 ERROR 🛑)
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 08/29/2023
+    # Last Edited Coder: Zaib Quraishi
+    # NOTE (08/29/23): Zaib adjusts the format so it follows the coding standard.
+    args.update({
+        "dataframe": crabinvert,
+        "tablename": "tbl_crabfishinvert_abundance",
+        "badrows": mismatch(crabinvert, crabmeta, crabmeta_crabinvert_shared_pkey), 
+        "badcolumn": ','.join(crabmeta_crabinvert_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Each abundance data must include corresponding metadata"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 2")
+
+
+
+    print("# CHECK - 3")
+    # Description: Each metadata must include corresponding length data (🛑 ERROR 🛑)
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 08/29/2023
+    # Last Edited Coder: Zaib Quraishi
+    # NOTE (08/29/23): Zaib adjusts the format so it follows the coding standard.
+    args.update({
+        "dataframe": crabmeta,
+        "tablename": "tbl_crabtrap_metadata",
+        "badrows": mismatch(crabmeta, crabmass, crabmeta_crabmass_shared_pkey), 
+        "badcolumn": ','.join(crabmeta_crabmass_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Each metadata must include corresponding length data"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 3")
+
+
+
+    print("# CHECK - 4")
+    # Description: Each length data must include corresponding metadata (🛑 ERROR 🛑)
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 08/29/2023
+    # Last Edited Coder: Zaib Quraishi
+    # NOTE (08/29/23): Zaib adjusts the format so it follows the coding standard.
+    args.update({
+        "dataframe": crabmass,
+        "tablename": "tbl_crabbiomass_length",
+        "badrows": mismatch(crabmass, crabmeta, crabmeta_crabmass_shared_pkey), 
+        "badcolumn": ','.join(crabmeta_crabmass_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Each length data must include corresponding metadata"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 4")
+
+
+    print("# CHECK - 5")
+    # Description: Each abundance data must include corresponding length data (🛑 ERROR 🛑)
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 08/29/2023
+    # Last Edited Coder: Zaib Quraishi
+    # NOTE (08/29/23): Zaib adjusts the format so it follows the coding standard.
+    args.update({
+        "dataframe": crabinvert,
+        "tablename": "tbl_crabfishinvert_abundance",
+        "badrows": mismatch(crabinvert, crabmass, crabinvert_crabmass_shared_pkey), 
+        "badcolumn": ','.join(crabinvert_crabmass_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Each abundance data must include corresponding length data"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 5")
+
+
+
+    print("# CHECK - 6")
+    # Description: Each length data data must include corresponding abundance data (🛑 ERROR 🛑)
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 08/29/2023
+    # Last Edited Coder: Zaib Quraishi
+    # NOTE (08/29/23): Zaib adjusts the format so it follows the coding standard.
+    args.update({
+        "dataframe": crabmass,
+        "tablename": "tbl_crabbiomass_length",
+        "badrows": mismatch(crabmass, crabinvert, crabinvert_crabmass_shared_pkey), 
+        "badcolumn": ','.join(crabinvert_crabmass_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Each length data data must include corresponding abundance data"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 6")
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # --------------------------------------------- END OF Crab Logic Checks --------------------------------------------#
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+
+
+    ######################################################################################################################################
+    # ---------------------------------------------------------------------------------------------------------------------------------- #
+    # ----------------------------------------------------- Crab Trap Metadata Checks -------------------------------------------------- #
+    # ---------------------------------------------------------------------------------------------------------------------------------- #
+    ######################################################################################################################################
+    print("# CHECK - 7")
+    # Description: If trapsuccess is yes then catch must be either yes or no (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 10/04/2022
+    # Last Edited Date: 8/29/2023
+    # Last Edited Coder: Zaib Quraishi
+    # NOTE (2/16/23): (Duy) Fixed this check. I made a mistake where I was trying to get the boolean values of a pandas Series by doing something like ([pd.Series] not in [values]). 
+    # This yields the error the truth value is ambiguous. 
+    # badrows = crabmeta[
+    #             (crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'yes') & 
+    #     ([x not in ['yes','no'] for x in crabmeta['catch'].apply(lambda x: str(x).strip().lower()) ])
+    # ].tmp_row.tolist()  
+    # NOTE (8/29/23): Zaib adjusts the format so it follows the coding standard.
+    args.update({
+        "dataframe": crabmeta,
+        "tablename": "tbl_crabtrap_metadata",
+        "badrows": crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'yes') & ([x not in ['yes','no'] for x in crabmeta['catch'].apply(lambda x: str(x).strip().lower()) ])].tmp_row.tolist(),
+        "badcolumn": "catch",
+        "error_type": "Undefined Error",
+        "error_message": "If trapsuccess is yes then catch must be either yes or no"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 7")
+
+
+
+    print("# CHECK - 8")
+    # Description: If trapsuccess is no then catch must be NULL or empty (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 10/04/2022
+    # Last Edited Date: 8/29/2023
+    # Last Edited Coder: Zaib Quraishi
+    # NOTE (2/16/23): (Duy) Fixed this one too. Using the keyword 'no' to get the contradiction of a boolean series is not recommended. 
+    # Use '~' instead.
+    # NOTE (8/29/23): Zaib adjusts the format so it follows the coding standard.
+    args.update({
+        "dataframe": crabmeta,
+        "tablename": 'tbl_crabtrap_metadata',
+        "badrows": crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'no') & (~pd.isnull(crabmeta['catch']))].tmp_row.tolist(),
+        "badcolumn": "catch",
+        "error_type": "Undefined Error",
+        "error_message": "If trapsuccess is no then catch must be NULL or empty"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 8")
+
+
+
+    print("# CHECK - 9")
+    # Description: If catch is no then abundance should be 0 (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 10/04/2022
+    # Last Edited Date: 8/29/2023
+    # Last Edited Coder: Zaib Quraishi
+    # NOTE (11/02/2022): (Robert) We cant use index to get the bad rows since we merged dataframes and the index gets reset
+    # We must preserve the original index values of the dataframe that we are checking 
+    #  so that we can correctly tell the user which rows are bad
+    # So we will assign a temp column in this merged dataframe and use that for the "badrows"
+    # NOTE (11/02/2022): Robert 2022-11-02 added .lower() to the merged['catch'] for the following reason
+    # We cannot simply assume that the 'catch' column will be a lowercase 'no'
+    # ESPECIALLY since that column is tied to the lookup list lu_yesno
+    # It is actually impossible for the catch column to have a value of 'no' all lowercase, since lu_yesno has a capitalized 'Yes' and 'No'
+    # That would have got flagged at core checks
+    # NOTE (8/29/23): Zaib adjusts the format so it follows the coding standard.
+    merged = pd.merge(
+        crabinvert.assign(invert_tmp_row = crabinvert.index),
+        crabmeta, 
+        how='left',
+        suffixes=('_abundance', '_meta'),
+        on = ['siteid','estuaryname','traptype','samplecollectiondate', 'traplocation','stationno','replicate', 'projectid']
+    )
+
+    args.update({
+        "dataframe": crabinvert,
+        "tablename": 'tbl_crabfishinvert_abundance',
+        "badrows":  merged[(merged['catch'].str.lower() == 'no') & (merged['abundance'] > 0)].invert_tmp_row.tolist(),
+        "badcolumn": "abundance",
+        "error_type": "Undefined Error",
+        "error_message": "If catch = No in crab_meta, then abundance shoud be 0 in invert_abundance tab"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 9")
+
+
+
+    print("# CHECK - 10")
+    # Description:  (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 10/04/2022
+    # Last Edited Date: 8/29/2023
+    # Last Edited Coder: Zaib Quraishi
+    # NOTE (8/29/23): Zaib adjusts the format so it follows the coding standard.
+
+
+
+
+    # New checks written by Duy - 2022-10-04
+    
+    # Check 6: If catch = No in meta, then abundance = 0 in abundance tab
+    # Robert 2022-11-02
+    # We cant use index to get the bad rows since we merged dataframes and the index gets reset
+    # We must preserve the original index values of the dataframe that we are checking 
+    #  so that we can correctly tell the user which rows are bad
+    # So we will assign a temp column in this merged dataframe and use that for the "badrows"
+    print('Start custom check 6')
+    merged = pd.merge(
+        crabinvert.assign(invert_tmp_row = crabinvert.index),
+        crabmeta, 
+        how='left',
+        suffixes=('_abundance', '_meta'),
+        on = ['siteid','estuaryname','traptype','samplecollectiondate', 'traplocation','stationno','replicate', 'projectid']
+    )
+
+    # Robert 2022-11-02 - added .lower() to the merged['catch'] for the following reason
+    # We cannot simply assume that the 'catch' column will be a lowercase 'no'
+    # ESPECIALLY since that column is tied to the lookup list lu_yesno
+    # It is actually impossible for the catch column to have a value of 'no' all lowercase, since lu_yesno has a capitalized 'Yes' and 'No'
+    # That would have got flagged at core checks
+    # badrows = merged[(merged['catch'].str.lower() == 'no') & (merged['abundance'] > 0)].invert_tmp_row.tolist()
+    args.update({
+        "dataframe": crabinvert,
+        "tablename": 'tbl_crabfishinvert_abundance',
+        "badrows":  merged[(merged['catch'].str.lower() == 'no') & (merged['abundance'] > 0)].invert_tmp_row.tolist(),
+        "badcolumn": "abundance",
+        "error_type": "Undefined Error",
+        "error_message": "If catch = No in crab_meta, then abundance shoud be 0 in invert_abundance tab"
+    })
+    errs = [*errs, checkData(**args)]
+    print("End Check 6: If catch is no in metadata then abundance should be 0 in crabinvert abundnace ")
+    
+    # Check 7: If catch = Yes in meta, then abundance is non-zero integer in abundance tab
+    print('Start custom check 7')
+    # badrows = merged[(merged['catch'].str.lower() == 'yes') & (merged['abundance'] <= 0)].invert_tmp_row.tolist()
+    args.update({
+        "dataframe": crabinvert,
+        "tablename": 'tbl_crabfishinvert_abundance',
+        "badrows":  merged[(merged['catch'].str.lower() == 'yes') & (merged['abundance'] <= 0)].invert_tmp_row.tolist(),
+        "badcolumn": "abundance",
+        "error_type": "Undefined Error",
+        "error_message": "If catch = Yes in crab_meta, then abundance should be a non-zero integer in abundance tab."
+    })
+    errs = [*errs, checkData(**args)]
+    print("End Check 7: If catch = Yes in crab_meta, then abundance should be a non-zero integer in abundance tab. ") 
+
+    #lookup lists
+    print("before multicol check")
+    def multicol_lookup_check(df_tocheck, lookup_df, check_cols, lookup_cols):
+        assert set(check_cols).issubset(set(df_tocheck.columns)), "columns do not exist in the dataframe"
+        assert isinstance(lookup_cols, list), "lookup columns is not a list"
+
+        lookup_df = lookup_df.assign(match="yes")
+        df_tocheck['status'] = df_tocheck['status'].astype(str)
+        
+        for c in check_cols:
+            df_tocheck[c] = df_tocheck[c].apply(lambda x: str(x).lower().strip())
+        for c in lookup_cols:
+            lookup_df[c] = lookup_df[c].apply(lambda x: str(x).lower().strip())
+
+        merged = pd.merge(df_tocheck, lookup_df, how="left", left_on=check_cols, right_on=lookup_cols)
+        badrows = merged[pd.isnull(merged.match)].tmp_row.tolist()
+        return(badrows)
+
+
+    lookup_sql = f"SELECT * FROM lu_fishmacrospecies;"
+    lu_species = pd.read_sql(lookup_sql, g.eng)
+    #check_cols = ['scientificname', 'commonname', 'status']
+    check_cols = ['scientificname', 'commonname']
+    #lookup_cols = ['scientificname', 'commonname', 'status']
+    lookup_cols = ['scientificname', 'commonname']
+
+    badrows = multicol_lookup_check(crabinvert,lu_species, check_cols, lookup_cols)
+    
+    #check 9: Scientificname/commoname pair for species must match lookup
+    print("Start check custom 9")
+    args.update({
+        "dataframe": crabinvert,
+        "tablename": "tbl_crabfishinvert_abundance",
+        "badrows": badrows,
+        "badcolumn": "commonname",
+        "error_type": "Multicolumn Lookup Error",
+        "error_message": "The scientificname/commonname entry did not match the lookup list."
+                        '<a ' 
+                        f'href="/{lu_list_script_root}/scraper?action=help&layer=lu_fishmacrospecies" '
+                        'target="_blank">lu_fishmacrospecies</a>' # need to add href for lu_species
+    })
+    errs = [*errs, checkData(**args)]
+    print("check  9 ran - crabfishinvert_abundance - multicol species") 
+    badrows = multicol_lookup_check(crabmass, lu_species, check_cols, lookup_cols)
+
+    #check 11: Scientificname/commoname pair for species must match lookup
+    print("Start check custom 11")
+    args.update({
+        "dataframe": crabmass,
+        "tablename": "tbl_crabbiomass_length",
+        "badrows": badrows,
+        "badcolumn": "commonname",
+        "error_type": "Multicolumn Lookup Error",
+        "error_message": f'The scientificname/commonname entry did not match the lookup list.'
+                         '<a ' 
+                        f'href="/{lu_list_script_root}/scraper?action=help&layer=lu_fishmacrospecies" '
+                        'target="_blank">lu_fishmacrospecies</a>' # need to add href for lu_species
+
+    })
+    errs = [*errs, checkData(**args)]
+    print("check 11 ran - crabbiomass_length - multicol species") 
+
+    # #Check 10: if abundance >0 then there needs to be a corresponding record in length:
+    print("Start check custom 10")
+    groupcols = ['siteid', 'estuaryname', 'stationno', 'traptype', 'samplecollectiondate', 'scientificname', 'traplocation', 'replicate', 'projectid']
+    crabinvert_filtered = crabinvert[crabinvert["abundance"] > 0]
+
+    args.update({
+        "dataframe": crabinvert,
+        "tablename": "tbl_crabfishinvert_abundance",
+        "badrows" : mismatch(crabinvert_filtered, crabmass, groupcols),
+        "badcolumn": "siteid, estuaryname, stationno, traptype, samplecollectiondate, scientificname, traplocation, replicate, projectid",
+        "error_type": "Logic Error",
+        "error_message": "If fishabud > 0, then Records in crabinvert must have corresponding records in crabmass. Missing records in crabmass."
+    })
+    errs = [*errs, checkData(**args)]
+    print("check ran 10 - If abundance > 0, then there must be a corresponding record in length data")
+    ################################################
+
+
+
+
+
+
     # Example of appending an error (same logic applies for a warning)
     # args.update({
     #   "badrows": get_badrows(df[df.temperature != 'asdf']),
