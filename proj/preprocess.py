@@ -155,6 +155,19 @@ def fill_daubenmiremidpoint(all_dfs):
 
 def fill_commonname(all_dfs):
     print("### IN FILL COMMONNAME ###")
+    fishmacro_tbls = ['tbl_bruv_data',
+                      'tbl_crabbiomass_length',
+                      'tbl_crabfishinvert_abundance',
+                      'tbl_epifauna_data',
+                      'tbl_fish_abundance_data',
+                      'tbl_fish_length_data']
+    plant_tbls = ['tbl_algaecover_data',
+                  'tbl_floating_data',
+                  'tbl_savpercentcover_data',
+                  'tbl_vegetativecover_data']
+    benthic_tbls = ['tbl_benthicinfauna_abundance',
+                    'tbl_benthicinfauna_biomass',
+                    'tbl_benthiclarge_abundance']
     if 'tbl_fish_abundance_data' in all_dfs.keys():
         df = all_dfs['tbl_fish_abundance_data']
         lu_fishmacrospecies = pd.read_sql('SELECT commonname, scientificname FROM lu_fishmacrospecies', g.eng)
