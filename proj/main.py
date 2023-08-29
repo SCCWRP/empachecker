@@ -330,25 +330,9 @@ def main():
         try:
             custom_output = eval(match_dataset)(all_dfs)
             
-            # we define global custom checks are the checks that apply to multiple datatype.
+            # Duy: We define global custom checks are the checks that apply to multiple datatypes.
             # the goal is to extend the custom output dictionnary
-            # the output of global custom should look something like this
-            '''
-                global_custom_output = {
-                    'errors': 
-                        [
-                            {
-                                'table': 'tbl_fish_sample_metadata',
-                                'rows': [7],
-                                'columns': 'starttime,endtime',
-                                'error_type': 'Logic Error', 
-                                'is_core_error': False, 
-                                'error_message': 'StartTime/Endtime does not follow 24-hour format'
-                            },
-                        ],
-                    'warnings': []
-                }
-            '''
+            # the output of global custom should look the same as the custom_output
             # Then we can do custom_output.get('errors').extend(global_custom_output.get('errors))
             # and custom_output.get('warnings').extend(global_custom_output.get('warnings))
             global_custom_output = global_custom(all_dfs)
@@ -357,8 +341,6 @@ def main():
             custom_output.get('errors').extend(global_custom_output.get('errors'))
             custom_output.get('warnings').extend(global_custom_output.get('warnings'))
             
-
-
         except NameError as err:
             print("Error with custom checks")
             print(err)

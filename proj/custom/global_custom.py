@@ -26,7 +26,7 @@ def global_custom(all_dfs):
     #errs = [*errs, checkData(**args)]
 
     print("# GLOBAL CUSTOM CHECK - 1")
-    # Description: 
+    # Description: Siteid/estuaryname pair must match lookup list (multicolumn check)
     # Created Coder: 
     # Created Date: 
     # Last Edited Date: 
@@ -40,7 +40,7 @@ def global_custom(all_dfs):
 
     
     print("# GLOBAL CUSTOM CHECK - 2")
-    # Description: 
+    # Description: Scientificname/commoname pair for species must match lookup
     # Created Coder: 
     # Created Date: 
     # Last Edited Date: 
@@ -53,7 +53,7 @@ def global_custom(all_dfs):
 
 
     print("# GLOBAL CUSTOM CHECK - 3")
-    # Description: 
+    # Description: Scientificname/commoname/status for species must match lookup
     # Created Coder: 
     # Created Date: 
     # Last Edited Date: 
@@ -66,7 +66,7 @@ def global_custom(all_dfs):
 
 
     print("# GLOBAL CUSTOM CHECK - 4")
-    # Description: 
+    # Description: starttime should be entered in HH:MM format on 24-hour-clock
     # Created Coder: 
     # Created Date: 
     # Last Edited Date: 
@@ -79,7 +79,7 @@ def global_custom(all_dfs):
 
 
     print("# GLOBAL CUSTOM CHECK - 5")
-    # Description: 
+    # Description: endtime should be entered in HH:MM format on 24-hour-clock
     # Created Coder: 
     # Created Date: 
     # Last Edited Date: 
@@ -92,7 +92,7 @@ def global_custom(all_dfs):
 
 
     print("# GLOBAL CUSTOM CHECK - 6")
-    # Description: 
+    # Description: starttime must be before endtime
     # Created Coder: 
     # Created Date: 
     # Last Edited Date: 
@@ -105,7 +105,7 @@ def global_custom(all_dfs):
 
 
     print("# GLOBAL CUSTOM CHECK - 7")
-    # Description: 
+    # Description: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Time_Ele is required
     # Created Coder: 
     # Created Date: 
     # Last Edited Date: 
@@ -118,7 +118,7 @@ def global_custom(all_dfs):
 
 
     print("# GLOBAL CUSTOM CHECK - 8")
-    # Description: 
+    # Description: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_units is required
     # Created Coder: 
     # Created Date: 
     # Last Edited Date: 
@@ -131,7 +131,7 @@ def global_custom(all_dfs):
 
 
     print("# GLOBAL CUSTOM CHECK - 9")
-    # Description: 
+    # Description: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Corr is required
     # Created Coder: 
     # Created Date: 
     # Last Edited Date: 
@@ -144,7 +144,7 @@ def global_custom(all_dfs):
 
 
     print("# GLOBAL CUSTOM CHECK - 10")
-    # Description: 
+    # Description: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Datum is required
     # Created Coder: 
     # Created Date: 
     # Last Edited Date: 
