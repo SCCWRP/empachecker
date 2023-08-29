@@ -9,6 +9,10 @@ import time
 
 
 def global_custom(all_dfs):
+    '''
+        These checks apply to multiple datatypes. However, we need to carefully assert the tables to determine if a check is applicable to this datatype or not.
+        We should not make any assumptions about the data, like assuming 'starttime' column exists in a dataframe.
+    '''
     print("begin global custom checks")
     errs = []
     warnings = []
@@ -32,7 +36,7 @@ def global_custom(all_dfs):
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (): 
-    # NOTE (): 
+ 
     print("# END GLOBAL CUSTOM CHECK - 1")
 
 
@@ -46,7 +50,7 @@ def global_custom(all_dfs):
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (): 
-    # NOTE (): 
+
     print("# END GLOBAL CUSTOM CHECK - 2")
 
 
@@ -59,7 +63,7 @@ def global_custom(all_dfs):
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (): 
-    # NOTE (): 
+
     print("# END GLOBAL CUSTOM CHECK - 3")
 
 
@@ -72,7 +76,7 @@ def global_custom(all_dfs):
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (): 
-    # NOTE (): 
+
     print("# END GLOBAL CUSTOM CHECK - 4")
 
 
@@ -85,7 +89,7 @@ def global_custom(all_dfs):
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (): 
-    # NOTE (): 
+
     print("# END GLOBAL CUSTOM CHECK - 5")
 
 
@@ -98,7 +102,7 @@ def global_custom(all_dfs):
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (): 
-    # NOTE (): 
+
     print("# END GLOBAL CUSTOM CHECK - 6")
 
 
@@ -111,7 +115,7 @@ def global_custom(all_dfs):
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (): 
-    # NOTE (): 
+
     print("# END GLOBAL CUSTOM CHECK - 7")
 
 
@@ -124,7 +128,7 @@ def global_custom(all_dfs):
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (): 
-    # NOTE (): 
+
     print("# END GLOBAL CUSTOM CHECK - 8")
 
 
@@ -137,7 +141,7 @@ def global_custom(all_dfs):
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (): 
-    # NOTE (): 
+
     print("# END GLOBAL CUSTOM CHECK - 9")
 
 
@@ -150,7 +154,7 @@ def global_custom(all_dfs):
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (): 
-    # NOTE (): 
+
     print("# END GLOBAL CUSTOM CHECK - 10")
 
 
@@ -163,7 +167,7 @@ def global_custom(all_dfs):
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (): 
-    # NOTE (): 
+
     print("# END GLOBAL CUSTOM CHECK - 11")
 
 
