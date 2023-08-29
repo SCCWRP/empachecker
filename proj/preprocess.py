@@ -112,7 +112,6 @@ def fix_case(all_dfs: dict):
     print("END fix_case function")
     return all_dfs
 
-
 def fill_daubenmiremidpoint(all_dfs):
     if 'tbl_vegetativecover_data' in all_dfs.keys():
         df = all_dfs['tbl_vegetativecover_data']
@@ -153,6 +152,24 @@ def fill_daubenmiremidpoint(all_dfs):
         all_dfs['tbl_vegetativecover_data'] = df
 
     return all_dfs
+
+def fill_commonname(all_dfs):
+    print("### IN FILL COMMONNAME ###")
+    if 'tbl_fish_abundance_data' in all_dfs.keys():
+        df = all_dfs['tbl_fish_abundance_data']
+        lu_fishmacrospecies = pd.read_sql('SELECT commonname, scientificname FROM lu_fishmacrospecies', g.eng)
+
+        for index, row in df.iterrows():
+            if type(row['commonname']) != str:
+                sci_name = row['scientificname']
+                common_name = pd.read_sql(f"SELECT commonname FROM lu_fishmacrospecies WHERE scientificname = '{sci_name}'", g.eng).values.tolist()[0]
+                print(f'Corrected commonname: {common_name}')
+            else:
+                print(row['commonname'])
+
+        print("### FILL COMMONNAME DONE ###")
+    return all_dfs
+    
 
 def fix_projectid(all_dfs):
     '''
@@ -200,9 +217,10 @@ def clean_data(all_dfs):
     # Description: Match the value to lookup list value if case insensitivity is the only issue
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 08/18/23
-    # Last Edited Coder: Duy Nguyen
+    # Last Edited Date: 08/28/23
+    # Last Edited Coder: Caspian Thackeray
     # NOTE (08/17/23): Duy adjusts the format so it follows the coding standard.
+    # NOTE (08/28/23): This doesnt work for lu lists that are related indirectly to the table-- see QA screenshots
     all_dfs = fix_case(all_dfs)
     print("# end data cleaning - 2")
 
@@ -250,14 +268,14 @@ def clean_data(all_dfs):
     
     
     
-    
     print("# begin data filling - 2")
     # Description: fill commonname based on scientificname from appropriate lookup list
-    # Created Coder:  
-    # Created Date:  
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (08/17/23): 
+    # Created Coder: Caspian Thackeray
+    # Created Date:  08/28/23
+    # Last Edited Date: 08/28/23
+    # Last Edited Coder: Caspian Thackeray
+    # NOTE (08/17/23): Begin writing this check
+    all_dfs = fill_commonname(all_dfs)
     print("# end data filling - 2")
     
     

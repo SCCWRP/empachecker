@@ -28,9 +28,9 @@ def crabtrap(all_dfs):
     crabinvert = all_dfs['tbl_crabfishinvert_abundance']
     crabmass = all_dfs['tbl_crabbiomass_length']
 
-    crabmeta['badrows'] = crabmeta.index
-    crabinvert['badrows'] = crabinvert.index
-    crabmass['badrows'] = crabmass.index
+    crabmeta['tmp_row'] = crabmeta.index
+    crabinvert['tmp_row'] = crabinvert.index
+    crabmass['tmp_row'] = crabmass.index
 
     errs = []
     warnings = []
