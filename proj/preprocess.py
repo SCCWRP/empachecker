@@ -153,32 +153,37 @@ def fill_daubenmiremidpoint(all_dfs):
 
     return all_dfs
 
-def fill_commonname(all_dfs):
-    fishmacro_tbls = ['tbl_bruv_data',
-                      'tbl_crabbiomass_length',
-                      'tbl_crabfishinvert_abundance',
-                      'tbl_epifauna_data',
-                      'tbl_fish_abundance_data',
-                      'tbl_fish_length_data']
-    plant_tbls = ['tbl_algaecover_data',
-                  'tbl_floating_data',
-                  'tbl_savpercentcover_data',
-                  'tbl_vegetativecover_data']
-    # benthic_tbls = ['tbl_benthicinfauna_abundance',
-    #                 'tbl_benthicinfauna_biomass',
-    #                 'tbl_benthiclarge_abundance']
-    
-    all_tbls = {
-        'fishmacro_tbls': {
-            'tbls': fishmacro_tbls,
-            'lu_list': 'lu_fishmacrospecies'
-            },
-        'plant_tbls': {
-            'tbls': plant_tbls,
-            'lu_list': 'lu_plantspecies'
-            },
-    }
+fishmacro_tbls = [
+    'tbl_bruv_data',
+    'tbl_crabbiomass_length',
+    'tbl_crabfishinvert_abundance',
+    'tbl_epifauna_data',
+    'tbl_fish_abundance_data',
+    'tbl_fish_length_data'
+]
 
+plant_tbls = [
+    'tbl_algaecover_data',
+    'tbl_floating_data',
+    'tbl_savpercentcover_data',
+    'tbl_vegetativecover_data'
+]
+# benthic_tbls = ['tbl_benthicinfauna_abundance',
+#                 'tbl_benthicinfauna_biomass',
+#                 'tbl_benthiclarge_abundance']
+
+all_tbls = {
+    'fishmacro_tbls': {
+        'tbls': fishmacro_tbls,
+        'lu_list': 'lu_fishmacrospecies'
+        },
+    'plant_tbls': {
+        'tbls': plant_tbls,
+        'lu_list': 'lu_plantspecies'
+        },
+}
+
+def fill_commonname(all_dfs):
     for _, tbl_arr in all_tbls.items():
         lu_list = tbl_arr['lu_list']
         for tbl in tbl_arr['tbls']:
@@ -187,14 +192,45 @@ def fill_commonname(all_dfs):
                 for label, row in df.iterrows():
                     sci_name = row['scientificname']
                     com_name = row['commonname']
-                    # couldn't find a good way to check for nulls here so I went for a type check. I can't think of an edge case where this wouldn't work.
-                    # checks if commonname is empty and if scientific name has a value. skips if not. blank scientific name is caught by another check.
-                    if type(com_name) != str and type(sci_name) == str:
+                    if pd.isna(com_name) and pd.notna(sci_name):
                         common_name_df = pd.read_sql(f"SELECT commonname FROM {lu_list} WHERE scientificname = '{sci_name}'", g.eng)
                         new_common_name = str(common_name_df.iat[0,0])
                         df.loc[label, 'commonname'] = new_common_name
                         all_dfs[tbl] = df
                         print(f'filled common name for {sci_name} with {new_common_name}')
+    return all_dfs
+
+def fill_status(all_dfs):
+    for _, tbl_arr in all_tbls.items():
+        lu_list = tbl_arr['lu_list']
+        for tbl in tbl_arr['tbls']:
+            if tbl in all_dfs.keys():
+                df = all_dfs[tbl]
+                for label, row in df.iterrows():
+                    sci_name = row['scientificname']
+                    status = row['status']
+                    if pd.isna(status) and pd.notna(sci_name):
+                        status_df = pd.read_sql(f"SELECT status FROM {lu_list} WHERE scientificname = '{sci_name}'", g.eng)
+                        new_status = str(status_df.iat[0,0])
+                        df.loc[label, 'status'] = new_status
+                        all_dfs[tbl] = df
+                        print(f'filled status for {sci_name} with {new_status}')
+    return all_dfs
+
+def fill_area(all_dfs):
+    print('### IN FILL AREA')
+    if 'tbl_fish_sample_metadata' in all_dfs.keys():
+        df = all_dfs['tbl_fish_sample_metadata']
+        for label, row in df.iterrows():
+            area = row['area_m2']
+            length = row['seinelength_m']
+            distance = row['seinedistance_m']
+            if pd.isna(area):
+                if pd.notna(length) and pd.notna(distance):
+                    new_area = length * distance
+                    df.loc[label, 'area_m2'] = new_area
+                    all_dfs['tbl_fish_sample_metadata'] = df
+    print('### FILL AREA DONE')
     return all_dfs
     
 
@@ -311,11 +347,12 @@ def clean_data(all_dfs):
     
     print("# begin data filling - 3")
     # Description: fill status based on scienticficname,commonname from appropriate lookup lists
-    # Created Coder:  
-    # Created Date:  
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (08/17/23): 
+    # Created Coder: Caspian Thackeray
+    # Created Date:  08/29/23
+    # Last Edited Date: 08/29/23
+    # Last Edited Coder: Caspian Thackeray
+    # NOTE (08/29/23): Wrote this check
+    all_dfs = fill_status(all_dfs)
     print("# end data filling - 3")
     
     
@@ -323,11 +360,12 @@ def clean_data(all_dfs):
     
     print("# begin data filling - 4")
     # Description: fill the area_m2 column if it is empty. Formula: area_m2 = seinelength_m x seinedistance_m
-    # Created Coder:  
-    # Created Date:  
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (08/17/23): 
+    # Created Coder: Caspian Thackeray
+    # Created Date:  08/30/23
+    # Last Edited Date: 08/30/23
+    # Last Edited Coder: Caspian Thackeray
+    # NOTE (08/17/23): Wrote this check
+    all_dfs = fill_area(all_dfs)
     print("# end data filling - 4")
 
 
