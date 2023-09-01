@@ -743,7 +743,37 @@ def crabtrap(all_dfs):
     })
     errs = [*errs, checkData(**args)]
     print("check ran 10 - If abundance > 0, then there must be a corresponding record in length data")
+
+    # print("# CHECK - 17")
+    # Description: Replicate must be consecutive within a primary key  (🛑 ERROR 🛑)
+    # Created Coder: Ayah H
+    # Created Date: 09/01/2023
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (09/01/2023): Ayah H. coded added Check 17.
+
+    # crabmeta_pkey = list(get_primary_key('tbl_crabtrap_metadata', g.eng))
+    # def check_replicate(tablename,rep_column,pkeys):
+    #     badrows = []
+    #     for _, subdf in tablename.groupby([x for x in pkeys if x != rep_column]):
+    #             df = subdf.filter(items=[*pkeys,*['tmp_row']])
+    #             df = df.sort_values(by=f'{rep_column}').fillna(0)
+    #             rep_diff = df[f'{rep_column}'].diff().dropna()
+    #             all_values_are_one = (rep_diff == 1).all()
+    #             if not all_values_are_one:
+    #                 badrows.extend(df.tmp_row.tolist())
+    #     return badrows
     
+    # args.update({
+    #     "dataframe": crabmeta,
+    #     "tablename": "tbl_crabtrap_metadata",
+    #     "badrows" : check_replicate(crabmeta,'replicate',crabmeta_pkey),
+    #     "badcolumn": "replicate",
+    #     "error_type": "Replicate Error",
+    #     "error_message": "Replicate must be consecutive within a primary key."
+    # })
+    # errs = [*errs, checkData(**args)]
+    # print(" Check 17 ran - Replicate must be consecutive within a primary key.")
 
     # Disabling Time Check for Crab Trap to submit data.
     '''
