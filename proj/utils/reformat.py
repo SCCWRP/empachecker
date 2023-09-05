@@ -70,10 +70,11 @@ def read_minidot(minidot_path):
         lambda x: re.search(r"(?<=\().+?(?=\))", minidot_data[x.name[:-5]][0])[0] 
     )
 
-    minidot_data['raw_h2otemp_unit'] = minidot_data['raw_h2otemp_unit'].str.replace("deg ", "")
-
     minidot_data.drop(0, inplace = True) # drop first row, which is just units for each column
 
+    minidot_data['raw_do_unit'] = minidot_data['raw_do_unit'].apply(
+        lambda x: 'mg/L' if x == 'mg/l' else x
+    )
     minidot_data['samplecollectiontimestamp'] = pd.to_datetime(minidot_data['UTC_Date_&_Time'])
     minidot_data['samplecollectiontimezone'] = 'UTC'
     minidot_data[raw_columns] = minidot_data[raw_columns].astype('float64')
