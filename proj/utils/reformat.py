@@ -42,7 +42,7 @@ def read_minidot(minidot_path):
     # tab separated, but can sometimes be more than one tab
     # since regex, this uses python engine to parse through csv, which may be slow
     # tested, 3 times slower than c engine, but files won't be large enough for this to matter, I think
-    minidot_data = pd.read_csv(minidot_path, header = 5, usecols = [1,3,4,5,6], sep = '\t+', engine = 'python', encoding='utf-8')
+    minidot_data = pd.read_csv(minidot_path, header = 5, sep = '[\t,]+', engine = 'python', encoding='utf-8')
     minidot_data.columns = [column.strip() for column in minidot_data.columns]
     minidot_data = pd.concat([minidot_data, pd.DataFrame(columns=TEMPLATE_COLUMNS)])
 
