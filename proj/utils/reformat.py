@@ -104,6 +104,7 @@ def read_ctd(ctd_path):
         lambda x: ctd_data[template_to_raw_map[x.name]]
     )
 
+    ctd_data['sensorid'] = ctd_data['SerialNumber']
     ctd_data = ctd_data[TEMPLATE_COLUMNS]
 
     return ctd_data
@@ -154,6 +155,12 @@ def read_troll(troll_path):
             r"(?<=\().+?(?=\))", # get all characters within parentheses, excluding parentheses
             troll_data.columns[troll_data.columns.str.startswith(template_to_raw_map[x.name])][0]
         )[0]
+    )
+    troll_data['raw_h2otemp_unit'] = troll_data['raw_h2otemp_unit'].apply(
+        lambda x: f'deg {x}' if x in ['C', 'F'] else x
+    )
+    troll_data['raw_pressure_unit'] = troll_data['raw_pressure_unit'].apply(
+        lambda x: x.lower() if x == 'mBar' else x
     )
 
     troll_data = troll_data[TEMPLATE_COLUMNS]
@@ -215,7 +222,7 @@ def read_hydrolab(hydrolab_path):
             # is the unit word
             .rsplit(" (")[0].rsplit(" ")[-1]\
             # replace uncommon characters with common ones
-            .replace("µ", "u").replace(u"\N{DEGREE SIGN}", "")
+            .replace("µ", "u").replace(u"\N{DEGREE SIGN}", "deg")
     )
 
     hydrolab_data = hydrolab_data[TEMPLATE_COLUMNS]
