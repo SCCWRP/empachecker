@@ -153,3 +153,15 @@ def check_bad_time_format(value):
     
     correct_time_format =  r'^(0?[0-9]|1\d|2[0-3]):([0-5]\d)(:([0-5]\d))?$'
     return not bool(re.match(correct_time_format, str(value)))
+
+def check_replicate(tablename,rep_column,pkeys):
+    badrows = []
+    for _, subdf in tablename.groupby([x for x in pkeys if x != rep_column]):
+            df = subdf.filter(items=[*pkeys,*['tmp_row']])
+            df = df.sort_values(by=f'{rep_column}').fillna(0)
+            rep_diff = df[f'{rep_column}'].diff().dropna()
+            all_values_are_one = (rep_diff == 1).all()
+            if not all_values_are_one:
+                badrows.extend(df.tmp_row.tolist())
+    pkeys.remove(rep_column)
+    return badrows,pkeys
