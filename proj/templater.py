@@ -214,7 +214,6 @@ def template():
             xls[sheet_name].to_excel(writer, sheet_name=sheet_name, index=False) 
             worksheet = writer.sheets[sheet_name]
             for col_num, col_name in enumerate(xls[sheet_name].columns.values):
-                print(col_num, col_name)
                 if (col_name in all_pkeys) and (col_name not in all_fkeys):
                     worksheet.write(0, col_num, col_name, format_pkey)
                     worksheet.write_comment(0, col_num, column_comment.get(col_name, 'N/A'), options)
@@ -224,7 +223,6 @@ def template():
                     worksheet.write_comment(0, col_num, column_comment.get(col_name, 'N/A'), options)
                     worksheet.set_row(0, 170)
                 elif (col_name in all_fkeys) and (col_name in all_pkeys):
-                    print(column_comment.get(col_name, 'N/A'))
                     worksheet.write(0, col_num, col_name, format_pkey_fkey)
                     worksheet.write_comment(0, col_num, column_comment.get(col_name, 'N/A'), options)
                     worksheet.set_row(0, 170)            
