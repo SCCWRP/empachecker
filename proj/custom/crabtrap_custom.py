@@ -1,7 +1,7 @@
 from inspect import currentframe
 from flask import current_app, g
 import pandas as pd
-from .functions import checkData, checkLogic, mismatch, get_primary_key
+from .functions import checkData, checkLogic, mismatch, get_primary_key, check_replicate
 import re
 
 def crabtrap(all_dfs):
@@ -749,8 +749,10 @@ def crabtrap(all_dfs):
     # Created Coder: Ayah H
     # Created Date: 09/01/2023
     # Last Edited Date: 
-    # Last Edited Coder: 
+    # Last Edited Coder: Ayah H.
     # NOTE (09/01/2023): Ayah H. coded added Check 17.
+    # NOTE (09/05/2023): Ayah checked that the check works 
+    # NOTE (09/06/2023): Nick commented out so we could pull from github
 
     # crabmeta_pkey = list(get_primary_key('tbl_crabtrap_metadata', g.eng))
     # def check_replicate(tablename,rep_column,pkeys):
@@ -763,14 +765,14 @@ def crabtrap(all_dfs):
     #             if not all_values_are_one:
     #                 badrows.extend(df.tmp_row.tolist())
     #     return badrows
-    
+
     # args.update({
     #     "dataframe": crabmeta,
     #     "tablename": "tbl_crabtrap_metadata",
-    #     "badrows" : check_replicate(crabmeta,'replicate',crabmeta_pkey),
+    #     "badrows" : check_replicate(crabmeta,'replicate',crabmeta_pkey)[0],
     #     "badcolumn": "replicate",
     #     "error_type": "Replicate Error",
-    #     "error_message": "Replicate must be consecutive within a primary key."
+    #     "error_message": f"Replicate must be consecutive within{','.join(check_replicate(crabmeta,'replicate',crabmeta_pkey)[1])}."
     # })
     # errs = [*errs, checkData(**args)]
     # print(" Check 17 ran - Replicate must be consecutive within a primary key.")
