@@ -13,3 +13,5 @@ from .vegetation_custom import vegetation
 from .grab_field_custom import grab_field
 from .trash_custom import trash
 from .global_custom import global_custom
+from .logger_custom import logger_formatted, logger_meta, logger_raw
+from .toxicity_custom import toxicity
