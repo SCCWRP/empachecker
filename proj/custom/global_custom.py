@@ -9,6 +9,10 @@ import time
 
 
 def global_custom(all_dfs):
+    '''
+        These checks apply to multiple datatypes. However, we need to carefully assert the tables to determine if a check is applicable to this datatype or not.
+        We should not make any assumptions about the data, like assuming 'starttime' column exists in a dataframe.
+    '''
     print("begin global custom checks")
     lu_list_script_root = current_app.script_root
     errs = []
