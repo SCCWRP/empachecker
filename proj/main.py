@@ -11,7 +11,7 @@ from .preprocess import clean_data
 from .match import match
 from .core.core import core
 from .core.functions import fetch_meta
-from .utils.functions import check_time_format, check_elevation_fields
+from .utils.functions import  check_elevation_fields
 from .utils.generic import save_errors, correct_row_offset
 from .utils.excel import mark_workbook
 from .utils.exceptions import default_exception_handler
@@ -329,6 +329,8 @@ def main():
         # match_dataset is a string, which should also be the same as one of the function names imported from custom, so we can "eval" it
         try:
             custom_output = eval(match_dataset)(all_dfs)
+
+            print(f'Custom Output: {custom_output}')
             
             # Duy: We define global custom checks are the checks that apply to multiple datatypes.
             # the goal is to extend the custom output dictionnary

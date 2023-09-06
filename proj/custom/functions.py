@@ -1,5 +1,5 @@
-import json, os
-from pandas import isnull, DataFrame, read_sql, merge
+import json, os, re
+import pandas as pd
 
 def checkData(tablename, badrows, badcolumn, error_type, is_core_error = False, error_message = "Error", errors_list = [], q = None, **kwargs):
     
@@ -99,9 +99,9 @@ def mismatch(df1, df2, mergecols = None, left_mergecols = None, right_mergecols 
         raise Exception("In mismatch function - improper use of function - No merging columns are defined")
 
     if not tmp.empty:
-        badrows = tmp[isnull(tmp._present_)][row_identifier].tolist() \
+        badrows = tmp[pd.isnull(tmp._present_)][row_identifier].tolist() \
             if row_identifier not in (None, 'index') \
-            else tmp[isnull(tmp._present_)].index.tolist()
+            else tmp[pd.isnull(tmp._present_)].index.tolist()
     else:
         badrows = []
 
@@ -123,7 +123,7 @@ def get_primary_key(tablename, eng):
             AND tc.table_name = c.table_name AND ccu.column_name = c.column_name
         WHERE constraint_type = 'PRIMARY KEY' and tc.table_name = '{tablename}';
     """
-    pkey_df = read_sql(pkey_query, eng)
+    pkey_df = pd.read_sql(pkey_query, eng)
     
     pkey = pkey_df.column_name.tolist() if not pkey_df.empty else []
     
@@ -143,3 +143,13 @@ def multicol_lookup_check(df_to_check, lookup_df, check_cols, lookup_cols):
     merged = pd.merge(df_to_check, lookup_df, how="left", left_on=check_cols, right_on=lookup_cols)
     badrows = merged[pd.isnull(merged.match)].tmp_row.tolist()
     return(badrows)
+
+def check_bad_time_format(value):
+    """
+        Check if a value is in the format HH:MM or HH:MM:SS 24-hour
+    """
+    if value == "Not recorded":
+        return False
+    
+    correct_time_format =  r'^(0?[0-9]|1\d|2[0-3]):([0-5]\d)(:([0-5]\d))?$'
+    return not bool(re.match(correct_time_format, str(value)))
