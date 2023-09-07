@@ -96,7 +96,7 @@ def global_custom(all_dfs):
                 "error_type": "Value Error",
                 "is_core_error": False,
                 "error_message": f'''
-                    The scientificname/commonname entry did not match the lookup list 
+                    The scientificname-commonname-status entry did not match the lookup list 
                     <a href="/{lu_list_script_root}/scraper?action=help&layer={lu_list}" target="_blank">
                         {lu_list}
                     </a>.
