@@ -182,3 +182,25 @@ def check_replicate(tablename,rep_column,pkeys):
                 badrows.extend(df.tmp_row.tolist())
     pkeys.remove(rep_column)
     return badrows,pkeys
+
+def check_bad_start_end_time(start_time, end_time):
+    # note that this function returns True if the row of data is bad
+    # if the format is bad, don't consider them in this check, i.e. return False
+    if start_time == "Not recorded" or end_time == "Not recorded":
+        return False
+    if check_bad_time_format(start_time) or check_bad_time_format(end_time):
+        return False
+    # Timestamp uses the current date as the date if only a time is provided
+    # so, use UTC to avoid daylight savings issues
+    return pd.Timestamp(start_time, tz = "UTC") > pd.Timestamp(end_time, tz = "UTC")
+
+def check_elevation_columns(df, column):
+    return (
+        (
+            (~pd.isnull(df['elevation_ellipsoid']) & (df['elevation_ellipsoid'] != -88)) |
+            (~pd.isnull(df['elevation_orthometric']) & (df['elevation_orthometric'] != -88)) 
+        ) &
+        (
+            (pd.isnull(df[column]) | (df[column] == 'Not recorded') | (df[column] == ''))
+        )
+    )
