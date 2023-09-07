@@ -59,7 +59,7 @@ def vegetation(all_dfs):
 
     # Logic Check 1a: vegmeta records not found in vegdata
     print("begin logic check 1a sample_metadata records not found in vegetationcover_data ")
-    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'transectreplicate', 'habitat', 'projectid']
+    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'transectreplicate', 'projectid']
     args.update({
         "dataframe": vegmeta,
         "tablename": "tbl_vegetation_sample_metadata",
@@ -74,13 +74,14 @@ def vegetation(all_dfs):
 
     # Logic Check 1b: vegmeta records missing for records provided by vegdata
     # Note: checkLogic() did not output badrows properly for Logic Check 1b. 
+    #Note:  pkey do not include habitat anymore so it has been removedthat the groupcols // Ayah 08/08/2023
     print("begin logic check 1b: sample_metadata records missing for records provided in vegetationcover_data")
-    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'transectreplicate', 'habitat', 'projectid']
+    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'transectreplicate', 'projectid']
     args.update({
         "dataframe": vegdata,
         "tablename": "tbl_vegetativecover_data",
         "badrows": mismatch(vegdata, vegmeta, groupcols), 
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, transectreplicate, habitat, projectid",
+        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, transectreplicate,  projectid",
         "error_type": "Logic Error",
         "error_message": "Records in vegetationcover_data must have corresponding records in sample_metadata."
     })
@@ -188,11 +189,7 @@ def vegetation(all_dfs):
 
     #Check 5: If method is obs_plant, then latitude/longitude is not required (if value is not plant then lat and long are req, but if it is plant then lat and long can be -88)
     # print('begin check 5 vegetation:')
-    
-    #end check 5 
-
-    #Check 13: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Time_Ele is required
-    print("Check 13 fish seines begin:")
+    print("Check 5 begin:")
     args.update({
         "dataframe": vegmeta,
         "tablename": "tbl_vegetation_sample_metadata",
@@ -202,48 +199,62 @@ def vegetation(all_dfs):
         "error_message": "Elevation_time is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
     })
     errs = [*errs, checkData(**args)]
-    print('check 13 ran - ele_ellip or ele_ortho is reported then ele_time is required')
+    print('check 5 ran -If method is obs_plant, then latitude/longitude is not required (if value is not plant then lat and long are req, but if it is plant then lat and long can be -88)')    
+    #end check 5 
+
+    # #Check 13: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Time_Ele is required
+    # print("Check 13 begin:")
+    # args.update({
+    #     "dataframe": vegmeta,
+    #     "tablename": "tbl_vegetation_sample_metadata",
+    #     "badrows": vegmeta[(vegmeta['elevation_ellipsoid'].notna() | vegmeta['elevation_orthometric'].notna()) & ( vegmeta['elevation_time'].isna() | (vegmeta['elevation_time'] == -88))].tmp_row.tolist(),
+    #     "badcolumn": "elevation_time",
+    #     "error_type": "Empty value",
+    #     "error_message": "Elevation_time is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+    # })
+    # errs = [*errs, checkData(**args)]
+    # print('check 13 ran - ele_ellip or ele_ortho is reported then ele_time is required')
     
-    #Check 14: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_units is required
+    # #Check 14: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_units is required
    
-    print("begin check 13 vegetation")
-    args.update({
-        "dataframe": vegmeta,
-        "tablename": "tbl_vegetation_sample_metadata",
-        "badrows":vegmeta[(vegmeta['elevation_ellipsoid'].notna() | vegmeta['elevation_orthometric'].notna()) & ( vegmeta['elevation_units'].isna() | (vegmeta['elevation_units'] == -88))].tmp_row.tolist(),
-        "badcolumn": "elevation_units",
-        "error_type": "Empty value",
-        "error_message": "Elevation_units is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    })
-    errs = [*errs, checkData(**args)]
-    print('check 14 ran - ele_units required when ele_ellip and ele_ortho are reported')
+    # print("begin check 13 vegetation")
+    # args.update({
+    #     "dataframe": vegmeta,
+    #     "tablename": "tbl_vegetation_sample_metadata",
+    #     "badrows":vegmeta[(vegmeta['elevation_ellipsoid'].notna() | vegmeta['elevation_orthometric'].notna()) & ( vegmeta['elevation_units'].isna() | (vegmeta['elevation_units'] == -88))].tmp_row.tolist(),
+    #     "badcolumn": "elevation_units",
+    #     "error_type": "Empty value",
+    #     "error_message": "Elevation_units is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+    # })
+    # errs = [*errs, checkData(**args)]
+    # print('check 14 ran - ele_units required when ele_ellip and ele_ortho are reported')
 
-    #Check 15: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Corr is required
+    # #Check 15: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Corr is required
 
-    print('beging check 13 fishsienes:')
-    args.update({
-        "dataframe": vegmeta,
-        "tablename": "tbl_vegetation_sample_metadata",
-        "badrows":vegmeta[(~vegmeta['elevation_ellipsoid'].isna() | ~vegmeta['elevation_orthometric'].isna()) & ( vegmeta['elevation_corr'].isna() | (vegmeta['elevation_corr'] == -88))].tmp_row.tolist(),
-        "badcolumn": "elevation_corr",
-        "error_type": "Empty value",
-        "error_message": "Elevation_corr is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    })
-    errs = [*errs, checkData(**args)]
-    print('check 15 ran - ele_corr required when ele_ellip and ele_ortho are reported')
+    # print('beging check 13 fishsienes:')
+    # args.update({
+    #     "dataframe": vegmeta,
+    #     "tablename": "tbl_vegetation_sample_metadata",
+    #     "badrows":vegmeta[(~vegmeta['elevation_ellipsoid'].isna() | ~vegmeta['elevation_orthometric'].isna()) & ( vegmeta['elevation_corr'].isna() | (vegmeta['elevation_corr'] == -88))].tmp_row.tolist(),
+    #     "badcolumn": "elevation_corr",
+    #     "error_type": "Empty value",
+    #     "error_message": "Elevation_corr is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+    # })
+    # errs = [*errs, checkData(**args)]
+    # print('check 15 ran - ele_corr required when ele_ellip and ele_ortho are reported')
 
-    #Check 15: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Datum is required
-    print('begin check 16 vegetation:')
-    args.update({
-        "dataframe": vegmeta,
-        "tablename": "tbl_fish_sample_metadata",
-        "badrows":vegmeta[(~vegmeta['elevation_ellipsoid'].isna() | ~vegmeta['elevation_orthometric'].isna()) & ( vegmeta['elevation_datum'].isna() | (vegmeta['elevation_datum'] == -88))].tmp_row.tolist(),
-        "badcolumn": "elevation_datum",
-        "error_type": "Empty value",
-        "error_message": "Elevation_datum is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    })
-    errs = [*errs, checkData(**args)]
-    print('check 16 ran - elev_datum is required when ele_ellip and elev_ortho are reported')
+    # #Check 16: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Datum is required
+    # print('begin check 16 vegetation:')
+    # args.update({
+    #     "dataframe": vegmeta,
+    #     "tablename": "tbl_fish_sample_metadata",
+    #     "badrows":vegmeta[(~vegmeta['elevation_ellipsoid'].isna() | ~vegmeta['elevation_orthometric'].isna()) & ( vegmeta['elevation_datum'].isna() | (vegmeta['elevation_datum'] == -88))].tmp_row.tolist(),
+    #     "badcolumn": "elevation_datum",
+    #     "error_type": "Empty value",
+    #     "error_message": "Elevation_datum is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+    # })
+    # errs = [*errs, checkData(**args)]
+    # print('check 16 ran - elev_datum is required when ele_ellip and elev_ortho are reported')
 
 
     #Check 6: If EstimatedCover is -88, then PercentCoverCode must be provided (cannot be -88)

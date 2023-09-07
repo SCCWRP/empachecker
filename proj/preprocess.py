@@ -1,6 +1,3 @@
-# This file is for various utilities to preprocess data before core checks
-
-import tabnanny
 from flask import current_app, g
 import pandas as pd
 import re
@@ -8,7 +5,6 @@ import time
 import numpy as np
 
 def strip_whitespace(all_dfs: dict):
-    print("BEGIN Stripping whitespace function")
     for table_name in all_dfs.keys():
         #First get all the foreign keys columns
         meta = pd.read_sql(
@@ -42,11 +38,9 @@ def strip_whitespace(all_dfs: dict):
             lambda col: col.apply(lambda x: str(x).strip() if not pd.isnull(x) else x)
         )
         all_dfs[f"{table_name}"] = table_df
-    print("END Stripping whitespace function")
     return all_dfs
 
 def fix_case(all_dfs: dict):
-    print("BEGIN fix_case function")
     for table_name in all_dfs.keys():
         table_df = all_dfs[f'{table_name}'] 
     #Among all the varchar cols, only get the ones tied to the lookup list -- modified to only find lu_lists that are not of numeric types
@@ -113,20 +107,9 @@ def fix_case(all_dfs: dict):
         }
         table_df = table_df.replace(fix_case)                
         all_dfs[f'{table_name}'] = table_df
-    print("END fix_case function")
     return all_dfs
 
-
-#Ayah added a hardcodded check to the function below 07/19/2023
-
-# because every project will have those non-generalizable, one off, "have to hard code" kind of fixes
-# and this project is no exception
-
-
-def hardcoded_fixes(all_dfs):
-    print('harcoded fixes')
-    #fill in daubenmiremidpoint values if estimatedcover and percent cover code match in the table and lookup list
-    # Duy - only hardcoded fix if we see tbl_vegetativecover_data being submitted
+def fill_daubenmiremidpoint(all_dfs):
     if 'tbl_vegetativecover_data' in all_dfs.keys():
         df = all_dfs['tbl_vegetativecover_data']
         lu_estimatedcover = pd.read_sql('SELECT * from lu_estimatedcover', g.eng)
@@ -165,9 +148,238 @@ def hardcoded_fixes(all_dfs):
         )
         all_dfs['tbl_vegetativecover_data'] = df
 
-
-    print('end hardcoded fixes')
     return all_dfs
+
+fishmacro_tbls = [
+    'tbl_bruv_data',
+    'tbl_crabbiomass_length',
+    'tbl_crabfishinvert_abundance',
+    'tbl_epifauna_data',
+    'tbl_fish_abundance_data',
+    'tbl_fish_length_data'
+]
+
+plant_tbls = [
+    'tbl_algaecover_data',
+    'tbl_floating_data',
+    'tbl_savpercentcover_data',
+    'tbl_vegetativecover_data'
+]
+# benthic_tbls = ['tbl_benthicinfauna_abundance',
+#                 'tbl_benthicinfauna_biomass',
+#                 'tbl_benthiclarge_abundance']
+
+all_tbls = {
+    'fishmacro_tbls': {
+        'tbls': fishmacro_tbls,
+        'lu_list': 'lu_fishmacrospecies'
+        },
+    'plant_tbls': {
+        'tbls': plant_tbls,
+        'lu_list': 'lu_plantspecies'
+        },
+}
+
+def fill_commonname(all_dfs):
+    for _, tbl_arr in all_tbls.items():
+        lu_list = tbl_arr['lu_list']
+        for tbl in tbl_arr['tbls']:
+            if tbl in all_dfs.keys():
+                df = all_dfs[tbl]
+                for label, row in df.iterrows():
+                    sci_name = row['scientificname']
+                    com_name = row['commonname']
+                    if pd.isna(com_name) and pd.notna(sci_name):
+                        common_name_df = pd.read_sql(f"SELECT commonname FROM {lu_list} WHERE scientificname = '{sci_name}'", g.eng)
+                        new_common_name = str(common_name_df.iat[0,0])
+                        df.loc[label, 'commonname'] = new_common_name
+                        all_dfs[tbl] = df
+                        print(f'filled common name for {sci_name} with {new_common_name}')
+    return all_dfs
+
+def fill_status(all_dfs):
+    for _, tbl_arr in all_tbls.items():
+        lu_list = tbl_arr['lu_list']
+        for tbl in tbl_arr['tbls']:
+            if tbl in all_dfs.keys():
+                df = all_dfs[tbl]
+                for label, row in df.iterrows():
+                    sci_name = row['scientificname']
+                    status = row['status']
+                    if pd.isna(status) and pd.notna(sci_name):
+                        status_df = pd.read_sql(f"SELECT status FROM {lu_list} WHERE scientificname = '{sci_name}'", g.eng)
+                        new_status = str(status_df.iat[0,0])
+                        df.loc[label, 'status'] = new_status
+                        all_dfs[tbl] = df
+                        print(f'filled status for {sci_name} with {new_status}')
+    return all_dfs
+
+def fill_area(all_dfs):
+    if 'tbl_fish_sample_metadata' in all_dfs.keys():
+        df = all_dfs['tbl_fish_sample_metadata']
+        for label, row in df.iterrows():
+            area = row['area_m2']
+            length = row['seinelength_m']
+            distance = row['seinedistance_m']
+            if pd.isna(area):
+                if pd.notna(length) and pd.notna(distance):
+                    new_area = length * distance
+                    df.loc[label, 'area_m2'] = new_area
+                    all_dfs['tbl_fish_sample_metadata'] = df
+    return all_dfs
+    
+
+def fix_projectid(all_dfs):
+    '''
+    The function "fix_projectid" takes a dictionary of dataframes, modifies the 'projectid' column in each dataframe 
+    by replacing its value with 'Baja-rails' if the corresponding value in the 'siteid' column is 'Baja-SQ' or 'Baja-PB'. 
+    The final dictionary of modified dataframes is returned.
+    '''
+    for table_name in all_dfs.keys():
+        print(table_name)
+        table_df = all_dfs[table_name] 
+        if ('siteid' not in table_df.columns) | ('projectid' not in table_df.columns):
+            continue
+        table_df = table_df.assign(
+            projectid = table_df.apply(
+                lambda row: 'Baja-rails' if row['siteid'] in ['Baja-SQ','Baja-PB']
+                else row['projectid'],
+                axis=1
+            )
+        )
+        all_dfs[table_name] = table_df
+    return all_dfs
+
+
+
+def clean_data(all_dfs):
+    print("BEGIN preprocessing")
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------Clean Data ------------------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+    print("# begin data cleaning - 1")
+    # Description: Strip whitespaces for all values
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 08/18/23
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (08/17/23): Duy adjusts the format so it follows the coding standard.
+    all_dfs = strip_whitespace(all_dfs)
+    print("# end data cleaning - 1")
+    
+
+    print("# begin data cleaning - 2")
+    # Description: Match the value to lookup list value if case insensitivity is the only issue
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 08/28/23
+    # Last Edited Coder: Caspian Thackeray
+    # NOTE (08/17/23): Duy adjusts the format so it follows the coding standard.
+    # NOTE (08/28/23): This doesnt work for lu lists that are related indirectly to the table-- see QA screenshots
+    all_dfs = fix_case(all_dfs)
+    print("# end data cleaning - 2")
+
+
+    print("# begin data cleaning - 3")
+    # Description: Modifies the 'projectid' column in each dataframe by replacing its value with 'Baja-rails' if the corresponding value in the 'siteid' column is 'Baja-SQ' or 'Baja-PB'
+    # Created Coder: Nick L
+    # Created Date: Nick L
+    # Last Edited Date: 08/18/23
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (08/17/23): Duy adjusts the format so it follows the coding standard.
+    all_dfs = fix_projectid(all_dfs)
+    print("# end data cleaning - 3")
+
+
+    
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------END Clean Data ----------------------------------------------------#
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+    #--------------------------------------------------------------------------------------------------------------------#
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------Fill  Data ------------------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    print("# begin data filling - 1")
+    # Description: fill in daubenmiremidpoint values if estimatedcover and percent cover code match in the table and lookup list
+    # Created Coder: Ayah 
+    # Created Date: Ayah 
+    # Last Edited Date: 08/18/23
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (08/17/23): Duy adjusts the format so it follows the coding standard.
+    all_dfs = fill_daubenmiremidpoint(all_dfs)
+    print("# end data filling - 1")
+    
+    
+    
+    
+    print("# begin data filling - 2")
+    # Description: fill commonname based on scientificname from appropriate lookup list
+    # Created Coder: Caspian Thackeray
+    # Created Date:  08/28/23
+    # Last Edited Date: 08/29/23
+    # Last Edited Coder: Caspian Thackeray
+    # NOTE (08/28/23): Begin writing this check
+    # NOTE (08/29/23): Finished writing this check
+    all_dfs = fill_commonname(all_dfs)
+    print("# end data filling - 2")
+    
+    
+    
+    
+    print("# begin data filling - 3")
+    # Description: fill status based on scienticficname,commonname from appropriate lookup lists
+    # Created Coder: Caspian Thackeray
+    # Created Date:  08/29/23
+    # Last Edited Date: 08/29/23
+    # Last Edited Coder: Caspian Thackeray
+    # NOTE (08/29/23): Wrote this check
+    all_dfs = fill_status(all_dfs)
+    print("# end data filling - 3")
+    
+    
+    
+    
+    print("# begin data filling - 4")
+    # Description: fill the area_m2 column if it is empty. Formula: area_m2 = seinelength_m x seinedistance_m
+    # Created Coder: Caspian Thackeray
+    # Created Date:  08/30/23
+    # Last Edited Date: 08/30/23
+    # Last Edited Coder: Caspian Thackeray
+    # NOTE (08/17/23): Wrote this check
+    all_dfs = fill_area(all_dfs)
+    print("# end data filling - 4")
+
+
+    
+  
+    
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------End Fill  Data --------------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+    #--------------------------------------------------------------------------------------------------------------------#
+
+    print("END preprocessing")
+    return all_dfs
+
+
 
 
 
@@ -232,63 +444,3 @@ def fill_speciesnames(all_dfs):
     print("end fill species name")
     return all_dfs
 '''
-
-def fix_projectid(all_dfs):
-    '''
-    The function "fix_projectid" takes a dictionary of dataframes, modifies the 'projectid' column in each dataframe 
-    by replacing its value with 'Baja-rails' if the corresponding value in the 'siteid' column is 'Baja-SQ' or 'Baja-PB'. 
-    The final dictionary of modified dataframes is returned.
-    '''
-    for table_name in all_dfs.keys():
-        table_df = all_dfs[table_name] 
-        if 'siteid' not in table_df.columns:
-            continue
-        table_df = table_df.assign(
-            projectid = table_df.apply(
-                lambda row: 'Baja-rails' if row['siteid'] in ['Baja-SQ','Baja-PB']
-                else row['projectid'],
-                axis=1
-            )
-        )
-        all_dfs[table_name] = table_df
-    return all_dfs
-
-
-
-def clean_data(all_dfs):
-    print("begin preprocessing")
-    
-    print("before strip_whitespace")
-    all_dfs = strip_whitespace(all_dfs)
-    print("after strip_whitespace")
-
-    print("before fix case")
-    all_dfs = fix_case(all_dfs)  # fix for lookup list values too, match to the lookup list value if case insensitivity is the only issue
-    print("after fix case")
-
-    print("before fill_empty_cells")
-    # all_dfs = fill_empty_cells(all_dfs) # commenting out for now
-    # On 12/27/2022, I came here to comment out the function fill_empty_cells per Jan's request.
-    # However, I saw this function had been commented out before this by someone.
-    # As a result, the checker should not fill out primary key values with placeholders from now on - Duy
-    print("after fill_empty_cells")
-
-    
-    #all_dfs = clean_speciesnames(all_dfs)
-    #all_dfs = fill_speciesnames(all_dfs)
-    print("before fix_case")
-    # fix for lookup list values too, match to the lookup list value if case insensitivity is the only issue
-    all_dfs = fix_case(all_dfs)                
-    print("after fix_case")
-
-    print("before hardcoded_fixes")
-    all_dfs = hardcoded_fixes(all_dfs)
-    print("after hardcoded_fixes")
-
-    print("before fixing projectid")
-    all_dfs =  fix_projectid(all_dfs)
-    print("after fixing projectid")
-
-    print("end preprocessing")
-    return all_dfs
-

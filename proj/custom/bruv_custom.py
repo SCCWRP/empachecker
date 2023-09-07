@@ -181,19 +181,6 @@ def bruv_field(all_dfs):
 
     return {'errors': errs, 'warnings': warnings}
 
-    #Check 13: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_time is required
-    print("Check 13 begin:")
-    args.update({
-        "dataframe": bruvmeta,
-        "tablename": "tbl_bruv_metadata",
-        "badrows": bruvmeta[(~bruvmeta['elevation_ellipsoid'].isna() | ~bruvmeta['elevation_orthometric'].isna()) & ( bruvmeta['elevation_time'].isna() | (bruvmeta['elevation_time'] == -88))].tmp_row.tolist(),
-        "badcolumn": "elevation_time",
-        "error_type": "Empty value",
-        "error_message": "Elevation_time is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    })
-    errs = [*errs, checkData(**args)]
-
-    print('check 13 ran - ele_ellip or ele_ortho is reported then ele_time is required')
 
     # #Check 7: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_units is required
     # print("Check 7 begin:")

@@ -3,7 +3,7 @@
 from inspect import currentframe
 from flask import current_app, g
 import pandas as pd
-from .functions import checkData, mismatch
+from .functions import checkData, mismatch, get_primary_key
 
 def discretewq(all_dfs):
     
@@ -56,30 +56,48 @@ def discretewq(all_dfs):
     # })
     # errs = [*errs, checkData(**args)]
 
-    ############################### --Start of Logic Checks -- #############################################################
-    print("Begin WQ Logic Checks...")
-    # Logic Check 1: wq_metadata & wq_data
-    # Logic Check 1a: Each metadata must include corresponding data (wq_metdata records not found in wq_data)
-    print("Start logic check 1a")
+    #Check Format: 
+    #Description:
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: (09/05/2023)
+    # Last Edited Coder:
+    # NOTE (Date): Note
 
-
-
-
-    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'samplecollectiontime', 'profile', 'depth_m', 'projectid']
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ Discrete WQ Logic Checks ----------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################    print("Begin WQ Logic Checks...")
+    
+    print("START CHECK  1a")
+    #Description: Each metadata must include corresponding data (wq_metdata records not found in wq_data)
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 09/05/2023
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
+    groupcols = get_primary_key('tbl_waterquality_metadata',g.eng)
     args.update({
         "dataframe": watermeta,
         "tablename": "tbl_waterquality_metadata",
         "badrows": mismatch(watermeta, waterdata, groupcols),
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, samplecollectiontime, profile, depth_m, 'projectid'",
+        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, samplecollectiontime, profile, depth_m, projectid",
         "error_type": "Logic Error",
         "error_message": "Each record in WQ_metadata must have a corresponding record in WQ_data."
     })
     errs = [*errs, checkData(**args)]
     print("check ran - logic - wq_metadata records not found in wq_data")
-    print("End logic check 1a")
+    print("END CHECK check 1a")
 
-    # Logic Check 1b:Each data must include corresponding metadata(wq_metadata records missing for records provided by wq_data)
-    print("Start logic check 1b")
+
+    print("START CHECK 1b")
+    #Description: Each data must include corresponding metadata(wq_metadata records missing for records provided by wq_data)
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 09/05/2023
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
     args.update({
         "dataframe": waterdata,
         "tablename": "tbl_waterquality_data",
@@ -89,19 +107,34 @@ def discretewq(all_dfs):
         "error_message": "Records in WQ_data must have a corresponding record in WQ_metadata."
     })
     errs = [*errs, checkData(**args)]
-    print("check ran - logic - wq_metadata records missing for records provided by wq_data") #testing
-    print("End logic check 1b")
-    print("End WQ Logic Checks...")
-
-    # End Discrete WQ Logic Checks
-    ############################## -- End of logic checks --####################################################################
+    print("END CHECK 1b")
     
-    ############################### --Start of WaterQuality Metadata Checks -- #############################################################
-    print("Begin WaterQuality Metadata Checks...")
-
-    #check 2: Depth_m must be greater than or equal to 0
-    print("Start of WQ Metadata custom checks:")
-    print('begin discretewq-custom-check 2')
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ End Discrete WQ Logic Check ----------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+    
+    
+    
+    
+    
+    
+    
+    
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ WQ Metadata Custom Checks ----------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+    
+    print('START CHECK 2')
+    #Description: Depth_m must be greater than or equal to 0
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 09/05/2023
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
     args.update({
         "dataframe": watermeta,
         "tablename": 'tbl_waterquality_metadata',
@@ -111,78 +144,31 @@ def discretewq(all_dfs):
         "error_message" : "Your depth value must be larger than or equal to 0."
     })
     errs = [*errs, checkData(**args)]
-    print('begin discretewq-custom-check 2')
+    print('END CHECK 2')
     
-    #check 3: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Time_Ele is required // 
-    # NOTE @Duy/Robert I am assuming Time_Ele is elevation_time since there is no Time_Ele field -Aria      
-    print('begin discretewq-custom-check 3')
-    args.update({
-        "dataframe": watermeta,
-        "tablename": 'tbl_waterquality_metadata',
-        "badrows": watermeta[            
-            ((watermeta['elevation_ellipsoid'].notna()) | (watermeta['elevation_orthometric'].notna())) & (watermeta['elevation_time'].isna())
-        ].tmp_row.tolist(), 
-        "badcolumn": "elevation_time",
-        "error_type": "Missing Value",
-        "error_message" : "If Elevation_Ellipsoid or Elevation_Orthometric is reported, then elevation_time is required"
-    })
-    errs = [*errs, checkData(**args)]
-    print('end discretewq-custom-check 3')
-
-    #check 4: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_units is required     
-    print('begin discretewq-custom-check 4')
-    args.update({
-        "dataframe": watermeta,
-        "tablename": 'tbl_waterquality_metadata',
-        "badrows": watermeta[            
-            ((watermeta['elevation_ellipsoid'].notna()) | (watermeta['elevation_orthometric'].notna())) & (watermeta['elevation_units'].isna())
-        ].tmp_row.tolist(), 
-        "badcolumn": "elevation_units",
-        "error_type": "Missing Value",
-        "error_message" : "If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_units is required"
-    })
-    errs = [*errs, checkData(**args)]
-    print('end discretewq-custom-check 4')
-
-    #check 5: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Corr is required
-    print('begin discretewq-custom-check 5')
-    args.update({
-        "dataframe": watermeta,
-        "tablename": 'tbl_waterquality_metadata',
-        "badrows": watermeta[            
-            ((watermeta['elevation_ellipsoid'].notna()) | (watermeta['elevation_orthometric'].notna())) & (watermeta['elevation_corr'].isna())
-        ].tmp_row.tolist(), 
-        "badcolumn": "elevation_corr",
-        "error_type": "Missing Value",
-        "error_message" : "If Elevation_Ellipsoid or Elevation_Orthometric is reported, then elevation_corr is required"
-    })
-    errs = [*errs, checkData(**args)]
-    print('end discretewq-custom-check 5')    
     
-    #check 6: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Datum is required
-    print('begin discretewq-custom-check 6')
-    args.update({
-        "dataframe": watermeta,
-        "tablename": 'tbl_waterquality_metadata',
-        "badrows": watermeta[            
-            ((watermeta['elevation_ellipsoid'].notna()) | (watermeta['elevation_orthometric'].notna())) & (watermeta['elevation_datum'].isna())
-        ].tmp_row.tolist(), 
-        "badcolumn": "elevation_datum",
-        "error_type": "Missing Value",
-        "error_message" : "If Elevation_Ellipsoid or Elevation_Orthometric is reported, then elevation_datum is required"
-    })
-    errs = [*errs, checkData(**args)]
-    print('end discretewq-custom-check 6')     
-    print("End WaterQuality Metadata Checks...")
-
-    # End WaterQuality Metadata Checks
-    ############################## -- End of WaterQuality Metadata checks --####################################################################
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END WQ Metadata Custom Checks ----------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
     
-    ###################################################################################
-    print("Start of WaterQuality data custom checks: ")
 
-    # Check 7: Range for conductivity, with conductivity_units as uS/cm, must be between [0, 100] or -88
-    print('begin discretewq-custom-check 7')
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------  WQ Data Custom Checks ----------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+    
+    
+    print('START CHECK 7')
+    #Description:Range for conductivity, with conductivity_units as uS/cm, must be between [0, 100] or -88
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 09/05/2023
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
+
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
@@ -196,10 +182,15 @@ def discretewq(all_dfs):
         "error_message" : "If the conductivity unit is uS/cm, then conductivity values must be between 0 and 100."
     })
     errs = [*errs, checkData(**args)]
-    print('end discretewq-custom-check 7')
+    print('END CHECK 7')
 
-    # Check 8: Range for tds, with tds_units as ppt, must be between [0, 100] or -88
-    print('begin discretewq-custom-check 8')
+    print('START CHECK 8')
+    #Description:Range for tds, with tds_units as ppt, must be between [0, 100] or -88
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 09/05/2023
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
@@ -213,10 +204,15 @@ def discretewq(all_dfs):
         "error_message" : "If the tds unit is ppt, then tds values must be between 0 and 100."
     })
     errs = [*errs, checkData(**args)]
-    print('end discretewq-custom-check 8')
+    print('END CHECK 8')
 
-    # Check 9: Range for ph_teststrip must be within [1, 14] or -88
-    print('begin discretewq-custom-check 9')
+    print('START CHECK 9')
+    #Description: Range for ph_teststrip must be within [1, 14] or -88
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 09/05/2023
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
@@ -229,10 +225,16 @@ def discretewq(all_dfs):
         "error_message" : "ph_teststrip values must be between 1 and 14"
     })
     errs = [*errs, checkData(**args)]
-    print('end discretewq-custom-check 9')
+    print('END CHECK  9')
 
-    # Check 10: Range for ph_probe must be within [1, 14] or -88
-    print('begin discretewq-custom-check 10')
+    print('BEGIN CHECK  10')
+    # Description: Range for ph_probe must be within [1, 14] or -88
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 09/05/2023
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
+    
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
@@ -245,9 +247,16 @@ def discretewq(all_dfs):
         "error_message" : "ph_probe values must be between 1 and 14"
     })
     errs = [*errs, checkData(**args)]
-    print('end discretewq-custom-check 10')
-
-    # Check 11: Range for salinity, with salinity_units as ppt, must be between [0, 100] or -88 
+    print('END CHECK 10')
+    
+    print('START CHECK  11')
+    # Description: Range for salinity, with salinity_units as ppt, must be between [0, 100] or -88 
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 09/05/2023
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
+    
     print('begin discretewq-custom-check 11')
     args.update({
         "dataframe": waterdata,
@@ -262,16 +271,21 @@ def discretewq(all_dfs):
         "error_message" : "salinity values must be between 0 and 100" 
     })
     errs = [*errs, checkData(**args)]
-    print('end discretewq-custom-check 11')
+    print('END CHECK 11')
 
-    # Check 12: Range for do, with do_units as mg/l, must be within [0, 20] or -88
-    print('begin discretewq-custom-check 12')
+    print('START CHECK 12')
+    # Description:  Range for do, with do_units as mg/l, must be within [0, 20] or -88
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 09/05/2023
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
         "badrows": waterdata[
             (waterdata['do_mgl'] != -88) & 
-            (waterdata['do_units'] == 'mg/l') &
+            (waterdata['do_units'].str.lower() == 'mg/l') &
             (~waterdata['do_mgl'].between(0, 20))
         ].tmp_row.tolist(),
         "badcolumn": "do_mgl",
@@ -279,16 +293,21 @@ def discretewq(all_dfs):
         "error_message" : "do_mgl values must be between 0 and 20."
     })
     errs = [*errs, checkData(**args)]
-    print('check discretewq-custom-check 12')
+    print('END CHECK 12')
 
-    # Check 13: Range for airtemp, with airtemp_units as C, must be between [0, 50] or -88
-    print('begin discretewq-custom-check 13')
+    print('START CHECK 13')
+    # Description:  Range for airtemp, with airtemp_units as C, must be between [0, 50] or -88
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 09/05/2023
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
         "badrows": waterdata[
             (waterdata['airtemp'] != -88) &
-            (waterdata['airtemp_units'] == 'C') &
+            (waterdata['airtemp_units'].str.lower() == 'deg c') &
             (~waterdata['airtemp'].between(0, 50))
         ].tmp_row.tolist(),
         "badcolumn": "airtemp",
@@ -296,16 +315,21 @@ def discretewq(all_dfs):
         "error_message" : "If airtemp_unit is C, airtemp must be between 0 and 50."
     })
     errs = [*errs, checkData(**args)]
-    print('end discretewq-custom-check 13')
+    print('END CHECK 13')
 
-    # Check 14: Range for h2otemp, with h2otemp_units as C, must be between [0, 50] or -88
-    print('begin discretewq-custom-check 14')
+    print('BEGIN CHECK  14')
+    # Description:  Range for h2otemp, with h2otemp_units as C, must be between [0, 50] or -88
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 09/05/2023
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
         "badrows": waterdata[
             (waterdata['h2otemp'] != -88) &
-            (waterdata['h2otemp_units'] == 'C') &
+            (waterdata['h2otemp_units'].str.lower()== 'deg c') &
             (~waterdata['h2otemp'].between(0, 50))
         ].tmp_row.tolist(),
         "badcolumn": "h2otemp",
@@ -313,10 +337,16 @@ def discretewq(all_dfs):
         "error_message" : "If h2otemp_unit is C, h2otemp values must be between 0 and 50."
     })
     errs = [*errs, checkData(**args)]
-    print('end discretewq-custom-check 14')
+    print('END CHECK  14')
 
-    #check 15: If H2OTemp is reported, then H2OTemp_Units cannot be 'Not Recorded'
-    print('begin discretewq-custom-check 15')
+    
+    print('BEGIN CHECK 15')
+    # Description:  If H2OTemp is reported, then H2OTemp_Units cannot be 'Not Recorded'
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 09/05/2023
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
@@ -329,10 +359,16 @@ def discretewq(all_dfs):
         "error_message" : " If H2OTemp is reported, then H2OTemp_Units cannot be 'Not Recorded'"
     })
     errs = [*errs, checkData(**args)]
-    print('end discretewq-custom-check 15')    
+    print('END CHECK 15')    
 
-    #check 16: If AirTemp is reported, then AirTemp_Units cannot be 'Not Recorded'
-    print('begin discretewq-custom-check 16')
+    
+    print('START CHECK 16')
+    # Description: If AirTemp is reported, then AirTemp_Units cannot be 'Not Recorded'
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 09/05/2023
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
@@ -345,10 +381,15 @@ def discretewq(all_dfs):
         "error_message" : " If AirTemp is reported, then AirTemp_Units cannot be 'Not Recorded'"
     })
     errs = [*errs, checkData(**args)]
-    print('end discretewq-custom-check 16')  
+    print('END CHECK 16')  
 
-    #check 17: If DO_mgL is reported, then DO_Units cannot be 'Not Recorded'
-    print('begin discretewq-custom-check 17')
+    print('BEGIN CHECK 17')
+    # Description: If DO_mgL is reported, then DO_Units cannot be 'Not Recorded'
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 09/05/2023
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
@@ -361,10 +402,15 @@ def discretewq(all_dfs):
         "error_message" : "If DO_mgL is reported, then DO_Units cannot be 'Not Recorded'"
     })
     errs = [*errs, checkData(**args)]
-    print('end discretewq-custom-check 17')   
+    print('END CHECK 17')   
 
-    #check 18: If Salinity is reported, then Salinity_Units cannot be 'Not Recorded'    
-    print('begin discretewq-custom-check 18')
+    print('START CHECK 18')
+    # Description:  If Salinity is reported, then Salinity_Units cannot be 'Not Recorded'    
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 09/05/2023
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
@@ -377,10 +423,15 @@ def discretewq(all_dfs):
         "error_message" : "If Salinity is reported, then Salinity_Units cannot be 'Not Recorded'"
     })
     errs = [*errs, checkData(**args)]
-    print('end discretewq-custom-check 18') 
+    print('END CHECK 18') 
 
-    #check 19: If TDS_ppt is reported, then TDS_Units cannot be 'Not Recorded'
-    print('begin discretewq-custom-check 19')
+    print('START CHECK 19')
+    # Description:  If TDS_ppt is reported, then TDS_Units cannot be 'Not Recorded'
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 09/05/2023
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
@@ -393,10 +444,16 @@ def discretewq(all_dfs):
         "error_message" : " If TDS is reported, then TDS_Units cannot be 'Not Recorded'"
     })
     errs = [*errs, checkData(**args)]
-    print('end discretewq-custom-check 19')   
+    print('END CHECK 19')   
 
-    #check 20: If Conductivity is reported, then Conductivity_Units cannot be 'Not Recorded'
-    print('begin discretewq-custom-check 20')
+    
+    print('START CHECK 20')
+    # Description:  If Conductivity is reported, then Conductivity_Units cannot be 'Not Recorded'
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 09/05/2023
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
@@ -409,12 +466,15 @@ def discretewq(all_dfs):
         "error_message" : "If Conductivity is reported, then Conductivity_Units cannot be 'Not Recorded'"
     })
     errs = [*errs, checkData(**args)]
-    print('end discretewq-custom-check 20')  
+    print('END CHECK 20')  
 
-    print("End of WaterQuality data custom checks! ")
-    ###################################################################################
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # --------------------------------------------- END WQ Data Custom Checks --------------------------------------------#
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
 
-    print("-------------done custom check----------")
+    print("-------------End of Discrete WQ Custom Check ----------")
     
     
     

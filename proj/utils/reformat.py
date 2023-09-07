@@ -42,7 +42,7 @@ def read_minidot(minidot_path):
     # tab separated, but can sometimes be more than one tab
     # since regex, this uses python engine to parse through csv, which may be slow
     # tested, 3 times slower than c engine, but files won't be large enough for this to matter, I think
-    minidot_data = pd.read_csv(minidot_path, header = 5, usecols = [1,3,4,5,6], sep = '\t+', engine = 'python', encoding='utf-8')
+    minidot_data = pd.read_csv(minidot_path, header = 5, sep = '[\t,]+', engine = 'python', encoding='utf-8')
     minidot_data.columns = [column.strip() for column in minidot_data.columns]
     minidot_data = pd.concat([minidot_data, pd.DataFrame(columns=TEMPLATE_COLUMNS)])
 
@@ -70,10 +70,16 @@ def read_minidot(minidot_path):
         lambda x: re.search(r"(?<=\().+?(?=\))", minidot_data[x.name[:-5]][0])[0] 
     )
 
+<<<<<<< HEAD
     # minidot_data['raw_h2otemp_unit'] = minidot_data['raw_h2otemp_unit']
 
+=======
+>>>>>>> dev
     minidot_data.drop(0, inplace = True) # drop first row, which is just units for each column
 
+    minidot_data['raw_do_unit'] = minidot_data['raw_do_unit'].apply(
+        lambda x: 'mg/L' if x == 'mg/l' else x
+    )
     minidot_data['samplecollectiontimestamp'] = pd.to_datetime(minidot_data['UTC_Date_&_Time'])
     minidot_data['samplecollectiontimezone'] = 'UTC'
     minidot_data[raw_columns] = minidot_data[raw_columns].astype('float64')
@@ -103,6 +109,7 @@ def read_ctd(ctd_path):
         lambda x: ctd_data[template_to_raw_map[x.name]]
     )
 
+    ctd_data['sensorid'] = ctd_data['SerialNumber']
     ctd_data = ctd_data[TEMPLATE_COLUMNS]
 
     return ctd_data
@@ -153,6 +160,12 @@ def read_troll(troll_path):
             r"(?<=\().+?(?=\))", # get all characters within parentheses, excluding parentheses
             troll_data.columns[troll_data.columns.str.startswith(template_to_raw_map[x.name])][0]
         )[0]
+    )
+    troll_data['raw_h2otemp_unit'] = troll_data['raw_h2otemp_unit'].apply(
+        lambda x: f'deg {x}' if x in ['C', 'F'] else x
+    )
+    troll_data['raw_pressure_unit'] = troll_data['raw_pressure_unit'].apply(
+        lambda x: x.lower() if x == 'mBar' else x
     )
 
     troll_data = troll_data[TEMPLATE_COLUMNS]
@@ -214,7 +227,7 @@ def read_hydrolab(hydrolab_path):
             # is the unit word
             .rsplit(" (")[0].rsplit(" ")[-1]\
             # replace uncommon characters with common ones
-            .replace("µ", "u").replace(u"\N{DEGREE SIGN}", "")
+            .replace("µ", "u").replace(u"\N{DEGREE SIGN}", "deg")
     )
 
     hydrolab_data = hydrolab_data[TEMPLATE_COLUMNS]

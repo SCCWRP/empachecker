@@ -164,63 +164,6 @@ def sav(all_dfs):
     lookup_cols = ['scientificname', 'commonname']
 
     badrows = multicol_lookup_check(savper, lu_species, check_cols, lookup_cols)
-
-    #Check 6: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_time is required
-    print("Check 6 begin:")
-    args.update({
-        "dataframe": savmeta,
-        "tablename": "tbl_sav_metadata",
-        "badrows": savmeta[(~savmeta['elevation_ellipsoid'].isna() | ~savmeta['elevation_orthometric'].isna()) & ( savmeta['elevation_time'].isna() | (savmeta['elevation_time'] == -88))].tmp_row.tolist(),
-        "badcolumn": "elevation_time",
-        "error_type": "Empty value",
-        "error_message": "Elevation_time is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    })
-    errs = [*errs, checkData(**args)]
-
-    print('check 6 ran - ele_ellip or ele_ortho is reported then ele_time is required')
-
-    #Check 7: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_units is required
-    print("Check 7 begin:")
-    args.update({
-        "dataframe": savmeta,
-        "tablename": "tbl_sav_metadata",
-        "badrows": savmeta[(~savmeta['elevation_ellipsoid'].isna() | ~savmeta['elevation_orthometric'].isna()) & ( savmeta['elevation_units'].isna() | (savmeta['elevation_units'] == -88))].tmp_row.tolist(),
-        "badcolumn": "elevation_units",
-        "error_type": "Empty value",
-        "error_message": "Elevation_units is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    })
-    errs = [*errs, checkData(**args)]
-
-    print('check 7 ran - ele_ellip or ele_ortho is reported then ele_units is required')
-
-    #Check 8: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Corr is required
-    print("Check 8 begin:")
-    args.update({
-        "dataframe": savmeta,
-        "tablename": "tbl_sav_metadata",
-        "badrows": savmeta[(~savmeta['elevation_ellipsoid'].isna() | ~savmeta['elevation_orthometric'].isna()) & ( savmeta['elevation_corr'].isna() | (savmeta['elevation_corr'] == -88))].tmp_row.tolist(),
-        "badcolumn": "Elevation_Corr",
-        "error_type": "Empty value",
-        "error_message": "Elevation_Corr is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    })
-    errs = [*errs, checkData(**args)]
-
-    print('check 8 ran - ele_ellip or ele_ortho is reported then Elevation_Corr is required')
-
-    #Check 9: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Datum is required
-    print("Check 9 begin:")
-    args.update({
-        "dataframe": savmeta,
-        "tablename": "tbl_sav_metadata",
-        "badrows": savmeta[(~savmeta['elevation_ellipsoid'].isna() | ~savmeta['elevation_orthometric'].isna()) & ( savmeta['elevation_datum'].isna() | (savmeta['elevation_datum'] == -88))].tmp_row.tolist(),
-        "badcolumn": "Elevation_Datum",
-        "error_type": "Empty value",
-        "error_message": "Elevation_Datum is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    })
-    errs = [*errs, checkData(**args)]
-
-    print('check 9 ran - ele_ellip or ele_ortho is reported then Elevation_Datum is required')
-
     
     args.update({
         "dataframe": savper,
@@ -236,5 +179,61 @@ def sav(all_dfs):
     errs = [*errs, checkData(**args)]
     print("check 5 ran - savpercentcover_data - multicol species")
     print("END check 5")
-    
+
+    # #Check 6: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_time is required
+    # print("Check 6 begin:")
+    # args.update({
+    #     "dataframe": savmeta,
+    #     "tablename": "tbl_sav_metadata",
+    #     "badrows": savmeta[(~savmeta['elevation_ellipsoid'].isna() | ~savmeta['elevation_orthometric'].isna()) & ( savmeta['elevation_time'].isna() | (savmeta['elevation_time'] == -88))].tmp_row.tolist(),
+    #     "badcolumn": "elevation_time",
+    #     "error_type": "Empty value",
+    #     "error_message": "Elevation_time is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+    # })
+    # errs = [*errs, checkData(**args)]
+
+    # print('check 6 ran - ele_ellip or ele_ortho is reported then ele_time is required')
+
+    # #Check 7: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_units is required
+    # print("Check 7 begin:")
+    # args.update({
+    #     "dataframe": savmeta,
+    #     "tablename": "tbl_sav_metadata",
+    #     "badrows": savmeta[(~savmeta['elevation_ellipsoid'].isna() | ~savmeta['elevation_orthometric'].isna()) & ( savmeta['elevation_units'].isna() | (savmeta['elevation_units'] == -88))].tmp_row.tolist(),
+    #     "badcolumn": "elevation_units",
+    #     "error_type": "Empty value",
+    #     "error_message": "Elevation_units is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+    # })
+    # errs = [*errs, checkData(**args)]
+
+    # print('check 7 ran - ele_ellip or ele_ortho is reported then ele_units is required')
+
+    # #Check 8: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Corr is required
+    # print("Check 8 begin:")
+    # args.update({
+    #     "dataframe": savmeta,
+    #     "tablename": "tbl_sav_metadata",
+    #     "badrows": savmeta[(~savmeta['elevation_ellipsoid'].isna() | ~savmeta['elevation_orthometric'].isna()) & ( savmeta['elevation_corr'].isna() | (savmeta['elevation_corr'] == -88))].tmp_row.tolist(),
+    #     "badcolumn": "Elevation_Corr",
+    #     "error_type": "Empty value",
+    #     "error_message": "Elevation_Corr is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+    # })
+    # errs = [*errs, checkData(**args)]
+
+    # print('check 8 ran - ele_ellip or ele_ortho is reported then Elevation_Corr is required')
+
+    # #Check 9: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Datum is required
+    # print("Check 9 begin:")
+    # args.update({
+    #     "dataframe": savmeta,
+    #     "tablename": "tbl_sav_metadata",
+    #     "badrows": savmeta[(~savmeta['elevation_ellipsoid'].isna() | ~savmeta['elevation_orthometric'].isna()) & ( savmeta['elevation_datum'].isna() | (savmeta['elevation_datum'] == -88))].tmp_row.tolist(),
+    #     "badcolumn": "Elevation_Datum",
+    #     "error_type": "Empty value",
+    #     "error_message": "Elevation_Datum is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+    # })
+    # errs = [*errs, checkData(**args)]
+
+    # print('check 9 ran - ele_ellip or ele_ortho is reported then Elevation_Datum is required')
+
     return {'errors': errs, 'warnings': warnings}

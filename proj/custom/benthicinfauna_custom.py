@@ -3,7 +3,7 @@
 from inspect import currentframe
 from flask import current_app, g
 import pandas as pd
-from .functions import checkData
+from .functions import checkData, mismatch
 import re
 
 def benthicinfauna_field(all_dfs):
@@ -219,7 +219,7 @@ def benthicinfauna_lab(all_dfs):
 
     #check 3: Each abundance data must include corresponding labbatch data within session submission
     print("begin check 3")
-    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'samplelocation', 'scientificname', 'fieldreplicate', 'projectid']
+    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'samplelocation', 'fieldreplicate', 'projectid']
     args.update({
         "dataframe": benthicabundance,
         "tablename": "tbl_benthicinfauna_abundance",

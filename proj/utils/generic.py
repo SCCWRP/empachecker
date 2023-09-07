@@ -6,6 +6,7 @@ from inspect import currentframe
 # a function used to collect the warnings to store in database
 # in other words, if a user submitted flagged data we want to store that information somewhere in the database to make it easier to hunt down flagged data
 def collect_error_messages(errs):
+    print("# IN collect_error_messages")
     """
     errs is the list of errors or warnings that were collected during the checking process
     offset is the number of rows the excel files are offsetted, based on how the people set up their data submission templates
@@ -47,7 +48,7 @@ def collect_error_messages(errs):
 
     #print("output from generic.py after groupby: ")
     #print(output)
-    
+    print("# collect_error_messages DONE")
     return [{'row_number': k[0], 'table': k[1], 'message': v} for k, v in output.items()]
 
 
@@ -77,11 +78,13 @@ def correct_row_offset(lst, offset):
 
 
 def save_errors(errs, filepath):
+    print("# IN SAVE ERRORS")
+    print(errs)
     errors_file = open(filepath, 'w')
     dump(
         collect_error_messages(errs),
         errors_file
     )
     errors_file.close()
-
+    print("# SAVE ERRORS DONE")
 

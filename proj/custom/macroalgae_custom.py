@@ -167,61 +167,61 @@ def macroalgae(all_dfs):
     print("check ran - positive transectreplicate - algaecover")
     print('end check 3')
 
-    #Check 16: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_time is required
-    print("Check 16 begin:")
-    args.update({
-        "dataframe": algaemeta,
-        "tablename": "tbl_macroalgae_sample_metadata",
-        "badrows": algaemeta[(~algaemeta['elevation_ellipsoid'].isna() | ~algaemeta['elevation_orthometric'].isna()) & ( algaemeta['elevation_time'].isna() | (algaemeta['elevation_time'] == -88))].tmp_row.tolist(),
-        "badcolumn": "elevation_time",
-        "error_type": "Empty value",
-        "error_message": "Elevation_time is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    })
-    errs = [*errs, checkData(**args)]
+    # #Check 16: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_time is required
+    # print("Check 16 begin:")
+    # args.update({
+    #     "dataframe": algaemeta,
+    #     "tablename": "tbl_macroalgae_sample_metadata",
+    #     "badrows": algaemeta[(~algaemeta['elevation_ellipsoid'].isna() | ~algaemeta['elevation_orthometric'].isna()) & ( algaemeta['elevation_time'].isna() | (algaemeta['elevation_time'] == -88))].tmp_row.tolist(),
+    #     "badcolumn": "elevation_time",
+    #     "error_type": "Empty value",
+    #     "error_message": "Elevation_time is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+    # })
+    # errs = [*errs, checkData(**args)]
 
-    print('check 16 ran - ele_ellip or ele_ortho is reported then ele_time is required')
+    # print('check 16 ran - ele_ellip or ele_ortho is reported then ele_time is required')
 
-    #Check 17: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_units is required
-    print("Check 17 begin:")
-    args.update({
-        "dataframe": algaemeta,
-        "tablename": "tbl_macroalgae_sample_metadata",
-        "badrows": algaemeta[(~algaemeta['elevation_ellipsoid'].isna() | ~algaemeta['elevation_orthometric'].isna()) & ( algaemeta['elevation_units'].isna() | (algaemeta['elevation_units'] == -88))].tmp_row.tolist(),
-        "badcolumn": "elevation_units",
-        "error_type": "Empty value",
-        "error_message": "Elevation_units is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    })
-    errs = [*errs, checkData(**args)]
+    # #Check 17: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_units is required
+    # print("Check 17 begin:")
+    # args.update({
+    #     "dataframe": algaemeta,
+    #     "tablename": "tbl_macroalgae_sample_metadata",
+    #     "badrows": algaemeta[(~algaemeta['elevation_ellipsoid'].isna() | ~algaemeta['elevation_orthometric'].isna()) & ( algaemeta['elevation_units'].isna() | (algaemeta['elevation_units'] == -88))].tmp_row.tolist(),
+    #     "badcolumn": "elevation_units",
+    #     "error_type": "Empty value",
+    #     "error_message": "Elevation_units is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+    # })
+    # errs = [*errs, checkData(**args)]
 
-    print('check 17 ran - ele_ellip or ele_ortho is reported then ele_units is required')
+    # print('check 17 ran - ele_ellip or ele_ortho is reported then ele_units is required')
 
-    #Check 18: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Corr is required
-    print("Check 18 begin:")
-    args.update({
-        "dataframe": algaemeta,
-        "tablename": "tbl_macroalgae_sample_metadata",
-        "badrows": algaemeta[(~algaemeta['elevation_ellipsoid'].isna() | ~algaemeta['elevation_orthometric'].isna()) & ( algaemeta['elevation_corr'].isna() | (algaemeta['elevation_corr'] == -88))].tmp_row.tolist(),
-        "badcolumn": "Elevation_Corr",
-        "error_type": "Empty value",
-        "error_message": "Elevation_Corr is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    })
-    errs = [*errs, checkData(**args)]
+    # #Check 18: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Corr is required
+    # print("Check 18 begin:")
+    # args.update({
+    #     "dataframe": algaemeta,
+    #     "tablename": "tbl_macroalgae_sample_metadata",
+    #     "badrows": algaemeta[(~algaemeta['elevation_ellipsoid'].isna() | ~algaemeta['elevation_orthometric'].isna()) & ( algaemeta['elevation_corr'].isna() | (algaemeta['elevation_corr'] == -88))].tmp_row.tolist(),
+    #     "badcolumn": "Elevation_Corr",
+    #     "error_type": "Empty value",
+    #     "error_message": "Elevation_Corr is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+    # })
+    # errs = [*errs, checkData(**args)]
 
-    print('check 18 ran - ele_ellip or ele_ortho is reported then Elevation_Corr is required')
+    # print('check 18 ran - ele_ellip or ele_ortho is reported then Elevation_Corr is required')
 
-    #Check 19: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Datum is required
-    print("Check 19 begin:")
-    args.update({
-        "dataframe": algaemeta,
-        "tablename": "tbl_macroalgae_sample_metadata",
-        "badrows": algaemeta[(~algaemeta['elevation_ellipsoid'].isna() | ~algaemeta['elevation_orthometric'].isna()) & ( algaemeta['elevation_datum'].isna() | (algaemeta['elevation_datum'] == -88))].tmp_row.tolist(),
-        "badcolumn": "Elevation_Datum",
-        "error_type": "Empty value",
-        "error_message": "Elevation_Datum is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    })
-    errs = [*errs, checkData(**args)]
+    # #Check 19: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Datum is required
+    # print("Check 19 begin:")
+    # args.update({
+    #     "dataframe": algaemeta,
+    #     "tablename": "tbl_macroalgae_sample_metadata",
+    #     "badrows": algaemeta[(~algaemeta['elevation_ellipsoid'].isna() | ~algaemeta['elevation_orthometric'].isna()) & ( algaemeta['elevation_datum'].isna() | (algaemeta['elevation_datum'] == -88))].tmp_row.tolist(),
+    #     "badcolumn": "Elevation_Datum",
+    #     "error_type": "Empty value",
+    #     "error_message": "Elevation_Datum is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+    # })
+    # errs = [*errs, checkData(**args)]
 
-    print('check 19 ran - ele_ellip or ele_ortho is reported then Elevation_Datum is required')
+    # print('check 19 ran - ele_ellip or ele_ortho is reported then Elevation_Datum is required')
 
     # Check 10: plotreplicate must be positive or -88 for tbl_algaecover_data
     print('begin check 10')

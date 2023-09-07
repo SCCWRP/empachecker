@@ -5,7 +5,7 @@ from flask import current_app, g
 import datetime as dt
 import pandas as pd
 from datetime import date
-from .functions import checkData,mismatch
+from .functions import checkData, mismatch
 
 def feldspar(all_dfs):
     
@@ -115,8 +115,22 @@ def feldspar(all_dfs):
     }
 
     #check 3: if plug_extracted = yes then corresponding data
+    print('Start check 3')
+    feldmeta_filter = feldmeta[feldmeta['plug_extracted'] == 'yes']
 
-    
+    groupcols = ['siteid','estuaryname', 'samplecollectiondate','stationno','projectid']
+    args = {
+        "dataframe": feldmeta,
+        "tablename": 'tbl_feldspar_metadata',
+        "badrows": mismatch(feldmeta_filter, felddata, groupcols),
+        "badcolumn": "plug_extracted ",
+        "error_type": "Value Error",
+        "is_core_error": False,
+        "error_message": "if plug_extracted = yes then corresponding data"
+    }
+    errs = [*errs, checkData(**args)]
+    print('End of check 3 ')
+
     # Example of appending an error (same logic applies for a warning)
     # args.update({
     #   "badrows": get_badrows(df[df.temperature != 'asdf']),

@@ -10,7 +10,8 @@ from pathlib import Path
 from .preprocess import clean_data
 from .match import match
 from .core.core import core
-from .core.functions import fetch_meta, check_time_format
+from .core.functions import fetch_meta
+from .utils.functions import  check_elevation_fields
 from .utils.generic import save_errors, correct_row_offset
 from .utils.excel import mark_workbook
 from .utils.exceptions import default_exception_handler
@@ -137,7 +138,7 @@ def main():
             
             if ((sheet not in current_app.tabs_to_ignore) and (not sheet.startswith('lu_')))
         }
-        
+    print(all_dfs)
     assert len(all_dfs) > 0, f"submissionid - {session.get('submissionid')} all_dfs is empty"
     
     for tblname in all_dfs.keys():
@@ -203,15 +204,19 @@ def main():
     #  We want to limit the manual cleaning of the data that the user has to do
     #  This function will strip whitespace on character fields and fix columns to match lookup lists if they match (case insensitive)
 
-    print("preprocessing and cleaning data")
+    print("begin preprocessing")
     # We are not sure if we want to do this
     # some projects like bight prohibit this
     if match_dataset != 'logger_raw':
         # Skip preprocessing for raw logger data
         # We can probably add an option in the config on a per datatype basis to generalize this
         all_dfs = clean_data(all_dfs)
-    print("DONE preprocessing and cleaning data")
-    
+    print("end preprocessing ")
+    # ----------------------------------------- #
+
+
+
+
     # write all_dfs again to the same excel path
     # Later, if the data is clean, the loading routine will use the tab names to load the data to the appropriate tables
     #   There is an assert statement (in load.py) which asserts that the tab names of the excel file match a table in the database
@@ -274,12 +279,10 @@ def main():
     # clear up some memory space, i never wanted to store the core checks output in memory anyways 
     # other than appending it to the errors/warnings list
 
-    # 08/07/2023 - Duy
-    extended_core_output = check_time_format(all_dfs)
-    errs.extend(extended_core_output['core_errors'])
-
     del core_output
     collect()
+    
+    
     
     print("DONE - Core Checks")
 
@@ -315,6 +318,20 @@ def main():
         # match_dataset is a string, which should also be the same as one of the function names imported from custom, so we can "eval" it
         try:
             custom_output = eval(match_dataset)(all_dfs)
+
+            print(f'Custom Output: {custom_output}')
+            
+            # Duy: We define global custom checks are the checks that apply to multiple datatypes.
+            # the goal is to extend the custom output dictionnary
+            # the output of global custom should look the same as the custom_output
+            # Then we can do custom_output.get('errors').extend(global_custom_output.get('errors))
+            # and custom_output.get('warnings').extend(global_custom_output.get('warnings))
+            global_custom_output = global_custom(all_dfs)
+
+            # extend the custom output
+            custom_output.get('errors').extend(global_custom_output.get('errors'))
+            custom_output.get('warnings').extend(global_custom_output.get('warnings'))
+            
         except NameError as err:
             print("Error with custom checks")
             print(err)
@@ -340,11 +357,6 @@ def main():
         errs = [e for e in errs if len(e) > 0]
         warnings = [w for w in warnings if len(w) > 0]
 
-        # commenting out errs and warnings print statements
-        #print("errs")
-        #print(errs)
-        #print("warnings")
-        #print(warnings)
 
         print("DONE - Custom Checks")
 
@@ -374,9 +386,8 @@ def main():
     # Later we will need to have a way to map the dataframe column names to the column indices
     # This is one of those lines of code where i dont know why it is here, but i have a feeling it will
     #   break things if i delete it
-    # Even though i'm the one that put it here... -Robert
+    # Even though i'm the one that put it here... -Robert <- classic programmer moment -Cas
     session['col_indices'] = {tbl: {col: df.columns.get_loc(col) for col in df.columns} for tbl, df in all_dfs.items() }
-
 
     # ---------------------------------------------------------------- #
 

@@ -50,7 +50,117 @@ def grab_field(all_dfs):
 
     print("Begin Grab Field Custom Checks..")
 
-   
+#Check: IF sampletype is benthuc infauna and the matrix is sediment then sieve or depth is required
+    args = {
+        "dataframe":grabeventdet,
+        "tablename":'tbl_grabevent_details',
+        "badrows": grabeventdet[(grabeventdet['sampletype'] == 'infauna') & (grabeventdet['matrix'] == 'sediment') & (grabeventdet['sieve_or_depth'].isna())].tmp_row.tolist(),
+        "badcolumn": "sieve_or_depth",
+        "error_type": "empty value",
+        "is_core_error": False,
+        "error_message": "Sieve_or_Depth is a required field since sampletype is Benthic infauna and matrix is sediment. Please enter the sieve size if the sample was sieved in the field. If the sample was not sieved in the field, enter -88."
+
+    }
+
+
+#Check: Coresizediameter should be filled when matrix is sediment
+    print("begin check grabfield ")
+    args.update({
+        "dataframe":grabeventdet,
+        "tablename":'tbl_grabevent_details',
+        "badrows":grabeventdet[ 
+            (grabeventdet['matrix'] == 'sediment') & 
+            (grabeventdet['coresizediameter'] == 'Not Recorded')
+        ].tmp_row.tolist(),
+        "badcolumn": "coresizediameter",
+        "error_type": "empty value",
+        "is_core_error": False,
+        "error_message": "CoreSizeDiameter is a required field since matrix is water. Please enter the diameter at which the sample was collected."
+    })
+    errs = [*errs, checkData(**args)]
+    print('check ran - error check for matrix and coresizediameter')
+
+#Check: Coresizedepth should be filled when matrix is sediment
+    print('begin check grabfield')
+    args = {
+            "dataframe":grabeventdet,
+            "tablename":'tbl_grabevent_details',
+            "badrows":grabeventdet[(grabeventdet['matrix'] == 'sediment') &
+                ((grabeventdet['coresizedepth']== 'Not Recorded')) 
+                ].tmp_row.tolist(),
+            "badcolumn": "coresizedepth",
+            "error_type": "empty value",
+            "is_core_error": False,
+            "error_message": "CoreSizeDepth is a required field since matrix is water. Please enter the depth at which the sample was collected."
+    }
+    errs = [*errs, checkData(**args)]
+    print('check ran - error check for matrix  and coresizedepth')
+
+
+#Check: Sieve_or_depth is required when matrix is water
+    print('begin check  grabfield')
+    args = {
+        "dataframe":grabeventdet,
+        "tablename":'tbl_grabevent_details',
+        "badrows":grabeventdet[(grabeventdet['matrix'].isin(['blankwater','labwater','saltwater','freshwater'])) & (
+            (grabeventdet['sieve_or_depth'] == 'Not Recorded')) 
+            ].tmp_row.tolist(),
+        "badcolumn": "sieve_or_depth",
+        "error_type": "empty value",
+        "is_core_error": False,
+        "error_message": "Sience_or_Depth is a required field since matrix is water. Please enter the depth at which the sample was collected."
+    }
+    errs = [*errs, checkData(**args)]
+    print('check ran - error check for matrix  and sieve_or_depth')
+
+#Check: Composition should not get filled in when matrix is water
+    print('begin check grab field')
+    args = {
+        "dataframe":grabeventdet,
+        "tablename":'tbl_grabevent_details',
+        "badrows":grabeventdet[(grabeventdet['matrix'].isin(['blankwater','labwater','saltwater','freshwater'])) &
+            (grabevent['composition'] != 'Not Recorded' ) 
+            ].tmp_row.tolist(),
+        "badcolumn": "composition",
+        "error_type": "empty value",
+        "is_core_error": False,
+        "error_message": "Compoistion should be 'Not Recorded' since matrix is water"
+    }
+    errs = [*errs, checkData(**args)]
+    print('check ran error check for matrix  and grab')
+
+#Check: Color should not get filled in when matrix is water
+    print("begin check grabfied:")
+    args = {
+        "dataframe":grabeventdet,
+        "tablename":'tbl_grabevent_details',
+        "badrows":grabeventdet[(grabeventdet['matrix'].isin(['blankwater','labwater','saltwater','freshwater'])) & 
+            (grabeventdet['color'] != 'Not Recorded')
+            ].tmp_row.tolist(),
+        "badcolumn": "color",
+        "error_type": "empty value",
+        "is_core_error": False,
+        "error_message": "Color should be 'Not Recorded' since matrix is water"
+    }
+    errs = [*errs, checkData(**args)]
+    print('check ran - error check for matrix  and grab')
+ 
+#Check: Odor should not get filled in when matrix is water
+    print("begin check grabfied:")
+    args = {
+        "dataframe":grabeventdet,
+        "tablename":'tbl_grabevent_details',
+        "badrows":grabeventdet[(grabeventdet['matrix'].isin(['blankwater','labwater','saltwater','freshwater']))
+        & ((grabeventdet['odor'] == 'Not Recorded'))].tmp_row.tolist(),
+        "badcolumn": "odor",
+        "error_type": "empty value",
+        "is_core_error": False,
+        "error_message": "Odor should be 'Not Recorded' since matrix is water"
+    }
+    
+    errs = [*errs, checkData(**args)]
+    print('check ran - error check for matrix  and grab')
+
 #aria started here
     #check specific to tbl_grabevent_detail: If sampletype is "infauna" then a value for sieve_or_depth field must be pulled from lu_benthicsievesize. Also a value needs to be set for the sieve_or_depthunits field (lu_benthicsievesizeunits).
     print("begin check grabfield: ")
@@ -101,103 +211,6 @@ def grab_field(all_dfs):
     print('check ran - If sampletype is "infauna" then a value for sieve_or_depthunits field must come from (lu_benthicsievesizeunits).')
 #aria ended here
 
-
-#Check: Coresizediameter should be filled when matrix is sediment
-    print("begin check grabfield ")
-    args.update({
-        "dataframe":grabeventdet,
-        "tablename":'tbl_grabevent_details',
-        "badrows":grabeventdet[ 
-            (grabeventdet['matrix'].isin(['sediment','eDNA benthic core sediment','eDNA sediment'])) & 
-            ( (grabeventdet['coresizediameter'] == -88) | (grabeventdet['coresizediameter'].isna()) )
-        ].tmp_row.tolist(),
-        "badcolumn": "coresizediameter",
-        "error_type": "empty value",
-        "is_core_error": False,
-        "error_message": "Since Matrix is sediment related, CoreSizeDiameter cannot be null value or -88"
-    })
-    errs = [*errs, checkData(**args)]
-    print('check ran - error check for matrix and coresizediameter')
-
-#Check: Coresizedepth should be filled when matrix is sediment
-    print('begin check grabfield')
-    args = {
-            "dataframe":grabeventdet,
-            "tablename":'tbl_grabevent_details',
-            "badrows":grabeventdet[(grabeventdet['matrix'].isin(['sediment','eDNA benthic core sediment','eDNA sediment'])) &
-                ((grabeventdet['coresizedepth']== -88)| (grabeventdet['coresizedepth'].isna())) 
-                ].tmp_row.tolist(),
-            "badcolumn": "coresizedepth",
-            "error_type": "empty value",
-            "is_core_error": False,
-            "error_message": "Since Matrix is sediment related, CoreSizeDepth cannot be null value or -88"
-    }
-    errs = [*errs, checkData(**args)]
-    print('check ran - error check for matrix  and coresizedepth')
-
-
-#Check: Sieve_or_depth is required when matrix is water
-    print('begin check  grabfield')
-    args = {
-        "dataframe":grabeventdet,
-        "tablename":'tbl_grabevent_details',
-        "badrows":grabeventdet[(grabeventdet['matrix'].isin(['blankwater','labwater','saltwater','freshwater'])) & (
-            (grabeventdet['sieve_or_depth']== -88) | (grabeventdet['sieve_or_depth'].isna())) 
-            ].tmp_row.tolist(),
-        "badcolumn": "sieve_or_depth",
-        "error_type": "empty value",
-        "is_core_error": False,
-        "error_message": "Since Matrix is water related, Sieve_or_Depth cannot be null value or -88"
-    }
-    errs = [*errs, checkData(**args)]
-    print('check ran - error check for matrix  and sieve_or_depth')
-
-#Check: Composition should not get filled in when matrix is water
-    print('begin check grab field')
-    args = {
-        "dataframe":grabeventdet,
-        "tablename":'tbl_grabevent_details',
-        "badrows":grabeventdet[(grabeventdet['matrix'].isin(['blankwater','labwater','saltwater','freshwater'])) &
-            ((grabeventdet['composition'] == -88) | (grabeventdet['composition'].isna())) 
-            ].tmp_row.tolist(),
-        "badcolumn": "composition",
-        "error_type": "empty value",
-        "is_core_error": False,
-        "error_message": "Since Matrix is water related, composition cannot be null value"
-    }
-    errs = [*errs, checkData(**args)]
-    print('check ran error check for matrix  and grab')
-
-#Check: Color should not get filled in when matrix is water
-    print("begin check grabfied:")
-    args = {
-        "dataframe":grabeventdet,
-        "tablename":'tbl_grabevent_details',
-        "badrows":grabeventdet[(grabeventdet['matrix'].isin(['blankwater','labwater','saltwater','freshwater'])) & 
-            ((grabeventdet['color']== -88) | (grabeventdet['color'].isna()))
-            ].tmp_row.tolist(),
-        "badcolumn": "color",
-        "error_type": "empty value",
-        "is_core_error": False,
-        "error_message": "Since Matrix is water related, color cannot be a null value or -88"
-    }
-    errs = [*errs, checkData(**args)]
-    print('check ran - error check for matrix  and grab')
- 
-#Check: Odor should not get filled in when matrix is water
-    print("begin check grabfied:")
-    args = {
-        "dataframe":grabeventdet,
-        "tablename":'tbl_grabevent_details',
-        "badrows":grabeventdet[(grabeventdet['matrix'].isin(['blankwater','labwater','saltwater','freshwater']))
-        & ((grabeventdet['odor'] == -88) | (grabeventdet['odor'].isna()))].tmp_row.tolist(),
-        "badcolumn": "odor",
-        "error_type": "empty value",
-        "is_core_error": False,
-        "error_message": "Since Matrix is water related, odor cannot be a null value or -88"
-    }
-    errs = [*errs, checkData(**args)]
-    print('check ran - error check for matrix  and grab')
 
 # #testing time check
 #     args = {
