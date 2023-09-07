@@ -61,7 +61,7 @@ def discretewq(all_dfs):
     # Created Coder:
     # Created Date:
     # Last Edited Date: (09/05/2023)
-    # Last Edited Coder:
+    # Last Edited Coder: 
     # NOTE (Date): Note
 
     ######################################################################################################################
@@ -77,11 +77,14 @@ def discretewq(all_dfs):
     # Last Edited Date: 09/05/2023
     # Last Edited Coder: Ayah Halabi
     # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
-    groupcols = get_primary_key('tbl_waterquality_metadata',g.eng)
+    watermeta_pkey = get_primary_key('tbl_waterquality_metadata',g.eng)
+    waterdata_pkey = get_primary_key('tbl_waterquality_data',g.eng)
+    watermeta_waterdata_shared_pkey = list(set(watermeta_pkey).intersection(set(waterdata_pkey)))
+    
     args.update({
         "dataframe": watermeta,
         "tablename": "tbl_waterquality_metadata",
-        "badrows": mismatch(watermeta, waterdata, groupcols),
+        "badrows": mismatch(watermeta, waterdata, watermeta_waterdata_shared_pkey),
         "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, samplecollectiontime, profile, depth_m, projectid",
         "error_type": "Logic Error",
         "error_message": "Each record in WQ_metadata must have a corresponding record in WQ_data."
@@ -101,7 +104,7 @@ def discretewq(all_dfs):
     args.update({
         "dataframe": waterdata,
         "tablename": "tbl_waterquality_data",
-        "badrows": mismatch(waterdata, watermeta, groupcols), 
+        "badrows": mismatch(waterdata, watermeta, watermeta_waterdata_shared_pkey), 
         "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, samplecollectiontime, profile, depth_m",
         "error_type": "Logic Error",
         "error_message": "Records in WQ_data must have a corresponding record in WQ_metadata."
