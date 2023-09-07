@@ -72,175 +72,175 @@ def template_file():
 @support_jsonp
 #@cross_origin() - disabled paul 9jan23
 def exportdata():
-        eng = g.eng
-        # function to build query from url string and return result as an excel file or zip file if requesting all data
-        print("start exportdata")
-        # sql injection check one
-        def cleanstring(instring):
-            # unacceptable characters from input
-            special_characters = '''!-[]{};:'"\,<>./?@#$^&*~'''
-            # remove punctuation from the string
-            outstring = ""
-            for char in instring:
-                if char not in special_characters:
-                    outstring = outstring + char
-            return outstring
+    eng = g.eng
+    # function to build query from url string and return result as an excel file or zip file if requesting all data
+    print("start exportdata")
+    # sql injection check one
+    def cleanstring(instring):
+        # unacceptable characters from input
+        special_characters = '''!-[]{};:'"\,<>./?@#$^&*~'''
+        # remove punctuation from the string
+        outstring = ""
+        for char in instring:
+            if char not in special_characters:
+                outstring = outstring + char
+        return outstring
 
-        # sql injection check two
-        def exists_table(local_engine, local_table_name):
-            # check lookups
-            lsql = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE' AND TABLE_CATALOG=%s"
-            lquery = local_engine.execute(lsql, ("empa2021"))
-            lresult = lquery.fetchall()
-            lresult = [r for r, in lresult]
-            result = lresult 
-            if local_table_name in result:
-                print("found matching table")
-                return 1
-            else:
-                print("no matching table return empty")
-                return 0
+    # sql injection check two
+    def exists_table(local_engine, local_table_name):
+        # check lookups
+        lsql = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE' AND TABLE_CATALOG=%s"
+        lquery = local_engine.execute(lsql, ("empa2021"))
+        lresult = lquery.fetchall()
+        lresult = [r for r, in lresult]
+        result = lresult 
+        if local_table_name in result:
+            print("found matching table")
+            return 1
+        else:
+            print("no matching table return empty")
+            return 0
 
-        #if request.args.get("action"):
-        gettime = int(time.time())
-        TIMESTAMP = str(gettime)
+    #if request.args.get("action"):
+    gettime = int(time.time())
+    TIMESTAMP = str(gettime)
 
-        # ---------------------------------------- NOTE ------------------------------------------------ #
-        # @Paul as a heads up - with these file paths, the empa directory doesnt exist in the container  # 
-        # the bind mount maps /var/www/empa/checker to /var/www/checker in the docker container          #
-        # ---------------------------------------------------------------------------------------------- #
-        
-        #export_file = '/var/www/checker/logs/%s-export.csv' % TIMESTAMP
-        export_file = os.path.join(os.getcwd(), "logs", f'{TIMESTAMP}-export.csv')
-        export_link = 'https://empachecker.sccwrp.org/checker/logs?filename=%s-export.csv' % TIMESTAMP
+    # ---------------------------------------- NOTE ------------------------------------------------ #
+    # @Paul as a heads up - with these file paths, the empa directory doesnt exist in the container  # 
+    # the bind mount maps /var/www/empa/checker to /var/www/checker in the docker container          #
+    # ---------------------------------------------------------------------------------------------- #
+    
+    #export_file = '/var/www/checker/logs/%s-export.csv' % TIMESTAMP
+    export_file = os.path.join(os.getcwd(), "logs", f'{TIMESTAMP}-export.csv')
+    export_link = 'https://empachecker.sccwrp.org/checker/logs?filename=%s-export.csv' % TIMESTAMP
 
-        # sql injection check three
-        valid_tables = {
-            'algaecover': 'tbl_algaecover_data',
-            'macroalgaesamplemetadata':'tbl_macroalgae_sample_metadata',
-            'algaecoverdata': 'tbl_algaecover_data',
-            'floatingdata': 'tbl_floating_data',
-            'benthicmetadata': 'tbl_benthicinfauna_metadata',
-            'benthiclabbatch':'tbl_benthic_infauna_labbatch_data',
-            'benthicabundance': 'tbl_benthic_infauna_abundance_data',
-            'benthicbiomass':'tbl_benthic_infauna_biomass_data',
-            'bruvmetadata': 'tbl_bruv_metadata',
-            'bruvdata':'tbl_bruv_data',
-            'crabbiomass': 'tbl_crabbiomass_length',
-            'crababundance': 'tbl_crabfishinvert_abundance',
-            'crabtrapmetadata':'tbl_crabtrap_metadata',
-            'waterqualitymetadata':'tbl_waterquality_metadata',
-            'waterqualitydata':'tbl_waterquality_data',
-            'ednametadata':'tbl_edna_metadata',
-            'ednawaterlabbatch':'tbl_edna_water_labbatch_data',
-            'ednasedlabbatch':'tbl_edna_sed_labbatch_data',
-            'ednadata':'tbl_edna_data',
-            'feldsparmetadata':'tbl_feldspar_metadata',
-            'feldspardata':'tbl_feldspar_data',
-            'fishsamplemetadata':'tbl_fish_sample_metadata',
-            'fishabundance': 'tbl_fish_abundance_data', 
-            'fishlength':'tbl_fish_length_data', 
-            'loggermetadata':'tbl_wq_logger_metadata',
-            'loggerdata':'tbl_wqlogger',
-            'sedchemmetadata':'tbl_sedchem_metadata',
-            'sedchemlabbatch':'tbl_sedchem_labbatch_data',
-            'sedchemdata':'tbl_sedchem_data',
-            'savmetadata': 'tbl_sav_metadata',
-            'savdata':'tbl_savpercentcover_data',
-            'sedgrainsizedata':'tbl_sedgrainsize_data', 
-            'sedgrainsizelabbatch':'tbl_sedgrainsize_labbatch_data',
-            'sedgrainsizemetadata':'tbl_sedgrainsize_metadata',
-            'vegetationsamplemetadata':'tbl_vegetation_sample_metadata',
-            'vegetationcoverdata':'tbl_vegetativecover_data',
-            'epifauna':'tbl_epifauna_data'
-        }
-        if request.args.get("callback"):
-            test = request.args.get("callback", False)
-            print(test)
-        if request.args.get("action"):
-            action = request.args.get("action", False)
-            print(action)
-            cleanstring(action)
-            print(action)
-        if request.args.get("query"):
-            query = request.args.get("query", False)
-            print(query)
-            # incoming json string 
-            jsonstring = json.loads(query)
+    # sql injection check three
+    valid_tables = {
+        'algaecover': 'tbl_algaecover_data',
+        'macroalgaesamplemetadata':'tbl_macroalgae_sample_metadata',
+        'algaecoverdata': 'tbl_algaecover_data',
+        'floatingdata': 'tbl_floating_data',
+        'benthicmetadata': 'tbl_benthicinfauna_metadata',
+        'benthiclabbatch':'tbl_benthic_infauna_labbatch_data',
+        'benthicabundance': 'tbl_benthic_infauna_abundance_data',
+        'benthicbiomass':'tbl_benthic_infauna_biomass_data',
+        'bruvmetadata': 'tbl_bruv_metadata',
+        'bruvdata':'tbl_bruv_data',
+        'crabbiomass': 'tbl_crabbiomass_length',
+        'crababundance': 'tbl_crabfishinvert_abundance',
+        'crabtrapmetadata':'tbl_crabtrap_metadata',
+        'waterqualitymetadata':'tbl_waterquality_metadata',
+        'waterqualitydata':'tbl_waterquality_data',
+        'ednametadata':'tbl_edna_metadata',
+        'ednawaterlabbatch':'tbl_edna_water_labbatch_data',
+        'ednasedlabbatch':'tbl_edna_sed_labbatch_data',
+        'ednadata':'tbl_edna_data',
+        'feldsparmetadata':'tbl_feldspar_metadata',
+        'feldspardata':'tbl_feldspar_data',
+        'fishsamplemetadata':'tbl_fish_sample_metadata',
+        'fishabundance': 'tbl_fish_abundance_data', 
+        'fishlength':'tbl_fish_length_data', 
+        'loggermetadata':'tbl_wq_logger_metadata',
+        'loggerdata':'tbl_wqlogger',
+        'sedchemmetadata':'tbl_sedchem_metadata',
+        'sedchemlabbatch':'tbl_sedchem_labbatch_data',
+        'sedchemdata':'tbl_sedchem_data',
+        'savmetadata': 'tbl_sav_metadata',
+        'savdata':'tbl_savpercentcover_data',
+        'sedgrainsizedata':'tbl_sedgrainsize_data', 
+        'sedgrainsizelabbatch':'tbl_sedgrainsize_labbatch_data',
+        'sedgrainsizemetadata':'tbl_sedgrainsize_metadata',
+        'vegetationsamplemetadata':'tbl_vegetation_sample_metadata',
+        'vegetationcoverdata':'tbl_vegetativecover_data',
+        'epifauna':'tbl_epifauna_data'
+    }
+    if request.args.get("callback"):
+        test = request.args.get("callback", False)
+        print(test)
+    if request.args.get("action"):
+        action = request.args.get("action", False)
+        print(action)
+        cleanstring(action)
+        print(action)
+    if request.args.get("query"):
+        query = request.args.get("query", False)
+        print(query)
+        # incoming json string 
+        jsonstring = json.loads(query)
 
-        if action == "multiple":
-            outlink = 'https://empachecker.sccwrp.org/checker/logs?filename=%s-export.zip' % (TIMESTAMP)
-            #zipfile = '/var/www/checker/logs/%s-export.zip' % (TIMESTAMP)
-            zipfile = os.path.join(os.getcwd(), "logs", f'{TIMESTAMP}-export.zip')
-            with ZipFile(zipfile,'w') as zip:
-                for item in jsonstring:
-                    table_name = jsonstring[item]['table']
-                    table_name = table_name.replace("-", "_")
-                    # check table_name for prevention of sql injection
-                    cleanstring(table_name)
-                    print(table_name)
-                    table = valid_tables[table_name]
-                    print(table)
-                    check = exists_table(g.eng, table)
-                    if (table_name in valid_tables) and check == 1:
-                        sql = jsonstring[item]['sql']
-                        # check sql string - clean it of any special characters
-                        cleanstring(sql)
-                        outputfilename = '%s-export.csv' % (table_name)
-                        outputfile = '/var/www/checker/logs/%s' % (outputfilename)
-                        isql = text(sql)
-                        print(isql)
-                        rsql = g.eng.execute(isql)
-                        df = DataFrame(rsql.fetchall())
-                        if len(df) > 0:
-                            df.columns = rsql.keys()
-                            df.columns = [x.lower() for x in df.columns]
-                            print(df)
-                            df.to_csv(outputfile,header=True, index=False, encoding='utf-8')
-                            print("outputfile")
-                            print(outputfile)
-                            print("outputfilename")
-                            print(outputfilename)
-                            zip.write(outputfile,outputfilename) 
-                    # if we dont pass validation then something is wrong - just error out
-                    else:
-                        response = jsonify({'code': 200,'link': outlink})
-                        return response
-
-        if action == "single":
+    if action == "multiple":
+        outlink = 'https://empachecker.sccwrp.org/checker/logs?filename=%s-export.zip' % (TIMESTAMP)
+        #zipfile = '/var/www/checker/logs/%s-export.zip' % (TIMESTAMP)
+        zipfile = os.path.join(os.getcwd(), "logs", f'{TIMESTAMP}-export.zip')
+        with ZipFile(zipfile,'w') as zip:
             for item in jsonstring:
                 table_name = jsonstring[item]['table']
-                #csvfile = '/var/www/checker/logs/%s-%s-export.csv' % (TIMESTAMP,table_name)
-                csvfile = os.path.join(os.getcwd(), "logs", f'{TIMESTAMP}-export.csv')
                 table_name = table_name.replace("-", "_")
-                outlink = 'https://empachecker.sccwrp.org/checker/logs?filename=%s-%s-export.csv' % (TIMESTAMP,table_name)
                 # check table_name for prevention of sql injection
                 cleanstring(table_name)
+                print(table_name)
                 table = valid_tables[table_name]
                 print(table)
-                check = exists_table(eng, table)
-                if table_name in valid_tables and check == 1:
+                check = exists_table(g.eng, table)
+                if (table_name in valid_tables) and check == 1:
                     sql = jsonstring[item]['sql']
                     # check sql string - clean it of any special characters
                     cleanstring(sql)
-                    outputfilename = '%s-%s-export.csv' % (TIMESTAMP,table_name)
-                    #outputfile = '/var/www/checker/logs/%s' % (outputfilename)
-                    outputfile = os.path.join(os.getcwd(), "logs", f'{outputfilename}')
+                    outputfilename = '%s-export.csv' % (table_name)
+                    outputfile = '/var/www/checker/logs/%s' % (outputfilename)
                     isql = text(sql)
-                    rsql = eng.execute(isql)
+                    print(isql)
+                    rsql = g.eng.execute(isql)
                     df = DataFrame(rsql.fetchall())
                     if len(df) > 0:
                         df.columns = rsql.keys()
                         df.columns = [x.lower() for x in df.columns]
+                        print(df)
                         df.to_csv(outputfile,header=True, index=False, encoding='utf-8')
-                    else:
-                        response = jsonify({'code': 200,'link': outlink})
-                        #response.headers['Access-Control-Allow-Origin'] = '*'
-                        return response
+                        print("outputfile")
+                        print(outputfile)
+                        print("outputfilename")
+                        print(outputfilename)
+                        zip.write(outputfile,outputfilename) 
+                # if we dont pass validation then something is wrong - just error out
+                else:
+                    response = jsonify({'code': 200,'link': outlink})
+                    return response
 
-        export_link = outlink
-        response = jsonify({'code': 200,'link': export_link})
-        return response
+    if action == "single":
+        for item in jsonstring:
+            table_name = jsonstring[item]['table']
+            #csvfile = '/var/www/checker/logs/%s-%s-export.csv' % (TIMESTAMP,table_name)
+            csvfile = os.path.join(os.getcwd(), "logs", f'{TIMESTAMP}-export.csv')
+            table_name = table_name.replace("-", "_")
+            outlink = 'https://empachecker.sccwrp.org/checker/logs?filename=%s-%s-export.csv' % (TIMESTAMP,table_name)
+            # check table_name for prevention of sql injection
+            cleanstring(table_name)
+            table = valid_tables[table_name]
+            print(table)
+            check = exists_table(eng, table)
+            if table_name in valid_tables and check == 1:
+                sql = jsonstring[item]['sql']
+                # check sql string - clean it of any special characters
+                cleanstring(sql)
+                outputfilename = '%s-%s-export.csv' % (TIMESTAMP,table_name)
+                #outputfile = '/var/www/checker/logs/%s' % (outputfilename)
+                outputfile = os.path.join(os.getcwd(), "logs", f'{outputfilename}')
+                isql = text(sql)
+                rsql = eng.execute(isql)
+                df = DataFrame(rsql.fetchall())
+                if len(df) > 0:
+                    df.columns = rsql.keys()
+                    df.columns = [x.lower() for x in df.columns]
+                    df.to_csv(outputfile,header=True, index=False, encoding='utf-8')
+                else:
+                    response = jsonify({'code': 200,'link': outlink})
+                    #response.headers['Access-Control-Allow-Origin'] = '*'
+                    return response
+
+    export_link = outlink
+    response = jsonify({'code': 200,'link': export_link})
+    return response
 
 @download.route('/logs', methods = ['GET'])
 def log_file():
@@ -635,9 +635,10 @@ def sedchem_translator():
                     comments
                 FROM 
                     tbl_grabevent
-                WHERE projectid = 'EMPA'
+                WHERE UPPER(projectid) = 'BIGHT'
             """, eng)
             #needs to be changed to BIGHT instead of EMPA
+            # NOTE - changed to BIGHT by robert on 9/7/2023
 
     df_occupation.insert(5, 'collectiontype', 'Grab')
     df_occupation.insert(6, 'vessel', 'NR')
