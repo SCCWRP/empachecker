@@ -199,8 +199,8 @@ def check_elevation_columns(df, column):
         (
             (~pd.isnull(df['elevation_ellipsoid']) & (df['elevation_ellipsoid'] != -88)) |
             (~pd.isnull(df['elevation_orthometric']) & (df['elevation_orthometric'] != -88)) 
-        ) &
+        ) & 
         (
-            (pd.isnull(df[column]) | (df[column] == 'Not recorded') | (df[column] == ''))
+            pd.isnull(df[column]) | (df[column] == 'Not recorded') | (df[column] == '')
         )
     )
