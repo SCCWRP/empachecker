@@ -41,9 +41,7 @@ def strip_whitespace(all_dfs: dict):
     return all_dfs
 
 def fix_case(all_dfs: dict):
-    print("BEGIN fix_case function")
     for table_name in all_dfs.keys():
-        print(table_name)
         table_df = all_dfs[f'{table_name}'] 
     #Among all the varchar cols, only get the ones tied to the lookup list -- modified to only find lu_lists that are not of numeric types
         lookup_sql = f"""
@@ -109,7 +107,6 @@ def fix_case(all_dfs: dict):
         }
         table_df = table_df.replace(fix_case)                
         all_dfs[f'{table_name}'] = table_df
-    print("END fix_case function")
     return all_dfs
 
 def fill_daubenmiremidpoint(all_dfs):
@@ -218,7 +215,6 @@ def fill_status(all_dfs):
     return all_dfs
 
 def fill_area(all_dfs):
-    print('### IN FILL AREA')
     if 'tbl_fish_sample_metadata' in all_dfs.keys():
         df = all_dfs['tbl_fish_sample_metadata']
         for label, row in df.iterrows():
@@ -230,7 +226,6 @@ def fill_area(all_dfs):
                     new_area = length * distance
                     df.loc[label, 'area_m2'] = new_area
                     all_dfs['tbl_fish_sample_metadata'] = df
-    print('### FILL AREA DONE')
     return all_dfs
     
 
