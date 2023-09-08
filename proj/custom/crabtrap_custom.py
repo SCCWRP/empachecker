@@ -275,6 +275,7 @@ def crabtrap(all_dfs):
     # It is actually impossible for the catch column to have a value of 'no' all lowercase, since lu_yesno has a capitalized 'Yes' and 'No'
     # That would have got flagged at core checks
     # NOTE (8/29/23): Zaib adjusts the format so it follows the coding standard.
+    # NOTE (9/7/2023): Zaib is the real MVP
     merged = pd.merge(
         crabinvert.assign(invert_tmp_row = crabinvert.index),
         crabmeta, 
