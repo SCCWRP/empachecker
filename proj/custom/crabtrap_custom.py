@@ -263,8 +263,8 @@ def crabtrap(all_dfs):
     # Description: If catch is no then abundance should be 0 (🛑 ERROR 🛑)
     # Created Coder: Duy Nguyen
     # Created Date: 10/04/2022
-    # Last Edited Date: 8/29/2023
-    # Last Edited Coder: Zaib Quraishi
+    # Last Edited Date: 9/7/2023
+    # Last Edited Coder: Robert Butler
     # NOTE (11/02/2022): (Robert) We cant use index to get the bad rows since we merged dataframes and the index gets reset
     # We must preserve the original index values of the dataframe that we are checking 
     #  so that we can correctly tell the user which rows are bad
@@ -275,9 +275,9 @@ def crabtrap(all_dfs):
     # It is actually impossible for the catch column to have a value of 'no' all lowercase, since lu_yesno has a capitalized 'Yes' and 'No'
     # That would have got flagged at core checks
     # NOTE (8/29/23): Zaib adjusts the format so it follows the coding standard.
-    # NOTE (9/7/2023): Zaib is the real MVP
+    # NOTE (9/7/2023): assigned invert tmp row to be crabinvert tmp_row rather than crabinvert.index - Robert
     merged = pd.merge(
-        crabinvert.assign(invert_tmp_row = crabinvert.index),
+        crabinvert.assign(invert_tmp_row = crabinvert.tmp_row),
         crabmeta, 
         how='left',
         suffixes=('_abundance', '_meta'),
@@ -287,7 +287,11 @@ def crabtrap(all_dfs):
     args.update({
         "dataframe": crabinvert,
         "tablename": 'tbl_crabfishinvert_abundance',
-        "badrows":  merged[(merged['catch'].str.lower() == 'no') & (merged['abundance'] > 0)].invert_tmp_row.tolist(),
+        
+        "badrows":  merged[
+            (merged['catch'].str.lower() == 'no') & ( merged['abundance'] > 0 )  
+        ].invert_tmp_row.tolist(),
+        
         "badcolumn": "abundance",
         "error_type": "Undefined Error",
         "error_message": "If catch = No in crab_meta, then abundance shoud be 0 in invert_abundance tab"
@@ -295,9 +299,52 @@ def crabtrap(all_dfs):
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 9")
 
-
+    
 
     print("# CHECK - 10")
+    # Description: # Check 6: If catch = No in meta, then abundance = 0 in abundance tab (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 10/04/2022
+    # Last Edited Date: 9/7/2023
+    # Last Edited Coder: Robert Butler
+    
+    # NOTE: (2022-11-02) (Robert)
+    # # # We cant use index to get the bad rows since we merged dataframes and the index gets reset
+    # # # We must preserve the original index values of the dataframe that we are checking 
+    # # #  so that we can correctly tell the user which rows are bad
+    # # # So we will assign a temp column in this merged dataframe and use that for the "badrows"
+
+    # NOTE:(2023-09-07) Robert adjusted it to match the QA doc and the new coding standard
+    # NOTE:(2023-09-07) Robert added merged['abundance'].isnull() since it should also be an error if there is no abundance, but there was a catch
+    # NOTE:(2023-09-07) Robert changed 
+    # # # # crabinvert.assign(invert_tmp_row = crabinvert.index ) 
+    # # # # to 
+    # # # # crabinvert.assign(invert_tmp_row = crabinvert.tmp_row)
+
+    merged = pd.merge(
+        crabinvert.assign(invert_tmp_row = crabinvert.tmp_row),
+        crabmeta, 
+        how='left',
+        suffixes=('_abundance', '_meta'),
+        on = ['siteid','estuaryname','traptype','samplecollectiondate', 'traplocation','stationno','replicate', 'projectid']
+    )
+    
+    args.update({
+        "dataframe": crabinvert,
+        "tablename": 'tbl_crabfishinvert_abundance',
+        "badrows":  merged[(merged['catch'].str.lower() == 'yes') & ( (merged['abundance'] <= 0) | merged['abundance'].isnull() )].invert_tmp_row.tolist(),
+        "badcolumn": "abundance",
+        "error_type": "Undefined Error",
+        "error_message": "If catch = Yes in crab_meta, then abundance should be a positive integer in abundance tab."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 10")
+
+
+
+    
+    
+    print("# CHECK - 11")
     # Description: Range for abundance must be between [0, 100] unless it is -88 (🛑 ERROR 🛑)
     # Created Coder: Duy Nguyen
     # Created Date: 10/04/2022
@@ -313,56 +360,10 @@ def crabtrap(all_dfs):
         "error_message": "Your abundance value must be between 0 to 100, unless it is a -88 indicating a missing value."
     })
     errs.append(checkData(**args))
-    print("# END OF CHECK - 10")
+    print("# END OF CHECK - 11")
 
 
-    # New checks written by Duy - 2022-10-04
-    
-    # Check 6: If catch = No in meta, then abundance = 0 in abundance tab
-    # Robert 2022-11-02
-    # We cant use index to get the bad rows since we merged dataframes and the index gets reset
-    # We must preserve the original index values of the dataframe that we are checking 
-    #  so that we can correctly tell the user which rows are bad
-    # So we will assign a temp column in this merged dataframe and use that for the "badrows"
-    print('Start custom check 6')
-    merged = pd.merge(
-        crabinvert.assign(invert_tmp_row = crabinvert.index),
-        crabmeta, 
-        how='left',
-        suffixes=('_abundance', '_meta'),
-        on = ['siteid','estuaryname','traptype','samplecollectiondate', 'traplocation','stationno','replicate', 'projectid']
-    )
-
-    # Robert 2022-11-02 - added .lower() to the merged['catch'] for the following reason
-    # We cannot simply assume that the 'catch' column will be a lowercase 'no'
-    # ESPECIALLY since that column is tied to the lookup list lu_yesno
-    # It is actually impossible for the catch column to have a value of 'no' all lowercase, since lu_yesno has a capitalized 'Yes' and 'No'
-    # That would have got flagged at core checks
-    # badrows = merged[(merged['catch'].str.lower() == 'no') & (merged['abundance'] > 0)].invert_tmp_row.tolist()
-    args.update({
-        "dataframe": crabinvert,
-        "tablename": 'tbl_crabfishinvert_abundance',
-        "badrows":  merged[(merged['catch'].str.lower() == 'no') & (merged['abundance'] > 0)].invert_tmp_row.tolist(),
-        "badcolumn": "abundance",
-        "error_type": "Undefined Error",
-        "error_message": "If catch = No in crab_meta, then abundance shoud be 0 in invert_abundance tab"
-    })
-    errs = [*errs, checkData(**args)]
-    print("End Check 6: If catch is no in metadata then abundance should be 0 in crabinvert abundnace ")
-    
-    # Check 7: If catch = Yes in meta, then abundance is non-zero integer in abundance tab
-    print('Start custom check 7')
-    # badrows = merged[(merged['catch'].str.lower() == 'yes') & (merged['abundance'] <= 0)].invert_tmp_row.tolist()
-    args.update({
-        "dataframe": crabinvert,
-        "tablename": 'tbl_crabfishinvert_abundance',
-        "badrows":  merged[(merged['catch'].str.lower() == 'yes') & (merged['abundance'] <= 0)].invert_tmp_row.tolist(),
-        "badcolumn": "abundance",
-        "error_type": "Undefined Error",
-        "error_message": "If catch = Yes in crab_meta, then abundance should be a non-zero integer in abundance tab."
-    })
-    errs = [*errs, checkData(**args)]
-    print("End Check 7: If catch = Yes in crab_meta, then abundance should be a non-zero integer in abundance tab. ") 
+     
 
     #lookup lists
     print("before multicol check")
