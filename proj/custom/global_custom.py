@@ -24,6 +24,9 @@ def global_custom(all_dfs):
 
 
     for table_name in all_dfs:
+        if all_dfs[table_name].empty:
+            continue
+        
         df = all_dfs[table_name]
         df['tmp_row'] = df.index
         #args = {
@@ -108,8 +111,7 @@ def global_custom(all_dfs):
             errs = [*errs, checkData(**args)]
 
             print("# END GLOBAL CUSTOM CHECK - 2")
-
-
+       
         time_columns = [x for x in df.columns if x.endswith("time")]
         if len(time_columns) > 0:
             print("# GLOBAL CUSTOM CHECK - 3 columns that end with 'time' should be entered in HH:MM format on 24-hour-clock")
