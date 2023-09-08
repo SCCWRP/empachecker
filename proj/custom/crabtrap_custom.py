@@ -297,14 +297,22 @@ def crabtrap(all_dfs):
 
 
     print("# CHECK - 10")
-    # Description:  (🛑 ERROR 🛑)
+    # Description: Range for abundance must be between [0, 100] unless it is -88 (🛑 ERROR 🛑)
     # Created Coder: Duy Nguyen
     # Created Date: 10/04/2022
-    # Last Edited Date: 8/29/2023
-    # Last Edited Coder: Zaib Quraishi
-    # NOTE (8/29/23): Zaib adjusts the format so it follows the coding standard.
-
-
+    # Last Edited Date: 9/7/2023
+    # Last Edited Coder: Robert Butler
+    # NOTE (8/29/23): Robert adjusts the format so it follows the coding standard. (I also added the & pd.notnull(x) part)
+    args.update({
+        "dataframe": crabinvert,
+        "tablename": 'tbl_crabfishinvert_abundance',
+        "badrows": crabinvert[crabinvert['abundance'].apply(lambda x: ((x < 0) | (x > 100)) & ( (x != -88) & pd.notnull(x) ) )].tmp_row.tolist(),
+        "badcolumn": "abundance",
+        "error_type": "Value out of range",
+        "error_message": "Your abundance value must be between 0 to 100, unless it is a -88 indicating a missing value."
+    })
+    errs.append(checkData(**args))
+    print("# END OF CHECK - 10")
 
 
     # New checks written by Duy - 2022-10-04
@@ -577,20 +585,7 @@ def crabtrap(all_dfs):
     ############################### --Start of CrabTrap Metadata Checks -- #############################################################
     print("Begin CrabTrap Metadata Checks...")
 
-    # check 8: Range for abundance must be between [0, 100]
-    print("enter abundance check")
-    print("Start custom check 8")
-    args.update({
-        "dataframe": crabinvert,
-        "tablename": 'tbl_crabfishinvert_abundance',
-        #"badrows":crabinvert[((crabinvert['abundance'] < 0) | (crabinvert['abundance'] > 100) & (crabinvert['abundance'] != -88)].tmp_row.tolist(),
-        "badrows": crabinvert[crabinvert['abundance'].apply(lambda x: ((x < 0) | (x > 100)) & (x != -88))].tmp_row.tolist(),
-        "badcolumn": "abundance",
-        "error_type": "Value out of range",
-        "error_message": "Your abundance value must be between 0 to 100."
-    })
-    errs = [*errs, checkData(**args)]
-    print("check 8 ran - tbl_crabfishinvert_abundance - abundance check") 
+
 
   
     # New checks written by Duy - 2022-10-04
