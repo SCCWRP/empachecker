@@ -73,7 +73,7 @@ def global_custom(all_dfs):
 
 
         # do this for now cuz we need to double check benthic scientificname and commonname
-        if {"scientificname", "commonname", "status"}.issubset(df.columns) and table_name != 'tbl_benthicinfauna_abundance': 
+        if {"scientificname", "commonname", "status"}.issubset(df.columns): 
             print("# GLOBAL CUSTOM CHECK - 2 Scientificname/commoname/status combination for species must match lookup")
             # Description: Scientificname/commoname pair for species must match lookup
             # Created Coder: Nick Lombardo
