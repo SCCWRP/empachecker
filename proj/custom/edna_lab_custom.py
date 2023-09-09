@@ -64,12 +64,12 @@ def edna_lab(all_dfs):
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (09/08-2023): Ayah wrote check
-    eng = g.eng
-    sql = eng.execute("SELECT * FROM tbl_grabevent_details")
-    sql_df = DataFrame(sql.fetchall())
-    sql_df.columns = sql.keys()
-    grabevent  = sql_df
-    del sql_df
+    # eng = g.eng
+    # sql = eng.execute("SELECT * FROM tbl_grabevent_details")
+    # sql_df = DataFrame(sql.fetchall())
+    # sql_df.columns = sql.keys()
+    # grabevent  = sql_df
+    # del sql_df
     
 
     #print("# END OF CHECK - 1")

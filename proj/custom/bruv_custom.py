@@ -29,11 +29,7 @@ def bruv_field(all_dfs):
     
     # These are the dataframes that got submitted for bruv
     print("define tables")
-    protocol = all_dfs['tbl_protocol_metadata']
     bruvmeta = all_dfs['tbl_bruv_metadata']
-    #bruvdata = all_dfs['tbl_bruv_data'] #leaving tbl_bruv_data out for later, this is lab data and will not be submitted with the metadata tables - Zaib
-
-    protocol['tmp_row'] = protocol.index
     bruvmeta['tmp_row'] = bruvmeta.index
 
     errs = []
@@ -54,191 +50,30 @@ def bruv_field(all_dfs):
     }
     
 
-    # Example of appending an error (same logic applies for a warning)
-    # args.update({
-    #   "badrows": df[df.temperature != 'asdf'].index.tolist(),
-    #   "badcolumn": "temperature",
-    #   "error_type" : "Not asdf",
-    #   "error_message" : "This is a helpful useful message for the user"
-    # })
-    # errs = [*errs, checkData(**args)]
-    
-    #(1) maxnspecies is nonnegative
-    '''
-    timeregex ="([01]?[0-9]|2[0-3]):[0-5][0-9]$" #24 hour clock HH:MM time validation
-    args.update({
-        "dataframe":bruvdata,
-        "tablename":'tbl_bruv_data',
-        "badrows":bruvdata[bruvdata['maxnspecies'] < 0].index.tolist(),
-        "badcolumn":"maxnspecies",
-        "error_type":"Value out of range",
-        #"error_message":"Max number of species should be between 0 and 100"
-        "error_message":"Max number of species must be nonnegative."
-    })
-    errs = [*errs, checkData(**args)]
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ BRUV Meta Checks ------------------------------------------------ #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
 
-    #(2) maxnspecies should not exceed 100 (warning)
-    args.update({
-        "dataframe":bruvdata,
-        "tablename":'tbl_bruv_data',
-        "badrows":bruvdata[(bruvdata['maxnspecies'] < 0) | (bruvdata['maxnspecies'] > 100)].index.tolist(),
-        "badcolumn":"maxnspecies",
-        "error_type":"Value out of range",
-        "error_message":"Max number of species should NOT exceed 100."
-    })
-    warnings = [*warnings, checkData(**args)]
+    #print("# CHECK - 4")
+    # Description: Depth_m must be -88 or greater than or equal to 0
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 4")
 
-    
-    args.update({
-        "dataframe":bruvdata,
-        "tablename":'tbl_bruv_data',
-        "badrows":bruvdata[bruvdata.foventeredtime.apply(pd.Timestamp) > bruvdata.fovlefttime.apply(pd.Timestamp)].index.tolist(),
-        "badcolumn":"foventeredtime,fovlefttime",
-        "error_type": "Value out of range",
-        "error_message":"FOV entered time must be before FOV left time"
-    })
-    errs = [*errs, checkData(**args)]
-    '''
-
-
-
-    print("bruvmeta.head()['bruvintime']")
-    print(bruvmeta.head()['bruvintime'])
-    print("bruvmeta.head()['bruvouttime']")
-    print(bruvmeta.head()['bruvouttime'])
-
-    #NOTE THIS SHOULD BE TAKEN CARE OF BY CORE CHECK
-########################################################################################################################################################
-    # # Check: bruvmetadata bruvintime time validation
-    # timeregex = "([01]?[0-9]|2[0-3]):[0-5][0-9]$" #24 hour clock HH:MM time validation
-    # badrows_bruvintime = bruvmeta[
-    #     bruvmeta['bruvintime'].apply(
-    #         lambda x: not bool(re.match(timeregex, str(x))) if str(x) != "00:00:00" else False)
-    #         ].index.tolist()
-    # args.update({
-    #     "dataframe": bruvmeta,
-    #     "tablename": "tbl_bruv_metadata",
-    #     "badrows": badrows_bruvintime,
-    #     "badcolumn": "bruvintime",
-    #     "error_type" : "Time Format Error",
-    #     "error_message": "Time should be entered in HH:MM format on a 24-hour clock."
-    # })
-    # errs = [*errs, checkData(**args)]
-    # print("check ran - bruv_metadata - bruvintime") 
-    # # Check: bruvmetadata bruvouttime time validation
-    # badrows_bruvouttime = bruvmeta[
-    #     bruvmeta['bruvouttime'].apply(
-    #         lambda x: not bool(re.match(timeregex, str(x))) if str(x) != "00:00:00" else False)
-    #         ].index.tolist()
-    # args.update({
-    #     "dataframe": bruvmeta,
-    #     "tablename": "tbl_bruv_metadata",
-    #     "badrows": badrows_bruvouttime,
-    #     "badcolumn": "bruvouttime",
-    #     "error_message": "Time should be entered in HH:MM format on a 24-hour clock."
-    # })
-    # errs = [*errs, checkData(**args)]
-    # print("check ran - tbl_bruv_metadata - bruvouttime format") 
-########################################################################################################################################################
-    # NOTE This check needs to take into consideration that the data is clean if the start date is before the end date
-    # Note: starttime and endtime format checks must pass before entering the starttime before endtime check
-    '''
-    df = bruvmeta[(bruvmeta['bruvintime'] != "00:00:00") & (bruvmeta['bruvouttime'] != "00:00:00")]
-    print(" =========================================")
-    print("subsetting df on bruv time: ")
-    print(" =========================================")
-    print(df['bruvintime'])
-    print(df['bruvouttime'])
-    if (len(badrows_bruvintime) == 0 & (len(badrows_bruvouttime) == 0)):
-        args.update({
-            "dataframe": bruvmeta,
-            "tablename": "tbl_bruv_metadata",
-            "badrows": df[df['bruvintime'].apply(
-                lambda x: pd.Timestamp(str(x)).strftime('%H:%M') 
-                if not "00:00:00" else '') >= df['bruvouttime'].apply(lambda x: pd.Timestamp(str(x)).strftime('%H:%M') 
-                if not "00:00:00" else '')].index.tolist(),
-            "badcolumn": "bruvintime",
-            "error_message": "Bruvintime value must be before bruvouttime."
-            })
-        errs = [*errs, checkData(**args)]
-    print("check ran - tbl_bruv_metadata - bruvintime before bruvouttime")
-
-    del badrows_bruvintime
-    del badrows_bruvouttime
-    '''
-    # Check 2: depth_m is positive for tbl_bruv_metadata 
-    print("begin check 2")
-    args.update({
-        "dataframe": bruvmeta,
-        "tablename": 'tbl_bruv_metadata',
-        "badrows": bruvmeta[(bruvmeta['depth_m'] < 0) & (bruvmeta['depth_m'] != -88)].tmp_row.tolist(),
-        "badcolumn": "depth_m",
-        "error_type" : "Value out of range",
-        "error_message" : "Depth measurement should not be a negative number, must be greater than 0."
-    })
-    errs = [*errs, checkData(**args)]
-    print("check 2 ran - tbl_bruv_metadata - nonnegative depth_m") # tested
-
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF BRUV Meta Checks ----------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
     return {'errors': errs, 'warnings': warnings}
 
 
-    # #Check 7: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_units is required
-    # print("Check 7 begin:")
-    # args.update({
-    #     "dataframe": bruvmeta,
-    #     "tablename": "tbl_bruv_metadata",
-    #     "badrows": bruvmeta[(~bruvmeta['elevation_ellipsoid'].isna() | ~bruvmeta['elevation_orthometric'].isna()) & ( bruvmeta['elevation_units'].isna() | (bruvmeta['elevation_units'] == -88))].tmp_row.tolist(),
-    #     "badcolumn": "elevation_units",
-    #     "error_type": "Empty value",
-    #     "error_message": "Elevation_units is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    # })
-    # errs = [*errs, checkData(**args)]
 
-    # print('check 7 ran - ele_ellip or ele_ortho is reported then ele_units is required')
-
-    # #Check 8: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Corr is required
-    # print("Check 8 begin:")
-    # args.update({
-    #     "dataframe": bruvmeta,
-    #     "tablename": "tbl_bruv_metadata",
-    #     "badrows": bruvmeta[(~bruvmeta['elevation_ellipsoid'].isna() | ~bruvmeta['elevation_orthometric'].isna()) & ( bruvmeta['elevation_corr'].isna() | (bruvmeta['elevation_corr'] == -88))].tmp_row.tolist(),
-    #     "badcolumn": "Elevation_Corr",
-    #     "error_type": "Empty value",
-    #     "error_message": "Elevation_Corr is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    # })
-    # errs = [*errs, checkData(**args)]
-
-    # print('check 8 ran - ele_ellip or ele_ortho is reported then Elevation_Corr is required')
-
-    # #Check 9: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Datum is required
-    # print("Check 9 begin:")
-    # args.update({
-    #     "dataframe": bruvmeta,
-    #     "tablename": "tbl_bruv_metadata",
-    #     "badrows": bruvmeta[(~bruvmeta['elevation_ellipsoid'].isna() | ~bruvmeta['elevation_orthometric'].isna()) & ( bruvmeta['elevation_datum'].isna() | (bruvmeta['elevation_datum'] == -88))].tmp_row.tolist(),
-    #     "badcolumn": "Elevation_Datum",
-    #     "error_type": "Empty value",
-    #     "error_message": "Elevation_Datum is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    # })
-    # errs = [*errs, checkData(**args)]
-
-    # print('check 9 ran - ele_ellip or ele_ortho is reported then Elevation_Datum is required')
-
-    
-
-    
-
-    # # Check: bruvintime format validation    24 hour clock HH:MM time validation
-    # timeregex = "([01]?[0-9]|2[0-3]):[0-5][0-9]$" #24 hour clock HH:MM time validation
-    # args.update({
-    #     "dataframe": bruvmeta,
-    #     "tablename": "tbl_bruv_metadata",
-    #     "badrows": bruvmeta[~bruvmeta['bruvintime'].str.match(timeregex)].index.tolist(),
-    #     "badcolumn": "bruvintime",
-    #     "error_message": "Time should be entered in HH:MM format on a 24-hour clock."
-    # })
-    # errs = [*errs, checkData(**args)]
-    # print("check ran - bruv_metadata - bruvintime format") 
 
 def bruv_lab(all_dfs):
     
@@ -283,6 +118,143 @@ def bruv_lab(all_dfs):
         "error_message": ""
     }
 
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ Logic Checks ---------------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    #print("# CHECK - 1")
+    # Description: Each data must include corresponding metadata record in the database
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 1")
+
+    #print("# CHECK - 2")
+    # Description: Each data must include corresponding videolog data
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 2")
+
+    #print("# CHECK - 3")
+    # Description: Each videolog data must include corresponding data
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 3")
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF Logic Checks --------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ BRUV Data Checks ------------------------------------------------ #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+    #print("# CHECK - 5")
+    # Description: MaxNs must be a positive integer or left blank
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 5")
+
+
+    #print("# CHECK - 6")
+    # Description: If in_out is "out" then both MaxN/MaxNs must be empty
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 6")
+
+    #print("# CHECK - 7")
+    # Description: If in_out is "in" then both MaxN/MaxNs must have an integer value and cannot be left empty
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 7")
+
+    #print("# CHECK - 8")
+    # Description: If in_out is "in" then MaxN is the sum of MaxNs (MaxN is the sum of all/each species counts (MaxNs) within a given FOV frame)
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 8")
+
+    #print("# CHECK - 9")
+    # Description: If in_out is "in" then certainty cannot be left empty
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 9")
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF BRUV Data Checks ----------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ BRUV Videolog Checks -------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF BRUV Videolog Checks ------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    '''
     ##################################### CUSTOM CHECKS ######################################################
     # Custom Checks
     # Check 1: bruv_videolog MaxNs col must be a postive integer 
@@ -526,5 +498,190 @@ def bruv_lab(all_dfs):
     })
     errs = [*errs, checkData(**args)]
     print("check 8 ran - bruv_data - multicol species")
-
+    '''
     return {'errors': errs, 'warnings': warnings}
+
+
+
+
+    '''
+    # #Check 7: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_units is required
+    # print("Check 7 begin:")
+    # args.update({
+    #     "dataframe": bruvmeta,
+    #     "tablename": "tbl_bruv_metadata",
+    #     "badrows": bruvmeta[(~bruvmeta['elevation_ellipsoid'].isna() | ~bruvmeta['elevation_orthometric'].isna()) & ( bruvmeta['elevation_units'].isna() | (bruvmeta['elevation_units'] == -88))].tmp_row.tolist(),
+    #     "badcolumn": "elevation_units",
+    #     "error_type": "Empty value",
+    #     "error_message": "Elevation_units is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+    # })
+    # errs = [*errs, checkData(**args)]
+
+    # print('check 7 ran - ele_ellip or ele_ortho is reported then ele_units is required')
+
+    # #Check 8: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Corr is required
+    # print("Check 8 begin:")
+    # args.update({
+    #     "dataframe": bruvmeta,
+    #     "tablename": "tbl_bruv_metadata",
+    #     "badrows": bruvmeta[(~bruvmeta['elevation_ellipsoid'].isna() | ~bruvmeta['elevation_orthometric'].isna()) & ( bruvmeta['elevation_corr'].isna() | (bruvmeta['elevation_corr'] == -88))].tmp_row.tolist(),
+    #     "badcolumn": "Elevation_Corr",
+    #     "error_type": "Empty value",
+    #     "error_message": "Elevation_Corr is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+    # })
+    # errs = [*errs, checkData(**args)]
+
+    # print('check 8 ran - ele_ellip or ele_ortho is reported then Elevation_Corr is required')
+
+    # #Check 9: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Datum is required
+    # print("Check 9 begin:")
+    # args.update({
+    #     "dataframe": bruvmeta,
+    #     "tablename": "tbl_bruv_metadata",
+    #     "badrows": bruvmeta[(~bruvmeta['elevation_ellipsoid'].isna() | ~bruvmeta['elevation_orthometric'].isna()) & ( bruvmeta['elevation_datum'].isna() | (bruvmeta['elevation_datum'] == -88))].tmp_row.tolist(),
+    #     "badcolumn": "Elevation_Datum",
+    #     "error_type": "Empty value",
+    #     "error_message": "Elevation_Datum is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+    # })
+    # errs = [*errs, checkData(**args)]
+
+    # print('check 9 ran - ele_ellip or ele_ortho is reported then Elevation_Datum is required')
+
+    
+
+    
+
+    # # Check: bruvintime format validation    24 hour clock HH:MM time validation
+    # timeregex = "([01]?[0-9]|2[0-3]):[0-5][0-9]$" #24 hour clock HH:MM time validation
+    # args.update({
+    #     "dataframe": bruvmeta,
+    #     "tablename": "tbl_bruv_metadata",
+    #     "badrows": bruvmeta[~bruvmeta['bruvintime'].str.match(timeregex)].index.tolist(),
+    #     "badcolumn": "bruvintime",
+    #     "error_message": "Time should be entered in HH:MM format on a 24-hour clock."
+    # })
+    # errs = [*errs, checkData(**args)]
+    # print("check ran - bruv_metadata - bruvintime format") 
+
+
+    # Example of appending an error (same logic applies for a warning)
+    # args.update({
+    #   "badrows": df[df.temperature != 'asdf'].index.tolist(),
+    #   "badcolumn": "temperature",
+    #   "error_type" : "Not asdf",
+    #   "error_message" : "This is a helpful useful message for the user"
+    # })
+    # errs = [*errs, checkData(**args)]
+    
+    #(1) maxnspecies is nonnegative
+ 
+    timeregex ="([01]?[0-9]|2[0-3]):[0-5][0-9]$" #24 hour clock HH:MM time validation
+    args.update({
+        "dataframe":bruvdata,
+        "tablename":'tbl_bruv_data',
+        "badrows":bruvdata[bruvdata['maxnspecies'] < 0].index.tolist(),
+        "badcolumn":"maxnspecies",
+        "error_type":"Value out of range",
+        #"error_message":"Max number of species should be between 0 and 100"
+        "error_message":"Max number of species must be nonnegative."
+    })
+    errs = [*errs, checkData(**args)]
+
+    #(2) maxnspecies should not exceed 100 (warning)
+    args.update({
+        "dataframe":bruvdata,
+        "tablename":'tbl_bruv_data',
+        "badrows":bruvdata[(bruvdata['maxnspecies'] < 0) | (bruvdata['maxnspecies'] > 100)].index.tolist(),
+        "badcolumn":"maxnspecies",
+        "error_type":"Value out of range",
+        "error_message":"Max number of species should NOT exceed 100."
+    })
+    warnings = [*warnings, checkData(**args)]
+
+    
+    args.update({
+        "dataframe":bruvdata,
+        "tablename":'tbl_bruv_data',
+        "badrows":bruvdata[bruvdata.foventeredtime.apply(pd.Timestamp) > bruvdata.fovlefttime.apply(pd.Timestamp)].index.tolist(),
+        "badcolumn":"foventeredtime,fovlefttime",
+        "error_type": "Value out of range",
+        "error_message":"FOV entered time must be before FOV left time"
+    })
+    errs = [*errs, checkData(**args)]
+    print("bruvmeta.head()['bruvintime']")
+    print(bruvmeta.head()['bruvintime'])
+    print("bruvmeta.head()['bruvouttime']")
+    print(bruvmeta.head()['bruvouttime'])
+
+    #NOTE THIS SHOULD BE TAKEN CARE OF BY CORE CHECK
+########################################################################################################################################################
+    # # Check: bruvmetadata bruvintime time validation
+    # timeregex = "([01]?[0-9]|2[0-3]):[0-5][0-9]$" #24 hour clock HH:MM time validation
+    # badrows_bruvintime = bruvmeta[
+    #     bruvmeta['bruvintime'].apply(
+    #         lambda x: not bool(re.match(timeregex, str(x))) if str(x) != "00:00:00" else False)
+    #         ].index.tolist()
+    # args.update({
+    #     "dataframe": bruvmeta,
+    #     "tablename": "tbl_bruv_metadata",
+    #     "badrows": badrows_bruvintime,
+    #     "badcolumn": "bruvintime",
+    #     "error_type" : "Time Format Error",
+    #     "error_message": "Time should be entered in HH:MM format on a 24-hour clock."
+    # })
+    # errs = [*errs, checkData(**args)]
+    # print("check ran - bruv_metadata - bruvintime") 
+    # # Check: bruvmetadata bruvouttime time validation
+    # badrows_bruvouttime = bruvmeta[
+    #     bruvmeta['bruvouttime'].apply(
+    #         lambda x: not bool(re.match(timeregex, str(x))) if str(x) != "00:00:00" else False)
+    #         ].index.tolist()
+    # args.update({
+    #     "dataframe": bruvmeta,
+    #     "tablename": "tbl_bruv_metadata",
+    #     "badrows": badrows_bruvouttime,
+    #     "badcolumn": "bruvouttime",
+    #     "error_message": "Time should be entered in HH:MM format on a 24-hour clock."
+    # })
+    # errs = [*errs, checkData(**args)]
+    # print("check ran - tbl_bruv_metadata - bruvouttime format") 
+########################################################################################################################################################
+    # NOTE This check needs to take into consideration that the data is clean if the start date is before the end date
+    # Note: starttime and endtime format checks must pass before entering the starttime before endtime check
+    '''
+    df = bruvmeta[(bruvmeta['bruvintime'] != "00:00:00") & (bruvmeta['bruvouttime'] != "00:00:00")]
+    print(" =========================================")
+    print("subsetting df on bruv time: ")
+    print(" =========================================")
+    print(df['bruvintime'])
+    print(df['bruvouttime'])
+    if (len(badrows_bruvintime) == 0 & (len(badrows_bruvouttime) == 0)):
+        args.update({
+            "dataframe": bruvmeta,
+            "tablename": "tbl_bruv_metadata",
+            "badrows": df[df['bruvintime'].apply(
+                lambda x: pd.Timestamp(str(x)).strftime('%H:%M') 
+                if not "00:00:00" else '') >= df['bruvouttime'].apply(lambda x: pd.Timestamp(str(x)).strftime('%H:%M') 
+                if not "00:00:00" else '')].index.tolist(),
+            "badcolumn": "bruvintime",
+            "error_message": "Bruvintime value must be before bruvouttime."
+            })
+        errs = [*errs, checkData(**args)]
+    print("check ran - tbl_bruv_metadata - bruvintime before bruvouttime")
+
+    del badrows_bruvintime
+    del badrows_bruvouttime
+    '''
+    # Check 2: depth_m is positive for tbl_bruv_metadata 
+    print("begin check 2")
+    args.update({
+        "dataframe": bruvmeta,
+        "tablename": 'tbl_bruv_metadata',
+        "badrows": bruvmeta[(bruvmeta['depth_m'] < 0) & (bruvmeta['depth_m'] != -88)].tmp_row.tolist(),
+        "badcolumn": "depth_m",
+        "error_type" : "Value out of range",
+        "error_message" : "Depth measurement should not be a negative number, must be greater than 0."
+    })
+    errs = [*errs, checkData(**args)]
+    print("check 2 ran - tbl_bruv_metadata - nonnegative depth_m") # tested
+    '''

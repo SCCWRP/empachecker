@@ -2,7 +2,7 @@
 
 from inspect import currentframe
 from flask import current_app, g
-from .functions import checkData
+from .functions import checkData, get_primary_key, mismatch
 import pandas as pd
 
 def toxicity(all_dfs):
@@ -56,6 +56,8 @@ def toxicity(all_dfs):
     toxicityresults = all_dfs['tbl_toxicityresults'].assign(tmp_row = all_dfs['tbl_toxicityresults'].index)
     toxicitysummary = all_dfs['tbl_toxicitysummary'].assign(tmp_row = all_dfs['tbl_toxicitysummary'].index)
 
+    grabevent_details = pd.read_sql("SELECT * FROM tbl_grabevent_details", g.eng)
+
     toxicitybatch_args = {
         "dataframe": toxicitybatch,
         "tablename": 'tbl_toxicitybatch',
@@ -96,122 +98,83 @@ def toxicity(all_dfs):
     # Description: Each toxicitysummary record must have correspond record in the grabeventdetails in database
     # Created Coder: Caspian Thackeray
     # Created Date: 09/05/23
-    # Last Edited Date: 09/06/23
+    # Last Edited Date: 09/08/23
     # Last Edited Coder: Caspian Thackeray
+    # NOTE (09/08/23): Wrote new code to checker standards
 
-    sql = """
-        SELECT siteid, estuaryname, samplecollectiondate, matrix, stationno, samplereplicate
-        FROM tbl_grabevent_details
-    """
+    toxsum_pkey = get_primary_key('tbl_toxicitysummary', g.eng)
+    grabdeets_pkey = get_primary_key('tbl_grabevent_details', g.eng)
 
-    grab_records = pd.read_sql(sql, g.eng)
+    toxsum_grabdeets_shared_pkey = list(set(toxsum_pkey).intersection(set(grabdeets_pkey)))
 
-    if 'tbl_toxicitysummary' in all_dfs.keys():
-        new_bad_rows = []
-        for label, row in toxicitysummary.iterrows():
-            tox_row_list = row.values.tolist()
-            found = False
-            for _, row2 in grab_records.iterrows():
-                grab_row_list = row2[['siteid', 'estuaryname', 'samplecollectiondate', 'matrix', 'stationno', 'samplereplicate']].values.tolist()
-                if tox_row_list == grab_row_list:
-                    found = True
-            if found == False:
-                new_bad_rows.append(label)
-        row_labels = toxicitysummary.index.values.tolist()
-        row_labels_string = ', '.join(map(str, row_labels))
-        errs.append(
-        checkData(
-            tablename     = 'tbl_toxicitysummary',
-            badrows       = new_bad_rows,
-            badcolumn     = row_labels_string,
-            error_type    = 'Matching Record Error',
-            error_message = 'Each toxicitysummary record must have corresponding record in the grabevent_details table in database'
-        )
-    )
-     
+    toxicitysummary_args.update({
+        "dataframe": toxicitysummary,
+        "tablename": 'tbl_toxicitysummary',
+        "badrows": mismatch(toxicitysummary, grabevent_details, toxsum_grabdeets_shared_pkey),
+        "badcolumn": ','.join(toxsum_grabdeets_shared_pkey),
+        "error_type": "Logic Error",
+        "is_core_error": False,
+        "error_message": "Each toxicitysummary record must have corresponding record in the grabevent_details table in database"
+    })
+    errs = [*errs, checkData(**toxicitysummary_args)]
     print("# END of CHECK - 1")
 
     print("# CHECK - 2")
     # Description: Each toxicitybatch record must have corresponding record in the grabevent_details table in database
     # Created Coder: Caspian Thackeray
     # Created Date: 09/05/23
-    # Last Edited Date: 09/06/23
+    # Last Edited Date: 09/08/23
     # Last Edited Coder: Caspian Thackeray
+    # NOTE (09/08/23): Wrote new code to checker standards
+    
+    toxbatch_pkey = get_primary_key('tbl_toxicitybatch', g.eng)
+    grabdeets_pkey = get_primary_key('tbl_grabevent_details', g.eng)
 
-    sql = """
-        SELECT siteid, estuaryname, samplecollectiondate, matrix, stationno, samplereplicate
-        FROM tbl_grabevent_details
-    """
+    toxbatch_grabdeets_shared_pkey = list(set(toxbatch_pkey).intersection(set(grabdeets_pkey)))
 
-    grab_records = pd.read_sql(sql, g.eng)
+    print('variables done')
 
-    if 'tbl_toxicitybatch' in all_dfs.keys():
-        new_bad_rows = []
-        for label, row in toxicitybatch.iterrows():
-            tox_row_list = row.values.tolist()
-            found = False
-            for _, row2 in grab_records.iterrows():
-                grab_row_list = row2[['siteid', 'estuaryname', 'samplecollectiondate', 'matrix', 'stationno', 'samplereplicate']].values.tolist()
-                if tox_row_list == grab_row_list:
-                    found = True
-            if found == False:
-                new_bad_rows.append(label)
-        row_labels = toxicitybatch.index.values.tolist()
-        row_labels_string = ', '.join(map(str, row_labels))
-        errs.append(
-        checkData(
-            tablename     = 'tbl_toxicitybatch',
-            badrows       = new_bad_rows,
-            badcolumn     = row_labels_string,
-            error_type    = 'Matching Record Error',
-            error_message = 'Each toxicitybatch record must have corresponding record in the grabevent_details table in database'
-        )
-    )
-     
+    toxicitybatch_args.update({
+        "dataframe": toxbatch_pkey,
+        "tablename": 'tbl_toxicitybatch',
+        "badrows": mismatch(toxicitybatch, grabevent_details, toxbatch_grabdeets_shared_pkey),
+        "badcolumn": ','.join(toxbatch_grabdeets_shared_pkey),
+        "error_type": "Logic Error",
+        "is_core_error": False,
+        "error_message": "Each toxicitybatch record must have corresponding record in the grabevent_details table in database"
+    })
+    print('update done')
+    errs = [*errs, checkData(**toxicitybatch_args)]
+
     print("# END of CHECK - 2")
 
     print("# CHECK - 3")
     # Description: Each toxicityresults record must have corresponding record in the grabevent_details table in database
     # Created Coder: Caspian Thackeray
     # Created Date: 09/05/23
-    # Last Edited Date: 09/06/23
+    # Last Edited Date: 09/08/23
     # Last Edited Coder: Caspian Thackeray
-
-    sql = """
-        SELECT siteid, estuaryname, samplecollectiondate, matrix, stationno, samplereplicate
-        FROM tbl_grabevent_details
-    """
-
-    grab_records = pd.read_sql(sql, g.eng)
-
-    if 'tbl_toxicityresults' in all_dfs.keys():
-        new_bad_rows = []
-        for label, row in toxicityresults.iterrows():
-            tox_row_list = row.values.tolist()
-            found = False
-            for _, row2 in grab_records.iterrows():
-                grab_row_list = row2[['siteid', 'estuaryname', 'samplecollectiondate', 'matrix', 'stationno', 'samplereplicate']].values.tolist()
-                if tox_row_list == grab_row_list:
-                    found = True
-            if found == False:
-                new_bad_rows.append(label)
-        row_labels = toxicityresults.index.values.tolist()
-        row_labels_string = ', '.join(map(str, row_labels))
-        errs.append(
-        checkData(
-            tablename     = 'tbl_toxicityresults',
-            badrows       = new_bad_rows,
-            badcolumn     = row_labels_string,
-            error_type    = 'Matching Record Error',
-            error_message = 'Each toxicityresults record must have corresponding record in the grabevent_details table in database'
-        )
-    )
-     
-    print("# END of CHECK - 3")
+    # NOTE (09/08/23): Wrote new code to checker standards
     
+    toxres_pkey = get_primary_key('tbl_toxicityresults', g.eng)
+    grabdeets_pkey = get_primary_key('tbl_grabevent_details', g.eng)
+
+    toxres_grabdeets_shared_pkey = list(set(toxres_pkey).intersection(set(grabdeets_pkey)))
+
+    toxicityresults_args.update({
+        "dataframe": toxbatch_pkey,
+        "tablename": 'tbl_toxicityresults',
+        "badrows": mismatch(toxicityresults, grabevent_details, toxres_grabdeets_shared_pkey),
+        "badcolumn": ','.join(toxres_grabdeets_shared_pkey),
+        "error_type": "Logic Error",
+        "is_core_error": False,
+        "error_message": "Each toxicitybatch record must have corresponding record in the grabevent_details table in database"
+    })
+    errs = [*errs, checkData(**toxicityresults_args)]
+
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
-    # ------------------------------------------END of Toxicity Checks ------------------------------------------------- #
+    # ------------------------------------------END of Toxicity Logic Checks ------------------------------------------- #
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################  
 

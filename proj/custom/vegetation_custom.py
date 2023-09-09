@@ -51,6 +51,231 @@ def vegetation(all_dfs):
         "error_message": ""
     }
 
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ Logic Checks ---------------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    #print("# CHECK - 1")
+    # Description: Each sample metadata must include corresponding cover data
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 1")
+
+    #print("# CHECK - 2")
+    # Description: Each cover data must include corresponding sample metadata
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 2")
+
+    #print("# CHECK - 3")
+    # Description: Each epifauna data must include corresponding sample metadata (but not vice versa)
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 3")
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF Logic Checks --------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ Sample Metadata Checks ------------------------------------------ #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    #print("# CHECK - 4")
+    # Description: Range for coordinates for transectbeginlongitude must be greater than -114.043 or transectendlongitude must be less than -124.502 (within CA)
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 4")
+
+    #print("# CHECK - 5")
+    # Description: Range for coordinates for transectbeginlatitude must be greater than 28 or transectendlatitude must be less than 41.992 (within CA including Baja)
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 5")
+
+    #print("# CHECK - 6")
+    # Description: If value is not plant then lat and long are req, but if it is plant then lat and long can be -88
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 6")
+
+    #print("# CHECK - 7")
+    # Description: Transectreplicate must be consecutive within primary keys
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 7")
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF Sample Metadata Checks ----------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ Vegetative Cover Data Checks ------------------------------------ #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    #print("# CHECK - 8")
+    # Description:
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 8")
+
+    #print("# CHECK - 9")
+    # Description:
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 9")
+
+    #print("# CHECK - 10")
+    # Description:
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 10")
+
+    #print("# CHECK - 11")
+    # Description:
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 11")
+
+    #print("# CHECK - 12")
+    # Description:
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 12")
+
+    #print("# CHECK - 13")
+    # Description:
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 13")
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF Vegetative Cover Data Checks ----------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ Epifauna Data  Checks ------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+    #print("# CHECK - 14")
+    # Description: If burrows is "yes" then entered abundance must be greater than or equal to 0 and cannot be -88
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 14")
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF Epifauna Data  Checks ------------------------------------ #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    '''
     ######################  LOGIC CHECKS #############################################################################################################
     print("Begin Vegetation Logic Checks..")
     # Note: Vegetation submission should always have vegetativecover_data. Metadata and vegetation data must have corresponding records.
@@ -401,5 +626,5 @@ def vegetation(all_dfs):
     # errs = [*errs, checkData(**args)]
 
     print("End Vegetation Checks")
-    
+    '''
     return {'errors': errs, 'warnings': warnings}

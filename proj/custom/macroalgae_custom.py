@@ -48,7 +48,192 @@ def macroalgae(all_dfs):
         "is_core_error": False,
         "error_message": ""
     }
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ Macroalgae Logic Checks ----------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
 
+    #print("# CHECK - 1")
+    # Description: Each metadata must include a corresponding coverdata
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 1")
+
+    #print("# CHECK - 2")
+    # Description: Each cover data must include a corresponding metadata
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 2")
+
+    #print("# CHECK - 3")
+    # Description: Each metadata must include a corresponding floating data
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 3")
+
+    #print("# CHECK - 4")
+    # Description: Each floating data must include a corresponding metadata
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 4")
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------END OF Macroalgae Logic Checks ----------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ Sample Metadata Checks ------------------------------------------ #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    #print("# CHECK - 5")
+    # Description: Transectreplicate must be greater than 0
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 5")
+
+    #print("# CHECK - 6")
+    # Description: Transectlength_m must be greater than 0
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 6")
+
+    #print("# CHECK - 7")
+    # Description: Transectreplicate must be consecutive within primary keys
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 7")
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------END OF  Sample Metadata Checks ----------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ Cover Data Checks ----------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    #print("# CHECK - 8")
+    # Description: Transectreplicate must be greater than 0
+    # Created Coder: 
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 8")
+
+    #print("# CHECK - 9")
+    # Description: Plotreplicate must be greater than 0
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 9")
+
+    #print("# CHECK - 10")
+    # Description: If covertype is "plant" then scientificname cannot be "Not recorded"
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 10")
+
+    #print("# CHECK - 11")
+    # Description: Plotreplicate must be consecutive within primary keys
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 11")
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------END OF Cover Data Checks ----------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ Floating Data Checks -------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    #print("# CHECK - 12")
+    # Description: If estimatedcover is 0 then scientificname must be "Not recorded"
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 12")
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF Floating Data Checks ------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+    '''
     # generalizing multicol_lookup_check
     def multicol_lookup_check(df_to_check, lookup_df, check_cols, lookup_cols):
         assert set(check_cols).issubset(set(df_to_check.columns)), "columns do not exists in the dataframe"
@@ -391,54 +576,5 @@ def macroalgae(all_dfs):
     errs = [*errs, checkData(**args)]
     print("check 15 ran - floating_data - multicol species") 
 
-    
+    '''
     return {'errors': errs, 'warnings': warnings}
-
-'''
-    #TransectBeginLatitude, TransectEndLatitude
-    args.update({
-        "dataframe": algaemeta,
-        "tablename": "tbl_macroalgae_sample_metadata",
-        "badrows":algaemeta[(algaemeta['transectbeginlatitude'] < 32.5008497379)].tmp_row.tolist(),
-        "badcolumn": "transectbeginlatitude",
-        "error_type" : "Value out of range",
-        "error_message" : "Your latitude coordinate is outside of california."
-    })
-    errs = [*warnings, checkData(**args)]
-
-    
-    args.update({
-        "dataframe": algaemeta,
-        "tablename": "tbl_macroalgae_sample_metadata",
-        "badrows":algaemeta[(algaemeta['transectendlatitude'] > 41.9924715343)].tmp_row.tolist(),
-        "badcolumn": "transectendlatitude",
-        "error_type" : "Value out of range",
-        "error_message" : "Your latitude coordinate is outside of california."
-    })
-    errs = [*warnings, checkData(**args)]
-
-
-
-
-
-    args.update({
-        "dataframe": algaemeta,
-        "tablename": "tbl_macroalgae_sample_metadata",
-        "badrows":algaemeta[(algaemeta['transectbeginlongitude'] < 32.5008497379)].tmp_row.tolist(),
-        "badcolumn": "transectbeginlongitude",
-        "error_type" : "Value out of range",
-        "error_message" : "Your longitude coordinate is  outside of california."
-    })
-    errs = [*warnings, checkData(**args)]
-
-    
-    args.update({
-        "dataframe": algaemeta,
-        "tablename": "tbl_macroalgae_sample_metadata",
-        "badrows":algaemeta[(algaemeta['transectendlongitude'] > 41.9924715343)].tmp_row.tolist(),
-        "badcolumn": "transectendlongitude",
-        "error_type" : "Value out of range",
-        "error_message" : "Your longitude coordinate is outside of california."
-    })
-    errs = [*warnings, checkData(**args)]
-'''

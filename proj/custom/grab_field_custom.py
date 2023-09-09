@@ -1,5 +1,3 @@
-# Dont touch this file! This is intended to be a template for implementing new custom checks
-
 from inspect import currentframe
 from flask import current_app, g
 from .functions import checkData
@@ -47,9 +45,147 @@ def grab_field(all_dfs):
         "is_core_error": False,
         "error_message": ""
     }
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ Logic Checks ---------------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
 
-    print("Begin Grab Field Custom Checks..")
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF Logic Checks --------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
 
+
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ GrabEvent Checks ------------------------------------------------ #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------END OF GrabEvent Checks ------------------------------------------ #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ GrabEventDetail Checks ------------------------------------------ #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    #print("# CHECK - 3")
+    # Description: coresizediameter should be filled when matrix is sediment 
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 3")
+
+    #print("# CHECK - 4")
+    # Description: coresizedepth should be filled when matrix is sediment 
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 4")
+
+    #print("# CHECK - 5")
+    # Description: If the sample type is benthic infauna and the matrix is sediment then sieve_or_depth is required 
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 5")
+
+    #print("# CHECK - 6")
+    # Description: sieve_or_depth is required when matrix is water
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 6")
+
+    #print("# CHECK - 7")
+    # Description: color should not get filled in when matrix is water
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 7")
+
+
+    #print("# CHECK - 8")
+    # Description: odor should not get filled when matrix is water
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 8")
+
+    #print("# CHECK - 9")
+    # Description: composition should not get filled in when matrix is water
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 9")
+
+    #print("# CHECK - 10")
+    # Description: If sampletype is "infauna" then a value for sieve_or_depth field must be pulled from lu_benthicsievesize. Also a value needs to be set for the sieve_or_depthunits field (lu_benthicsievesizeunits).
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 10")
+
+    #print("# CHECK - 11")
+    # Description: samplereplicate must be consecutive within primary keys
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 11")
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF GrabEventDetail Checks ----------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+
+
+
+
+    return {'errors': errs, 'warnings': warnings}
+
+'''
 #Check: IF sampletype is benthuc infauna and the matrix is sediment then sieve or depth is required
     args = {
         "dataframe":grabeventdet,
@@ -227,5 +363,4 @@ def grab_field(all_dfs):
 
 # #Ayah Finished
 
-
-    return {'errors': errs, 'warnings': warnings}
+'''

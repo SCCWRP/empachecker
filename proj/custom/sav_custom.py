@@ -28,7 +28,7 @@ def sav(all_dfs):
     savmeta = all_dfs['tbl_sav_metadata']
     savper = all_dfs['tbl_savpercentcover_data']
 
-    savmeta['tmp_row'] = savmets.index
+    savmeta['tmp_row'] = savmeta.index
     savper['tmp_row'] = savper.index
     
     errs = []
@@ -39,13 +39,140 @@ def sav(all_dfs):
     
     args = {
         "dataframe":pd.DataFrame({}),
-         "tablename": '',
-         "badrows": [],
-         "badcolumn": "",
-         "error_type": "",
-         "is_core_error": False,
-         "error_message": ""
-     }
+        "tablename": '',
+        "badrows": [],
+        "badcolumn": "",
+        "error_type": "",
+        "is_core_error": False,
+        "error_message": ""
+    }
+    
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ Logic Checks ---------------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+    #print("# CHECK - 1")
+    # Description: Each metadata must include corresponding percentcoverdata
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 1")
+
+    #print("# CHECK - 2")
+    # Description: Each metadata must include corresponding percentcoverdata
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 2")
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF Logic Checks --------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ SAV Metadata Checks --------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    #print("# CHECK - 3")
+    # Description: Transectlength_m must be -88 or greater than or equal to 0 (positive)
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 3")
+
+    #print("# CHECK - 4")
+    # Description: Range for transectlength_m is expected within [0, 50] or -88
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 4")
+
+    #print("# CHECK - 5")
+    # Description: savbedreplicate must be consecutive within primary keys
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 5")
+
+    #print("# CHECK - 6")
+    # Description: transectreplicate must be consecutive within primary keys
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 6")
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF SAV Metadata Checks -------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ SAV PercentCoverData -------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    #print("# CHECK - 7")
+    # Description: sdquadratreplicate must be consecutive within primary keys
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 7")
+
+    #print("# CHECK - 8")
+    # Description: pcquadratreplicate must be consecutive within primary keys
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - 8")
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF  SAV PercentCoverData ------------------------------------ #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+
+    '''
     #Function for multi column checks
     def multicol_lookup_check(df_to_check, lookup_df, check_cols, lookup_cols):
         assert set(check_cols).issubset(set(df_to_check.columns)), "columns do not exists in the dataframe"
@@ -235,5 +362,5 @@ def sav(all_dfs):
     # errs = [*errs, checkData(**args)]
 
     # print('check 9 ran - ele_ellip or ele_ortho is reported then Elevation_Datum is required')
-
+    '''
     return {'errors': errs, 'warnings': warnings}
