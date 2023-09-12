@@ -4,7 +4,7 @@ from inspect import currentframe
 from flask import current_app, g
 import pandas as pd
 from pandas import DataFrame
-from .functions import checkData, checkLogic, mismatch
+from .functions import checkData, checkLogic, mismatch, get_primary_key
 
 def sedchem_lab(all_dfs):
     
@@ -26,11 +26,13 @@ def sedchem_lab(all_dfs):
     # This data type should only have tbl_example
     # example = all_dfs['tbl_example']
 
-    nutrilab = all_dfs['tbl_nutrients_labbatch_data']
-    nutridata= all_dfs['tbl_nutrients_data']
-    
-    nutrilab['tmp_row'] = nutrilab.index
-    nutridata['tmp_row'] = nutridata.index
+    sedlabbatch = all_dfs['tbl_sedchem_labbatch_data']
+    seddata = all_dfs['tbl_sedchem_data']
+    grabeventdetails = pd.read_sql("SELECT * FROM tbl_grabevent_details", g.eng)
+
+    sedlabbatch['tmp_row'] = sedlabbatch.index
+    seddata['tmp_row'] = seddata.index
+    grabeventdetails['tmp_row'] = grabeventdetails
 
     errs = []
     warnings = []
@@ -54,39 +56,85 @@ def sedchem_lab(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
     
+    sedlabbatch_pkey = get_primary_key('tbl_sedchem_labbatch_data', g.eng)
+    seddata_pkey = get_primary_key('tbl_sedchem_data', g.eng)
+    grabeventdetails_pkey = get_primary_key('tbl_grabevent_details', g.eng)
+
+    sedlabbatch_seddata_shared_pkey = list(set(sedlabbatch_pkey).intersection(set(seddata_pkey)))
+    sedlabbatch_grabeventdetails_shared_pkey = list(set(sedlabbatch_pkey).intersection(set(grabeventdetails_pkey)))
+
     
-    #print("# CHECK - 1")
+    print("# CHECK - 1")
     # Description: Each labbatch data must correspond to grabeventdetails in database based on their shared pkeys (🛑 ERROR 🛑)
-    # Created Coder: 
-    # Created Date: 
+    # Created Coder: Ayah 
+    # Created Date: 09/12/2023
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE ():
-    #print("# END OF CHECK - 1")
+    # NOTE (09/12/2023): Ayah created logic check, has not tested yet
+
+    args.update({
+        "dataframe": sedlabbatch,
+        "tablename": "tbl_sedchem_labbatch_data",
+        "badrows": mismatch(sedlabbatch, grabeventdetails, sedlabbatch_grabeventdetails_shared_pkey), 
+        "badcolumn": ','.join(sedlabbatch_grabeventdetails_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Each labbatch data must have corresponding records in the grabeventdetails table based on the columns: {}".format(
+            ','.join(sedlabbatch_grabeventdetails_shared_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 1")
     
     
     
     
-    #print("# CHECK - 2")
+    print("# CHECK - 2")
     # Description: Each labbatch data must include corresponding data within session submission (🛑 ERROR 🛑)
-    # Created Coder: 
-    # Created Date: 
+    # Created Coder: Ayah 
+    # Created Date: 09/12/2023
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE ():
-    #print("# END OF CHECK - 2")
-    
-    
-    
-    
-    #print("# CHECK - 3")
+    # NOTE (09/12/2023): Ayah created logic check, has not tested yet   
+
+    args.update({
+        "dataframe": sedlabbatch,
+        "tablename": "tbl_sedchem_labbatch_data",
+        "badrows": mismatch(sedlabbatch, seddata, sedlabbatch_seddata_shared_pkey), 
+        "badcolumn": ','.join(sedlabbatch_seddata_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Each labbatch data must have corresponding records in SedChem Data based on the columns: {}".format(
+            ','.join(sedlabbatch_seddata_shared_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 2")
+
+    print("# CHECK - 3")
     # Description: Each data must include corresponding labbatch data within session submission (🛑 ERROR 🛑)
-    # Created Coder: 
-    # Created Date: 
+    # Created Coder: Ayah
+    # Created Date: 09/12/2023
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE ():
-    #print("# END OF CHECK - 3")
+    # NOTE (09/12/2023): Ayah created logic check, has not tested yet 
+
+    args.update({
+        "dataframe": seddata,
+        "tablename": "tbl_sedchem_data",
+        "badrows": mismatch(seddata,sedlabbatch,sedlabbatch_seddata_shared_pkey), 
+        "badcolumn": ','.join(sedlabbatch_seddata_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Each Sedchem data  must have corresponding records in SedChem Labbatch based on the columns: {}".format(
+            ','.join(sedlabbatch_seddata_shared_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 3")
+
+
+
 
 
 
@@ -104,17 +152,38 @@ def sedchem_lab(all_dfs):
     # ------------------------------------------------------ SedChemLabBatch Checks ---------------------------------------------------- #
     # ---------------------------------------------------------------------------------------------------------------------------------- #
     ######################################################################################################################################
-    
-    #print("# CHECK - 4")
+    sedlabbatch_pkey_norepcol = [pkey for pkey in sedlabbatch_pkey if pkey not in ('samplereplicate')]
+
+    def check_replicate(tablename,rep_column,pkeys):
+        badrows = []
+        for _, subdf in tablename.groupby([x for x in pkeys if x != rep_column]):
+                df = subdf.filter(items=[*pkeys,*['tmp_row']])
+                df = df.sort_values(by=f'{rep_column}').fillna(0)
+                rep_diff = df[f'{rep_column}'].diff().dropna()
+                all_values_are_one = (rep_diff == 1).all()
+                if not all_values_are_one:
+                    badrows.extend(df.tmp_row.tolist())
+        return badrows
+
+    print("# CHECK - 4")
     # Description: samplereplicate must be consecutive within primary keys (🛑 ERROR 🛑)
-    # Created Coder: 
-    # Created Date: 
+    # Created Coder: Ayah
+    # Created Date: 09/12/2023
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE ():
-    #print("# END OF CHECK - 4")    
+    # NOTE (09/12/2023): I made the variable "seddata_pkey_norepcol" because the error message must output all the pkey columns except for replicate ones
     
-    
+    args.update({
+        "dataframe": sedlabbatch,
+        "tablename": "tbl_sedchem_labbatch_data",
+        "badrows" : check_replicate(sedlabbatch,'samplereplicate',sedlabbatch_pkey),
+        "badcolumn": "samplereplicate",
+        "error_type": "Replicate Error",
+        "error_message": f"Replicate must be consecutive within these columns {','.join(sedlabbatch_pkey_norepcol)}."
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 4") 
     
     ######################################################################################################################################
     # ---------------------------------------------------------------------------------------------------------------------------------- #
@@ -132,34 +201,71 @@ def sedchem_lab(all_dfs):
     # ------------------------------------------------------ SedChemData Checks -------------------------------------------------------- #
     # ---------------------------------------------------------------------------------------------------------------------------------- #
     ######################################################################################################################################
-    
-    #print("# CHECK - 5")
+    seddata_pkey_norepcol = [pkey for pkey in seddata_pkey if pkey not in ('samplereplicate', 'labreplicate')]
+
+    print("# CHECK - 5")
     # Description: If there is a value in result column, mdl cannot be empty (🛑 ERROR 🛑)
-    # Created Coder: 
-    # Created Date: 
+    # Created Coder: Ayah
+    # Created Date: 09/12/2023
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE ():
-    #print("# END OF CHECK - 5")       
+    # NOTE (09/12/2023): Ayah wrote the check, it has not been tested yet
+
+    args.update({
+        "dataframe": seddata,
+        "tablename": "tbl_sedchem_data",
+        "badrows" : seddata[(seddata['results'].notna()) & (seddata['mdl'].isna())].tmp_row.tolist(),
+        "badcolumn": "mdl",
+        "error_type": "Empty Value Error",
+        "error_message": f"MDL must be recorded when results are not null."
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 5")       
 
 
-     #print("# CHECK - 6")
+    print("# CHECK - 6")
     # Description: labreplicate must be consecutive within primary keys (🛑 ERROR 🛑)
-    # Created Coder: 
-    # Created Date: 
+    # Created Coder: Ayah
+    # Created Date: 09/12/2023
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE ():
-    #print("# END OF CHECK - 6")       
+    # NOTE (09/12/2023): Ayah wrote the replicate check, it has not been tested. 
+    # NOTE (09/12/2023): I made the variable "seddata_pkey_norepcol" because the error message must output all the pkeys except for any rep columns
+
+    args.update({
+        "dataframe": seddata,
+        "tablename": "tbl_sedchem_data",
+        "badrows" : check_replicate(seddata,'labreplicate',seddata_pkey),
+        "badcolumn": "labreplicate",
+        "error_type": "Replicate Error",
+        "error_message": f"Labeplicate must be consecutive within these columns {','.join(seddata_pkey_norepcol)}."
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 6")       
     
-    #print("# CHECK - 7")
+    print("# CHECK - 7")
     # Description: samplereplicate must be consecutive within primary keys (🛑 ERROR 🛑)
     # Created Coder: 
     # Created Date: 
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE ():
-    #print("# END OF CHECK - 7")    
+    # NOTE (09/12/2023): Ayah wrote the replicate check, it has not been tested. 
+    # NOTE (09/12/2023): I made the variable "seddata_pkey_norepcol" because the error message must output all the pkey columns except for replicate ones
+
+    args.update({
+        "dataframe": seddata,
+        "tablename": "tbl_sedchem_data",
+        "badrows" : check_replicate(seddata,'samplereplicate',seddata_pkey),
+        "badcolumn": "samplereplicate",
+        "error_type": "Replicate Error",
+        "error_message": f"Samplereplicate must be consecutive within these columns {','.join(seddata_pkey_norepcol)}."
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 7")
+       
 
     
     
@@ -171,98 +277,4 @@ def sedchem_lab(all_dfs):
     ######################################################################################################################################
 
 
-
-
-
-    '''
-    print("Begin Logic Checks...")
-    eng = g.eng
-    sql = eng.execute("SELECT * FROM tbl_nutrients_metadata")
-    sql_df = DataFrame(sql.fetchall())
-    sql_df.columns = sql.keys()
-    nutrimeta = sql_df
-    del sql_df
-    # Logic Check 1: nutrients_metadata (db) & nutrients_labbatch_data (submission),nutrients metadata records do not exist in database
-    print("Start of Logic check 1")
-    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'samplecollectiontime', 'matrix', 'nutrientreplicate', 'sampleid']
-    args.update({
-        "dataframe": nutrilab,
-        "tablename": "tbl_nutrients_labbatch_data",
-        "badrows": mismatch(nutrilab, nutrimeta, groupcols), 
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, matrix, nutrientreplicate, sampleid",
-        "error_type": "Logic Error",
-        "error_message": "Field submission for nutrients labdata is missing. Please verify that the nutrients field data has been previously submitted."
-    })
-    errs = [*errs, checkData(**args)]
-    print("End of Logic check 1")
-    print("check ran - logic - nutrients metadata records do not exist in database for nutrilab submission")
-
-    # Logic Check 2: nutrients_labbatch_data & nutrients_data must have corresponding records within session submission
-    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate','samplecollectiontime', 'matrix', 'nutrientreplicate', 'sampleid', 'preparationbatchid']
-
-    # Logic Check 2a: nutrients_data missing records provided by nutrients_labbatch_data
-    print("Start of Logic check 2a")
-    args.update({
-        "dataframe": nutrilab,
-        "tablename": "tbl_nutrients_labbatch_data",
-        "badrows": mismatch(nutrilab, nutridata, groupcols), 
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, matrix, nutrientreplicate, sampleid, preparationbatchid",
-        "error_type": "Logic Error",
-        "error_message": "Records in nutrients_labbatch_data must have corresponding records in nutrients_data. Missing records in nutrients_data."
-    })
-    errs = [*errs, checkData(**args)]
-    print("Start of Logic check 2a")
-    print("check ran - logic - missing nutrients_data records")
-    # Logic Check 2b: nutrients_labbatch_data missing records provided by nutrients_data
-    print("Start of Logic check 2b")
-    args.update({
-        "dataframe": nutridata,
-        "tablename": "tbl_nutrients_data",
-        "badrows": mismatch(nutridata, nutrilab, groupcols), 
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, matrix, nutrientreplicate, sampleid, preparationbatchid",
-        "error_type": "Logic Error",
-        "error_message": "Records in nutrients_data must have corresponding records in nutrients_labbatch_data. Missing records in nutrients_labbatch_data."
-    })
-    errs = [*errs, checkData(**args)]
-    print("Start of Logic check 2b")
-    print("check ran - logic - missing nutrients_labbatch_data records")
-
-    print("End Nutrients Lab Logic Checks...")
-
-    print("-----------CUSTOM CHECKS-------------")
-    #check 4: If there is a value in result column, mdl cannot be empty
-    print("Start of custom check 4")
-
-    # args.update({
-    #     "dataframe": nutridata,
-    #     "tablename": "tbl_nutrients_data",
-    #     "badrows":nutridata['analysisdate'].apply(lambda x: pd.Timestamp(str(x)).strftime('%Y-%m-%d') if not (pd.isnull(x) or x == 'Not recorded') else "00:00:00").index.tolist(),
-    #     "badcolumn": "analysisdate",
-    #     "error_type" : "Value out of range",
-    #     "error_message" : "Your time input is out of range."
-    # })
-    # #errs = [*warnings, checkData(**args)]
-    
-    # args.update({
-    #     "dataframe": nutrilab,
-    #     "tablename": "tbl_nutrients_labbatch_data",
-    #     "badrows":nutrilab['preparationtime'].apply(lambda x: pd.Timestamp(str(x)).strftime('%H:%M:%S') if not (pd.isnull(x) or x == 'Not recorded') else "00:00:00").index.tolist(),
-    #     "badcolumn": "preparationtime",
-    #     "error_type" : "Value out of range",
-    #     "error_message" : "Your time input is out of range."
-    # })
-    # #errs = [*errs, checkData(**args)]
-    
-    # args.update({
-    #     "dataframe": nutridata,
-    #     "tablename": "tbl_nutrients_data",
-    #     "badrows":nutridata['samplecollectiontime'].apply(lambda x: pd.Timestamp(str(x)).strftime('%H:%M:%S') if not (pd.isnull(x) or x == 'Not recorded') else "00:00:00").index.tolist(),
-    #     "badcolumn": "samplecollectiontime",
-    #     "error_type" : "Value out of range",
-    #     "error_message" : "Your time input is out of range."
-    # })
-    #errs = [*errs, checkData(**args)]
-    
-    print("End of custom check 4")
-    '''
     return {'errors': errs, 'warnings': warnings}

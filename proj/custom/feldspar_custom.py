@@ -5,8 +5,7 @@ from flask import current_app, g
 import datetime as dt
 import pandas as pd
 from datetime import date
-from .functions import checkData, mismatch
-
+from .functions import checkData, mismatch, multicol_lookup_check, get_primary_key
 def feldspar(all_dfs):
     
     current_function_name = str(currentframe().f_code.co_name)
@@ -32,21 +31,25 @@ def feldspar(all_dfs):
     felddata['tmp_row'] = felddata.index
     feldmeta['tmp_row'] = feldmeta.index
 
+    felddata_pkey = get_primary_key('tbl_feldspar_data',g.eng)
+    feldmeta_pkey = get_primary_key('tbl_feldspar_metadata',g.eng)
+    felddata_feldmeta_shared_pkey = list(set(felddata_pkey).intersection(set(feldmeta_pkey)))
+
     errs = []
     warnings = []
 
     # Alter this args dictionary as you add checks and use it for the checkData function
     # for errors that apply to multiple columns, separate them with commas
     
-    # args = {
-    #     "dataframe": pd.DataFrame({}),
-    #     "tablename": '',
-    #     "badrows": [],
-    #     "badcolumn": "",
-    #     "error_type": "",
-    #     "is_core_error": False,
-    #     "error_message": ""
-    # }
+    args = {
+        "dataframe": pd.DataFrame({}),
+        "tablename": '',
+        "badrows": [],
+        "badcolumn": "",
+        "error_type": "",
+        "is_core_error": False,
+        "error_message": ""
+    }
 
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
@@ -54,14 +57,25 @@ def feldspar(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
 
-    #print("# CHECK - 1")
+    print("# CHECK - 1")
     # Description: Each data must include corresponding sample metadata
-    # Created Coder:
+    # Created Coder: Ayah
     # Created Date:
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (Date):
-    #print("# END OF CHECK - 1")
+    args.update({
+        "dataframe": felddata,
+        "tablename": "tbl_feldspar_data",
+        "badrows": mismatch(felddata,feldmeta,felddata_feldmeta_shared_pkey), 
+        "badcolumn": ','.join(felddata_feldmeta_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Each Feldspar data  must have corresponding records in Feldspar Metadata based on the columns: {}".format(
+            ','.join(felddata_feldmeta_shared_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 1")
 
 
     ######################################################################################################################
@@ -81,14 +95,28 @@ def feldspar(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
     
-    #print("# CHECK - 2")
+    print("# CHECK - 2")
     # Description: if plug_extracted = yes then corresponding data
     # Created Coder:
     # Created Date:
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (Date):
-    #print("# END OF CHECK - 2")
+    feldmeta_filter = feldmeta[feldmeta['plug_extracted'] == 'yes']
+    args = {
+        "dataframe": feldmeta,
+        "tablename": 'tbl_feldspar_metadata',
+        "badrows": mismatch(feldmeta_filter, felddata, felddata_feldmeta_shared_pkey),
+        "badcolumn": "plug_extracted ",
+        "error_type": "Value Error",
+        "is_core_error": False,
+        "error_message": "Since plug_extracted = yes, metadata must have corresponding records in Feldspar Data based on the columns: {}".format(
+            ','.join(felddata_feldmeta_shared_pkey)
+        )
+    }
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 2")
     
     
     
@@ -118,28 +146,7 @@ def feldspar(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
 
-
-
     '''
-    # generalizing multicol_lookup_check
-    def multicol_lookup_check(df_to_check, lookup_df, check_cols, lookup_cols):
-        assert set(check_cols).issubset(set(df_to_check.columns)), "columns do not exists in the dataframe"
-        assert isinstance(lookup_cols, list), "lookup columns is not a list"
-
-        lookup_df = lookup_df.assign(match="yes")
-        #bug fix: read 'status' as string to avoid merging on float64 (from df_to_check) and object (from lookup_df) error
-        if 'status' in df_to_check.columns.tolist():
-            df_to_check['status'] = df_to_check['status'].astype(str)
-        
-        for c in check_cols:
-            df_to_check[c] = df_to_check[c].apply(lambda x: str(x).lower().strip())
-        for c in lookup_cols:
-            lookup_df[c] = lookup_df[c].apply(lambda x: str(x).lower().strip())
-        
-        merged = pd.merge(df_to_check, lookup_df, how="left", left_on=check_cols, right_on=lookup_cols)
-        badrows = merged[pd.isnull(merged.match)].tmp_row.tolist()
-        return(badrows)
-    
     ############################### --Start of Logic Checks -- #############################################################
     print("Begin fieldspar Logic Checks...")
 
