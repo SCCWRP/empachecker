@@ -88,7 +88,6 @@ def fix_case(all_dfs: dict):
             ]  
             for x in lu_info.column_name
         }
-        print(f"foreignkeys_rawvalues = {foreignkeys_rawvalues}")
         # Remove the empty lists in the dictionary's values. 
         # Empty lists indicate there are values that are not in the lu list for a certain column
         # This will be taken care of by core check.
