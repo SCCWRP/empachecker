@@ -56,14 +56,25 @@ def bruv_field(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
 
-    #print("# CHECK - 4")
+    print("# CHECK - 4")
     # Description: Depth_m must be -88 or greater than or equal to 0
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 4")
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 09/12/2023
+    # Last Edited Coder: Ayah
+    # NOTE (09/12/2023): Ayah adjusts the format so it follows the coding standard
+
+    args.update({
+        "dataframe": bruvmeta,
+        "tablename": 'tbl_bruv_metadata',
+        "badrows": bruvmeta[(bruvmeta['depth_m'] < 0) & (bruvmeta['depth_m'] != -88)].tmp_row.tolist(),
+        "badcolumn": "depth_m",
+        "error_type" : "Value out of range",
+        "error_message" : "Depth measurement should not be a negative number, must be greater than 0."
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 4")
 
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
