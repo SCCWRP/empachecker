@@ -253,12 +253,14 @@ def crabtrap(all_dfs):
     # Description: Replicate must be consecutive within a primary key  (🛑 ERROR 🛑)
     # Created Coder: Ayah H
     # Created Date: 09/01/2023
-    # Last Edited Date: 
+    # Last Edited Date: 09/12/2023
     # Last Edited Coder: Ayah H.
     # NOTE (09/01/2023): Ayah H. coded added Check 17.
     # NOTE (09/05/2023): Ayah checked that the check works 
     # NOTE (09/06/2023): Nick commented out so we could pull from github
+    # NOTE (09/12/2023): Ayah Fixed Error statement for check
     crabmeta_pkey = list(get_primary_key('tbl_crabtrap_metadata', g.eng))
+    crabmeta_pkey_norepcol = crabmeta_pkey.remove('replicate')
     def check_replicate(tablename,rep_column,pkeys):
         badrows = []
         for _, subdf in tablename.groupby([x for x in pkeys if x != rep_column]):
@@ -273,10 +275,10 @@ def crabtrap(all_dfs):
     args.update({
         "dataframe": crabmeta,
         "tablename": "tbl_crabtrap_metadata",
-        "badrows" : check_replicate(crabmeta,'replicate',crabmeta_pkey)[0],
+        "badrows" : check_replicate(crabmeta,'replicate',crabmeta_pkey),
         "badcolumn": "replicate",
         "error_type": "Replicate Error",
-        "error_message": f"Replicate must be consecutive within{','.join(check_replicate(crabmeta,'replicate',crabmeta_pkey)[1])}."
+        "error_message": f"Replicate must be consecutive within these columns {','.join(crabmeta_pkey_norepcol)}."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 9")
