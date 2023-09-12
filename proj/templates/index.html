@@ -135,7 +135,6 @@
                     {% endif %}
 
                   </div>  
-                  <br>
                   {% endfor %}
                 
                   <div class="login-input-container form form-group" id="login-form-submit-btn-container">
@@ -543,6 +542,40 @@
     .then(response => response.json())
     .then(data => console.log(data));
   }
+
+
+  // For the CTD raw files, they dont have units of measurement, so we can have the user specify here
+  // but we dont want the fields to show if they are not giving us CTD data
+  document.querySelector('#logger_raw-sensortype-select')?.addEventListener('change', function() {
+    const tz = document.querySelector('#logger_raw-ctd_timezone-select');
+    const press = document.querySelector('#logger_raw-ctd_pressureunit-select');
+    const temp = document.querySelector('#logger_raw-ctd_temperatureunit-select');
+    const cond = document.querySelector('#logger_raw-ctd_conductivityunit-select');
+    
+    if (String(document.querySelector('#logger_raw-sensortype-select').value).toLowerCase() === 'ctd') {
+      tz?.parentElement.classList.remove('hidden');
+      press?.parentElement.classList.remove('hidden');
+      temp?.parentElement.classList.remove('hidden');
+      cond?.parentElement.classList.remove('hidden');
+    } else {
+      tz?.parentElement.classList.add('hidden')
+      press?.parentElement.classList.add('hidden');
+      temp?.parentElement.classList.add('hidden');
+      cond?.parentElement.classList.add('hidden');
+      
+      tz.value = '';
+      press.value = '';
+      temp.value = '';
+      cond.value = '';
+
+    }
+  })
+
+  // Hide the CTD units select options
+  document.querySelector('#logger_raw-ctd_timezone-select')?.parentElement.classList.add('hidden');
+  document.querySelector('#logger_raw-ctd_pressureunit-select')?.parentElement.classList.add('hidden');
+  document.querySelector('#logger_raw-ctd_temperatureunit-select')?.parentElement.classList.add('hidden');
+  document.querySelector('#logger_raw-ctd_conductivityunit-select')?.parentElement.classList.add('hidden');
   
 
 //   Array.from(document.getElementsByClassName('filetype-select-radio')).forEach(btn => {
