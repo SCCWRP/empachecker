@@ -1,6 +1,9 @@
 from .mail import send_mail
 from flask import jsonify
 
+SCIENTIST_EMAILS = ['janw@sccwrp.org']
+TEST_EMAILS = ['test@sccwrp.org']
+
 def default_exception_handler(mail_from, errmsg, maintainers, project_name, login_info, submissionid, mail_server, attachment = None):
     print("Checker application came across an error")
     print(errmsg) # commenting out due to unicodeencodeerror
@@ -19,6 +22,10 @@ def default_exception_handler(mail_from, errmsg, maintainers, project_name, logi
         for k, v in login_info.items():
             msgbody += f"{k}: {v}\n"
     msgbody += f"\nHere is the error message:\n{errmsg}"
+
+    # Do not email to the scientist if the login email is test@sccwrp.org
+    if login_info.get('login_email') in TEST_EMAILS:
+        maintainers = [x for x in maintainers if x not in SCIENTIST_EMAILS]
 
     send_mail(
         mail_from,
