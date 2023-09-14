@@ -3,7 +3,7 @@
 from inspect import currentframe
 from flask import current_app, g
 import pandas as pd
-from .functions import checkData, mismatch
+from .functions import checkData, mismatch, get_primary_key
 import re
 
 
@@ -67,33 +67,58 @@ def benthicinfauna_lab(all_dfs):
     # ------------------------------------------------ Benthic Infauna Logic Checks ------------------------------------ #
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
+    benthiclabbatch_pkey = get_primary_key('tbl_benthicinfauna_labbatch', g.eng)
+    benthicabundance_pkey = get_primary_key('tbl_benthicinfauna_abundance', g.eng)
+    benthicbiomass_pkey = get_primary_key('tbl_benthicinfauna_biomass', g.eng)
 
-    #print("# CHECK - 1")
+    labbatch_grabevent_shared_pkey = list(set(benthiclabbatch_pkey).intersection(set(benthicbiomass_pkey)))
+    labbatch_abundance_shared_pkey = list(set(benthiclabbatch_pkey).intersection(set(benthicabundance_pkey)))
+    abundance_labbatch_shared_pkey = list(set(benthicabundance_pkey).intersection(set(benthiclabbatch_pkey)))
+
+    print("# CHECK - 1")
     # Description: Each labbatch data must include corresponding records in grab_event
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 1")
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date:  NA
+    # Last Edited Coder: NA
+    # NOTE (9/14/2023): Aria This check cant be completed. There is no primary_keys on grab_event table in the database
 
-    #print("# CHECK - 2")
+    
+    print("# CHECK - 2")
     # Description: Each labbatch data must include corresponding abundance data within session submission
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 2")
+    # Created Coder: Aria Askaryar
+    # Created Date: NA
+    # Last Edited Date:  9/14/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (9/14/2023): Aria adjusts the format so it follows the coding standard.
+    args.update({
+        "dataframe": benthiclabbatch,
+        "tablename": "tbl_benthicinfauna_labbatch",
+        "badrows": mismatch(benthiclabbatch, benthicabundance, labbatch_abundance_shared_pkey), 
+        "badcolumn": ','.join(labbatch_abundance_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Records in tbl_benthicinfauna_labbatch must have corresponding records in benthicabundance. Missing records in benthicabundance."
+    })
+    errs = [*errs, checkData(**args)]  
+    print("# END OF CHECK - 2")
 
-    #print("# CHECK - 3")
+    print("# CHECK - 3")
     # Description: Each abundance data must include corresponding labbatch data within session submission
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 3")
+    # Created Coder: Aria Askaryar
+    # Created Date: NA
+    # Last Edited Date:  9/14/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (9/14/2023): Aria adjusts the format so it follows the coding standard.
+    args.update({
+        "dataframe": benthicabundance,
+        "tablename": "tbl_benthicinfauna_abundance",
+        "badrows": mismatch(benthicabundance, benthiclabbatch, abundance_labbatch_shared_pkey), 
+        "badcolumn": ','.join(abundance_labbatch_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Records in benthicabundance must have corresponding records in benthiclabbatch. Missing records in benthiclabbatch."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 3")
 
 
     ######################################################################################################################
@@ -105,40 +130,29 @@ def benthicinfauna_lab(all_dfs):
 
 
 
-
-
-
-
-
-
-
-
-
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
     # ------------------------------------------------ Fish Logic Checks ----------------------------------------------- #
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
 
-    #print("# CHECK - 4")
+    print("# CHECK - 4")
     # Description: Biomass_g must be greater than or equal to 0
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 4")
-
-
-
-
-
-
-
-
-
-
-
+    # Created Coder: Aria Askaryar
+    # Created Date: NA
+    # Last Edited Date:  9/14/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (9/14/2023): Aria adjusts the format so it follows the coding standard.
+    args.update({
+        "dataframe": benthicbiomass,
+        "tablename": "tbl_benthicinfauna_biomass",
+        "badrows":benthicbiomass[(benthicbiomass['biomass_g'] <= 0)].tmp_row.tolist(),
+        "badcolumn": "biomass_g",
+        "error_type" : "Value is out of range.",
+        "error_message" : "Biomass must be greater than 0"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 4")
 
 
     ######################################################################################################################
@@ -146,21 +160,6 @@ def benthicinfauna_lab(all_dfs):
     # --------------------------------------------END OF  Biomasss Checks ---------------------------------------------- #
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
