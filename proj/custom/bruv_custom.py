@@ -4,7 +4,7 @@ from inspect import currentframe
 import pandas as pd
 from pandas import DataFrame
 from flask import current_app, g
-from .functions import checkData, checkLogic, mismatch
+from .functions import checkData, checkLogic, mismatch, get_primary_key
 import re
 import time
 
@@ -58,11 +58,11 @@ def bruv_field(all_dfs):
 
     print("# CHECK - 4")
     # Description: Depth_m must be -88 or greater than or equal to 0
-    # Created Coder: NA
+    # Created Coder: Aria Askaryar
     # Created Date: NA
-    # Last Edited Date: 09/12/2023
-    # Last Edited Coder: Ayah
-    # NOTE (09/12/2023): Ayah adjusts the format so it follows the coding standard
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/12/2023): Aria Askaryar adjusts the format so it follows the coding standard
 
     args.update({
         "dataframe": bruvmeta,
@@ -134,33 +134,67 @@ def bruv_lab(all_dfs):
     # ------------------------------------------------ Logic Checks ---------------------------------------------------- #
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
+    protocol_pkey = get_primary_key('tbl_protocol_metadata', g.eng)
+    bruvdata_pkey = get_primary_key('tbl_bruv_data', g.eng)
+    bruvvideo_pkey = get_primary_key('tbl_bruv_videolog', g.eng)
 
-    #print("# CHECK - 1")
-    # Description: Each data must include corresponding metadata record in the database
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 1")
+    bruvdata_protocol_shared_pkey = list(set(bruvdata_pkey).intersection(set(protocol_pkey)))
+    bruvdata_bruvvideo_shared_pkey = list(set(bruvdata_pkey).intersection(set(bruvvideo_pkey)))
+    bruvvideo_bruvdata_shared_pkey = list(set(bruvvideo_pkey).intersection(set(bruvdata_pkey)))
 
-    #print("# CHECK - 2")
+    print("# CHECK - 1")
+    # Description: Each data(bruvdata) must include corresponding metadata(protocol) record in the database
+    # Created Coder: Aria Askaryar
+    # Created Date: NA
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/12/2023): Aria Askaryar adjusts the format so it follows the coding standard
+    args.update({
+        "dataframe": bruvdata,
+        "tablename": "tbl_bruv_data",
+        "badrows":  mismatch(bruvdata, protocol, bruvdata_protocol_shared_pkey),  
+        "badcolumn": ','.join(bruvdata_protocol_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": f"Records in bruvdata should have corresponding records in bruv_metadata. Please submit the metadata for these records first. They should be matching on these columns {bruvdata_protocol_shared_pkey}"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 1")
+
+    print("# CHECK - 2")
     # Description: Each data must include corresponding videolog data
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 2")
+    # Created Coder: Aria Askaryar
+    # Created Date: NA
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/12/2023): Aria Askaryar adjusts the format so it follows the coding standard
+    args.update({
+        "dataframe": bruvdata,
+        "tablename": "tbl_bruv_data",
+        "badrows": mismatch(bruvdata, bruvvideo, bruvdata_bruvvideo_shared_pkey),  
+        "badcolumn":  ','.join(bruvdata_bruvvideo_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": f"Each data (bruv_data) should have a corresponding record in videolog based on these columns {bruvdata_bruvvideo_shared_pkey}."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 2")
 
-    #print("# CHECK - 3")
+    print("# CHECK - 3")
     # Description: Each videolog data must include corresponding data
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 3")
+    # Created Coder: Aria Askaryar
+    # Created Date: NA
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/12/2023): Aria Askaryar adjusts the format so it follows the coding standard
+    args.update({
+        "dataframe": bruvvideo,
+        "tablename": "tbl_bruv_videolog",
+        "badrows": mismatch(bruvvideo, bruvdata, bruvvideo_bruvdata_shared_pkey),  
+        "badcolumn":  ','.join(bruvvideo_bruvdata_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": f"Each metadata (videolog) with fish is no should not have a corresponding record in data based on these columns {bruvvideo_bruvdata_shared_pkey}."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 3")
 
 
     ######################################################################################################################
@@ -171,59 +205,121 @@ def bruv_lab(all_dfs):
 
 
 
-
-
-
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
     # ------------------------------------------------ BRUV Data Checks ------------------------------------------------ #
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
-    #print("# CHECK - 5")
+    print("# CHECK - 5")
     # Description: MaxNs must be a positive integer or left blank
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 5")
+    # Created Coder: Aria Askaryar
+    # Created Date: NA
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/12/2023): Aria Askaryar adjusts the format so it follows the coding standard
+    args = {
+        "dataframe": bruvdata,
+        "tablename": 'tbl_bruv_data',
+        "badrows": bruvdata[bruvdata['maxns'] < 0].tmp_row.tolist(),
+        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, camerareplicate",
+        "error_type": "Value Error",
+        "error_message": "MaxNs must be a positive integer or left blank."
+    }
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 5")
 
-
-    #print("# CHECK - 6")
+    print("# CHECK - 6")
     # Description: If in_out is "out" then both MaxN/MaxNs must be empty
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 6")
+    # Created Coder: Aria Askaryar
+    # Created Date: NA
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/12/2023): Aria Askaryar adjusts the format so it follows the coding standard
+    args = {
+        "dataframe": bruvdata,
+        "tablename": 'tbl_bruv_data',
+        "badrows": bruvdata[
+            (bruvdata['in_out'] == 'out') & 
+            ((~bruvdata['maxn'].isna()) | (~bruvdata['maxns'].isna()))].tmp_row.tolist(),
+        "badcolumn": "in_out, maxn, maxns",
+        "error_type": "Value Error",
+        "error_message": "Invalid entry for MaxN/MaxNs column. Since in_out column is 'out', then both MaxN/MaxNs must be empty."
+    }
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 6")
 
-    #print("# CHECK - 7")
+    print("# CHECK - 7")
     # Description: If in_out is "in" then both MaxN/MaxNs must have an integer value and cannot be left empty
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 7")
+    # Created Coder: Aria Askaryar
+    # Created Date: NA
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/12/2023): Aria Askaryar adjusts the format so it follows the coding standard
+    args = {
+        "dataframe": bruvdata,
+        "tablename": 'tbl_bruv_data',
+        "badrows": bruvdata[
+            (bruvdata['in_out'] == 'in') & 
+            ((bruvdata['maxn'].isna()) | (bruvdata['maxns'].isna()))
+            ].tmp_row.tolist(),
+        "badcolumn": "in_out, maxn, maxns",
+        "error_type": "Value Error",
+        "error_message": "Invalid entry for MaxN/MaxNs column. Since in_out column is 'in', then both MaxN/MaxNs must have an integer value and cannot be left empty."
+    }
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 7")
 
-    #print("# CHECK - 8")
+    print("# CHECK - 8")
     # Description: If in_out is "in" then MaxN is the sum of MaxNs (MaxN is the sum of all/each species counts (MaxNs) within a given FOV frame)
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 8")
+    # Created Coder: 
+    # Created Date: NA
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/12/2023): Aria Askaryar adjusts the format so it follows the coding standard
+    cols = ['siteid','estuaryname','stationno','samplecollectiondate','camerareplicate','videoorder','foventeredtime','fovlefttime','in_out'] 
+    bruvdata['tmp_row'] = bruvdata.index
+    grouped_df = bruvdata[bruvdata['in_out'] == 'in'].groupby(cols) 
+    gb = grouped_df.groups
+    key_list_from_gb = gb.keys()
+    badrows = [] #initialized to append
+    for key, values in gb.items():
+        if key in key_list_from_gb: #this is by unique group
+            tmp = bruvdata.loc[values]
+            #print("=============== printing tmp for maxn maxns check ==================")
+            #print(tmp)
+            #print("=============== tmp printed ==================")
+            brows = tmp[(tmp['maxn'] != tmp['maxns'].sum())].tmp_row.tolist()
+            #extend adds second list elts to first list
+            badrows.extend(brows) #this will be populated to the badrows key in the args dict
+    bruvdata = bruvdata.drop(columns=['tmp_row'])
+    args = {
+        "dataframe": bruvdata,
+        "tablename": 'tbl_bruv_data',
+        "badrows": badrows,
+        "badcolumn": "maxns, maxn",
+        "error_type": "Value Error",
+        "error_message": "MaxN is the sum of all/each species counts (MaxNs) within a given frame. Each record with the same FOV frame should have the same value for MaxN."
+    }
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 8")
 
-    #print("# CHECK - 9")
+    print("# CHECK - 9")
     # Description: If in_out is "in" then certainty cannot be left empty
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 9")
+    # Created Coder: Aria Askaryar
+    # Created Date: NA
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/12/2023): Aria Askaryar adjusts the format so it follows the coding standard
+    args = {
+        "dataframe": bruvdata,
+        "tablename": 'tbl_bruv_data',
+        "badrows": bruvdata[(bruvdata['in_out'] == 'in') & (pd.isnull(bruvdata['certainty']))].tmp_row.tolist(),
+        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, camerareplicate",
+        "error_type": "Value Error",
+        "error_message": "Invalid entry for certainty column. Since in_out column is 'in', then certainty must have a nonempty value."
+    }
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 9")
 
 
 
