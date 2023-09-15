@@ -36,6 +36,7 @@ def grab_field(all_dfs):
 
     grabeventdet_pkey = get_primary_key('tbl_grabevent_details',g.eng)
     grabevent_pkey = get_primary_key('tbl_grabevent',g.eng)
+    grabevent_grabeventdet_shared_pkey = list(set(grabevent_pkey).intersection(grabeventdet_pkey))
 
 
     # Alter this args dictionary as you add checks and use it for the checkData function
@@ -54,7 +55,50 @@ def grab_field(all_dfs):
     # ------------------------------------------------ Logic Checks ---------------------------------------------------- #
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
+    print("# CHECK - 1")
+    # Description: Records in the grabevent should have the corresponding records in the grabeventdetails when the sampletype identifying column is yes (for example: toxicity column in grabevent)
+    # Created Coder: Ayah
+    # Created Date: NA
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Ayah
+    # NOTE (09/12/2023): Ayah wrote logic check. Since we are only checking records when any sampletype is yea, I created a filtered df containing all the rows where one or more sampletype identifier is "Yes"
+    lu_sampletype = pd.read_sql("SELECT sampletype FROM lu_sampletype",g.eng)
+    grab_sampletypes = list(set(grabevent.columns).intersection(set(lu_sampletype['sampletype'])))
+    filtered_grabevent = grabevent.iloc[grabevent[grabevent[grab_sampletypes] == 'Yes'].index.tolist()]
+    args.update({
+        "dataframe":grabeventdet,
+        "tablename":'tbl_grabevent_details',
+        "badrows":mismatch(filtered_grabevent,grabeventdet,grabevent_grabeventdet_shared_pkey),
+        "badcolumn": ','.join(grabevent_grabeventdet_shared_pkey),
+        "error_type": "empty value",
+        "is_core_error": False,
+        "error_message": "Records in the grabevent should have the corresponding records in the grabevent_details based on these columns {}".format(
+            ','.join(grabevent_grabeventdet_shared_pkey))
+    })
+    errs = [*errs, checkData(**args)] 
+    print("# END OF CHECK - 2")
+    
+    
+    print("# CHECK - 2")
+    # Description: Records in the grabevent_details should have the corresponding records in the grabevent based on the shared pkeys
+    # Created Coder: Ayah
+    # Created Date: NA
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Ayah
+    # NOTE (09/12/2023): Ayah wrote logic check
 
+    args.update({
+        "dataframe":grabeventdet,
+        "tablename":'tbl_grabevent_details',
+        "badrows":mismatch(grabevent,grabeventdet,grabevent_grabeventdet_shared_pkey),
+        "badcolumn": ','.join(grabevent_grabeventdet_shared_pkey),
+        "error_type": "empty value",
+        "is_core_error": False,
+        "error_message": "Records in the grabevent_details should have the corresponding records in the grabevent based on these columns {}".format(
+            ','.join(grabevent_grabeventdet_shared_pkey))
+    })
+    errs = [*errs, checkData(**args)] 
+    print("# END OF CHECK - 2")
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
     # ------------------------------------------------ END OF Logic Checks --------------------------------------------- #
@@ -117,7 +161,7 @@ def grab_field(all_dfs):
     # Created Coder: Ayah 
     # Created Date: NA
     # Last Edited Date: 09/12/2023
-    # Last Edited Coder: Ayah
+    # Last Edited Coder: Ayahlu
     # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
 
     args.update({
@@ -164,15 +208,17 @@ def grab_field(all_dfs):
     # Description: sieve_or_depth is required when matrix is water
     # Created Coder: Ayah 
     # Created Date: NA
-    # Last Edited Date: 09/12/2023
+    # Last Edited Date: 09/14/2023
     # Last Edited Coder: Ayah
     # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
-
+    # NOTE (09/14/2023): Ayah made the lu list for all water matrix for the check
+    lu_matrix_filtered = pd.read_sql("SELECT matrix FROM lu_matrix where matrix like '%%water';",g.eng)
+    lu_matrix_filtered = lu_matrix_filtered['matrix'].tolist()
     args.update({
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
         "badrows":grabeventdet[
-            (grabeventdet['matrix'].isin(['blankwater','labwater','saltwater','freshwater'])) & (
+            (grabeventdet['matrix'].isin(lu_matrix_filtered)) & (
             (grabeventdet['sieve_or_depth'] == 'Not Recorded')) 
             ].tmp_row.tolist(),
         "badcolumn": "sieve_or_depth",
@@ -187,14 +233,14 @@ def grab_field(all_dfs):
     # Description: color should not get filled in when matrix is water
     # Created Coder: Ayah 
     # Created Date: NA
-    # Last Edited Date: 09/12/2023
+    # Last Edited Date: 09/14/2023
     # Last Edited Coder: Ayah
     # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
-
+    # NOTE (09/14/2023): Ayah made the lu list for all water matrix for the check
     args.update({
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
-        "badrows":grabeventdet[(grabeventdet['matrix'].isin(['blankwater','labwater','saltwater','freshwater'])) & 
+        "badrows":grabeventdet[(grabeventdet['matrix'].isin(lu_matrix_filtered)) & 
             (grabeventdet['color'] != 'Not Recorded')
             ].tmp_row.tolist(),
         "badcolumn": "color",
@@ -211,14 +257,14 @@ def grab_field(all_dfs):
     # Description: odor should not get filled when matrix is water
     # Created Coder: Ayah 
     # Created Date: NA
-    # Last Edited Date: 09/12/2023
+    # Last Edited Date: 09/14/2023
     # Last Edited Coder: Ayah
     # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
-
+    # NOTE (09/14/2023): Ayah made the lu list for all water matrix for the check
     args.update({
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
-        "badrows":grabeventdet[(grabeventdet['matrix'].isin(['blankwater','labwater','saltwater','freshwater']))
+        "badrows":grabeventdet[(grabeventdet['matrix'].isin([lu_matrix_filtered]))
         & ((grabeventdet['odor'] == 'Not Recorded'))].tmp_row.tolist(),
         "badcolumn": "odor",
         "error_type": "empty value",
@@ -233,14 +279,14 @@ def grab_field(all_dfs):
     # Description: composition should not get filled in when matrix is water
     # Created Coder: Ayah 
     # Created Date: NA
-    # Last Edited Date: 09/12/2023
+    # Last Edited Date: 09/14/2023
     # Last Edited Coder: Ayah
     # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
-    
+    # NOTE (09/14/2023): Ayah made the lu list for all water matrix for the check
     args.update({
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
-        "badrows":grabeventdet[(grabeventdet['matrix'].isin(['blankwater','labwater','saltwater','freshwater'])) &
+        "badrows":grabeventdet[(grabeventdet['matrix'].isin(lu_matrix_filtered)) &
             (grabevent['composition'] != 'Not Recorded' ) 
             ].tmp_row.tolist(),
         "badcolumn": "composition",
@@ -254,11 +300,11 @@ def grab_field(all_dfs):
 
     print("# CHECK - 10")
     # Description: If sampletype is "infauna" then a value for sieve_or_depth field must be pulled from lu_benthicsievesize. Also a value needs to be set for the sieve_or_depthunits field (lu_benthicsievesizeunits).
-    # Created Coder: 
+    # Created Coder: Aria
     # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
+    # Last Edited Date: 09/12/2023
+    # Last Edited Coder: Ayah 
+    # NOTE (09/12/2023): Ayah Adjusted format so it follows the coding standard
     lu_benthicsievesize = pd.read_sql("SELECT * FROM lu_benthicsievesize", g.eng)
     lu_benthicsievesizeunits = pd.read_sql("SELECT * FROM lu_benthicsievesizeunits", g.eng)
     

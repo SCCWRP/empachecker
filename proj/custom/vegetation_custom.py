@@ -3,7 +3,7 @@
 from inspect import currentframe
 from flask import current_app, g
 import pandas as pd
-from .functions import checkData, checkLogic, mismatch
+from .functions import checkData, checkLogic, mismatch,get_primary_key
 print('before vegatation funcntion')
 
 def vegetation(all_dfs):
@@ -35,6 +35,14 @@ def vegetation(all_dfs):
     vegdata['tmp_row'] = vegdata.index
     epidata['tmp_row'] = epidata.index
 
+    vegmeta_pkey = get_primary_key('tbl_vegetation_sample_metadata',g.eng)
+    vegdata_pkey = get_primary_key('tbl_vegetativecover_data',g.eng)
+    epidata_pkey = get_primary_key('tbl_epifauna_data',g.eng)
+
+    vegdata_vegmeta_shared_pkey = list(set(vegdata_pkey).intersection(set(vegmeta_pkey)))
+    epidata_vegmata_shareed_pkey = list(set(vegdata_pkey).intersection(set(epidata_pkey)))
+
+
     errs = []
     warnings = []
 
@@ -57,32 +65,62 @@ def vegetation(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
 
-    #print("# CHECK - 1")
+    print("# CHECK - 1")
     # Description: Each sample metadata must include corresponding cover data
     # Created Coder:
     # Created Date:
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (Date):
-    #print("# END OF CHECK - 1")
+    args.update({
+        "dataframe": vegmeta,
+        "tablename": "tbl_vegetation_sample_metadata",
+        "badrows": mismatch(vegmeta, vegdata, vegdata_vegmeta_shared_pkey), 
+        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, transectreplicate",
+        "error_type": "Logic Error",
+        "error_message": "Records in sample_metadata must have corresponding records in vegetationcover_data."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 1")
 
-    #print("# CHECK - 2")
+    print("# CHECK - 2")
     # Description: Each cover data must include corresponding sample metadata
     # Created Coder:
     # Created Date:
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (Date):
-    #print("# END OF CHECK - 2")
+    args.update({
+        "dataframe": vegmeta,
+        "tablename": "tbl_vegetation_sample_metadata",
+        "badrows": mismatch(vegdata, vegmeta, vegdata_vegmeta_shared_pkey), 
+        "badcolumn": ','.join(vegdata_vegmeta_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Records in vegetationcover_data should have the corresponding records in  vegetation_sample_metadata based on these columns {}".format(
+            ','.join(vegdata_vegmeta_shared_pkey))
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 2")
 
-    #print("# CHECK - 3")
+
+    print("# CHECK - 3")
     # Description: Each epifauna data must include corresponding sample metadata (but not vice versa)
     # Created Coder:
     # Created Date:
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (Date):
-    #print("# END OF CHECK - 3")
+    args.update({
+        "dataframe": epidata,
+        "tablename": "tbl_epifauna_data",
+        "badrows": mismatch(epidata, vegmeta, epidata_vegmata_shareed_pkey),
+        "badcolumn": ','.join(epidata_vegmata_shareed_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Records in epifauna data must have corresponding records in vegetationcover_data bas."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 3")
+
 
 
 
@@ -103,41 +141,72 @@ def vegetation(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
 
-    #print("# CHECK - 4")
+    print("# CHECK - 4")
     # Description: Range for coordinates for transectbeginlongitude must be greater than -114.043 or transectendlongitude must be less than -124.502 (within CA)
     # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 4")
+    # Created Date: 
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Ayah
+    # NOTE (09/14/2023): Adjust code to match coding standard
 
-    #print("# CHECK - 5")
+    args.update({
+        "dataframe": vegmeta,
+        "tablename": "tbl_vegetation_sample_metadata",
+        "badrows":vegmeta[(vegmeta['transectbeginlongitude'] < -114.0430560959) | (vegmeta['transectendlongitude'] > -124.5020404709)].tmp_row.tolist(),
+        "badcolumn": "transectbeginlongitude,transectendlongitude",
+        "error_type" : "Value out of range",
+        "error_message" : "Your longitude coordinates are outside of california, check your minus sign in your longitude data."
+    })
+    warnings = [*warnings, checkData(**args)]    
+    print("# END OF CHECK - 4")
+
+    print("# CHECK - 5")
     # Description: Range for coordinates for transectbeginlatitude must be greater than 28 or transectendlatitude must be less than 41.992 (within CA including Baja)
     # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 5")
+    # Created Date: 
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Ayah
+    # NOTE (09/14/2023): Adjust code to match coding standard
 
-    #print("# CHECK - 6")
+    args.update({
+        "dataframe": vegmeta,
+        "tablename": "tbl_vegetation_sample_metadata",
+        "badrows":vegmeta[(vegmeta['transectbeginlatitude'] < 32.5008497379) | (vegmeta['transectendlatitude'] > 41.9924715343)].tmp_row.tolist(),
+        "badcolumn": "transectbeginlatitude,transectendlatitude",
+        "error_type" : "Value out of range",
+        "error_message" : "Your latitude coordinates are outside of california."
+    })
+    warnings = [*warnings, checkData(**args)]
+    print("# END OF CHECK - 5")
+
+    print("# CHECK - 6")
     # Description: If value is not plant then lat and long are req, but if it is plant then lat and long can be -88
     # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 6")
+    # Created Date: 
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Ayah
+    # NOTE (09/14/2023): Adjust code to match coding standard
 
-    #print("# CHECK - 7")
+    args.update({
+        "dataframe": vegmeta,
+        "tablename": "tbl_vegetation_sample_metadata",
+        "badrows": vegmeta[(vegmeta['elevation_ellipsoid'].notna() | vegmeta['elevation_orthometric'].notna()) & ( vegmeta['elevation_time'].isna() | (vegmeta['elevation_time'] == -88))].tmp_row.tolist(),
+        "badcolumn": "elevation_time",
+        "error_type": "Empty value",
+        "error_message": "Elevation_time is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 6")
+
+    print("# CHECK - 7")
     # Description: Transectreplicate must be consecutive within primary keys
     # Created Coder:
     # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 7")
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Ayah
+    # NOTE (09/14/2023): Adjust code to match coding standard
+
+    print("# END OF CHECK - 7")
 
 
     ######################################################################################################################
@@ -160,44 +229,92 @@ def vegetation(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
 
-    #print("# CHECK - 8")
-    # Description:
+    print("# CHECK - 8")
+    # Description: If EstimatedCover is -88, then PercentCoverCode must be provided (cannot be -88)
     # Created Coder:
     # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 8")
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Ayah
+    # NOTE (09/14/2023): Adjust code to match coding standard
+    args = ({
+        "dataframe":vegdata,
+        "tablename":'tbl_vegetativecover_data',
+        "badrows":vegdata[(vegdata['estimatedcover'] == -88) & (vegdata['percentcovercode'] == -88)].tmp_row.tolist(),
+        "badcolumn": "percentcovercode",
+        "error_type": "wrong value",
+        "is_core_error": False,
+        "error_message": "Since EstimatedCover is -88, PercentCoverCOde must be provided"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 8")
 
-    #print("# CHECK - 9")
-    # Description:
+    print("# CHECK - 9")
+    # Description: EstimatedCover must be nonnegative. If no value, -88 is OK.
     # Created Coder:
     # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 9")
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Ayah
+    # NOTE (09/14/2023): Adjust code to match coding standard
+    args = ({
+        "dataframe":vegdata,
+        "tablename":"tbl_vegetativecover_data",
+        "badrows":vegdata[(vegdata['estimatedcover'] <0) & (vegdata['estimatedcover'] != -88)].tmp_row.tolist(),
+        "badcolumn": "estimatedcover",
+        "error_type": "wrong value",
+        "is_core_error": False,
+        "error_message": "EstimatedCover must be non-negative, except when  no value exists then  -88 can be used."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 9")
 
-    #print("# CHECK - 10")
-    # Description:
+    print("# CHECK - 10")
+    # Description: Multicolumn Lookup Check for EstimatedCover/PercentCoverCode/DaubenmireMidpoint
     # Created Coder:
     # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 10")
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Ayah
+    # NOTE (09/14/2023): Adjust code to match coding standard
+    del badrows
+    lookup_sql = f"SELECT * FROM lu_estimatedcover;"
+    lu_estimatedcover = pd.read_sql(lookup_sql, g.eng)
+    merged = pd.merge(vegdata, lu_estimatedcover, how="left", on=['daubenmiremidpoint','percentcovercode'])
+    badrows = merged[(merged['estimatedcover_x'] < merged['estimatedcover_min' ]) | (merged['estimatedcover_x'] >= merged['estimatedcover_max'])].tmp_row.tolist()
+   
+    args.update({
+        "dataframe": vegdata,
+        "tablename": "tbl_vegetativecover_data",
+        "badrows": badrows,
+        "badcolumn": "estimatedcover",
+        "error_type": "Multicolumn Lookup Error",
+        "error_message": f'The estimatedcover entry is out of range, refer to estimatedcover column in lu_percentcovercode .'
+                         '<a '
+                         f'href="/{lu_list_script_root}/scraper?action=help&layer=lu_percentcovercode" '
+                        'target="_blank">lu_percentcovercode</a>'
+                        
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 10")
 
-    #print("# CHECK - 11")
-    # Description:
+    print("# CHECK - 11")
+    # Description: Range for tallestplantheight_cm must be between [0, 300]
     # Created Coder:
     # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 11")
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Ayah
+    # NOTE (09/14/2023): Adjust code to match coding standard
+    args.update({
+        "dataframe": vegdata,
+        "tablename": "tbl_vegetativecover_data",
+        "badrows":vegdata[(vegdata['tallestplantheight_cm']<0) | (vegdata['tallestplantheight_cm'] > 300)].tmp_row.tolist(),
+        "badcolumn": "tallestplantheight_cm",
+        "error_type" : "Value is out of range.",
+        "error_message" : "Height should be between 0 to 3 metres"
+    })
+    warnings = [*warnings, checkData(**args)]
+    print("# END OF CHECK - 11")
 
     #print("# CHECK - 12")
-    # Description:
+    # Description: transectreplicate must be consecutive within primary keys
     # Created Coder:
     # Created Date:
     # Last Edited Date: 
@@ -206,7 +323,7 @@ def vegetation(all_dfs):
     #print("# END OF CHECK - 12")
 
     #print("# CHECK - 13")
-    # Description:
+    # Description: plotreplicate must be  consecutive within primary keys
     # Created Coder:
     # Created Date:
     # Last Edited Date: 
@@ -236,14 +353,23 @@ def vegetation(all_dfs):
     ######################################################################################################################
 
 
-    #print("# CHECK - 14")
+    print("# CHECK - 14")
     # Description: If burrows is "yes" then entered abundance must be greater than or equal to 0 and cannot be -88
     # Created Coder:
     # Created Date:
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (Date):
-    #print("# END OF CHECK - 14")
+    args.update({
+        "dataframe": epidata,
+        "tablename": "tbl_epifauna_data",
+        "badrows":epidata[(epidata['burrows'] == 'Yes') & (epidata['enteredabundance'].apply(lambda x: x < 0))].tmp_row.tolist(),
+        "badcolumn": "enteredabundance",
+        "error_type" : "Value out of range",
+        "error_message" : "Your recorded entered abundance value must be greater than 0 and cannot be -88."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 14")
 
 
 

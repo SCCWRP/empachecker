@@ -3,7 +3,7 @@
 from inspect import currentframe
 from flask import current_app, g
 import pandas as pd
-from .functions import checkData, checkLogic, mismatch
+from .functions import checkData, checkLogic, mismatch,get_primary_key
 
 def macroalgae(all_dfs):
     
@@ -33,6 +33,12 @@ def macroalgae(all_dfs):
     algaecover['tmp_row'] = algaecover.index
     algaefloating['tmp_row'] = algaefloating.index
 
+    algaemeta_pkey = get_primary_key('tbl_macroalgae_sample_metadata',g.eng)
+    algaecover_pkey = get_primary_key('tbl_algaecover_data',g.eng)
+    algaefloating_pkey = get_primary_key('tbl_floating_data',g.eng)
+
+    algaemeta_algaecover_shared_pkey = list(set(algaemeta_pkey).intersection(algaecover_pkey))
+    algaemeta_algaefloating_shared_pkey = list(set(algaemeta_pkey).intersection(algaefloating_pkey))
 
     errs = []
     warnings = []
