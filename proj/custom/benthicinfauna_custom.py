@@ -146,7 +146,7 @@ def benthicinfauna_lab(all_dfs):
     args.update({
         "dataframe": benthicbiomass,
         "tablename": "tbl_benthicinfauna_biomass",
-        "badrows":benthicbiomass[(benthicbiomass['biomass_g'] <= 0)].tmp_row.tolist(),
+        "badrows":benthicbiomass[(benthicbiomass['biomass_g'] < 0)].tmp_row.tolist(),
         "badcolumn": "biomass_g",
         "error_type" : "Value is out of range.",
         "error_message" : "Biomass must be greater than 0"
