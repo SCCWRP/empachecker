@@ -2,8 +2,7 @@ from inspect import currentframe
 from flask import current_app, g
 from pandas import DataFrame
 import pandas as pd
-from .functions import checkData, checkLogic, mismatch
-
+from .functions import checkData, checkLogic, mismatch,get_primary_key
 def sedimentgrainsize_lab(all_dfs):
     
     current_function_name = str(currentframe().f_code.co_name)
@@ -25,6 +24,16 @@ def sedimentgrainsize_lab(all_dfs):
     
     sed_data = all_dfs['tbl_sedgrainsize_data']
     sed_labbatch = all_dfs['tbl_sedgrainsize_labbatch_data']
+    grabeventdetails = pd.read_sql("SELECT * FROM tbl_grabevent_details", g.eng)
+
+    sed_data_pkey = get_primary_key('tbl_sedgrainsize_data', g.eng)
+    sed_labbatch_pkey = get_primary_key('tbl_sedgrainsize_labbatch_data', g.eng)
+    grabeventdetails_pkey = get_primary_key('tbl_grabevent_details', g.eng)
+
+    sed_labbatch_grabevntdetails_shared_pkey = list(set(sed_labbatch_pkey).intersection(set(grabeventdetails_pkey)))
+    sed_labbatch_grabevntdetails_shared_key = list(set(sed_data_pkey).intersection(set(grabeventdetails_pkey)))
+    sed_data_sed_labbatch_shared_pkey = list(set(sed_data_pkey).intersection(set(sed_labbatch_pkey)))
+
 
     errs = []
     warnings = []
@@ -55,33 +64,66 @@ def sedimentgrainsize_lab(all_dfs):
     # ------------------------------------------------ SedGrainSize Logic Checks --------------------------------------- #
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
-    #print("# CHECK - 1")
+    print("# CHECK - 1")
     # Description: Each labbatch data must correspond to grabeventdetails in database
-    # Created Coder:
-    # Created Date:
+    # Created Coder: Ayah
+    # Created Date: 09/15/2021
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 1")
+    # NOTE (09/15/2021): Ayah wrote logic check
+    args.update({
+        "dataframe": sed_labbatch,
+        "tablename": "tbl_sedgrainsize_labbatch_data",
+        "badrows": mismatch(sed_labbatch, grabeventdetails, sed_labbatch_grabevntdetails_shared_key), 
+        "badcolumn": ','.join(sed_labbatch_grabevntdetails_shared_key),
+        "error_type": "Logic Error",
+        "error_message": "Each labbatch data must have corresponding records in the grabeventdetails table based on the columns: {}".format(
+            ','.join(sed_labbatch_grabevntdetails_shared_key)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 1")
 
-    #print("# CHECK - 2")
+    print("# CHECK - 2")
     # Description: Each labbatch data must include corresponding data within session submission
-    # Created Coder:
-    # Created Date:
+    # Created Coder: Ayah
+    # Created Date: 09/15/2021
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 2")
+    # NOTE (09/15/2021): Ayah wrote logic check
+    args.update({
+        "dataframe": sed_labbatch,
+        "tablename": "tbl_sedgrainsize_data",
+        "badrows": mismatch(sed_labbatch, sed_data, sed_data_sed_labbatch_shared_pkey), 
+        "badcolumn": ','.join(sed_data_sed_labbatch_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Each labbatch data must have corresponding records in the data table based on the columns: {}".format(
+            ','.join(sed_data_sed_labbatch_shared_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 2")
 
 
-    #print("# CHECK - 3")
+    print("# CHECK - 3")
     # Description: Each data must include corresponding labbatch data within session submission
-    # Created Coder:
-    # Created Date:
+    # Created Coder: Ayah
+    # Created Date: 09/15/2021
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 3")    
+    # NOTE (09/15/2021): Ayah wrote logic check
+    args.update({
+        "dataframe": sed_data,
+        "tablename": "tbl_sedgrainsize_data",
+        "badrows": mismatch(sed_data, sed_labbatch, sed_data_sed_labbatch_shared_pkey), 
+        "badcolumn": ','.join(sed_data_sed_labbatch_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Each  data must have corresponding records in the labbatch data table based on the columns: {}".format(
+            ','.join(sed_data_sed_labbatch_shared_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 3")    
 
 
     ######################################################################################################################

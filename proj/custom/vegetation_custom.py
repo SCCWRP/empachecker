@@ -91,7 +91,7 @@ def vegetation(all_dfs):
     # Last Edited Coder: 
     # NOTE (Date):
     args.update({
-        "dataframe": vegmeta,
+        "dataframe": vegdata,
         "tablename": "tbl_vegetation_sample_metadata",
         "badrows": mismatch(vegdata, vegmeta, vegdata_vegmeta_shared_pkey), 
         "badcolumn": ','.join(vegdata_vegmeta_shared_pkey),

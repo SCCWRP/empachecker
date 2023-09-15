@@ -43,6 +43,7 @@ def macroalgae(all_dfs):
     errs = []
     warnings = []
 
+
     # Alter this args dictionary as you add checks and use it for the checkData function
     # for errors that apply to multiple columns, separate them with commas
     args = {
@@ -60,41 +61,87 @@ def macroalgae(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
 
-    #print("# CHECK - 1")
+    print("# CHECK - 1")
     # Description: Each metadata must include a corresponding coverdata
-    # Created Coder:
-    # Created Date:
+    # Created Coder: Ayah
+    # Created Date:09/15/2023
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 1")
+    # NOTE (09/15/2023): Ayah wrote check
+    args.update({
+        "dataframe": algaemeta,
+        "tablename": "tbl_macroalgae_sample_metadata",
+        "badrows": mismatch(algaemeta, algaecover, algaemeta_algaecover_shared_pkey), 
+        "badcolumn":  ','.join(algaemeta_algaecover_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Records in Algae metadata should have corresponding records in AlgeaCover data in the database. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(algaemeta_algaecover_shared_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 1")
 
-    #print("# CHECK - 2")
+    print("# CHECK - 2")
     # Description: Each cover data must include a corresponding metadata
     # Created Coder:
-    # Created Date:
+    # Created Coder: Ayah
+    # Created Date:09/15/2023
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 2")
+    # NOTE (09/15/2023): Ayah wrote check
+    args.update({
+        "dataframe": algaecover,
+        "tablename": "tbl_algaecover_data",
+        "badrows": mismatch(algaecover, algaemeta, algaemeta_algaecover_shared_pkey), 
+        "badcolumn":  ','.join(algaemeta_algaecover_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Records in AlgeaCover data  should have corresponding records in Algae metadata. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(algaemeta_algaecover_shared_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 2")
 
-    #print("# CHECK - 3")
+    print("# CHECK - 3")
     # Description: Each metadata must include a corresponding floating data
     # Created Coder:
-    # Created Date:
+    # Created Coder: Ayah
+    # Created Date:09/15/2023
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 3")
+    # NOTE (09/15/2023): Ayah wrote check
+    args.update({
+        "dataframe": algaemeta,
+        "tablename": "tbl_macroalgae_sample_metadata",
+        "badrows": mismatch(algaemeta, algaefloating, algaemeta_algaefloating_shared_pkey), 
+        "badcolumn":  ','.join(algaemeta_algaefloating_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Records in Algae metadata should have corresponding records in AlgeaFloating data. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(algaemeta_algaefloating_shared_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 3")
 
-    #print("# CHECK - 4")
+    print("# CHECK - 4")
     # Description: Each floating data must include a corresponding metadata
-    # Created Coder:
-    # Created Date:
+    # Created Coder: Ayah
+    # Created Date:09/15/2023
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 4")
+    # NOTE (09/15/2023): Ayah wrote check
+    args.update({
+        "dataframe": algaefloating,
+        "tablename": "tbl_floating_data",
+        "badrows": mismatch(algaefloating, algaemeta, algaemeta_algaefloating_shared_pkey), 
+        "badcolumn":  ','.join(algaemeta_algaefloating_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Records in AlgaeFloating should have corresponding records in AlgeaCover data. Please submit the data for these records first based on these columns: {}".format(
+            ','.join(algaemeta_algaefloating_shared_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 4")
 
 
 
@@ -120,21 +167,39 @@ def macroalgae(all_dfs):
 
     #print("# CHECK - 5")
     # Description: Transectreplicate must be greater than 0
-    # Created Coder:
-    # Created Date:
+    # Created Coder: Ayah
+    # Created Date:09/15/2023
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE (Date):
+    # NOTE (09/15/2023): Ayah wrote check
+    args.update({
+        "dataframe": algaemeta,
+        "tablename": "tbl_macroalgae_sample_metadata",
+        "badrows": algaemeta[(algaemeta['transectreplicate'] <= 0) & (algaemeta['transectreplicate'] != -88)].tmp_row.tolist(),
+        "badcolumn": "transectreplicate",
+        "error_type" : "Value Error",
+        "error_message" : "TransectReplicate must be greater than 0."
+    })
+    errs = [*errs, checkData(**args)]
     #print("# END OF CHECK - 5")
 
-    #print("# CHECK - 6")
+    print("# CHECK - 6")
     # Description: Transectlength_m must be greater than 0
-    # Created Coder:
-    # Created Date:
+    # Created Coder: Ayah
+    # Created Date:09/15/2023
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 6")
+    # NOTE (09/15/2023): Ayah wrote check
+    args.update({
+        "dataframe": algaemeta,
+        "tablename": "tbl_macroalgae_sample_metadata",
+        "badrows": algaemeta[algaemeta['transect_length_m'] <= 0].tmp_row.tolist(),
+        "badcolumn": "transect_length_m",
+        "error_type" : "Value out of range",
+        "error_message" : "Transect length must be greater than 0."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 6")
 
     #print("# CHECK - 7")
     # Description: Transectreplicate must be consecutive within primary keys
@@ -143,6 +208,7 @@ def macroalgae(all_dfs):
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (Date):
+
     #print("# END OF CHECK - 7")
 
 
@@ -164,39 +230,68 @@ def macroalgae(all_dfs):
 
     #print("# CHECK - 8")
     # Description: Transectreplicate must be greater than 0
-    # Created Coder: 
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
+    # Created Coder: NA
+    # Created Date:NA
+    # Last Edited Date: 09/15/2023
+    # Last Edited Coder: Ayah
+    # NOTE (09/15/2023): Ayah ajusted code to match coding standard
+    args.update({
+        "dataframe": algaecover,
+        "tablename": "tbl_algaecover_data",
+        "badrows": algaecover[(algaecover['transectreplicate'] <= 0) & (algaecover['transectreplicate'] != -88)].tmp_row.tolist(),
+        "badcolumn": "transectreplicate",
+        "error_type" : "Value Error",
+        "error_message" : "TransectReplicate must be greater than 0."
+    })
+    errs = [*errs, checkData(**args)]
     #print("# END OF CHECK - 8")
 
     #print("# CHECK - 9")
     # Description: Plotreplicate must be greater than 0
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 9")
+    # Created Coder: NA
+    # Created Date:NA
+    # Last Edited Date: 09/15/2023
+    # Last Edited Coder: Ayah
+    # NOTE (09/15/2023): Ayah ajusted code to match coding standard
+    args.update({
+        "dataframe": algaecover,
+        "tablename": "tbl_algaecover_data",
+        "badrows": algaecover[(algaecover['plotreplicate'] <= 0) & (algaecover['plotreplicate'] != -88)].tmp_row.tolist(),
+        "badcolumn": "plotreplicate",
+        "error_type" : "Value Error",
+        "error_message" : "PlotReplicate must be greater than 0."
+    })
+    errs = [*errs, checkData(**args)]
+    
+    
+    print("# END OF CHECK - 9")
 
-    #print("# CHECK - 10")
+    print("# CHECK - 10")
     # Description: If covertype is "plant" then scientificname cannot be "Not recorded"
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 10")
+    # Created Coder: NA
+    # Created Date:NA
+    # Last Edited Date: 09/15/2023
+    # Last Edited Coder: Ayah
+    # NOTE (09/15/2023): Ayah ajusted code to match coding standard
+    args.update({
+        "dataframe": algaecover,
+        "tablename": "tbl_algaecover_data",
+        "badrows": algaecover[(algaecover['covertype'] == 'plant') & (algaecover['scientificname'] == 'Not recorded')].tmp_row.tolist(), 
+        "badcolumn": "covertype, scientificname",
+        "error_type": "Value Error",
+        "error_message": "CoverType is 'plant' so the ScientificName must be a value other than 'Not recorded'."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 10")
 
-    #print("# CHECK - 11")
+    print("# CHECK - 11")
     # Description: Plotreplicate must be consecutive within primary keys
     # Created Coder:
     # Created Date:
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (Date):
-    #print("# END OF CHECK - 11")
+    print("# END OF CHECK - 11")
 
 
 
@@ -227,6 +322,15 @@ def macroalgae(all_dfs):
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (Date):
+    args.update({
+        "dataframe": algaefloating,
+        "tablename": "tbl_floating_data",
+        "badrows": algaefloating[(algaefloating['estimatedcover'] == 0) & (algaefloating['scientificname'] != 'Not recorded')].tmp_row.tolist(), 
+        "badcolumn": "estimatedcover, scientificname",
+        "error_type": "Value Error",
+        "error_message": "EstimatedCover is 0. The ScientificName MUST be 'Not recorded'."
+    })
+    errs = [*errs, checkData(**args)]
     #print("# END OF CHECK - 12")
 
 

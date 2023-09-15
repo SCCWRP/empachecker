@@ -66,7 +66,7 @@ def grab_field(all_dfs):
     grab_sampletypes = list(set(grabevent.columns).intersection(set(lu_sampletype['sampletype'])))
     filtered_grabevent = grabevent.iloc[grabevent[grabevent[grab_sampletypes] == 'Yes'].index.tolist()]
     args.update({
-        "dataframe":grabeventdet,
+        "dataframe":grabevent,
         "tablename":'tbl_grabevent_details',
         "badrows":mismatch(filtered_grabevent,grabeventdet,grabevent_grabeventdet_shared_pkey),
         "badcolumn": ','.join(grabevent_grabeventdet_shared_pkey),
