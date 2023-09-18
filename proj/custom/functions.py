@@ -67,7 +67,6 @@ def checkLogic(df1, df2, cols: list, error_type = "Logic Error", df1_name = "", 
     return(badrows)
 
 def mismatch(df1, df2, mergecols = None, left_mergecols = None, right_mergecols = None, row_identifier = 'tmp_row'):
-    print('in mismatch')
     # gets rows in df1 that are not in df2
     # row identifier column is tmp_row by default
 
@@ -78,13 +77,11 @@ def mismatch(df1, df2, mergecols = None, left_mergecols = None, right_mergecols 
     # if second dataframe is empty, all rows in df1 are mismatched
     if df2.empty:
         return df1[row_identifier].tolist() if row_identifier != 'index' else df1.index.tolist()
-    print('1')
     # Hey, you never know...
     assert not '_present_' in df1.columns, 'For some reason, the reserved column name _present_ is in columns of df1'
     assert not '_present_' in df2.columns, 'For some reason, the reserved column name _present_ is in columns of df2'
 
     if mergecols is not None:
-        print('2')
         assert set(mergecols).issubset(set(df1.columns)), f"""In mismatch function - {','.join(mergecols)} is not a subset of the columns of the dataframe """
         assert set(mergecols).issubset(set(df2.columns)), f"""In mismatch function - {','.join(mergecols)} is not a subset of the columns of the dataframe """
         tmp = df1.astype(str) \
@@ -97,7 +94,6 @@ def mismatch(df1, df2, mergecols = None, left_mergecols = None, right_mergecols 
         
 
     elif (right_mergecols is not None) and (left_mergecols is not None):
-        print('3')
         assert set(left_mergecols).issubset(set(df1.columns)), f"""In mismatch function - {','.join(left_mergecols)} is not a subset of the columns of the dataframe of the first argument"""
         assert set(right_mergecols).issubset(set(df2.columns)), f"""In mismatch function - {','.join(right_mergecols)} is not a subset of the columns of the dataframe of the second argument"""
         
@@ -207,3 +203,21 @@ def check_elevation_columns(df, column):
             pd.isnull(df[column]) | (df[column] == 'Not recorded') | (df[column] == '')
         )
     )
+
+def check_multiple_dates_within_site(submission):
+    print("enter check_multiple_dates_within_site")
+    assert 'siteid' in submission.columns, "'siteid' is not a column in submission dataframe"
+    assert 'samplecollectiondate' in submission.columns, "'samplecollectiondate' is not a column in submission dataframe"
+    assert 'tmp_row' in submission.columns, "'tmp_row' is not a column in submission dataframe"
+    assert not submission.empty, "submission dataframe is empty"
+
+    # group by station code and samplecollectiondate, grab the first index of each unique date, reset to dataframe
+    submission_groupby = submission.groupby(['siteid','samplecollectiondate'])['tmp_row'].first().reset_index()
+    print(submission_groupby.groupby('siteid'))
+    # filter on grouped stations that have more than one unique sample date, output sorted list of indices 
+    badrows = sorted(list(set(submission_groupby.groupby('siteid').filter(lambda x: x['samplecollectiondate'].count() > 1)['tmp_row'])))
+
+    # count number of unique dates within a siteid
+    num_unique_sample_dates = len(badrows)
+    print("done check_multiple_dates_within_site")
+    return (badrows, num_unique_sample_dates)

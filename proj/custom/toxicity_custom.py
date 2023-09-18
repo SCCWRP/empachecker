@@ -2,7 +2,7 @@
 
 from inspect import currentframe
 from flask import current_app, g
-from .functions import checkData, get_primary_key, mismatch
+from .functions import checkData, get_primary_key, mismatch, check_multiple_dates_within_site
 import pandas as pd
 
 def toxicity(all_dfs):
@@ -114,7 +114,7 @@ def toxicity(all_dfs):
         "badcolumn": ','.join(toxsum_grabdeets_shared_pkey),
         "error_type": "Logic Error",
         "is_core_error": False,
-        "error_message": "Each toxicitysummary record must have corresponding record in the grabevent_details table in database"
+        "error_message": "Each toxicity summary record must have corresponding record in the grabevent_details table in database"
     })
     errs = [*errs, checkData(**toxicitysummary_args)]
     print("# END of CHECK - 1")
@@ -123,28 +123,37 @@ def toxicity(all_dfs):
     # Description: Each toxicitybatch record must have corresponding record in the grabevent_details table in database
     # Created Coder: Caspian Thackeray
     # Created Date: 09/05/23
-    # Last Edited Date: 09/08/23
+    # Last Edited Date: 09/13/23
     # Last Edited Coder: Caspian Thackeray
-    # NOTE (09/08/23): Wrote new code to checker standards
+    # NOTE (09/12/23): Still working on this one
+    # NOTE (09/13/23):  The problem with this check is that there are no matching primary keys between grabevent_details and tox batch.
+    #                   Also, there aren't any useful matching primary keys between tox summary and batch to use a work around
+    #                   I'll come back to this check later
     
     toxbatch_pkey = get_primary_key('tbl_toxicitybatch', g.eng)
+    toxsum_pkey = get_primary_key('tbl_toxicitysummary', g.eng)
     grabdeets_pkey = get_primary_key('tbl_grabevent_details', g.eng)
 
-    toxbatch_grabdeets_shared_pkey = list(set(toxbatch_pkey).intersection(set(grabdeets_pkey)))
+    toxbatch_toxsum_shared_pkey = list(set(toxbatch_pkey).intersection(set(toxsum_pkey)))
+    toxsum_grabdeets_shared_pkey = list(set(toxsum_pkey).intersection(set(grabdeets_pkey)))
 
-    print('variables done')
+    summ_bad_rows = mismatch(toxicitysummary, grabevent_details, toxsum_grabdeets_shared_pkey)
+    summ_batch_mismatching_rows = mismatch(toxicitysummary, toxicitybatch, toxbatch_toxsum_shared_pkey)
 
+    batch_grab_intersect = list(set(summ_bad_rows).intersection(set(summ_batch_mismatching_rows)))
+    """
     toxicitybatch_args.update({
-        "dataframe": toxbatch_pkey,
+        "dataframe": toxicitybatch,
         "tablename": 'tbl_toxicitybatch',
-        "badrows": mismatch(toxicitybatch, grabevent_details, toxbatch_grabdeets_shared_pkey),
-        "badcolumn": ','.join(toxbatch_grabdeets_shared_pkey),
+        "badrows": "",
+        "badcolumn": ','.join(toxbatch_toxsum_shared_pkey),
         "error_type": "Logic Error",
         "is_core_error": False,
         "error_message": "Each toxicitybatch record must have corresponding record in the grabevent_details table in database"
     })
     print('update done')
     errs = [*errs, checkData(**toxicitybatch_args)]
+    """
 
     print("# END of CHECK - 2")
 
@@ -162,20 +171,69 @@ def toxicity(all_dfs):
     toxres_grabdeets_shared_pkey = list(set(toxres_pkey).intersection(set(grabdeets_pkey)))
 
     toxicityresults_args.update({
-        "dataframe": toxbatch_pkey,
+        "dataframe": toxicityresults,
         "tablename": 'tbl_toxicityresults',
         "badrows": mismatch(toxicityresults, grabevent_details, toxres_grabdeets_shared_pkey),
         "badcolumn": ','.join(toxres_grabdeets_shared_pkey),
         "error_type": "Logic Error",
         "is_core_error": False,
-        "error_message": "Each toxicitybatch record must have corresponding record in the grabevent_details table in database"
+        "error_message": "Each toxicity results record must have corresponding record in the grabevent_details table in database"
     })
     errs = [*errs, checkData(**toxicityresults_args)]
 
+    print("# END of CHECK - 3")
+
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
-    # ------------------------------------------END of Toxicity Logic Checks ------------------------------------------- #
+    # ------------------------------------------ END of Toxicity Logic Checks ------------------------------------------ #
     # ------------------------------------------------------------------------------------------------------------------ #
-    ######################################################################################################################  
+    ######################################################################################################################
+
+    
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # -------------------------------------------- Toxicity Custom Checks ---------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    print("# CHECK - 4")
+    # Description: Within toxicity data, return a warning if a submission contains multiple dates within a single site
+    # Created Coder: Caspian Thackeray
+    # Created Date: 09/13/23
+    # Last Edited Date: 09/13/23
+    # Last Edited Coder: Caspian Thackeray
+
+    multiple_dates_within_site_summary = check_multiple_dates_within_site(toxicitysummary)
+    multiple_dates_within_site_results = check_multiple_dates_within_site(toxicityresults)
+
+    toxicitysummary_args.update({
+        "dataframe": toxicitysummary,
+        "tablename": 'tbl_toxicitysummary',
+        "badrows": toxicitysummary[(toxicitysummary['samplecollectiondate'].duplicated()) & (toxicitysummary['siteid'].duplicated())].tmp_row.tolist(),
+        "badcolumn": 'siteid, samplecollectiondate',
+        "error_type": "Value Error",
+        "is_core_error": False,
+        "error_message": f'Warning! You are submitting toxicity data with multiple dates for the same site. {multiple_dates_within_site_summary[1]} unique sample dates were submitted. Is this correct?'
+    })
+    warnings = [*warnings, checkData(**toxicitysummary_args)]
+    
+    toxicityresults_args.update({
+        "dataframe": toxicityresults,
+        "tablename": 'tbl_toxicityresults',
+        "badrows": toxicityresults[(toxicityresults['samplecollectiondate'].duplicated()) & (toxicityresults['siteid'].duplicated())].tmp_row.tolist(),
+        "badcolumn": 'siteid, samplecollectiondate',
+        "error_type": "Value Error",
+        "is_core_error": False,
+        "error_message": f'Warning! You are submitting toxicity data with multiple dates for the same site. {multiple_dates_within_site_results[1]} unique sample dates were submitted. Is this correct?'
+    })
+    warnings = [*warnings, checkData(**toxicityresults_args)]
+
+    print("# END of CHECK - 4")
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------ END of Toxicity Custom Checks ----------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
 
     return {'errors': errs, 'warnings': warnings}
