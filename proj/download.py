@@ -1,14 +1,17 @@
-import os, json
+import os, json, time
 from flask import send_file, Blueprint, jsonify, request, g, current_app, render_template, url_for
 #from flask_cors import CORS, cross_origin - disabled paul 9jan23
 from pandas import read_sql, DataFrame
 from sqlalchemy import text
 from zipfile import ZipFile
-import time, datetime
-import functools
 from io import BytesIO
 import subprocess as sp
 import pandas as pd
+from pathlib import Path
+import json
+from dateutil.relativedelta import relativedelta
+from io import BytesIO
+
 #from functools import wrap
 
 def support_jsonp(f):
@@ -677,3 +680,51 @@ def sedchem_translator():
         #df_sql.to_excel(writer, sheet_name='test', index=False)
 
     return send_file( file_path, as_attachment = True, download_name = 'grabevent.xlsx' )
+
+
+
+
+@download.route('/test-data', methods=['GET'])
+def get_test_data():
+
+    dtype = request.args.get('dtype')
+    clean = str(request.args.get('clean')).lower() == 'true'
+    
+    print("dtype:", dtype)
+
+    dataset = current_app.datasets.get(dtype)
+    eng = g.eng
+    
+    if dataset is None:
+        return f"Datatype {dtype} not found in datasets"
+
+    if any(['logger' in dtype, 'trash' in dtype]):
+        return "We won't do it for loggers or trash"
+    
+    try:
+        data = BytesIO()
+
+        with pd.ExcelWriter(data, engine='openpyxl') as writer:
+            for tbl in dataset.get('tables'):
+                print(tbl)
+                if tbl == 'tbl_protocol_metadata':
+                    df = pd.read_sql(f'SELECT * FROM {tbl}', eng)
+                    df.to_excel(writer, sheet_name=tbl, index=False)
+                else:
+                    siteid_df = pd.read_sql(f"SELECT DISTINCT siteid FROM {tbl} LIMIT 1", eng)
+                    if siteid_df.empty:
+                        df = pd.read_sql(f"SELECT * FROM {tbl}", eng)
+                        df.to_excel(writer, sheet_name=tbl, index=False)
+                    else:
+                        siteid = siteid_df.iloc[0, 0]
+                        df = pd.read_sql(f"SELECT * FROM {tbl} WHERE siteid = '{siteid}'", eng)
+                        for col in [col for col in df.columns if 'date' in col]:
+                            df[col] = df[col].apply(lambda x: pd.Timestamp(x.to_pydatetime() + relativedelta(years=50)))
+                        df.to_excel(writer, sheet_name=tbl, index=False)
+
+        data.seek(0)
+        filename = f'{dtype}_{"clean" if clean else "unclean"}.xlsx'
+        return send_file(data, download_name=filename, mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    except Exception as e:
+        print(f"Error: {e}")
+        return "You broke it."
