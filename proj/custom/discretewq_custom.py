@@ -68,33 +68,33 @@ def discretewq(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     # ----------------------------------------- Discrete WQ Logic Checks ----------------------------------------------- #
     # ------------------------------------------------------------------------------------------------------------------ #
-    ######################################################################################################################    print("Begin WQ Logic Checks...")
+    ######################################################################################################################
     
-    print("START CHECK  1a")
+    print("# CHECK - 1")
     #Description: Each metadata must include corresponding data (wq_metdata records not found in wq_data)
     # Created Coder: NA
     # Created Date: NA
     # Last Edited Date: 09/05/2023
     # Last Edited Coder: Ayah Halabi
     # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
-    watermeta_pkey = get_primary_key('tbl_waterquality_metadata',g.eng)
-    waterdata_pkey = get_primary_key('tbl_waterquality_data',g.eng)
-    watermeta_waterdata_shared_pkey = list(set(watermeta_pkey).intersection(set(waterdata_pkey)))
-    
+    watermeta_pkey = get_primary_key('tbl_waterquality_metadata', g.eng)
+    waterdata_pkey = get_primary_key('tbl_waterquality_data', g.eng)
+    watermeta_waterdata_shared_pkey = [x for x in watermeta_pkey if x in waterdata_pkey]
+
     args.update({
         "dataframe": watermeta,
         "tablename": "tbl_waterquality_metadata",
         "badrows": mismatch(watermeta, waterdata, watermeta_waterdata_shared_pkey),
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, samplecollectiontime, profile, depth_m, projectid",
+        "badcolumn": ','.join(watermeta_waterdata_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each record in WQ_metadata must have a corresponding record in WQ_data."
+        "error_message": "Each record in waterquality_metadata must have a corresponding record in waterquality_data. Records are matched based on the columns listed in the Column(s) box"
     })
     errs = [*errs, checkData(**args)]
     print("check ran - logic - wq_metadata records not found in wq_data")
-    print("END CHECK check 1a")
+    print("#END CHECK - 1")
 
 
-    print("START CHECK 1b")
+    print("# CHECK - 2")
     #Description: Each data must include corresponding metadata(wq_metadata records missing for records provided by wq_data)
     # Created Coder: NA
     # Created Date: NA
@@ -105,12 +105,12 @@ def discretewq(all_dfs):
         "dataframe": waterdata,
         "tablename": "tbl_waterquality_data",
         "badrows": mismatch(waterdata, watermeta, watermeta_waterdata_shared_pkey), 
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, samplecollectiontime, profile, depth_m",
+        "badcolumn": ','.join(watermeta_waterdata_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Records in WQ_data must have a corresponding record in WQ_metadata."
+        "error_message": "Each record in waterquality_data must have a corresponding record in waterquality_metadata. Records are matched based on the columns listed in the Column(s) box"
     })
     errs = [*errs, checkData(**args)]
-    print("END CHECK 1b")
+    print("# END CHECK - 2")
     
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
@@ -131,7 +131,7 @@ def discretewq(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
     
-    print('START CHECK 2')
+    print('START CHECK 3')
     #Description: Depth_m must be greater than or equal to 0
     # Created Coder: NA
     # Created Date: NA
@@ -147,7 +147,7 @@ def discretewq(all_dfs):
         "error_message" : "Your depth value must be larger than or equal to 0."
     })
     errs = [*errs, checkData(**args)]
-    print('END CHECK 2')
+    print('END CHECK 3')
     
     
     ######################################################################################################################
@@ -164,7 +164,7 @@ def discretewq(all_dfs):
     ######################################################################################################################
     
     
-    print('START CHECK 7')
+    print('START CHECK 4')
     #Description:Range for conductivity, with conductivity_units as uS/cm, must be between [0, 100] or -88
     # Created Coder: NA
     # Created Date: NA
@@ -185,9 +185,9 @@ def discretewq(all_dfs):
         "error_message" : "If the conductivity unit is uS/cm, then conductivity values must be between 0 and 100."
     })
     errs = [*errs, checkData(**args)]
-    print('END CHECK 7')
+    print('END CHECK 4')
 
-    print('START CHECK 8')
+    print('START CHECK 5')
     #Description:Range for tds, with tds_units as ppt, must be between [0, 100] or -88
     # Created Coder: NA
     # Created Date: NA
@@ -207,9 +207,9 @@ def discretewq(all_dfs):
         "error_message" : "If the tds unit is ppt, then tds values must be between 0 and 100."
     })
     errs = [*errs, checkData(**args)]
-    print('END CHECK 8')
+    print('END CHECK 5')
 
-    print('START CHECK 9')
+    print('START CHECK 6')
     #Description: Range for ph_teststrip must be within [1, 14] or -88
     # Created Coder: NA
     # Created Date: NA
@@ -228,9 +228,9 @@ def discretewq(all_dfs):
         "error_message" : "ph_teststrip values must be between 1 and 14"
     })
     errs = [*errs, checkData(**args)]
-    print('END CHECK  9')
+    print('END CHECK 6')
 
-    print('BEGIN CHECK  10')
+    print('BEGIN CHECK 7')
     # Description: Range for ph_probe must be within [1, 14] or -88
     # Created Coder: NA
     # Created Date: NA
@@ -250,9 +250,9 @@ def discretewq(all_dfs):
         "error_message" : "ph_probe values must be between 1 and 14"
     })
     errs = [*errs, checkData(**args)]
-    print('END CHECK 10')
+    print('END CHECK 7')
     
-    print('START CHECK  11')
+    print('START CHECK 8')
     # Description: Range for salinity, with salinity_units as ppt, must be between [0, 100] or -88 
     # Created Coder: NA
     # Created Date: NA
@@ -274,9 +274,9 @@ def discretewq(all_dfs):
         "error_message" : "salinity values must be between 0 and 100" 
     })
     errs = [*errs, checkData(**args)]
-    print('END CHECK 11')
+    print('END CHECK 8')
 
-    print('START CHECK 12')
+    print('START CHECK 9')
     # Description:  Range for do, with do_units as mg/l, must be within [0, 20] or -88
     # Created Coder: NA
     # Created Date: NA
@@ -296,9 +296,9 @@ def discretewq(all_dfs):
         "error_message" : "do_mgl values must be between 0 and 20."
     })
     errs = [*errs, checkData(**args)]
-    print('END CHECK 12')
+    print('END CHECK 9')
 
-    print('START CHECK 13')
+    print('START CHECK 10')
     # Description:  Range for airtemp, with airtemp_units as C, must be between [0, 50] or -88
     # Created Coder: NA
     # Created Date: NA
@@ -318,9 +318,9 @@ def discretewq(all_dfs):
         "error_message" : "If airtemp_unit is C, airtemp must be between 0 and 50."
     })
     errs = [*errs, checkData(**args)]
-    print('END CHECK 13')
+    print('END CHECK 10')
 
-    print('BEGIN CHECK  14')
+    print('BEGIN CHECK 11')
     # Description:  Range for h2otemp, with h2otemp_units as C, must be between [0, 50] or -88
     # Created Coder: NA
     # Created Date: NA
@@ -340,10 +340,10 @@ def discretewq(all_dfs):
         "error_message" : "If h2otemp_unit is C, h2otemp values must be between 0 and 50."
     })
     errs = [*errs, checkData(**args)]
-    print('END CHECK  14')
+    print('END CHECK 11')
 
     
-    print('BEGIN CHECK 15')
+    print('BEGIN CHECK 12')
     # Description:  If H2OTemp is reported, then H2OTemp_Units cannot be 'Not Recorded'
     # Created Coder: NA
     # Created Date: NA
@@ -362,10 +362,10 @@ def discretewq(all_dfs):
         "error_message" : " If H2OTemp is reported, then H2OTemp_Units cannot be 'Not Recorded'"
     })
     errs = [*errs, checkData(**args)]
-    print('END CHECK 15')    
+    print('END CHECK 12')    
 
     
-    print('START CHECK 16')
+    print('START CHECK 13')
     # Description: If AirTemp is reported, then AirTemp_Units cannot be 'Not Recorded'
     # Created Coder: NA
     # Created Date: NA
@@ -384,9 +384,9 @@ def discretewq(all_dfs):
         "error_message" : " If AirTemp is reported, then AirTemp_Units cannot be 'Not Recorded'"
     })
     errs = [*errs, checkData(**args)]
-    print('END CHECK 16')  
+    print('END CHECK 13')  
 
-    print('BEGIN CHECK 17')
+    print('BEGIN CHECK 14')
     # Description: If DO_mgL is reported, then DO_Units cannot be 'Not Recorded'
     # Created Coder: NA
     # Created Date: NA
@@ -405,9 +405,9 @@ def discretewq(all_dfs):
         "error_message" : "If DO_mgL is reported, then DO_Units cannot be 'Not Recorded'"
     })
     errs = [*errs, checkData(**args)]
-    print('END CHECK 17')   
+    print('END CHECK 14')   
 
-    print('START CHECK 18')
+    print('START CHECK 15')
     # Description:  If Salinity is reported, then Salinity_Units cannot be 'Not Recorded'    
     # Created Coder: NA
     # Created Date: NA
@@ -426,9 +426,9 @@ def discretewq(all_dfs):
         "error_message" : "If Salinity is reported, then Salinity_Units cannot be 'Not Recorded'"
     })
     errs = [*errs, checkData(**args)]
-    print('END CHECK 18') 
+    print('END CHECK 15') 
 
-    print('START CHECK 19')
+    print('START CHECK 16')
     # Description:  If TDS_ppt is reported, then TDS_Units cannot be 'Not Recorded'
     # Created Coder: NA
     # Created Date: NA
@@ -447,10 +447,10 @@ def discretewq(all_dfs):
         "error_message" : " If TDS is reported, then TDS_Units cannot be 'Not Recorded'"
     })
     errs = [*errs, checkData(**args)]
-    print('END CHECK 19')   
+    print('END CHECK 16')   
 
     
-    print('START CHECK 20')
+    print('START CHECK 17')
     # Description:  If Conductivity is reported, then Conductivity_Units cannot be 'Not Recorded'
     # Created Coder: NA
     # Created Date: NA
@@ -469,7 +469,7 @@ def discretewq(all_dfs):
         "error_message" : "If Conductivity is reported, then Conductivity_Units cannot be 'Not Recorded'"
     })
     errs = [*errs, checkData(**args)]
-    print('END CHECK 20')  
+    print('END CHECK 17')  
 
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #

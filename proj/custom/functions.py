@@ -130,14 +130,37 @@ def get_primary_key(tablename, eng):
     # This query gets us the primary keys of a table. Not in a python friendly format
     # Copy paste to Navicat, pgadmin, or do a pd.read_sql to see what it gives
     pkey_query = f"""
-        SELECT 
-            c.column_name, 
-            c.data_type
-        FROM information_schema.table_constraints tc 
-        JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_name) 
-        JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema
-            AND tc.table_name = c.table_name AND ccu.column_name = c.column_name
-        WHERE constraint_type = 'PRIMARY KEY' and tc.table_name = '{tablename}';
+        WITH tmp AS (
+            SELECT
+                C.COLUMN_NAME,
+                C.data_type
+            FROM
+                information_schema.table_constraints tc
+                JOIN information_schema.constraint_column_usage AS ccu USING (CONSTRAINT_SCHEMA, CONSTRAINT_NAME)
+                JOIN information_schema.COLUMNS AS C ON C.table_schema = tc.CONSTRAINT_SCHEMA
+                AND tc.TABLE_NAME = C.TABLE_NAME
+                AND ccu.COLUMN_NAME = C.COLUMN_NAME
+            WHERE
+                constraint_type = 'PRIMARY KEY'
+                AND tc.TABLE_NAME = '{tablename}'
+        )
+        SELECT
+            tmp.COLUMN_NAME,
+            tmp.data_type,
+                column_order.custom_column_position
+        FROM
+            tmp
+            LEFT JOIN (
+                SELECT
+                    COLUMN_NAME,
+                    custom_column_position
+                FROM
+                    column_order
+                WHERE
+                    TABLE_NAME = '{tablename}'
+            ) column_order ON column_order."column_name" = tmp.COLUMN_NAME
+                ORDER BY
+                custom_column_position
     """
     pkey_df = pd.read_sql(pkey_query, eng)
     
@@ -221,3 +244,22 @@ def check_multiple_dates_within_site(submission):
     num_unique_sample_dates = len(badrows)
     print("done check_multiple_dates_within_site")
     return (badrows, num_unique_sample_dates)
+
+
+def check_consecutiveness(df, groupcols, col_to_check):
+    '''
+        This function checks for consecutive values in a field within a group, and return indices if the values are not consecutive
+    '''
+    assert 'tmp_row' in df.columns, 'tmp_row not found in dataframe'
+    assert df[col_to_check].apply(lambda val: isinstance(val, int)).all(), f'all values in {col_to_check} needed to be integers'
+
+    def is_consecutive(df):
+        df = df.sort_values(by=col_to_check)
+        consecutive = (df[col_to_check].diff().dropna() == 1).all()
+        if not consecutive:
+            return df.tmp_row.tolist()
+        else:
+            return []    
+
+    badrows = [idx for indexes in df.groupby(groupcols).apply(is_consecutive) for idx in indexes]
+    return badrows

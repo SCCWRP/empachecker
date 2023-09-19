@@ -4,7 +4,7 @@ from inspect import currentframe
 from flask import current_app, g
 import pandas as pd
 from pandas import DataFrame
-from .functions import checkData, checkLogic, mismatch, get_primary_key
+from .functions import checkData, checkLogic, mismatch, get_primary_key, check_consecutiveness
 
 def sedchem_lab(all_dfs):
     
@@ -60,8 +60,8 @@ def sedchem_lab(all_dfs):
     seddata_pkey = get_primary_key('tbl_sedchem_data', g.eng)
     grabeventdetails_pkey = get_primary_key('tbl_grabevent_details', g.eng)
 
-    sedlabbatch_seddata_shared_pkey = list(set(sedlabbatch_pkey).intersection(set(seddata_pkey)))
-    sedlabbatch_grabeventdetails_shared_pkey = list(set(sedlabbatch_pkey).intersection(set(grabeventdetails_pkey)))
+    sedlabbatch_seddata_shared_pkey = [x for x in sedlabbatch_pkey if x in seddata_pkey]
+    sedlabbatch_grabeventdetails_shared_pkey = [x for x in sedlabbatch_pkey if x in grabeventdetails_pkey]
 
     
     print("# CHECK - 1")
@@ -78,9 +78,8 @@ def sedchem_lab(all_dfs):
         "badrows": mismatch(sedlabbatch, grabeventdetails, sedlabbatch_grabeventdetails_shared_pkey), 
         "badcolumn": ','.join(sedlabbatch_grabeventdetails_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each labbatch data must have corresponding records in the grabeventdetails table based on the columns: {}".format(
-            ','.join(sedlabbatch_grabeventdetails_shared_pkey)
-        )
+        "error_message": 
+            "Each record in sedchem_labbatch_data must have a corresponding field record. You must submit the field data to the checker first. The Field template can be downloaded on empa.sccwrp.org (Field Grab table). Records are matched based on the columns listed in the Column(s) box."
     })
     errs = [*errs, checkData(**args)]
 
@@ -103,9 +102,7 @@ def sedchem_lab(all_dfs):
         "badrows": mismatch(sedlabbatch, seddata, sedlabbatch_seddata_shared_pkey), 
         "badcolumn": ','.join(sedlabbatch_seddata_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each labbatch data must have corresponding records in SedChem Data based on the columns: {}".format(
-            ','.join(sedlabbatch_seddata_shared_pkey)
-        )
+        "error_message": "Each record in sedchem_labbatch_data must have a corresponding record in sedchem_data. Records are matched based on the columns listed in the Column(s) box."
     })
     errs = [*errs, checkData(**args)]
 
@@ -125,9 +122,7 @@ def sedchem_lab(all_dfs):
         "badrows": mismatch(seddata,sedlabbatch,sedlabbatch_seddata_shared_pkey), 
         "badcolumn": ','.join(sedlabbatch_seddata_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each Sedchem data  must have corresponding records in SedChem Labbatch based on the columns: {}".format(
-            ','.join(sedlabbatch_seddata_shared_pkey)
-        )
+        "error_message": "Each record in sedchem_data must have a corresponding record in sedchem_labbatch_data. Records are matched based on the columns listed in the Column(s) box."
     })
     errs = [*errs, checkData(**args)]
 
@@ -152,34 +147,22 @@ def sedchem_lab(all_dfs):
     # ------------------------------------------------------ SedChemLabBatch Checks ---------------------------------------------------- #
     # ---------------------------------------------------------------------------------------------------------------------------------- #
     ######################################################################################################################################
-    sedlabbatch_pkey_norepcol = [pkey for pkey in sedlabbatch_pkey if pkey not in ('samplereplicate')]
-
-    def check_replicate(tablename,rep_column,pkeys):
-        badrows = []
-        for _, subdf in tablename.groupby([x for x in pkeys if x != rep_column]):
-                df = subdf.filter(items=[*pkeys,*['tmp_row']])
-                df = df.sort_values(by=f'{rep_column}').fillna(0)
-                rep_diff = df[f'{rep_column}'].diff().dropna()
-                all_values_are_one = (rep_diff == 1).all()
-                if not all_values_are_one:
-                    badrows.extend(df.tmp_row.tolist())
-        return badrows
-
     print("# CHECK - 4")
     # Description: samplereplicate must be consecutive within primary keys (🛑 ERROR 🛑)
     # Created Coder: Ayah
     # Created Date: 09/12/2023
-    # Last Edited Date: 
-    # Last Edited Coder: 
+    # Last Edited Date: 09/18/23
+    # Last Edited Coder: Duy
     # NOTE (09/12/2023): I made the variable "seddata_pkey_norepcol" because the error message must output all the pkey columns except for replicate ones
+    # NOTE (09/18/23): Duy made a function to check for consecutive values
     
     args.update({
         "dataframe": sedlabbatch,
         "tablename": "tbl_sedchem_labbatch_data",
-        "badrows" : check_replicate(sedlabbatch,'samplereplicate',sedlabbatch_pkey),
+        "badrows" : check_consecutiveness(sedlabbatch, [x for x in sedlabbatch_pkey if x != 'samplereplicate'], 'samplereplicate'),
         "badcolumn": "samplereplicate",
         "error_type": "Replicate Error",
-        "error_message": f"Replicate must be consecutive within these columns {','.join(sedlabbatch_pkey_norepcol)}."
+        "error_message": f"samplereplicate values must be consecutive."
     })
     errs = [*errs, checkData(**args)]
 
@@ -201,8 +184,6 @@ def sedchem_lab(all_dfs):
     # ------------------------------------------------------ SedChemData Checks -------------------------------------------------------- #
     # ---------------------------------------------------------------------------------------------------------------------------------- #
     ######################################################################################################################################
-    seddata_pkey_norepcol = [pkey for pkey in seddata_pkey if pkey not in ('samplereplicate', 'labreplicate')]
-
     print("# CHECK - 5")
     # Description: If there is a value in result column, mdl cannot be empty (🛑 ERROR 🛑)
     # Created Coder: Ayah
@@ -210,14 +191,17 @@ def sedchem_lab(all_dfs):
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (09/12/2023): Ayah wrote the check, it has not been tested yet
-
+    
     args.update({
         "dataframe": seddata,
         "tablename": "tbl_sedchem_data",
-        "badrows" : seddata[(seddata['results'].notna()) & (seddata['mdl'].isna())].tmp_row.tolist(),
+        "badrows" : seddata[
+            (seddata['results'].notna()) & 
+            (seddata['mdl'].isna())
+        ].tmp_row.tolist(),
         "badcolumn": "mdl",
         "error_type": "Empty Value Error",
-        "error_message": f"MDL must be recorded when results are not null."
+        "error_message": f"If there is a value in result column, mdl cannot be empty"
     })
     errs = [*errs, checkData(**args)]
 
@@ -228,18 +212,18 @@ def sedchem_lab(all_dfs):
     # Description: labreplicate must be consecutive within primary keys (🛑 ERROR 🛑)
     # Created Coder: Ayah
     # Created Date: 09/12/2023
-    # Last Edited Date: 
-    # Last Edited Coder: 
+    # Last Edited Date: 09/18/23
+    # Last Edited Coder: Duy
     # NOTE (09/12/2023): Ayah wrote the replicate check, it has not been tested. 
     # NOTE (09/12/2023): I made the variable "seddata_pkey_norepcol" because the error message must output all the pkeys except for any rep columns
-
+    # NOTE (09/18/23): Duy made a function to check for consecutive values
     args.update({
         "dataframe": seddata,
         "tablename": "tbl_sedchem_data",
-        "badrows" : check_replicate(seddata,'labreplicate',seddata_pkey),
+        "badrows" : check_consecutiveness(seddata, [x for x in seddata_pkey if x != 'labreplicate'], 'labreplicate'),
         "badcolumn": "labreplicate",
         "error_type": "Replicate Error",
-        "error_message": f"Labeplicate must be consecutive within these columns {','.join(seddata_pkey_norepcol)}."
+        "error_message": f"labreplicate values must be consecutive."
     })
     errs = [*errs, checkData(**args)]
 
@@ -247,20 +231,20 @@ def sedchem_lab(all_dfs):
     
     print("# CHECK - 7")
     # Description: samplereplicate must be consecutive within primary keys (🛑 ERROR 🛑)
-    # Created Coder: 
-    # Created Date: 
-    # Last Edited Date: 
-    # Last Edited Coder: 
+    # Created Coder: Ayah
+    # Created Date: 09/12/2023
+    # Last Edited Date: 09/18/23
+    # Last Edited Coder: Duy
     # NOTE (09/12/2023): Ayah wrote the replicate check, it has not been tested. 
     # NOTE (09/12/2023): I made the variable "seddata_pkey_norepcol" because the error message must output all the pkey columns except for replicate ones
-
+    # NOTE (09/18/23): Duy made a function to check for consecutive values
     args.update({
         "dataframe": seddata,
         "tablename": "tbl_sedchem_data",
-        "badrows" : check_replicate(seddata,'samplereplicate',seddata_pkey),
+        "badrows" : check_consecutiveness(seddata, [x for x in seddata_pkey if x != 'samplereplicate'], 'samplereplicate'),
         "badcolumn": "samplereplicate",
         "error_type": "Replicate Error",
-        "error_message": f"Samplereplicate must be consecutive within these columns {','.join(seddata_pkey_norepcol)}."
+        "error_message": f"samplereplicate values must be consecutive."
     })
     errs = [*errs, checkData(**args)]
 

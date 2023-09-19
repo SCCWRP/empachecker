@@ -52,35 +52,15 @@ def toxicity(all_dfs):
 
     # return {'errors': errs, 'warnings': warnings}
 
+    toxicitysummary = all_dfs['tbl_toxicitysummary'].assign(tmp_row = all_dfs['tbl_toxicitysummary'].index)
     toxicitybatch = all_dfs['tbl_toxicitybatch'].assign(tmp_row = all_dfs['tbl_toxicitybatch'].index)
     toxicityresults = all_dfs['tbl_toxicityresults'].assign(tmp_row = all_dfs['tbl_toxicityresults'].index)
-    toxicitysummary = all_dfs['tbl_toxicitysummary'].assign(tmp_row = all_dfs['tbl_toxicitysummary'].index)
 
     grabevent_details = pd.read_sql("SELECT * FROM tbl_grabevent_details", g.eng)
 
-    toxicitybatch_args = {
-        "dataframe": toxicitybatch,
-        "tablename": 'tbl_toxicitybatch',
-        "badrows": [],
-        "badcolumn": "",
-        "error_type": "",
-        "is_core_error": False,
-        "error_message": ""
-    }
-
-    toxicityresults_args = {
-        "dataframe": toxicityresults,
-        "tablename": 'tbl_toxicityresults',
-        "badrows": [],
-        "badcolumn": "",
-        "error_type": "",
-        "is_core_error": False,
-        "error_message": ""
-    }
-
-    toxicitysummary_args = {
-        "dataframe": toxicitysummary,
-        "tablename": 'tbl_toxicitysummary',
+    args = {
+        "dataframe": pd.DataFrame({}),
+        "tablename": '',
         "badrows": [],
         "badcolumn": "",
         "error_type": "",
@@ -93,95 +73,99 @@ def toxicity(all_dfs):
     # --------------------------------------------- Toxicity Logic Checks ---------------------------------------------- #
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
+    toxicitybatch_pkey = get_primary_key('tbl_toxicitybatch', g.eng)
+    toxicitysummary_pkey = get_primary_key('tbl_toxicitysummary', g.eng)
+    grabeventdetails_pkey = get_primary_key('tbl_grabevent_details', g.eng)
     
+    toxicitysummary_grabeventdetails_shared_pkey = [x for x in toxicitysummary_pkey if x in grabeventdetails_pkey]
+    toxicitysummary_toxicitybatch_shared_pkey = [x for x in toxicitysummary_pkey if x in toxicitybatch_pkey]
+
     print("# CHECK - 1")
     # Description: Each toxicitysummary record must have correspond record in the grabeventdetails in database
-    # Created Coder: Caspian Thackeray
-    # Created Date: 09/05/23
-    # Last Edited Date: 09/08/23
-    # Last Edited Coder: Caspian Thackeray
-    # NOTE (09/08/23): Wrote new code to checker standards
+    # Created Coder: Caspian
+    # Created Date: 09/01/23
+    # Last Edited Date: 9/18/23
+    # Last Edited Coder: Duy
+    # NOTE (9/18/23): Duy rewrites the logic check
 
-    toxsum_pkey = get_primary_key('tbl_toxicitysummary', g.eng)
-    grabdeets_pkey = get_primary_key('tbl_grabevent_details', g.eng)
-
-    toxsum_grabdeets_shared_pkey = list(set(toxsum_pkey).intersection(set(grabdeets_pkey)))
-
-    toxicitysummary_args.update({
+    args.update({
         "dataframe": toxicitysummary,
-        "tablename": 'tbl_toxicitysummary',
-        "badrows": mismatch(toxicitysummary, grabevent_details, toxsum_grabdeets_shared_pkey),
-        "badcolumn": ','.join(toxsum_grabdeets_shared_pkey),
+        "tablename": "tbl_toxicitysummary",
+        "badrows": mismatch(toxicitysummary, grabevent_details, toxicitysummary_grabeventdetails_shared_pkey), 
+        "badcolumn": ','.join(toxicitysummary_grabeventdetails_shared_pkey),
         "error_type": "Logic Error",
-        "is_core_error": False,
-        "error_message": "Each toxicity summary record must have corresponding record in the grabevent_details table in database"
+        "error_message": 
+            "Each record in tbl_toxicitysummary must have a corresponding field record. You must submit the field data to the checker first. The Field template can be downloaded on empa.sccwrp.org (Field Grab table). Records are matched based on the columns listed in the Column(s) box."
     })
-    errs = [*errs, checkData(**toxicitysummary_args)]
+    errs = [*errs, checkData(**args)]
+
     print("# END of CHECK - 1")
 
     print("# CHECK - 2")
-    # Description: Each toxicitybatch record must have corresponding record in the grabevent_details table in database
-    # Created Coder: Caspian Thackeray
-    # Created Date: 09/05/23
-    # Last Edited Date: 09/13/23
-    # Last Edited Coder: Caspian Thackeray
-    # NOTE (09/12/23): Still working on this one
-    # NOTE (09/13/23):  The problem with this check is that there are no matching primary keys between grabevent_details and tox batch.
-    #                   Also, there aren't any useful matching primary keys between tox summary and batch to use a work around
-    #                   I'll come back to this check later
-    
-    toxbatch_pkey = get_primary_key('tbl_toxicitybatch', g.eng)
-    toxsum_pkey = get_primary_key('tbl_toxicitysummary', g.eng)
-    grabdeets_pkey = get_primary_key('tbl_grabevent_details', g.eng)
+    # Description: Each toxicitysummary record must have corresponding record in toxicitybatch
+    # Created Coder: Caspian
+    # Created Date: 09/01/23
+    # Last Edited Date: 9/18/23
+    # Last Edited Coder: Duy
+    # NOTE (9/18/23): Duy rewrites the logic check
 
-    toxbatch_toxsum_shared_pkey = list(set(toxbatch_pkey).intersection(set(toxsum_pkey)))
-    toxsum_grabdeets_shared_pkey = list(set(toxsum_pkey).intersection(set(grabdeets_pkey)))
-
-    summ_bad_rows = mismatch(toxicitysummary, grabevent_details, toxsum_grabdeets_shared_pkey)
-    summ_batch_mismatching_rows = mismatch(toxicitysummary, toxicitybatch, toxbatch_toxsum_shared_pkey)
-
-    batch_grab_intersect = list(set(summ_bad_rows).intersection(set(summ_batch_mismatching_rows)))
-    """
-    toxicitybatch_args.update({
-        "dataframe": toxicitybatch,
-        "tablename": 'tbl_toxicitybatch',
-        "badrows": "",
-        "badcolumn": ','.join(toxbatch_toxsum_shared_pkey),
+    args.update({
+        "dataframe": toxicitysummary,
+        "tablename": "tbl_toxicitysummary",
+        "badrows": mismatch(toxicitysummary, toxicitybatch, toxicitysummary_toxicitybatch_shared_pkey), 
+        "badcolumn": ','.join(toxicitysummary_toxicitybatch_shared_pkey),
         "error_type": "Logic Error",
-        "is_core_error": False,
-        "error_message": "Each toxicitybatch record must have corresponding record in the grabevent_details table in database"
+        "error_message": 
+            "Each record in tbl_toxicitysummary must have a corresponding record in tbl_toxicitybatch. Records are matched based on the columns listed in the Column(s) box"
     })
-    print('update done')
-    errs = [*errs, checkData(**toxicitybatch_args)]
-    """
+    errs = [*errs, checkData(**args)]
 
     print("# END of CHECK - 2")
 
+
     print("# CHECK - 3")
-    # Description: Each toxicityresults record must have corresponding record in the grabevent_details table in database
-    # Created Coder: Caspian Thackeray
-    # Created Date: 09/05/23
-    # Last Edited Date: 09/08/23
-    # Last Edited Coder: Caspian Thackeray
-    # NOTE (09/08/23): Wrote new code to checker standards
-    
-    toxres_pkey = get_primary_key('tbl_toxicityresults', g.eng)
-    grabdeets_pkey = get_primary_key('tbl_grabevent_details', g.eng)
-
-    toxres_grabdeets_shared_pkey = list(set(toxres_pkey).intersection(set(grabdeets_pkey)))
-
-    toxicityresults_args.update({
-        "dataframe": toxicityresults,
-        "tablename": 'tbl_toxicityresults',
-        "badrows": mismatch(toxicityresults, grabevent_details, toxres_grabdeets_shared_pkey),
-        "badcolumn": ','.join(toxres_grabdeets_shared_pkey),
+    # Description: Each toxicitybatch record must have corresponding record in toxicitysummary
+    # Created Coder: Caspian
+    # Created Date: 09/01/23
+    # Last Edited Date: 9/18/23
+    # Last Edited Coder: Duy
+    # NOTE (9/18/23): Duy rewrites the logic check
+    args.update({
+        "dataframe": toxicitybatch,
+        "tablename": "tbl_toxicitybatch",
+        "badrows": mismatch(toxicitybatch, toxicitysummary, toxicitysummary_toxicitybatch_shared_pkey), 
+        "badcolumn": ','.join(toxicitysummary_toxicitybatch_shared_pkey),
         "error_type": "Logic Error",
-        "is_core_error": False,
-        "error_message": "Each toxicity results record must have corresponding record in the grabevent_details table in database"
+        "error_message": 
+            "Each record in tbl_toxicitybatch must have a corresponding record in tbl_toxicitysummary. Records are matched based on the columns listed in the Column(s) box"
     })
-    errs = [*errs, checkData(**toxicityresults_args)]
+    errs = [*errs, checkData(**args)]
 
     print("# END of CHECK - 3")
+
+
+    print("# CHECK - 4")
+    # Description: Each toxicityresults record must have corresponding record in the toxicitybatch
+    # Created Coder: Caspian
+    # Created Date: 09/01/23
+    # Last Edited Date: 9/18/23
+    # Last Edited Coder: Duy
+    # NOTE (9/18/23): Duy rewrites the logic check
+
+    args.update({
+        "dataframe": toxicitybatch,
+        "tablename": "tbl_toxicitybatch",
+        "badrows": mismatch(toxicitybatch, toxicitysummary, toxicitysummary_toxicitybatch_shared_pkey), 
+        "badcolumn": ','.join(toxicitysummary_toxicitybatch_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": 
+            "Each record in tbl_toxicitybatch must have a corresponding record in tbl_toxicitysummary. Records are matched based on the columns listed in the Column(s) box"
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END of CHECK - 4")
+
+
 
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
@@ -206,27 +190,26 @@ def toxicity(all_dfs):
     multiple_dates_within_site_summary = check_multiple_dates_within_site(toxicitysummary)
     multiple_dates_within_site_results = check_multiple_dates_within_site(toxicityresults)
 
-    toxicitysummary_args.update({
+    args.update({
         "dataframe": toxicitysummary,
-        "tablename": 'tbl_toxicitysummary',
-        "badrows": toxicitysummary[(toxicitysummary['samplecollectiondate'].duplicated()) & (toxicitysummary['siteid'].duplicated())].tmp_row.tolist(),
-        "badcolumn": 'siteid, samplecollectiondate',
-        "error_type": "Value Error",
-        "is_core_error": False,
-        "error_message": f'Warning! You are submitting toxicity data with multiple dates for the same site. {multiple_dates_within_site_summary[1]} unique sample dates were submitted. Is this correct?'
+        "tablename": "tbl_toxicitysummary",
+        "badrows": multiple_dates_within_site_summary[0], 
+        "badcolumn": 'siteid,samplecollectiondate',
+        "error_type": "Logic Error",
+        "error_message": "Multiple dates are submitted within a single site"
     })
-    warnings = [*warnings, checkData(**toxicitysummary_args)]
-    
-    toxicityresults_args.update({
-        "dataframe": toxicityresults,
-        "tablename": 'tbl_toxicityresults',
-        "badrows": toxicityresults[(toxicityresults['samplecollectiondate'].duplicated()) & (toxicityresults['siteid'].duplicated())].tmp_row.tolist(),
-        "badcolumn": 'siteid, samplecollectiondate',
-        "error_type": "Value Error",
-        "is_core_error": False,
-        "error_message": f'Warning! You are submitting toxicity data with multiple dates for the same site. {multiple_dates_within_site_results[1]} unique sample dates were submitted. Is this correct?'
+    errs = [*errs, checkData(**args)]
+
+    args.update({
+        "dataframe": toxicitybatch,
+        "tablename": "tbl_toxicitybatch",
+        "badrows": multiple_dates_within_site_results[0], 
+        "badcolumn": 'siteid,samplecollectiondate',
+        "error_type": "Logic Error",
+        "error_message": "Multiple dates are submitted within a single site"
     })
-    warnings = [*warnings, checkData(**toxicityresults_args)]
+    errs = [*errs, checkData(**args)]
+
 
     print("# END of CHECK - 4")
 
