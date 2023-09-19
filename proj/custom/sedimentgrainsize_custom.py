@@ -3,6 +3,10 @@ from flask import current_app, g
 from pandas import DataFrame
 import pandas as pd
 from .functions import checkData, checkLogic, mismatch,get_primary_key
+
+
+
+
 def sedimentgrainsize_lab(all_dfs):
     
     current_function_name = str(currentframe().f_code.co_name)
@@ -137,14 +141,6 @@ def sedimentgrainsize_lab(all_dfs):
 
 
 
-
-
-
-
-
-
-
-
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
     # ------------------------------------------------ Sedgrainsize LabBatch Checks ------------------------------------ #
@@ -199,71 +195,5 @@ def sedimentgrainsize_lab(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
 
-
-
-    '''
-    # Logic Checks
-    eng = g.eng
-    sql = eng.execute("SELECT * FROM tbl_sedgrainsize_metadata")
-    sql_df = DataFrame(sql.fetchall())
-    sql_df.columns = sql.keys()
-    sedmeta = sql_df
-    del sql_df
-
-    ############################### --Start of Logic Checks -- #############################################################
-    print("Begin Sediment Grain Size Lab Logic Checks...")
-
-    # Logic Check 1: Siteid/estuaryname pair must match lookup list -- sedimentgrainsize_metadata (db) & sediment_labbatch_data (submission), sedimentgrainsize_metadata records do not exist in database
-    print("begin check 1")
-    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'matrix', 'samplelocation','projectid']
-    args = {
-        "dataframe": sed_labbatch,
-        "tablename": 'tbl_sedgrainsize_labbatch_data',
-        "badrows": mismatch(sed_labbatch, sedmeta, groupcols),
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, matrix, samplelocation",
-        "error_type": "Logic Error",
-        "error_message": "Field submission for sediment grain size labbatch data is missing. Please verify that the sediment grain size field data has been previously submitted."
-    }
-    errs = [*errs, checkData(**args)]
-    print("check ran - logic - sediment grain size metadata records do not exist in database for sediment grain size labbatch data submission")
-    print("end check 1")
-
-    # Logic Check 2: sedgrainsize_labbatch_data & sedgrainsize_data must have corresponding records within session submission
-    # Logic Check 2a: sedgrainsize_data missing records provided by sedgrainsize_labbatch_data
-    print("begin check 2a")
-    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'samplelocation', 'preparationbatchid', 'labreplicate', 'matrix', 'projectid']
-    args.update({
-        "dataframe": sed_labbatch,
-        "tablename": "tbl_sedgrainsize_labbatch_data",
-        "badrows": mismatch(sed_labbatch, sed_data, groupcols), 
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, samplelocation, preparationbatchid, labreplicate",
-        "error_type": "Logic Error",
-        "error_message": "Records in sedimentgrainsize_labbatch_data must have corresponding records in sedgrainsize_data. Missing records in sedgrainsize_data."
-    })
-    errs = [*errs, checkData(**args)]
-    print("check ran - logic - missing sedgrainsize_data records")
-    print("end check 2a")
-
-    # Logic Check 2b: sedgrainsize_labbatch_data missing records provided by sedgrainsize_data
-    print("begin check 2b")
-    tmp = sed_data.merge(
-        sed_labbatch.assign(present = 'yes'), 
-        on = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'samplelocation', 'preparationbatchid', 'matrix', 'labreplicate', 'projectid'],
-        how = 'left'
-    )
-    # badrows = tmp[pd.isnull(tmp.present)].tmp_row.tolist()
-    args.update({
-        "dataframe": sed_data,
-        "tablename": "tbl_sedgrainsize_data",
-        "badrows": tmp[pd.isnull(tmp.present)].tmp_row.tolist(),
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, samplelocation, preparationbatchid, matrix, labreplicate, 'projectid",
-        "error_type": "Logic Error",
-        "error_message": "Records in sedgrainsize_data must have corresponding records in sedgrainsize_labbatch_data. Missing records in sedgrainsize_labbatch_data."
-    })
-    errs = [*errs, checkData(**args)]
-    print("check ran - logic - missing sedgrainsize_labbatch_data records")
-    print("begin check 2b")
-    print("End Sediment Grain Size Lab Logic Checks...")
-    '''
     
     return {'errors': errs, 'warnings': warnings}
