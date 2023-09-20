@@ -154,12 +154,14 @@ def sav(all_dfs):
     print("# END OF CHECK - 4")
 
     print("# CHECK - 5")
-    # Description: savbedreplicate must be consecutive within primary keys
+    # Description: savbedreplicate values must be consecutive when grouped by primary keys
     # Created Coder: Caspian Thackeray
     # Created Date: 09/15/23
     # Last Edited Date: 09/15/23
     # Last Edited Coder: Caspian Thackeray
     # NOTE (09/15/23): Check written
+
+    print(f"savmeta: {savmeta.iloc[0]}")
 
     badrows = []
     for _, subdf in savmeta.groupby([x for x in savmeta_pkey if x != 'savbedreplicate']):
@@ -195,6 +197,7 @@ def sav(all_dfs):
         df = subdf.filter(items=[*savmeta_pkey,*['tmp_row']])
         df = df.sort_values(by='transectreplicate').fillna(0)
         rep_diff = df['transectreplicate'].diff().dropna()
+        print(rep_diff.to_string())
         all_values_are_one = (rep_diff == 1).all()
         if not all_values_are_one:
             badrows = [*badrows, *df.tmp_row.tolist()]

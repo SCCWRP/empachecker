@@ -82,6 +82,7 @@ def benthicinfauna_lab(all_dfs):
     # Last Edited Date:  NA
     # Last Edited Coder: NA
     # NOTE (9/14/2023): Aria This check cant be completed. There is no primary_keys on grab_event table in the database
+    print("# END OF CHECK - 1")
 
     
     print("# CHECK - 2")

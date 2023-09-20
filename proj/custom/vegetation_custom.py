@@ -39,8 +39,9 @@ def vegetation(all_dfs):
     vegdata_pkey = get_primary_key('tbl_vegetativecover_data',g.eng)
     epidata_pkey = get_primary_key('tbl_epifauna_data',g.eng)
 
+    vegmeta_vegdata_shared_pkey = list(set(vegmeta_pkey).intersection(set(vegdata_pkey)))
     vegdata_vegmeta_shared_pkey = list(set(vegdata_pkey).intersection(set(vegmeta_pkey)))
-    epidata_vegmata_shareed_pkey = list(set(vegdata_pkey).intersection(set(epidata_pkey)))
+    epidata_vegmata_shareed_pkey = list(set(epidata_pkey).intersection(set(vegmeta_pkey)))
 
 
     errs = []
@@ -67,16 +68,16 @@ def vegetation(all_dfs):
 
     print("# CHECK - 1")
     # Description: Each sample metadata must include corresponding cover data
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 9/19/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (9/19/2023): Updated the shared_pkeys, was matching the wrong keys with the wrong tables 
     args.update({
         "dataframe": vegmeta,
         "tablename": "tbl_vegetation_sample_metadata",
-        "badrows": mismatch(vegmeta, vegdata, vegdata_vegmeta_shared_pkey), 
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, transectreplicate",
+        "badrows": mismatch(vegmeta, vegdata, vegmeta_vegdata_shared_pkey), 
+        "badcolumn": ','.join(vegmeta_vegdata_shared_pkey),
         "error_type": "Logic Error",
         "error_message": "Records in sample_metadata must have corresponding records in vegetationcover_data."
     })
@@ -85,11 +86,11 @@ def vegetation(all_dfs):
 
     print("# CHECK - 2")
     # Description: Each cover data must include corresponding sample metadata
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 9/19/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (9/19/2023): Updated the shared_pkeys, was matching the wrong keys with the wrong tables 
     args.update({
         "dataframe": vegdata,
         "tablename": "tbl_vegetation_sample_metadata",
@@ -105,18 +106,18 @@ def vegetation(all_dfs):
 
     print("# CHECK - 3")
     # Description: Each epifauna data must include corresponding sample metadata (but not vice versa)
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 09/19/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/19/2023): Updated code, was not matching correct tables so changed "vegdata" to "vegmeta" which is what the checks wants. 
     args.update({
         "dataframe": epidata,
         "tablename": "tbl_epifauna_data",
         "badrows": mismatch(epidata, vegmeta, epidata_vegmata_shareed_pkey),
         "badcolumn": ','.join(epidata_vegmata_shareed_pkey),
         "error_type": "Logic Error",
-        "error_message": "Records in epifauna data must have corresponding records in vegetationcover_data bas."
+        "error_message": "Records in epifauna data must have corresponding records in vegetationcover_data base."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 3")
