@@ -112,6 +112,10 @@ def bruv_lab(all_dfs):
     bruvvideo = all_dfs['tbl_bruv_videolog']
     errs = []
     warnings = []
+    
+    protocol['tmp_row'] = protocol.index
+    bruvdata['tmp_row'] = bruvdata.index
+    bruvvideo['tmp_row'] = bruvvideo.index
 
     # read in samplecollectiondate as pandas datetime so merging bruv dfs (incl metadata) without dtype conflict
     bruvvideo['samplecollectiondate'] = pd.to_datetime(bruvvideo['samplecollectiondate'])
@@ -149,6 +153,10 @@ def bruv_lab(all_dfs):
     # Last Edited Date: 09/12/2023 
     # Last Edited Coder: Aria Askaryar
     # NOTE (09/12/2023): Aria adjusts the format so it follows the coding standard
+    print("START bruvdata_protocol_shared_pkey listing:")
+    for item in bruvdata_protocol_shared_pkey:
+        print(item)
+    print("END bruvdata_protocol_shared_pkey listing:")
 
     args.update({
         "dataframe": bruvdata,
@@ -288,14 +296,17 @@ def bruv_lab(all_dfs):
     # Description: If in_out is "in" then MaxN is the sum of MaxNs (MaxN is the sum of all/each species counts (MaxNs) within a given FOV frame)
     # Created Coder: Aria Askaryar
     # Created Date: NA
-    # Last Edited Date: 09/12/2023 
-    # Last Edited Coder: Aria Askaryar
+    # Last Edited Date: 09/19/2023 
+    # Last Edited Coder: Robert Butler
     # NOTE (09/12/2023): Aria adjusts the format so it follows the coding standard
+
+    # NOTE (09/19/2023): The tmp_row column should never be dropped from the dataframe. 
+    #                    If one needs to do more complicated operations with the data they need to make a copy of it
+    #                    This is so we can correctly mark the original row numbers of the dataframe
     
     # grouped_cols = ['siteid','estuaryname','stationno','samplecollectiondate','camerareplicate','foventeredtime','fovlefttime','in_out'] 
     cols = ['siteid','estuaryname','stationno','samplecollectiondate','camerareplicate','videoorder','foventeredtime','fovlefttime','in_out'] 
-    # keep origial indices for marking file
-    bruvdata['tmp_row'] = bruvdata.index
+    
     #subsetting for 'in_out' == 'in' so that there are fewer keys to loop through
     grouped_df = bruvdata[bruvdata['in_out'] == 'in'].groupby(cols) 
     gb = grouped_df.groups
@@ -306,7 +317,7 @@ def bruv_lab(all_dfs):
             tmp = bruvdata.loc[values]
             brows = tmp[(tmp['maxn'] != tmp['maxns'].sum())].tmp_row.tolist()
             badrows.extend(brows) #this will be populated to the badrows key in the args dict
-    bruvdata = bruvdata.drop(columns=['tmp_row'])
+    
 
     args = {
         "dataframe": bruvdata,
@@ -329,7 +340,12 @@ def bruv_lab(all_dfs):
     # NOTE (09/12/2023): Aria adjusts the format so it follows the coding standard
     # NOTE (09/12/2023): Aria - i am not sure wh the badcolumns are checking all those keys? Shouldnt it jus be in_out and certainty
 
-    print('begin check 7')
+    print("bruvdata")
+    print(bruvdata)
+    
+    print("""bruvdata[(bruvdata['in_out'] == 'in') & (pd.isnull(bruvdata['certainty']))]""")
+    print(bruvdata[(bruvdata['in_out'] == 'in') & (pd.isnull(bruvdata['certainty']))])
+
     args = {
         "dataframe": bruvdata,
         "tablename": 'tbl_bruv_data',
