@@ -3,7 +3,7 @@
 from inspect import currentframe
 from flask import current_app, g
 import pandas as pd
-from .functions import checkData, checkLogic, mismatch, get_primary_key
+from .functions import checkData, checkLogic, mismatch, get_primary_key, check_consecutiveness
 import re
 import time
 
@@ -265,23 +265,16 @@ def fishseines(all_dfs):
     # Description: Netreplicate must be consecutive within a projectid,siteid,estuaryname,stationno,samplecollectiondate,surveytype group (🛑 ERROR 🛑)
     # Created Coder: Duy Nguyen
     # Created Date: 8/23/23
-    # Last Edited Date: 8/25/23
+    # Last Edited Date: 9/21/23
     # Last Edited Coder: Duy Nguyen
     # NOTE (8/23/23): Duy wrote this check but did not test it
     # NOTE (8/25/23): Duy tested the code.
-    badrows = []
-    for _, subdf in fishmeta.groupby([x for x in fishmeta_pkey if x != 'netreplicate']):
-        df = subdf.filter(items=[*fishmeta_pkey,*['tmp_row']])
-        df = df.sort_values(by='netreplicate').fillna(0)
-        rep_diff = df['netreplicate'].diff().dropna()
-        all_values_are_one = (rep_diff == 1).all()
-        if not all_values_are_one:
-            badrows.extend(df.tmp_row.tolist())
+    # NOTE (9/21/23): Duy used the function check_consecutiveness.
     
     args.update({
         "dataframe": fishmeta,
         "tablename": "tbl_fish_sample_metadata",
-        "badrows": badrows, 
+        "badrows": check_consecutiveness(fishmeta, [x for x in fishmeta_pkey if x != 'netreplicate'], 'netreplicate'), 
         "badcolumn": 'netreplicate',
         "error_type": "Custom Error",
         "error_message": " Netreplicate must be consecutive within a projectid,siteid,estuaryname,stationno,samplecollectiondate,surveytype group"
@@ -334,12 +327,13 @@ def fishseines(all_dfs):
     # ---------------------------------------------------------------------------------------------------------------------------------- #
     ######################################################################################################################################
     print("# CHECK - 11")
-    # Description: Range for abundance should be between [0, 5000] or -88 (empty) (🛑 ERROR 🛑)
+    # Description: Range for abundance should be between [0, 10000] or -88 (empty) (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 8/18/23  
+    # Last Edited Date: 9/21/23  
     # Last Edited Coder: Duy Nguyen
     # NOTE (8/18/23): Duy adjusts the format so it follows the coding standard
+    # NOTE (9/21/23): Duy changed range to [0,10000] per Jan's request. Qa'ed
     args.update({
         "dataframe": fishabud,
         "tablename": "tbl_fish_abundance_data",
@@ -348,12 +342,12 @@ def fishseines(all_dfs):
                 fishabud['abundance'] != -88
             ) &
             (
-                (fishabud['abundance'] < 0) | (fishabud['abundance'] > 5000)
+                (fishabud['abundance'] < 0) | (fishabud['abundance'] > 10000)
             )
         ].tmp_row.tolist(),
         "badcolumn": "abundance",
         "error_type" : "Value out of range",
-        "error_message" : "Range for abundance should be between [0, 5000] or -88 (empty)"
+        "error_message" : "Range for abundance should be between [0, 10000] or -88 (empty)"
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 11")
@@ -465,24 +459,17 @@ def fishseines(all_dfs):
     # Created Coder: Duy Nguyen
     # Created Date: 8/23/23
     # Last Edited Date: Duy Nguyen  
-    # Last Edited Coder: 8/25/23
+    # Last Edited Coder: 9/21/23
     # NOTE (8/23/23): Duy wrote this check but did not test it
     # NOTE (8/25/23): Duy tested the code.
-    badrows = []
-    for _, subdf in fishdata.groupby([x for x in fishdata_pkey if x != 'replicate']):
-        df = subdf.filter(items=[*fishdata_pkey,*['tmp_row']])
-        df = df.sort_values(by='replicate').fillna(0)
-        rep_diff = df['replicate'].diff().dropna()
-        all_values_are_one = (rep_diff == 1).all()
-        if not all_values_are_one:
-            badrows = [*badrows, *df.tmp_row.tolist()]
+    # NOTE (9/21/23): Duy used the check_consecutiveness function
     args.update({
         "dataframe": fishdata,
         "tablename": "tbl_fish_length_data",
-        "badrows": badrows,
+        "badrows": check_consecutiveness(fishdata, [x for x in fishdata_pkey if x != 'replicate'], 'replicate'),
         "badcolumn": "replicate",
         "error_type": "Custom Error",
-        "error_message": "Replicate must be consecutive within a projectid,siteid,estuaryname,stationno,samplecollectiondate,surveytype,netreplicate,scientificname group"
+        "error_message": "Replicate must be consecutive."
     })
     errs = [*errs, checkData(**args)]
 
