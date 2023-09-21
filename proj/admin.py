@@ -78,6 +78,8 @@ def schema():
             df.fillna('', inplace = True)
             print("before return obj")
 
+            
+
             return_object[tbl] = df.to_dict('records')
         
         
