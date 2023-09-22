@@ -1,7 +1,7 @@
 from inspect import currentframe
 from flask import current_app, g
 import pandas as pd
-from .functions import checkData, checkLogic, mismatch, get_primary_key, check_replicate
+from .functions import checkData, checkLogic, mismatch, get_primary_key, check_replicate, check_consecutiveness, check_date_order
 import re
 
 def crabtrap(all_dfs):
@@ -66,7 +66,7 @@ def crabtrap(all_dfs):
     print(f"crabinvert_crabmass_shared_pkey: {crabinvert_crabmass_shared_pkey}")
 
     print("# CHECK - 1")
-    # Description: Each metadata must include corresponding abundance data (🛑 ERROR 🛑)
+    # Description: Each record in crabtrap_metadata must include corresponding record crabfishinvert_abundance data when trapsuccess in crabtrap_metadata is yes (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
     # Last Edited Date: 08/29/23
@@ -107,7 +107,7 @@ def crabtrap(all_dfs):
 
 
     print("# CHECK - 3")
-    # Description: Each metadata must include corresponding length data (🛑 ERROR 🛑)
+    # Description: Each crabtrap_metadata must include corresponding crab_biomass_length data when trap success is yes (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
     # Last Edited Date: 08/29/2023
@@ -139,7 +139,7 @@ def crabtrap(all_dfs):
         "badrows": mismatch(crabmass, crabmeta, crabmeta_crabmass_shared_pkey), 
         "badcolumn": ','.join(crabmeta_crabmass_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each length data must include corresponding metadata"
+        "error_message": "Each crabbiomass_length data must include corresponding crabtrap_metadata. Records are matched based on the columns listed in the Column(s) box."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 4")
@@ -158,7 +158,7 @@ def crabtrap(all_dfs):
         "badrows": mismatch(crabinvert, crabmass, crabinvert_crabmass_shared_pkey), 
         "badcolumn": ','.join(crabinvert_crabmass_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each abundance data must include corresponding length data"
+        "error_message": "Each tbl_crabfishinvert_abundance data must include corresponding crabbiomass_length data. Records are matched based on the columns listed in the Column(s) box."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 5")
@@ -178,7 +178,7 @@ def crabtrap(all_dfs):
         "badrows": mismatch(crabmass, crabinvert, crabinvert_crabmass_shared_pkey), 
         "badcolumn": ','.join(crabinvert_crabmass_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each length data data must include corresponding abundance data"
+        "error_message": "Each crabbiomass_length data must include corresponding tbl_crabfishinvert_abundance data data. Records are matched based on the columns listed in the Column(s) box."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 6")
@@ -246,9 +246,6 @@ def crabtrap(all_dfs):
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 8")
 
-
-
-
     print("# CHECK - 9")
     # Description: Replicate must be consecutive within a primary key  (🛑 ERROR 🛑)
     # Created Coder: Ayah H
@@ -259,29 +256,20 @@ def crabtrap(all_dfs):
     # NOTE (09/05/2023): Ayah checked that the check works 
     # NOTE (09/06/2023): Nick commented out so we could pull from github
     # NOTE (09/12/2023): Ayah Fixed Error statement for check
-    crabmeta_pkey = list(get_primary_key('tbl_crabtrap_metadata', g.eng))
-    crabmeta_pkey_norepcol = crabmeta_pkey.remove('replicate')
-    def check_replicate(tablename,rep_column,pkeys):
-        badrows = []
-        for _, subdf in tablename.groupby([x for x in pkeys if x != rep_column]):
-                df = subdf.filter(items=[*pkeys,*['tmp_row']])
-                df = df.sort_values(by=f'{rep_column}').fillna(0)
-                rep_diff = df[f'{rep_column}'].diff().dropna()
-                all_values_are_one = (rep_diff == 1).all()
-                if not all_values_are_one:
-                    badrows.extend(df.tmp_row.tolist())
-        return badrows
-
+    print(crabmeta_pkey)
     args.update({
         "dataframe": crabmeta,
         "tablename": "tbl_crabtrap_metadata",
-        "badrows" : check_replicate(crabmeta,'replicate',crabmeta_pkey),
+        "badrows" : check_consecutiveness(crabmeta, [x for x in crabmeta_pkey if x != 'replicate'], 'replicate'),
         "badcolumn": "replicate",
         "error_type": "Replicate Error",
-        "error_message": f"Replicate must be consecutive within these columns {','.join(crabmeta_pkey_norepcol)}."
+        "error_message": f"replicate values must be consecutive."
     })
     errs = [*errs, checkData(**args)]
+    
     print("# END OF CHECK - 9")
+
+    
 
 
 
@@ -301,6 +289,7 @@ def crabtrap(all_dfs):
     # ----------------------------------------------- CrabFishInvert Abundance Checks -------------------------------------------------- #
     # ---------------------------------------------------------------------------------------------------------------------------------- #
     ######################################################################################################################################
+    
     print("# CHECK - 10")
     # Description: If catch is no then abundance should be 0 (🛑 ERROR 🛑)
     # Created Coder: Duy Nguyen
@@ -318,6 +307,7 @@ def crabtrap(all_dfs):
     # That would have got flagged at core checks
     # NOTE (8/29/23): Zaib adjusts the format so it follows the coding standard.
     # NOTE (9/7/2023): assigned invert tmp row to be crabinvert tmp_row rather than crabinvert.index - Robert
+    
     merged = pd.merge(
         crabinvert.assign(invert_tmp_row = crabinvert.tmp_row),
         crabmeta, 
@@ -336,7 +326,7 @@ def crabtrap(all_dfs):
         
         "badcolumn": "abundance",
         "error_type": "Undefined Error",
-        "error_message": "If catch = No in crab_meta, then abundance shoud be 0 in invert_abundance tab"
+        "error_message": "If catch is no in crabtrap_metadata then abundance should be 0 in crabfishinvert_abundance"
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 10")
@@ -377,7 +367,7 @@ def crabtrap(all_dfs):
         "badrows":  merged[(merged['catch'].str.lower() == 'yes') & ( (merged['abundance'] <= 0) | merged['abundance'].isnull() )].invert_tmp_row.tolist(),
         "badcolumn": "abundance",
         "error_type": "Undefined Error",
-        "error_message": "If catch = Yes in crab_meta, then abundance should be a positive integer in abundance tab."
+        "error_message": "If catch is yes in crabtrap_metadata, then abundance should be a positive integer in crabfishinvert_abundance"
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 11")
@@ -404,6 +394,25 @@ def crabtrap(all_dfs):
     errs.append(checkData(**args))
     print("# END OF CHECK - 12")
 
+    print("# CHECK - 18")
+    # Description: Replicate must be consecutive within a primary key  (🛑 ERROR 🛑)
+    # Created Coder: Caspian T.
+    # Created Date: 09/22/2023
+    # Last Edited Date: 09/22/2023
+    # Last Edited Coder: Caspian T.
+
+    args.update({
+        "dataframe": crabinvert,
+        "tablename": "tbl_crabfishinvert_abundance",
+        "badrows" : check_consecutiveness(crabinvert, [x for x in crabinvert_pkey if x != 'replicate'], 'replicate'),
+        "badcolumn": "replicate",
+        "error_type": "Replicate Error",
+        "error_message": f"replicate values must be consecutive."
+    })
+    errs = [*errs, checkData(**args)]
+    
+    print("# END OF CHECK - 18")
+
     ######################################################################################################################################
     # ---------------------------------------------------------------------------------------------------------------------------------- #
     # ----------------------------------------------- END OF CrabFishInvert Abundance Checks ------------------------------------------- #
@@ -425,16 +434,43 @@ def crabtrap(all_dfs):
     ######################################################################################################################################
 
 
-    #print("# CHECK - 13")
+    print("# CHECK - 13")
     # Description: speciesreplicate must be consecutive within primary keys (🛑 ERROR 🛑)
-    # Created Coder: 
-    # Created Date: 
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE ():
-    #print("# END OF CHECK - 13")
+    # Created Coder: Caspian T.
+    # Created Date: 09/22/2023
+    # Last Edited Date: 09/22/2023
+    # Last Edited Coder: Caspian T.
+    
+    args.update({
+        "dataframe": crabmass,
+        "tablename": "tbl_crabbiomass_length",
+        "badrows" : check_consecutiveness(crabmass, [x for x in crabmass_pkey if x != 'speciesreplicate'], 'speciesreplicate'),
+        "badcolumn": "speciesreplicate",
+        "error_type": "Replicate Error",
+        "error_message": f"speciesreplicate values must be consecutive within primary keys."
+    })
+    errs = [*errs, checkData(**args)]
 
+    print("# END OF CHECK - 13")
 
+    print("# CHECK - 17")
+    # Description: speciesreplicate must be consecutive within primary keys (🛑 ERROR 🛑)
+    # Created Coder: Caspian T.
+    # Created Date: 09/22/2023
+    # Last Edited Date: 09/22/2023
+    # Last Edited Coder: Caspian T.
+    
+    args.update({
+        "dataframe": crabmass,
+        "tablename": "tbl_crabbiomass_length",
+        "badrows" : check_consecutiveness(crabmass, [x for x in crabmass_pkey if x != 'replicate'], 'replicate'),
+        "badcolumn": "replicate",
+        "error_type": "Replicate Error",
+        "error_message": f"replicate values must be consecutive within primary keys."
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 17")
 
     ######################################################################################################################################
     # ---------------------------------------------------------------------------------------------------------------------------------- #
@@ -443,8 +479,25 @@ def crabtrap(all_dfs):
     ######################################################################################################################################
 
 
+    print("# CHECK - 15")
+    # Description: deploymentdate must be before samplecollectiondate (🛑 ERROR 🛑)
+    # Created Coder: Caspian T
+    # Created Date: 09/21/2023
+    # Last Edited Date: 09/22/2023
+    # Last Edited Coder: Caspian T
+    # NOTE:(09/22/2023): For some reason this check causes an error when placed before check 10, which is the order it's in in the QA doc. The terminal says it's a problem with
+    # NOTE:(09/22/2023): check 10, so I'm going to leave this like this for now and come back to it later
 
-
-
+    args.update({
+        "dataframe": crabmeta,
+        "tablename": "tbl_crabtrap_metadata",
+        "badrows" : check_date_order(crabmeta, 'deploymentdate', 'samplecollectiondate'),
+        "badcolumn": "deploymentdate",
+        "error_type": "Date Error",
+        "error_message": "deploymentdate must be before samplecollectiondate"
+    })
+    errs = [*errs, checkData(**args)]
+    
+    print("# END OF CHECK - 15")
 
     return {'errors': errs, 'warnings': warnings}
