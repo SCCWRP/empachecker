@@ -62,21 +62,44 @@ def grab_field(all_dfs):
     # Last Edited Date: 09/14/2023
     # Last Edited Coder: Ayah
     # NOTE (09/12/2023): Ayah wrote logic check. Since we are only checking records when any sampletype is yea, I created a filtered df containing all the rows where one or more sampletype identifier is "Yes"
-    lu_sampletype = pd.read_sql("SELECT sampletype FROM lu_sampletype",g.eng)
-    grab_sampletypes = list(set(grabevent.columns).intersection(set(lu_sampletype['sampletype'])))
-    filtered_grabevent = grabevent.iloc[grabevent[grabevent[grab_sampletypes] == 'Yes'].index.tolist()]
-    args.update({
-        "dataframe":grabevent,
-        "tablename":'tbl_grabevent_details',
-        "badrows":mismatch(filtered_grabevent,grabeventdet,grabevent_grabeventdet_shared_pkey),
-        "badcolumn": ','.join(grabevent_grabeventdet_shared_pkey),
-        "error_type": "empty value",
-        "is_core_error": False,
-        "error_message": "Records in the grabevent should have the corresponding records in the grabevent_details based on these columns {}".format(
-            ','.join(grabevent_grabeventdet_shared_pkey))
-    })
-    errs = [*errs, checkData(**args)] 
-    print("# END OF CHECK - 2")
+    
+    # NOTE (09/22/2023): Got a critical error submitting Prop50 data - "list index out of range" - Robert
+    #                    Remember that we need a matching record such that when a sampletype column is "Yes" there has to be a matching record in 
+    #                    Grab Event Details such that the sampletype is the same as the column name in Grab Event
+    #                    For this reason, i'll need to adjust this
+    
+    # lowercase the sampletypes 
+    # and put in alphabetical order, just because
+    sampletypes = pd.read_sql("SELECT DISTINCT LOWER(sampletype) AS sampletype FROM lu_sampletype ORDER BY 1",g.eng).sampletype.tolist()
+
+    # If there is a sampletype that is not in the grabevent dataframe columns, then we set something up incorrectly
+    assert \
+        set(sampletypes).issubset(set(grabevent.columns)), \
+        f"Sampletypes {set(sampletypes) - set(grabevent.columns)} not found in columns of grabevent table"
+    
+    # Loop through the sampletypes and check data accordingly
+    for sampletype in sampletypes:
+        
+        filtered_grabevent = grabevent[ grabevent[sampletype] == 'Yes' ]
+        
+        filtered_grabdetail = grabeventdet[grabeventdet['sampletype'] == sampletype]
+                
+        args.update({
+            "dataframe":grabeventdet,
+            "tablename":'tbl_grabevent_details',
+            "badrows":mismatch(filtered_grabevent, filtered_grabdetail, grabevent_grabeventdet_shared_pkey),
+            "badcolumn": ','.join(grabevent_grabeventdet_shared_pkey),
+            "error_type": "Logic Error",
+            "is_core_error": False,
+            "error_message": "Records in the grabevent should have the corresponding records in the grabevent_details based on these columns {}".format(
+                ','.join(grabevent_grabeventdet_shared_pkey))
+        })
+        print("Done calling mismatch")
+        
+        print("Calling checkData")
+        errs = [*errs, checkData(**args)] 
+        print("Done calling checkData")
+    print("# END OF CHECK - 1")
     
     
     print("# CHECK - 2")
@@ -287,12 +310,12 @@ def grab_field(all_dfs):
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
         "badrows":grabeventdet[(grabeventdet['matrix'].isin(lu_matrix_filtered)) &
-            (grabevent['composition'] != 'Not Recorded' ) 
+            (grabeventdet['composition'] != 'Not Recorded' ) 
             ].tmp_row.tolist(),
         "badcolumn": "composition",
         "error_type": "empty value",
         "is_core_error": False,
-        "error_message": "Compoistion should be 'Not Recorded' since matrix is water"
+        "error_message": "Composition should be 'Not Recorded' since matrix is water"
     })
     errs = [*errs, checkData(**args)]
 
@@ -302,9 +325,11 @@ def grab_field(all_dfs):
     # Description: If sampletype is "infauna" then a value for sieve_or_depth field must be pulled from lu_benthicsievesize. Also a value needs to be set for the sieve_or_depthunits field (lu_benthicsievesizeunits).
     # Created Coder: Aria
     # Created Date:
-    # Last Edited Date: 09/12/2023
-    # Last Edited Coder: Ayah 
+    # Last Edited Date: 09/22/2023
+    # Last Edited Coder: Robert 
     # NOTE (09/12/2023): Ayah Adjusted format so it follows the coding standard
+    # NOTE (09/22/2023): Adjusted the logic for obtaining the badrows - wrapped last two conditions in parentheses
+    # NOTE (09/22/2023): Adjusted lookup list link - lu_list_script_root is not necessarily needed so long as there is no slash in front of scraper
     lu_benthicsievesize = pd.read_sql("SELECT * FROM lu_benthicsievesize", g.eng)
     lu_benthicsievesizeunits = pd.read_sql("SELECT * FROM lu_benthicsievesizeunits", g.eng)
     
@@ -313,15 +338,17 @@ def grab_field(all_dfs):
         "tablename": "tbl_grabevent_details",
         "badrows":grabeventdet[
             (grabeventdet['sampletype'] == 'infauna') & 
-            (~grabeventdet['sieve_or_depth'].isin(lu_benthicsievesize)) | 
-            (~grabeventdet['sieve_or_depthunits'].isin(lu_benthicsievesizeunits))
+            (
+                (~grabeventdet['sieve_or_depth'].isin(lu_benthicsievesize)) | 
+                (~grabeventdet['sieve_or_depthunits'].isin(lu_benthicsievesizeunits))
+            )
         ].tmp_row.tolist(),
         "badcolumn": "sieve_or_depthunits",
         "error_type": "mismatched value",
         "is_core_error": False,
         "error_message": 
-            f"""If sampletype is 'infauna' then a value for sieve_or_depth field must come from <a href="/{lu_list_script_root}/scraper?action=help&layer=lu_benthicsievesize" target="_blank">lu_benthicsievesize</a>,
-                and sieve_or_depthunits must come from <a href="/{lu_list_script_root}/scraper?action=help&layer=lu_benthicsievesizeunits" target="_blank">lu_benthicsievesizeunits</a>
+            f"""If sampletype is 'infauna' then a value for sieve_or_depth field must come from <a href="scraper?action=help&layer=lu_benthicsievesize" target="_blank">lu_benthicsievesize</a>,
+                and sieve_or_depthunits must come from <a href="scraper?action=help&layer=lu_benthicsievesizeunits" target="_blank">lu_benthicsievesizeunits</a>
             """  
     })
     errs = [*errs, checkData(**args)]
