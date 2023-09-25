@@ -58,24 +58,23 @@ def crabtrap(all_dfs):
     crabinvert_pkey = get_primary_key('tbl_crabfishinvert_abundance', g.eng)
     crabmass_pkey = get_primary_key('tbl_crabbiomass_length', g.eng)
 
-    crabmeta_crabinvert_shared_pkey = list(set(crabmeta_pkey).intersection(set(crabinvert_pkey)))
-    crabmeta_crabmass_shared_pkey = list(set(crabmeta_pkey).intersection(set(crabmass_pkey)))
-    crabinvert_crabmass_shared_pkey = list(set(crabinvert_pkey).intersection(set(crabmass_pkey)))
-    print(f"crabmeta_crabinvert_shared_pkey: {crabmeta_crabinvert_shared_pkey}")
-    print(f"crabmeta_crabmass_shared_pkey: {crabmeta_crabmass_shared_pkey}")
-    print(f"crabinvert_crabmass_shared_pkey: {crabinvert_crabmass_shared_pkey}")
+    crabmeta_crabinvert_shared_pkey = [x for x in crabmeta_pkey if x in crabinvert_pkey]
+    crabmeta_crabmass_shared_pkey = [x for x in crabmeta_pkey if x in crabmass_pkey]
+    crabinvert_crabmass_shared_pkey = [x for x in crabinvert_pkey if x in crabmass_pkey]
+
 
     print("# CHECK - 1")
     # Description: Each record in crabtrap_metadata must include corresponding record crabfishinvert_abundance data when trapsuccess in crabtrap_metadata is yes (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 08/29/23
-    # Last Edited Coder: Zaib Quraishi
+    # Last Edited Date: 09/25/23
+    # Last Edited Coder: Duy
     # NOTE (08/29/23): Zaib adjusts the format so it follows the coding standard.
+    # NOTE (09/25/23): Duy modified the code, these should only match when trapsuccess is yes
     args.update({
         "dataframe": crabmeta,
         "tablename": "tbl_crabtrap_metadata",
-        "badrows": mismatch(crabmeta, crabinvert, crabmeta_crabinvert_shared_pkey), 
+        "badrows": mismatch(crabmeta[crabmeta['trapsuccess'].str.lower() == 'yes'], crabinvert, crabmeta_crabinvert_shared_pkey), 
         "badcolumn": ','.join(crabmeta_crabinvert_shared_pkey),
         "error_type": "Logic Error",
         "error_message": "Each metadata must include corresponding abundance data"
@@ -513,5 +512,37 @@ def crabtrap(all_dfs):
     errs = [*errs, checkData(**args)]
     
     print("# END OF CHECK - 15")
+    
+    
+    print("# CHECK - 16")
+    # Description: if catch is no in crabtrap_metadata, then biomass_g and length_mm should be -88(🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 09/25/2023
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (09/25/2023): Duy created the check, not QA
+    merged = pd.merge(
+        crabmass,
+        crabmeta[[*crabmeta_crabmass_shared_pkey, *['catch']]],
+        how='left',
+        on=crabmeta_crabmass_shared_pkey
+    )
+    args.update({
+        "dataframe": crabmass,
+        "tablename": "tbl_crabbiomass_length",
+        "badrows" : merged[
+            (merged['catch'].str.lower() == 'no') &
+            (
+                (merged['biomass_g'] != -88) | (merged['length_mm'] != -88)     
+            )
+
+        ].tmp_row.tolist(),
+        "badcolumn": "length_mm,biomass_g",
+        "error_type": "Value Error",
+        "error_message": "if catch is no in crabtrap_metadata, then biomass_g and length_mm should be -88"
+    })
+    errs = [*errs, checkData(**args)]
+    
+    print("# END OF CHECK - 16")
 
     return {'errors': errs, 'warnings': warnings}
