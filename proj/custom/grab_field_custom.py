@@ -170,7 +170,7 @@ def grab_field(all_dfs):
         "tablename":'tbl_grabevent_details',
         "badrows":grabeventdet[ 
             (grabeventdet['matrix'] == 'sediment') & 
-            (grabeventdet['coresizediameter'] == '-88')
+            (grabeventdet['coresizediameter'] == -88)
         ].tmp_row.tolist(),
         "badcolumn": "coresizediameter",
         "error_type": "empty value",
