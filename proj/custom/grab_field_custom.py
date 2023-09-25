@@ -110,7 +110,6 @@ def grab_field(all_dfs):
     # Last Edited Date: 09/14/2023
     # Last Edited Coder: Ayah
     # NOTE (09/12/2023): Ayah wrote logic check
-
     args.update({
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
@@ -161,21 +160,22 @@ def grab_field(all_dfs):
     # Description: coresizediameter should be filled when matrix is sediment 
     # Created Coder: Ayah
     # Created Date: NA
-    # Last Edited Date: 09/12/2023
-    # Last Edited Coder: Ayah
+    # Last Edited Date: 09/25/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
+    # NOTE (09/25/2023): Aria adjusted error message and changed code since coresizediamerter is numeric so -88 is the numeric equivalent to "Not Recorded"
 
     args.update({
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
         "badrows":grabeventdet[ 
             (grabeventdet['matrix'] == 'sediment') & 
-            (grabeventdet['coresizediameter'] == 'Not Recorded')
+            (grabeventdet['coresizediameter'] == '-88')
         ].tmp_row.tolist(),
         "badcolumn": "coresizediameter",
         "error_type": "empty value",
         "is_core_error": False,
-        "error_message": "CoreSizeDiameter is a required field since matrix is water. Please enter the diameter at which the sample was collected."
+        "error_message": "CoreSizeDiameter is a required field since matrix is sediment. Please enter the diameter at which the sample was collected."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 3")
