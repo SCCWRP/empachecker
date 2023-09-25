@@ -105,21 +105,20 @@ def bruv_lab(all_dfs):
     
     # This data type should only have tbl_example
     # example = all_dfs['tbl_example']
-
-    print("did it break here?")
-    protocol = all_dfs['tbl_protocol_metadata']
     bruvdata = all_dfs['tbl_bruv_data']
     bruvvideo = all_dfs['tbl_bruv_videolog']
+    bruvmeta = pd.read_sql("SELECT * FROM tbl_bruv_metadata;",g.eng)
     errs = []
     warnings = []
     
-    protocol['tmp_row'] = protocol.index
     bruvdata['tmp_row'] = bruvdata.index
     bruvvideo['tmp_row'] = bruvvideo.index
+    bruvmeta['tmp_row'] = bruvmeta.index
 
     # read in samplecollectiondate as pandas datetime so merging bruv dfs (incl metadata) without dtype conflict
     bruvvideo['samplecollectiondate'] = pd.to_datetime(bruvvideo['samplecollectiondate'])
     bruvdata['samplecollectiondate'] = pd.to_datetime(bruvdata['samplecollectiondate'])
+    bruvmeta['samplecollectiondate'] = pd.to_datetime(bruvmeta['samplecollectiondate'])
 
     # Alter this args dictionary as you add checks and use it for the checkData function
     # for errors that apply to multiple columns, separate them with commas
@@ -138,13 +137,12 @@ def bruv_lab(all_dfs):
     # ------------------------------------------------ Logic Checks ---------------------------------------------------- #
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
-    protocol_pkey = get_primary_key('tbl_protocol_metadata', g.eng)
     bruvdata_pkey = get_primary_key('tbl_bruv_data', g.eng)
     bruvvideo_pkey = get_primary_key('tbl_bruv_videolog', g.eng)
+    bruvmeta_pkey = get_primary_key('tbl_bruv_metadata',g.eng)
 
-    bruvdata_protocol_shared_pkey = list(set(bruvdata_pkey).intersection(set(protocol_pkey)))
     bruvdata_bruvvideo_shared_pkey = list(set(bruvdata_pkey).intersection(set(bruvvideo_pkey)))
-    bruvvideo_bruvdata_shared_pkey = list(set(bruvvideo_pkey).intersection(set(bruvdata_pkey)))
+    bruvmeta_bruvdata_shared_pkey = list(set(bruvmeta_pkey).intersection(set(bruvdata_pkey)))
 
     print("# CHECK - 1")
     # Description: Each data must include corresponding metadata record in the database
@@ -153,19 +151,15 @@ def bruv_lab(all_dfs):
     # Last Edited Date: 09/12/2023 
     # Last Edited Coder: Aria Askaryar
     # NOTE (09/12/2023): Aria adjusts the format so it follows the coding standard
-    print("START bruvdata_protocol_shared_pkey listing:")
-    for item in bruvdata_protocol_shared_pkey:
-        print(item)
-    print("END bruvdata_protocol_shared_pkey listing:")
 
     args.update({
         "dataframe": bruvdata,
         "tablename": "tbl_bruv_data",
-        "badrows": mismatch(bruvdata, protocol, bruvdata_protocol_shared_pkey), 
-        "badcolumn":  ','.join(bruvdata_protocol_shared_pkey),
+        "badrows": mismatch(bruvdata, bruvmeta, bruvmeta_bruvdata_shared_pkey), 
+        "badcolumn":  ','.join(bruvmeta_bruvdata_shared_pkey),
         "error_type": "Logic Error",
         "error_message": "Records in tbl_bruv_data should have corresponding records in bruv_metadata in the database. Please submit the metadata for these records first based on these columns: {}".format(
-            ','.join(bruvdata_protocol_shared_pkey)
+            ','.join(bruvmeta_bruvdata_shared_pkey)
         )
     })
     errs = [*errs, checkData(**args)]
@@ -183,7 +177,7 @@ def bruv_lab(all_dfs):
         "dataframe": bruvdata,
         "tablename": "tbl_bruv_data",
         "badrows": mismatch(bruvdata, bruvvideo, bruvdata_bruvvideo_shared_pkey), 
-        "badcolumn":  ','.join(bruvdata_bruvvideo_shared_pkey),
+        "badcolumn": ','.join(bruvdata_bruvvideo_shared_pkey),
         "error_type": "Logic Error",
         "error_message": "Each data (bruv_data) should have a corresponding record in videolog based on these fields {}".format(
             ','.join(bruvdata_bruvvideo_shared_pkey)
@@ -193,21 +187,22 @@ def bruv_lab(all_dfs):
     print("# END OF CHECK - 2")
 
     print("# CHECK - 3")
-    # Description: Each videolog data must include corresponding data
-    # Created Coder: Aria Askaryar
+    # Description: Each videolog data must include corresponding data if fish is yes and bait is visible
+    # Created Coder: Ayah Halabi
     # Created Date: NA
-    # Last Edited Date: 09/12/2023 
-    # Last Edited Coder: Aria Askaryar
-    # NOTE (09/12/2023): Aria adjusts the format so it follows the coding standard
-
+    # Last Edited Date: 09/21/2023 
+    # Last Edited Coder: Ayah
+    # NOTE (09/12/2023): Ayah wrote check 
+    bruvideo_filtered = bruvvideo[(bruvvideo['fish']== 'Yes')&(bruvvideo['bait']=='visible')]
+    print(bruvideo_filtered)
     args.update({
         "dataframe": bruvvideo,
         "tablename": "tbl_bruv_videolog",
-        "badrows": mismatch( bruvvideo, bruvdata, bruvvideo_bruvdata_shared_pkey), 
-        "badcolumn":  ','.join(bruvvideo_bruvdata_shared_pkey),
+        "badrows": mismatch(bruvideo_filtered, bruvdata, bruvdata_bruvvideo_shared_pkey), 
+        "badcolumn": ','.join(bruvdata_bruvvideo_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Records in bruv_videolog should have corresponding records in bruv_metadata. Please submit the metadata for these records first {}".format(
-            ','.join(bruvvideo_bruvdata_shared_pkey)
+        "error_message": "Since Fish is 'Yes' and bait is 'visible',these records in bruv_videolog should have corresponding records in bruvdata on the following columns {}".format(
+            ','.join(bruvdata_bruvvideo_shared_pkey)
         )
     })
     errs = [*errs, checkData(**args)]

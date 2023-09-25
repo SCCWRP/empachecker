@@ -298,31 +298,6 @@ def edna_lab(all_dfs):
     # Last Edited Coder: Caspian Thackeray
     # NOTE 09/14/23: Check written
 
-    ednawater['preparationdate'] = pd.to_datetime(ednawater['preparationdate'], format='%d/%m/%Y').dt.date
-    ednawater['samplecollectiondate'] = pd.to_datetime(ednawater['samplecollectiondate'], format='%d/%m/%Y').dt.date
-    
-    
-    args.update({
-        "dataframe": ednawater,
-        "tablename": 'tbl_edna_water_labbatch_data',
-        "badrows": ednawater[(ednawater["preparationdate"] > ednawater["samplecollectiondate"])].tmp_row.tolist(),
-        "badcolumn": "preparationdate",
-        "error_type": "Logic Error",
-        "is_core_error": False,
-        "error_message": "Preparation date should be before sample collection date"
-    })
-    errs = [*errs, checkData(**args)]
-
-    print("# END OF CHECK - 7")
-
-    print("# CHECK - 8")
-    # Description: Preparationdate should be before samplecollectiondate
-    # Created Coder: Caspian Thackeray
-    # Created Date: 09/14/23
-    # Last Edited Date: 09/14/23
-    # Last Edited Coder: Caspian Thackeray
-    # NOTE 09/14/23: Check written
-
     if (
         all(
             [
@@ -345,6 +320,31 @@ def edna_lab(all_dfs):
             "error_message": 'Preparation time should be before sample collection time'
         })
         errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 7")
+
+    print("# CHECK - 8")
+    # Description: Preparationdate should be before samplecollectiondate
+    # Created Coder: Caspian Thackeray
+    # Created Date: 09/14/23
+    # Last Edited Date: 09/14/23
+    # Last Edited Coder: Caspian Thackeray
+    # NOTE 09/14/23: Check written
+
+    ednawater['preparationdate'] = pd.to_datetime(ednawater['preparationdate'], format='%d/%m/%Y').dt.date
+    ednawater['samplecollectiondate'] = pd.to_datetime(ednawater['samplecollectiondate'], format='%d/%m/%Y').dt.date
+    
+    
+    args.update({
+        "dataframe": ednawater,
+        "tablename": 'tbl_edna_water_labbatch_data',
+        "badrows": ednawater[(ednawater["preparationdate"] > ednawater["samplecollectiondate"])].tmp_row.tolist(),
+        "badcolumn": "preparationdate",
+        "error_type": "Logic Error",
+        "is_core_error": False,
+        "error_message": "Preparation date should be before sample collection date"
+    })
+    errs = [*errs, checkData(**args)]
     
     print("# END OF CHECK - 8")
 
