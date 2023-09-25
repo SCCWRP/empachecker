@@ -254,13 +254,15 @@ def crabtrap(all_dfs):
     # Created Coder: Ayah H
     # Created Date: 09/01/2023
     # Last Edited Date: 09/12/2023
-    # Last Edited Coder: Ayah H.
+    # Last Edited Coder: Aria Askaryar
     # NOTE (09/01/2023): Ayah H. coded added Check 17.
     # NOTE (09/05/2023): Ayah checked that the check works 
     # NOTE (09/06/2023): Nick commented out so we could pull from github
     # NOTE (09/12/2023): Ayah Fixed Error statement for check
+    # NOTE (09/21/2023): Aria Fixed crabmeta_pkey_norepcol the old one used .remove('replicate') which results in a empty list. the updated version should correctly bring a list excluding replicate
     crabmeta_pkey = list(get_primary_key('tbl_crabtrap_metadata', g.eng))
-    crabmeta_pkey_norepcol = crabmeta_pkey.remove('replicate')
+    crabmeta_pkey_norepcol = [x for x in crabmeta_pkey if x != 'replicate']
+
     def check_replicate(tablename,rep_column,pkeys):
         badrows = []
         for _, subdf in tablename.groupby([x for x in pkeys if x != rep_column]):
