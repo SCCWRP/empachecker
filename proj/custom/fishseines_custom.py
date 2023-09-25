@@ -318,9 +318,7 @@ def fishseines(all_dfs):
     args.update({
         "dataframe": fishmeta,
         "tablename": "tbl_fish_sample_metadata",
-        "badrows": fishmeta[
-            round(fishmeta['area_m2'], 2) != round((fishmeta['seinelength_m'] * fishmeta['seinedistance_m']), 2)
-        ].tmp_row.tolist(), 
+        "badrows": fishmeta[round(fishmeta['area_m2'], 2) != round((fishmeta['seinelength_m'] * fishmeta['seinedistance_m']), 2)].tmp_row.tolist(), 
         "badcolumn": 'area_m2',
         "error_type": "Custom Error",
         "error_message": "area_m2 does not equal to seinelength_m x seinedistance_m."
