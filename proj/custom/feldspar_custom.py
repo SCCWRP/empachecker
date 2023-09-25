@@ -58,12 +58,12 @@ def feldspar(all_dfs):
     ######################################################################################################################
 
     print("# CHECK - 1")
-    # Description: Each data must include corresponding sample metadata
-    # Created Coder: Ayah
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
+    # Description: Each data must include corresponding sample metadata when plug_extracted = yes
+    # Created Coder: Aria Askaryar
+    # Created Date: NA
+    # Last Edited Date: 9/21/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (9/21/2023):
     args.update({
         "dataframe": felddata,
         "tablename": "tbl_feldspar_data",

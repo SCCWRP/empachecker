@@ -137,10 +137,12 @@ def bruv_lab(all_dfs):
     # ------------------------------------------------ Logic Checks ---------------------------------------------------- #
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
+    print("Potential error here 1:")
+    protocol_pkey = get_primary_key('tbl_protocol_metadata', g.eng)
     bruvdata_pkey = get_primary_key('tbl_bruv_data', g.eng)
     bruvvideo_pkey = get_primary_key('tbl_bruv_videolog', g.eng)
-    bruvmeta_pkey = get_primary_key('tbl_bruv_metadata',g.eng)
-
+    print("Potential error here 2:")
+    bruvdata_protocol_shared_pkey = list(set(bruvdata_pkey).intersection(set(protocol_pkey)))
     bruvdata_bruvvideo_shared_pkey = list(set(bruvdata_pkey).intersection(set(bruvvideo_pkey)))
     bruvmeta_bruvdata_shared_pkey = list(set(bruvmeta_pkey).intersection(set(bruvdata_pkey)))
 
