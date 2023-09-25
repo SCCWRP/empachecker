@@ -67,9 +67,9 @@ def fishseines(all_dfs):
     fishabud_pkey = get_primary_key('tbl_fish_abundance_data', g.eng)
     fishdata_pkey = get_primary_key('tbl_fish_length_data', g.eng)
 
-    fishmeta_fishabud_shared_pkey = list(set(fishmeta_pkey).intersection(set(fishabud_pkey)))
-    fishmeta_fishdata_shared_pkey = list(set(fishmeta_pkey).intersection(set(fishdata_pkey)))
-    fishabud_fishdata_shared_pkey = list(set(fishabud_pkey).intersection(set(fishdata_pkey)))
+    fishmeta_fishabud_shared_pkey = [x for x in fishmeta_pkey if x in fishabud_pkey]
+    fishmeta_fishdata_shared_pkey = [x for x in fishmeta_pkey if x in fishdata_pkey]
+    fishabud_fishdata_shared_pkey = [x for x in fishabud_pkey if x in fishdata_pkey]
 
     print("# CHECK - 1")
     # Description: Each sample metadata must include corresponding abundance data (🛑 ERROR 🛑)
@@ -197,25 +197,46 @@ def fishseines(all_dfs):
     # If abundance number > 10, then the number of matching records in length should be the minimum of 10. (🛑 ERROR 🛑)
     # Created Coder: Duy Nguyen
     # Created Date: 8/23/23
-    # Last Edited Date: 8/25/23
-    # Last Edited Coder: 8/25/23
+    # Last Edited Date: 09/25/23
+    # Last Edited Coder: Duy
     # NOTE (8/23/23): Duy wrote this check but has not tested it
     # NOTE (8/25/23): Duy tested it. The code worked as expected.
+    # NOTE (8/25/23): Duy tested it. The code worked as expected.
+    # NOTE (09/25/23): Duy changed this logic check. This check only applies if scientificname in abundance indicates that species is 
+    #   fish and method in metadata = 'count': The number of records in abundance should match with the number of records in length only 
+    #   if abundance number is between 1-10. If abundance number > 10, then the number of matching records in length should be the 
+    #   minimum of 10.
     
-    # merge the two dataframes
-    merged_data = pd.merge(
+    # first get the lu_fishmacrospecies 
+    lu_fishmacrospecies = pd.read_sql("SELECT scientificname, fish_or_invert FROM lu_fishmacrospecies", g.eng)
+
+    # then figure out if a species is a fish or invert by merging fishabud and lu_fishmacro
+    fishabud_tmp = pd.merge(
         fishabud,
+        lu_fishmacrospecies,
+        how='left',
+        on=['scientificname']
+    )
+
+    # then filter the dataframe to get only fish and method == 'count'
+    fishabud_tmp = fishabud_tmp[
+        (fishabud_tmp['method'] == 'count') &
+        (fishabud_tmp['fish_or_invert'] == 'fish')
+    ]
+
+    # then merge fishabud_tmp and fishdata and do the groupby to get the number of matching records
+    merged_data = pd.merge(
+        fishabud_tmp,
         fishdata,
         on=fishabud_fishdata_shared_pkey,
         how='inner'
     )
-    
     # count the matching records and store the result in a column called num_matching_recs
     counted_records = merged_data.groupby(fishabud_fishdata_shared_pkey).size().reset_index(name='num_matching_recs')
 
-    # merge the result back to the fish abundance table to compare num_matching_recs with the abundance column
+    # then merge the result back to the fish abundance table to compare num_matching_recs with the abundance column
     merged_tmp = pd.merge(
-        fishabud,
+        fishabud_tmp,
         counted_records,
         on=fishabud_fishdata_shared_pkey,
         how='inner'
@@ -239,7 +260,8 @@ def fishseines(all_dfs):
         "badrows": badrows, 
         "badcolumn": 'abundance',
         "error_type": "Logic Error",
-        "error_message": "The number of records in abundance should match with the number of records in length only if abundance number is between 1-10. If abundance number > 10, then the number of matching records in length should be the minimum of 10."
+        "error_message": 
+            "For a fish species, if a value of abundance column in abundance tab less than 10, then it should match with the number of records in length. If that value is more than 10, then there should be at least 10 records in length tab."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 7")
