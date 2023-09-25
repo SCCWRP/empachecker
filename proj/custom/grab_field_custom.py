@@ -184,20 +184,21 @@ def grab_field(all_dfs):
     # Description: coresizedepth should be filled when matrix is sediment 
     # Created Coder: Ayah 
     # Created Date: NA
-    # Last Edited Date: 09/12/2023
-    # Last Edited Coder: Ayahlu
+    # Last Edited Date: 09/25/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
+    # NOTE (09/25/2023): Aria adjusted error message and changed code since coresizediamerter is numeric so -88 is the numeric equivalent to "Not Recorded"
 
     args.update({
             "dataframe":grabeventdet,
             "tablename":'tbl_grabevent_details',
             "badrows":grabeventdet[(grabeventdet['matrix'] == 'sediment') &
-                ((grabeventdet['coresizedepth']== 'Not Recorded')) 
+                ((grabeventdet['coresizedepth']== -88)) 
                 ].tmp_row.tolist(),
             "badcolumn": "coresizedepth",
             "error_type": "empty value",
             "is_core_error": False,
-            "error_message": "CoreSizeDepth is a required field since matrix is water. Please enter the depth at which the sample was collected."
+            "error_message": "CoreSizeDepth is a required field since matrix is sediment. Please enter the depth at which the sample was collected."
     })
     errs = [*errs, checkData(**args)]
 
@@ -261,16 +262,17 @@ def grab_field(all_dfs):
     # Last Edited Coder: Ayah
     # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
     # NOTE (09/14/2023): Ayah made the lu list for all water matrix for the check
+
     args.update({
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
         "badrows":grabeventdet[(grabeventdet['matrix'].isin(lu_matrix_filtered)) & 
-            (grabeventdet['color'] != 'Not Recorded')
+            (grabeventdet['color'] != 'Not recorded')
             ].tmp_row.tolist(),
         "badcolumn": "color",
         "error_type": "empty value",
         "is_core_error": False,
-        "error_message": "Color should be 'Not Recorded' since matrix is water"
+        "error_message": "Color should be 'Not recorded' since matrix is water"
     })
     errs = [*errs, checkData(**args)]
 
@@ -311,12 +313,12 @@ def grab_field(all_dfs):
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
         "badrows":grabeventdet[(grabeventdet['matrix'].isin(lu_matrix_filtered)) &
-            (grabeventdet['composition'] != 'Not Recorded' ) 
+            (grabeventdet['composition'] != 'Not recorded' ) 
             ].tmp_row.tolist(),
         "badcolumn": "composition",
         "error_type": "empty value",
         "is_core_error": False,
-        "error_message": "Composition should be 'Not Recorded' since matrix is water"
+        "error_message": "Composition should be 'Not recorded' since matrix is water"
     })
     errs = [*errs, checkData(**args)]
 
