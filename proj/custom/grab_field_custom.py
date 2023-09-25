@@ -187,7 +187,7 @@ def grab_field(all_dfs):
     # Last Edited Date: 09/25/2023
     # Last Edited Coder: Aria Askaryar
     # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
-    # NOTE (09/25/2023): Aria adjusted error message and changed code since coresizediamerter is numeric so -88 is the numeric equivalent to "Not Recorded"
+    # NOTE (09/25/2023): Aria adjusted error message and changed code since coresizedepth is numeric so -88 is the numeric equivalent to "Not Recorded"
 
     args.update({
             "dataframe":grabeventdet,
@@ -208,7 +208,7 @@ def grab_field(all_dfs):
     # Description: If the sample type is benthic infauna and the matrix is sediment then sieve_or_depth is required 
     # Created Coder: Ayah 
     # Created Date: NA
-    # Last Edited Date: 09/12/2023
+    # Last Edited Date: 09/14/2023
     # Last Edited Coder: Ayah
     # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
 
@@ -335,7 +335,8 @@ def grab_field(all_dfs):
     # NOTE (09/22/2023): Adjusted lookup list link - lu_list_script_root is not necessarily needed so long as there is no slash in front of scraper
     lu_benthicsievesize = pd.read_sql("SELECT * FROM lu_benthicsievesize", g.eng)
     lu_benthicsievesizeunits = pd.read_sql("SELECT * FROM lu_benthicsievesizeunits", g.eng)
-    
+    print(f"lu_benthicsievesize: {lu_benthicsievesize}")
+    print(f"lu_benthicsievesizeunits: {lu_benthicsievesizeunits}")
     args.update({
         "dataframe": grabeventdet,
         "tablename": "tbl_grabevent_details",
