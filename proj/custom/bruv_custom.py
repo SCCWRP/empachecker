@@ -138,10 +138,11 @@ def bruv_lab(all_dfs):
     # ------------------------------------------------ Logic Checks ---------------------------------------------------- #
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
+    print("Potential error here 1:")
     protocol_pkey = get_primary_key('tbl_protocol_metadata', g.eng)
     bruvdata_pkey = get_primary_key('tbl_bruv_data', g.eng)
     bruvvideo_pkey = get_primary_key('tbl_bruv_videolog', g.eng)
-
+    print("Potential error here 2:")
     bruvdata_protocol_shared_pkey = list(set(bruvdata_pkey).intersection(set(protocol_pkey)))
     bruvdata_bruvvideo_shared_pkey = list(set(bruvdata_pkey).intersection(set(bruvvideo_pkey)))
     bruvvideo_bruvdata_shared_pkey = list(set(bruvvideo_pkey).intersection(set(bruvdata_pkey)))
@@ -153,10 +154,6 @@ def bruv_lab(all_dfs):
     # Last Edited Date: 09/12/2023 
     # Last Edited Coder: Aria Askaryar
     # NOTE (09/12/2023): Aria adjusts the format so it follows the coding standard
-    print("START bruvdata_protocol_shared_pkey listing:")
-    for item in bruvdata_protocol_shared_pkey:
-        print(item)
-    print("END bruvdata_protocol_shared_pkey listing:")
 
     args.update({
         "dataframe": bruvdata,
