@@ -36,7 +36,7 @@ def grab_field(all_dfs):
 
     grabeventdet_pkey = get_primary_key('tbl_grabevent_details',g.eng)
     grabevent_pkey = get_primary_key('tbl_grabevent',g.eng)
-    grabevent_grabeventdet_shared_pkey = list(set(grabevent_pkey).intersection(grabeventdet_pkey))
+    grabevent_grabeventdet_shared_pkey = [x for x in grabevent_pkey if x in grabeventdet_pkey]
 
 
     # Alter this args dictionary as you add checks and use it for the checkData function
@@ -59,8 +59,8 @@ def grab_field(all_dfs):
     # Description: Records in the grabevent should have the corresponding records in the grabeventdetails when the sampletype identifying column is yes (for example: toxicity column in grabevent)
     # Created Coder: Ayah
     # Created Date: NA
-    # Last Edited Date: 09/14/2023
-    # Last Edited Coder: Ayah
+    # Last Edited Date: 09/25/2023
+    # Last Edited Coder: Duy
     # NOTE (09/12/2023): Ayah wrote logic check. Since we are only checking records when any sampletype is yea, I created a filtered df containing all the rows where one or more sampletype identifier is "Yes"
     
     # NOTE (09/22/2023): Got a critical error submitting Prop50 data - "list index out of range" - Robert
@@ -70,6 +70,7 @@ def grab_field(all_dfs):
     
     # lowercase the sampletypes 
     # and put in alphabetical order, just because
+    # NOTE (09/25/2023): Duy changed the code so it marks the badrows in grabevent, added the sampletype column to badcolumns, clarified the error message
     sampletypes = pd.read_sql("SELECT DISTINCT LOWER(sampletype) AS sampletype FROM lu_sampletype ORDER BY 1",g.eng).sampletype.tolist()
 
     # If there is a sampletype that is not in the grabevent dataframe columns, then we set something up incorrectly
@@ -85,13 +86,13 @@ def grab_field(all_dfs):
         filtered_grabdetail = grabeventdet[grabeventdet['sampletype'] == sampletype]
                 
         args.update({
-            "dataframe":grabeventdet,
-            "tablename":'tbl_grabevent_details',
+            "dataframe":grabevent,
+            "tablename":'tbl_grabevent',
             "badrows":mismatch(filtered_grabevent, filtered_grabdetail, grabevent_grabeventdet_shared_pkey),
-            "badcolumn": ','.join(grabevent_grabeventdet_shared_pkey),
+            "badcolumn": ','.join([*grabevent_grabeventdet_shared_pkey, *[sampletype]]),
             "error_type": "Logic Error",
             "is_core_error": False,
-            "error_message": "Records in the grabevent should have the corresponding records in the grabevent_details based on these columns {}".format(
+            "error_message": "If you indicate that you collect data for a datatype (for example: you input 'Yes' in nutrients column in grab_event), then you should have the corresponding records for that datatype in the grabevent_details based on these columns {}, and the value in sampletype column should match".format(
                 ','.join(grabevent_grabeventdet_shared_pkey))
         })
         print("Done calling mismatch")
