@@ -264,7 +264,12 @@ def check_consecutiveness(df, groupcols, col_to_check):
     badrows = [idx for indexes in df.groupby(groupcols).apply(is_consecutive) for idx in indexes]
     return badrows
 
-def check_date_order(df, begindate, enddate):
-    assert 'tmp_row' in df.columns, "tmp_row is not found in the columns"
+def check_date_order(df, before_date, after_date):
+    
+    # This function checks that dates are in the correct order
 
-    return df[df[enddate] > df[begindate]].tmp_row.tolist()
+    df[before_date] = pd.to_datetime(df[before_date], format='%d/%m/%Y').dt.date
+    df[after_date] = pd.to_datetime(df[after_date], format='%d/%m/%Y').dt.date
+    
+    return df[(df[before_date] > df[after_date])].tmp_row.tolist()
+    
