@@ -1,7 +1,7 @@
 from inspect import currentframe
 from flask import current_app, g
 import pandas as pd
-from .functions import checkData, checkLogic, mismatch, get_primary_key, check_replicate, check_consecutiveness, check_date_order
+from .functions import checkData, checkLogic, mismatch, get_primary_key, check_replicate, check_consecutiveness, check_date_order, match
 import re
 
 def crabtrap(all_dfs):
@@ -77,7 +77,7 @@ def crabtrap(all_dfs):
         "badrows": mismatch(crabmeta[crabmeta['trapsuccess'].str.lower() == 'yes'], crabinvert, crabmeta_crabinvert_shared_pkey), 
         "badcolumn": ','.join(crabmeta_crabinvert_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each metadata must include corresponding abundance data"
+        "error_message": "Each metadata record must include corresponding abundance data when trap success is yes."
     })
     errs = [*errs, checkData(**args)]
     # END OF CHECK - Each sample metadata must include corresponding abundance data (🛑 ERROR 🛑)
@@ -109,16 +109,17 @@ def crabtrap(all_dfs):
     # Description: Each crabtrap_metadata must include corresponding crab_biomass_length data when trap success is yes (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 08/29/2023
-    # Last Edited Coder: Zaib Quraishi
+    # Last Edited Date: 09/26/2023
+    # Last Edited Coder: Caspian T.
     # NOTE (08/29/23): Zaib adjusts the format so it follows the coding standard.
+    # NOTE (08/29/23): Adjusted code so that trapsuccess must = yes
     args.update({
         "dataframe": crabmeta,
         "tablename": "tbl_crabtrap_metadata",
-        "badrows": mismatch(crabmeta, crabmass, crabmeta_crabmass_shared_pkey), 
+        "badrows": mismatch(crabmeta[crabmeta['trapsuccess'].str.lower() == 'yes'], crabmass, crabmeta_crabmass_shared_pkey), 
         "badcolumn": ','.join(crabmeta_crabmass_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each metadata must include corresponding length data"
+        "error_message": "Each metadata record must include corresponding length data when trap success is yes."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 3")
@@ -181,6 +182,37 @@ def crabtrap(all_dfs):
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 6")
+
+    print("# CHECK - 14")
+    # Description: If trapsuccess is no, then there should be no records in the crabfishinvert_abundance tab and crabbiomass_length (🛑 ERROR 🛑)
+    # Created Coder: Caspian
+    # Created Date: 09/27/2023
+    # Last Edited Date: 09/27/2023
+    # Last Edited Coder: Caspian
+
+    args.update({
+        "dataframe": crabmeta,
+        "tablename": 'tbl_crabtrap_metadata',
+        "badrows": list(set(match(crabmeta, crabinvert, crabmeta_crabinvert_shared_pkey)) & set(crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'no')].tmp_row.to_list())),
+        "badcolumn": "trapsuccess",
+        "error_type": "Undefined Error",
+        "error_message": "If trapsuccess is no, then there should be no records in the crabfishinvert_abundance"
+    })
+
+    errs = [*errs, checkData(**args)]
+
+    args.update({
+        "dataframe": crabmeta,
+        "tablename": 'tbl_crabtrap_metadata',
+        "badrows": list(set(match(crabmeta, crabmass, crabmeta_crabmass_shared_pkey)) & set(crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'no')].tmp_row.to_list())),
+        "badcolumn": "trapsuccess",
+        "error_type": "Undefined Error",
+        "error_message": "If trapsuccess is no, then there should be no records in the crabbiomass_length"
+    })
+
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 14")
 
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
@@ -489,30 +521,7 @@ def crabtrap(all_dfs):
     # ---------------------------------------------------------------------------------------------------------------------------------- #
     # ----------------------------------------------- END OF Crab Biomass Length Checks ------------------------------------------------ #
     # ---------------------------------------------------------------------------------------------------------------------------------- #
-    ######################################################################################################################################
-
-
-    print("# CHECK - 15")
-    # Description: deploymentdate must be before samplecollectiondate (🛑 ERROR 🛑)
-    # Created Coder: Caspian T
-    # Created Date: 09/21/2023
-    # Last Edited Date: 09/22/2023
-    # Last Edited Coder: Caspian T
-    # NOTE:(09/22/2023): For some reason this check causes an error when placed before check 10, which is the order it's in in the QA doc. The terminal says it's a problem with
-    # NOTE:(09/22/2023): check 10, so I'm going to leave this like this for now and come back to it later
-
-    args.update({
-        "dataframe": crabmeta,
-        "tablename": "tbl_crabtrap_metadata",
-        "badrows" : check_date_order(crabmeta, 'deploymentdate', 'samplecollectiondate'),
-        "badcolumn": "deploymentdate",
-        "error_type": "Date Error",
-        "error_message": "deploymentdate must be before samplecollectiondate"
-    })
-    errs = [*errs, checkData(**args)]
-    
-    print("# END OF CHECK - 15")
-    
+    ######################################################################################################################################  
     
     print("# CHECK - 16")
     # Description: if catch is no in crabtrap_metadata, then biomass_g and length_mm should be -88(🛑 ERROR 🛑)
@@ -539,10 +548,31 @@ def crabtrap(all_dfs):
         ].tmp_row.tolist(),
         "badcolumn": "length_mm,biomass_g",
         "error_type": "Value Error",
-        "error_message": "if catch is no in crabtrap_metadata, then biomass_g and length_mm should be -88"
+        "error_message": "if catch is no in crabtrap_metadata, then biomass_g and length_mm in crabbiomass_length should be -88"
     })
     errs = [*errs, checkData(**args)]
     
     print("# END OF CHECK - 16")
+
+    print("# CHECK - 15")
+    # Description: deploymentdate must be before samplecollectiondate (🛑 ERROR 🛑)
+    # Created Coder: Caspian T
+    # Created Date: 09/21/2023
+    # Last Edited Date: 09/22/2023
+    # Last Edited Coder: Caspian T
+    # NOTE:(09/22/2023): For some reason this check causes an error when placed before check 10, which is the order it's in in the QA doc. The terminal says it's a problem with
+    # NOTE:(09/22/2023): check 10, so I'm going to leave this like this for now and come back to it later
+
+    args.update({
+        "dataframe": crabmeta,
+        "tablename": "tbl_crabtrap_metadata",
+        "badrows" : check_date_order(crabmeta, 'deploymentdate', 'samplecollectiondate'),
+        "badcolumn": "deploymentdate",
+        "error_type": "Date Error",
+        "error_message": "deploymentdate must be before samplecollectiondate"
+    })
+    errs = [*errs, checkData(**args)]
+    
+    print("# END OF CHECK - 15")
 
     return {'errors': errs, 'warnings': warnings}
