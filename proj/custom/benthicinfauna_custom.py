@@ -31,10 +31,12 @@ def benthicinfauna_lab(all_dfs):
     benthiclabbatch = all_dfs['tbl_benthicinfauna_labbatch']
     benthicabundance = all_dfs['tbl_benthicinfauna_abundance']
     benthicbiomass = all_dfs['tbl_benthicinfauna_biomass']
+    grabevent_details = pd.read_sql("SELECT * FROM tbl_grabevent_details",g.eng)
     
     benthiclabbatch['tmp_row'] = benthiclabbatch.index
     benthicabundance['tmp_row'] = benthicabundance.index
     benthicbiomass['tmp_row'] = benthicbiomass.index
+    grabevent_details['tmp_row'] = grabevent_details.index
 
     errs = []
     warnings = []
@@ -70,10 +72,10 @@ def benthicinfauna_lab(all_dfs):
     benthiclabbatch_pkey = get_primary_key('tbl_benthicinfauna_labbatch', g.eng)
     benthicabundance_pkey = get_primary_key('tbl_benthicinfauna_abundance', g.eng)
     benthicbiomass_pkey = get_primary_key('tbl_benthicinfauna_biomass', g.eng)
-
-    labbatch_grabevent_shared_pkey = list(set(benthiclabbatch_pkey).intersection(set(benthicbiomass_pkey)))
-    labbatch_abundance_shared_pkey = list(set(benthiclabbatch_pkey).intersection(set(benthicabundance_pkey)))
-    abundance_labbatch_shared_pkey = list(set(benthicabundance_pkey).intersection(set(benthiclabbatch_pkey)))
+    
+    abundance_labbatch_shared_pkey = [x for x in benthicabundance_pkey if x in benthiclabbatch_pkey]
+    abundance_biomass_shared_pkey = [x for x in benthicbiomass_pkey if x in benthicabundance_pkey]
+    labbatch_abundance_shared_pkey = [x for x in benthiclabbatch_pkey if x in benthicabundance_pkey]
 
     print("# CHECK - 1")
     # Description: Each labbatch data must include corresponding records in grab_event
@@ -98,7 +100,7 @@ def benthicinfauna_lab(all_dfs):
         "badrows": mismatch(benthiclabbatch, benthicabundance, labbatch_abundance_shared_pkey), 
         "badcolumn": ','.join(labbatch_abundance_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Records in tbl_benthicinfauna_labbatch must have corresponding records in benthicabundance. Missing records in benthicabundance."
+        "error_message": "Records in benthicinfauna_labbatch must have corresponding records in benthicabundance. Missing records in benthicinfauna_abundance."
     })
     errs = [*errs, checkData(**args)]  
     print("# END OF CHECK - 2")
@@ -116,10 +118,47 @@ def benthicinfauna_lab(all_dfs):
         "badrows": mismatch(benthicabundance, benthiclabbatch, abundance_labbatch_shared_pkey), 
         "badcolumn": ','.join(abundance_labbatch_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Records in benthicabundance must have corresponding records in benthiclabbatch. Missing records in benthiclabbatch."
+        "error_message": "Records in benthic abundance must have corresponding records in benthicinfuana_labbatch. Missing records in benthiclabbatch."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 3")
+
+    
+    print("# CHECK - 4")
+    # Description: Each record in benthicinfauna_abundance must include corresponding record in benthicinfauna_biomass
+    # Created Coder: Ayah Halabi
+    # Created Date: NA
+    # Last Edited Date:  9/26/2023
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (9/14/2023): Ayah changed old check 4 to new logic check 4 from products QA.  
+    args.update({
+        "dataframe": benthicabundance,
+        "tablename": "tbl_benthicinfauna_abundance",
+        "badrows":mismatch(benthicabundance, benthicbiomass,abundance_biomass_shared_pkey),
+        "badcolumn": ','.join(abundance_biomass_shared_pkey),
+        "error_type" : "Logic Warning",
+        "error_message" : "Records in benthic infauna abundance do not include corresponding records in benthic infauna biomass.Records are matched based on the columns listed in the Column(s) box. "
+    })
+    warnings = [*warnings, checkData(**args)]
+    print("# END OF CHECK - 4")
+
+    print("# CHECK - 5")
+    # Description: Each record in benthicinfauna_abundance must include corresponding record in benthicinfauna_biomass
+    # Created Coder: Ayah Halabi
+    # Created Date: NA
+    # Last Edited Date:  9/26/2023
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (9/14/2023): Ayah changed old check 4 to new logic check 4.  
+    args.update({
+        "dataframe": benthicbiomass,
+        "tablename": "tbl_benthicinfauna_biomass",
+        "badrows":mismatch(benthicbiomass, benthicabundance,abundance_biomass_shared_pkey),
+        "badcolumn": ','.join(abundance_biomass_shared_pkey),
+        "error_type" : "Logic Warning",
+        "error_message" : "Records in benthic biomass  do not include corresponding records in benthic_infauna_biomass.Records are matched based on the columns listed in the Column(s) box. "
+    })
+    warnings = [*warnings, checkData(**args)]
+    print("# END OF CHECK - 5")
 
 
     ######################################################################################################################
@@ -137,23 +176,6 @@ def benthicinfauna_lab(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
 
-    print("# CHECK - 4")
-    # Description: Biomass_g must be greater than or equal to 0
-    # Created Coder: Aria Askaryar
-    # Created Date: NA
-    # Last Edited Date:  9/14/2023
-    # Last Edited Coder: Aria Askaryar
-    # NOTE (9/14/2023): Aria adjusts the format so it follows the coding standard.
-    args.update({
-        "dataframe": benthicbiomass,
-        "tablename": "tbl_benthicinfauna_biomass",
-        "badrows":benthicbiomass[(benthicbiomass['biomass_g'] < 0)].tmp_row.tolist(),
-        "badcolumn": "biomass_g",
-        "error_type" : "Value is out of range.",
-        "error_message" : "Biomass must be greater than 0"
-    })
-    errs = [*errs, checkData(**args)]
-    print("# END OF CHECK - 4")
 
 
     ######################################################################################################################
