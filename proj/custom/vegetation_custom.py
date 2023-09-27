@@ -275,6 +275,7 @@ def vegetation(all_dfs):
     # Last Edited Date: 09/14/2023
     # Last Edited Coder: Ayah
     # NOTE (09/14/2023): Adjust code to match coding standard
+
     del badrows
     lookup_sql = f"SELECT * FROM lu_estimatedcover;"
     lu_estimatedcover = pd.read_sql(lookup_sql, g.eng)

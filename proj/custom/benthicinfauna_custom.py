@@ -134,7 +134,7 @@ def benthicinfauna_lab(all_dfs):
     args.update({
         "dataframe": benthicabundance,
         "tablename": "tbl_benthicinfauna_abundance",
-        "badrows":mismatch(benthicabundance, benthicbiomass,abundance_biomass_shared_pkey),
+        "badrows": mismatch(benthicabundance, benthicbiomass,abundance_biomass_shared_pkey),
         "badcolumn": ','.join(abundance_biomass_shared_pkey),
         "error_type" : "Logic Warning",
         "error_message" : "Records in benthic infauna abundance do not include corresponding records in benthic infauna biomass.Records are matched based on the columns listed in the Column(s) box. "
@@ -152,7 +152,7 @@ def benthicinfauna_lab(all_dfs):
     args.update({
         "dataframe": benthicbiomass,
         "tablename": "tbl_benthicinfauna_biomass",
-        "badrows":mismatch(benthicbiomass, benthicabundance,abundance_biomass_shared_pkey),
+        "badrows": mismatch(benthicbiomass, benthicabundance,abundance_biomass_shared_pkey),
         "badcolumn": ','.join(abundance_biomass_shared_pkey),
         "error_type" : "Logic Warning",
         "error_message" : "Records in benthic biomass  do not include corresponding records in benthic_infauna_biomass.Records are matched based on the columns listed in the Column(s) box. "
@@ -180,7 +180,31 @@ def benthicinfauna_lab(all_dfs):
 
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
-    # --------------------------------------------END OF  Biomasss Checks ---------------------------------------------- #
+    # ----------------------------------------------- Biomasss Checks -------------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    print("# CHECK - 6")
+    # Description: Biomass_g must be greater than or equal to 0
+    # Created Coder: Caspian
+    # Created Date: 9/27/23
+    # Last Edited Date:  9/27/23
+    # Last Edited Coder: Caspian
+
+    args.update({
+        "dataframe": benthicbiomass,
+        "tablename": "tbl_benthicinfauna_biomass",
+        "badrows":  benthicbiomass[benthicbiomass['biomass_g'].apply(lambda x: (x < 0) & pd.notnull(x))].tmp_row.tolist(),
+        "badcolumn": 'biomass_g',
+        "error_type" : "Logic Warning",
+        "error_message" : "Biomass_g in benthicinfauna_biomass must be greater than or equal to 0."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 6")
+    
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # -------------------------------------------- END OF Biomasss Checks ---------------------------------------------- #
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
 
