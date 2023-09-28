@@ -236,12 +236,12 @@ def grab_field(all_dfs):
     # Description: sieve_or_depth is required when matrix is water
     # Created Coder: Ayah 
     # Created Date: NA
-    # Last Edited Date: 09/26/2023
+    # Last Edited Date: 09/28/2023
     # Last Edited Coder: Aria Askaryar
     # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
     # NOTE (09/14/2023): Ayah made the lu list for all water matrix for the check
     # NOTE (09/25/2023): Aria updated code to catch error(sieve_or_depth is numeric so it has to be -88 not "Not recorded") and updated error_message
-    # NOTE (09/26/2023): Aria changed the logic of this check (changed from Not recorded to -88 since coresizediameter is a numeric column).
+    # NOTE (09/28/2023): Aria changed the logic of this check (changed from Not recorded to -88 since coresizediameter is a numeric column) and changed the logic from != to == -88.
 
     lu_matrix_filtered = pd.read_sql("SELECT matrix FROM lu_matrix where matrix like '%%water';",g.eng)
     lu_matrix_filtered = lu_matrix_filtered['matrix'].tolist()
@@ -251,7 +251,7 @@ def grab_field(all_dfs):
         "tablename":'tbl_grabevent_details',
         "badrows":grabeventdet[
             (grabeventdet['matrix'].isin(lu_matrix_filtered)) & 
-            (grabeventdet['sieve_or_depth'] != -88) 
+            ((grabeventdet['sieve_or_depth'] == -88) | (grabeventdet['sieve_or_depth'].isna()) )
             ].tmp_row.tolist(),
         "badcolumn": "sieve_or_depth",
         "error_type": "empty value",
@@ -336,40 +336,64 @@ def grab_field(all_dfs):
 
     print("# END OF CHECK - 9")
 
-    print("# CHECK - 10")
-    # Description: If sampletype is "infauna" then a value for sieve_or_depth field must be pulled from lu_benthicsievesize. Also a value needs to be set for the sieve_or_depthunits field (lu_benthicsievesizeunits).
+    print("# CHECK - 10a")
+    # Description: If sampletype is "infauna" then a value for sieve_or_depth field must be pulled from lu_benthicsievesize. 
     # Created Coder: Aria
-    # Created Date:
-    # Last Edited Date: 09/22/2023
-    # Last Edited Coder: Robert 
+    # Created Date: 09/02/2023
+    # Last Edited Date: 09/28/2023
+    # Last Edited Coder: Aria Askaryar 
     # NOTE (09/12/2023): Ayah Adjusted format so it follows the coding standard
     # NOTE (09/22/2023): Adjusted the logic for obtaining the badrows - wrapped last two conditions in parentheses
     # NOTE (09/22/2023): Adjusted lookup list link - lu_list_script_root is not necessarily needed so long as there is no slash in front of scraper
-    lu_benthicsievesize = pd.read_sql("SELECT * FROM lu_benthicsievesize", g.eng)
-    lu_benthicsievesizeunits = pd.read_sql("SELECT * FROM lu_benthicsievesizeunits", g.eng)
-    print(f"lu_benthicsievesize: {lu_benthicsievesize}")
-    print(f"lu_benthicsievesizeunits: {lu_benthicsievesizeunits}")
+    # NOTE (09/28/2023): Aria and Duy -Made severe changes to the check broke the check into two checks 10a and 10b. Fixed the logic, added tmp_grabeventdet and tmp_grabeventdet, and fixed the error when empty value cant be int
+
+    lu_benthicsievesize = pd.read_sql("SELECT * FROM lu_benthicsievesize", g.eng).sievesize.tolist()
+    lu_benthicsievesizeunits = pd.read_sql("SELECT * FROM lu_benthicsievesizeunits", g.eng).sievesizeunits.tolist()
+    tmp_grabeventdet = grabeventdet[grabeventdet['sampletype'] == 'infauna']
+    tmp_grabeventdet['sieve_or_depth'] = [int(x) if not pd.isna(x) else x for x in tmp_grabeventdet['sieve_or_depth']] 
     args.update({
         "dataframe": grabeventdet,
         "tablename": "tbl_grabevent_details",
-        "badrows":grabeventdet[
-            (grabeventdet['sampletype'] == 'infauna') & 
-            (
-                (~grabeventdet['sieve_or_depth'].isin(lu_benthicsievesize)) | 
-                (~grabeventdet['sieve_or_depthunits'].isin(lu_benthicsievesizeunits))
+        "badrows": tmp_grabeventdet[
+            (tmp_grabeventdet['sieve_or_depth'].isna()) | (
+                (
+                    ~pd.isnull(tmp_grabeventdet['sieve_or_depth']) & 
+                    ~tmp_grabeventdet['sieve_or_depth'].isin(lu_benthicsievesize)
+                )
             )
         ].tmp_row.tolist(),
+        "badcolumn": "sieve_or_depth",
+        "error_type": "mismatched value",
+        "is_core_error": False,
+        "error_message": 
+            f"""If sampletype is 'infauna' then a value for sieve_or_depth field must come from <a href="scraper?action=help&layer=lu_benthicsievesize" target="_blank">lu_benthicsievesize</a> .</a>
+            """  
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 10a")
+
+    
+    print("# CHECK - 10b")
+    # Description: If sampletype is "infauna" then a value needs to be set for the sieve_or_depthunits field (lu_benthicsievesizeunits).
+    # Created Coder: Aria
+    # Created Date: 09/28/2023
+    # Last Edited Date: 09/28/2023
+    # Last Edited Coder: Aria Askaryar 
+    # NOTE (09/28/2023): Aria wrote check 
+
+    args.update({
+        "dataframe": grabeventdet,
+        "tablename": "tbl_grabevent_details",
+        "badrows": grabeventdet[(grabeventdet['sampletype'] == 'infauna') & (~grabeventdet['sieve_or_depthunits'].isin(lu_benthicsievesizeunits))].tmp_row.tolist(),
         "badcolumn": "sieve_or_depthunits",
         "error_type": "mismatched value",
         "is_core_error": False,
         "error_message": 
-            f"""If sampletype is 'infauna' then a value for sieve_or_depth field must come from <a href="scraper?action=help&layer=lu_benthicsievesize" target="_blank">lu_benthicsievesize</a>,
-                and sieve_or_depthunits must come from <a href="scraper?action=help&layer=lu_benthicsievesizeunits" target="_blank">lu_benthicsievesizeunits</a>
+            f"""If sampletype is 'infauna' then a sieve_or_depthunits must come from <a href="scraper?action=help&layer=lu_benthicsievesizeunits" target="_blank">lu_benthicsievesizeunits.</a>
             """  
     })
     errs = [*errs, checkData(**args)]
-
-    print("# END OF CHECK - 10")
+    print("# END OF CHECK - 10b")
 
     print("# CHECK - 11")
     # Description: samplereplicate must be consecutive within primary keys
