@@ -72,18 +72,34 @@ def benthicinfauna_lab(all_dfs):
     benthiclabbatch_pkey = get_primary_key('tbl_benthicinfauna_labbatch', g.eng)
     benthicabundance_pkey = get_primary_key('tbl_benthicinfauna_abundance', g.eng)
     benthicbiomass_pkey = get_primary_key('tbl_benthicinfauna_biomass', g.eng)
-    
+    grabeventdet_pkey = get_primary_key('tbl_grabevent_details', g.eng)
+
     abundance_labbatch_shared_pkey = [x for x in benthicabundance_pkey if x in benthiclabbatch_pkey]
     abundance_biomass_shared_pkey = [x for x in benthicbiomass_pkey if x in benthicabundance_pkey]
     labbatch_abundance_shared_pkey = [x for x in benthiclabbatch_pkey if x in benthicabundance_pkey]
+    labbatch_grabeventdet_shared_pkey = [x for x in benthiclabbatch_pkey if x in grabeventdet_pkey]
 
     print("# CHECK - 1")
     # Description: Each labbatch data must include corresponding records in grab_event
-    # Created Coder: NA
-    # Created Date: NA
+    # Created Coder: Duy
+    # Created Date: 09/27/23
     # Last Edited Date:  NA
     # Last Edited Coder: NA
-    # NOTE (9/14/2023): Aria This check cant be completed. There is no primary_keys on grab_event table in the database
+    # NOTE (09/27/23): Duy created the check, QA'ed
+    args.update({
+        "dataframe": benthiclabbatch,
+        "tablename": "tbl_benthicinfauna_labbatch",
+        "badrows": mismatch(benthiclabbatch, grabevent_details, labbatch_grabeventdet_shared_pkey), 
+        "badcolumn": ','.join(labbatch_grabeventdet_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": 
+            "Records in benthicinfauna_labbatch must have corresponding metadata records. " +\
+            "Please submit the metadata records using this template. " +\
+            "<a href='/checker/templater?datatype=grab_field' target='_blank'>Field Template</a>."
+    })
+    errs = [*errs, checkData(**args)]  
+    print("# END OF CHECK - 2")
+
     print("# END OF CHECK - 1")
 
     
