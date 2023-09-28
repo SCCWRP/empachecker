@@ -3,7 +3,7 @@
 from inspect import currentframe
 from flask import current_app, g
 import pandas as pd
-from .functions import checkData, checkLogic, mismatch,get_primary_key
+from .functions import checkData, checkLogic, mismatch,get_primary_key, check_consecutiveness
 
 def macroalgae(all_dfs):
     
@@ -201,16 +201,24 @@ def macroalgae(all_dfs):
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 6")
 
-    #print("# CHECK - 7")
+    print("# CHECK - 7")
     # Description: Transectreplicate must be consecutive within primary keys
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-
-    #print("# END OF CHECK - 7")
-
+    # Created Coder: Aria Askaryar
+    # Created Date: 09/28/2023
+    # Last Edited Date:  09/28/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE ( 09/28/2023): Aria wrote the check, it has not been tested yet
+    
+    args.update({
+        "dataframe": algaemeta,
+        "tablename": "tbl_macroalgae_sample_metadata",
+        "badrows" : check_consecutiveness(algaemeta, [x for x in algaemeta_pkey if x != 'transectreplicate'], 'transectreplicate'),
+        "badcolumn": "transectreplicate",
+        "error_type": "Replicate Error",
+        "error_message": f"transectreplicate values must be consecutive."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 7")
 
 
     ######################################################################################################################
@@ -286,13 +294,22 @@ def macroalgae(all_dfs):
 
     print("# CHECK - 11")
     # Description: Plotreplicate must be consecutive within primary keys
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
+    # Created Coder: Aria Askaryar
+    # Created Date: 09/28/2023
+    # Last Edited Date:  09/28/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE ( 09/28/2023): Aria wrote the check, it has not been tested yet
+    
+    args.update({
+        "dataframe": algaecover,
+        "tablename": "tbl_algaecover_data",
+        "badrows" : check_consecutiveness(algaecover, [x for x in algaecover_pkey if x != 'plotreplicate'], 'plotreplicate'),
+        "badcolumn": "plotreplicate",
+        "error_type": "Replicate Error",
+        "error_message": f"plotreplicate values must be consecutive."
+    })
+    errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 11")
-
 
 
     ######################################################################################################################
