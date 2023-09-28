@@ -10,7 +10,9 @@ import pandas as pd
 from pathlib import Path
 import json
 from dateutil.relativedelta import relativedelta
-from io import BytesIO
+
+from openpyxl import load_workbook
+from openpyxl.worksheet.table import Table, TableStyleInfo
 
 #from functools import wrap
 
@@ -500,164 +502,79 @@ def get_logger_data():
     )
 
 @download.route('/grabevent_translator', methods = ['GET'])
-def sedchem_translator():
+def grab_translator():
     
     eng = g.eng
-    
-    df_sql = pd.read_sql(
-            """ SELECT
-            tbl_grabevent.agency AS samplingorganization, 
-            concat_ws('-', tbl_grabevent.siteid, tbl_grabevent.stationno) AS stationid,
-            tbl_grabevent.latitude AS occupationlatitude,
-            tbl_grabevent.longitude AS occupationlongitude,
-            tbl_grabevent.datum_latlong AS datum,
-            tbl_grabevent_details.samplecollectiondate AS occupationdate,
-            tbl_grabevent_details.samplecollectiontime AS sampletime,
-            tbl_grabevent_details.samplecollectiontimezone AS sampletimezone,
-            tbl_grabevent_details.samplereplicate AS grabeventnumber,
-            tbl_grabevent_details.matrix,
-            tbl_grabevent_details.collectionmethod AS gear,
-            tbl_grabevent_details.sampletype,
-            tbl_grabevent_details.sampleid,
-            tbl_grabevent_details.sieve_or_depth,
-            tbl_grabevent_details.sieve_or_depthunits,
-            tbl_grabevent_details.coresizedepth,
-            tbl_grabevent_details.coresizedepthunits,
-            tbl_grabevent_details.color,
-            tbl_grabevent_details.composition,
-            tbl_grabevent_details.odor,
-            tbl_grabevent_details.shellhash,
-            tbl_grabevent.chemistry,
-            tbl_grabevent.toxicity,
-            tbl_grabevent.infauna,
-            tbl_grabevent.grainsize,
-            tbl_grabevent.microplastics,
-            tbl_grabevent.microplasticsfieldblank,
-            tbl_grabevent.pfas,
-            tbl_grabevent.pfasfieldblank,
-            tbl_grabevent.equipmentblank,
-            tbl_grabevent.comments
-            FROM
-            tbl_grabevent_details
-            LEFT JOIN
-            tbl_grabevent
-            ON
-            tbl_grabevent_details.projectid = tbl_grabevent.projectid AND
-            tbl_grabevent_details.siteid = tbl_grabevent.siteid AND
-            tbl_grabevent_details.stationno = tbl_grabevent.stationno AND
-            tbl_grabevent_details.latitude = tbl_grabevent.latitude AND
-            tbl_grabevent_details.longitude = tbl_grabevent.longitude AND 
-            tbl_grabevent_details.samplecollectiondate = tbl_grabevent.samplecollectiondate AND
-            tbl_grabevent_details.samplereplicate = tbl_grabevent.samplereplicate
-            GROUP BY
-            samplingorganization,
-            stationid,
-            occupationlatitude,
-            occupationlongitude,
-            datum,
-            occupationdate,
-            sampletime,
-            sampletimezone,
-            grabeventnumber,
-            tbl_grabevent_details.matrix,
-            gear,
-            tbl_grabevent_details.sampletype,
-            tbl_grabevent_details.sampleid,
-            tbl_grabevent_details.sieve_or_depth,
-            tbl_grabevent_details.sieve_or_depthunits,
-            tbl_grabevent_details.coresizedepth,
-            tbl_grabevent_details.coresizedepthunits,
-            tbl_grabevent_details.color,
-            tbl_grabevent_details.composition,
-            tbl_grabevent_details.odor,
-            tbl_grabevent_details.shellhash,
-            tbl_grabevent.chemistry,
-            tbl_grabevent.toxicity,
-            tbl_grabevent.infauna,
-            tbl_grabevent.grainsize,
-            tbl_grabevent.microplastics,
-            tbl_grabevent.microplasticsfieldblank,
-            tbl_grabevent.pfas,
-            tbl_grabevent.pfasfieldblank,
-            tbl_grabevent.equipmentblank,
-            tbl_grabevent.comments
-            ORDER BY
-            samplingorganization,
-            stationid,
-            occupationlatitude,
-            occupationlongitude,
-            datum,
-            occupationdate,
-            sampletime,
-            sampletimezone,
-            grabeventnumber,
-            tbl_grabevent_details.matrix,
-            gear,
-            tbl_grabevent_details.matrix,
-            tbl_grabevent_details.sampletype,
-            tbl_grabevent_details.sampleid,
-            tbl_grabevent_details.sieve_or_depth,
-            tbl_grabevent_details.sieve_or_depthunits,
-            tbl_grabevent_details.coresizedepth,
-            tbl_grabevent_details.coresizedepthunits,
-            tbl_grabevent_details.color,
-            tbl_grabevent_details.composition,
-            tbl_grabevent_details.odor,
-            tbl_grabevent_details.shellhash,
-            tbl_grabevent.chemistry,
-            tbl_grabevent.toxicity,
-            tbl_grabevent.infauna,
-            tbl_grabevent.grainsize,
-            tbl_grabevent.microplastics,
-            tbl_grabevent.microplasticsfieldblank,
-            tbl_grabevent.pfas,
-            tbl_grabevent.pfasfieldblank,
-            tbl_grabevent.equipmentblank
-        """, eng)
+
+    agencycode = request.args.get('agency')
+
+    if (agencycode is not None) and (agencycode not in pd.read_sql("SELECT DISTINCT agencycode FROM lu_agency", eng).agencycode.values) :
+        return "Invalid Agency Code"
+
+    # Because of the above if statement, this query should never come up empty, 
+    #   so safe to assume there should be at least one row in the query result
+    agency = pd.read_sql(f"SELECT agencyname FROM lu_agency WHERE agencycode = '{agencycode}'", eng).agencyname.values[0]
+
+    # Define the SQL query string in a well-formatted and readable manner
+    sql_query = """SELECT * FROM vw_fieldgrab_bightformat {}""".format(
+            f"WHERE samplingorganization = '{agency}' " if agency is not None else ""
+        )
+
+    # Execute the SQL query and assign the result to the dataframe
+    df_sql = pd.read_sql(sql_query, eng)
+
+    print("df_sql")
+    print(df_sql)
     
     df_grab = df_sql.filter(['samplingorganization', 'stationid', 'occupationdate', 'occupationlatitude', 'occupationlongitude', 'grabeventnumber', 'sampletime', 'sieve_or_depth', 'gear', 'datum', 'color', 'composition', 'odor', 'shellhash', 'toxicity', 'grainsize', 'microplastics', 'infauna', 'chemistry', 'pfas', 'pfasfieldblank', 'microplasticsfieldblank', 'equipmentblank', 'comments'], axis=1)
+    print("df_grab")
+    print(df_grab)
 
     df_occupation = df_sql.filter(['samplingorganization', 'stationid', 'sampletime', 'occupationdate', 'sampletimezone', 'sieve_or_depth', 'occupationlatitude', 'occupationlongitude', 'datum', 'comments'], axis=1)
+    print("df_occupation")
+    print(df_occupation)
 
-    old_df_occupation = pd.read_sql(
-            """SELECT 
-                    agency AS samplingorganization,
-                    concat_ws('-', siteid, stationno) AS stationid, 
-                    samplecollectiondate AS occupationdate,
-                    latitude AS occupationlatitude, 
-                    longitude AS occupationlongitude,
-                    chemistry,
-                    toxicity,
-                    infauna,
-                    grainsize,
-                    microplastics,
-                    microplasticsfieldblank,
-                    pfas,
-                    pfasfieldblank,
-                    equipmentblank,
-                    comments
-                FROM 
-                    tbl_grabevent
-                WHERE UPPER(projectid) = 'BIGHT'
-            """, eng)
-            #needs to be changed to BIGHT instead of EMPA
-            # NOTE - changed to BIGHT by robert on 9/7/2023
+    # old_df_occupation = pd.read_sql(
+    #         """SELECT 
+    #                 agency AS samplingorganization,
+    #                 concat_ws('-', siteid, stationno) AS stationid, 
+    #                 samplecollectiondate AS occupationdate,
+    #                 latitude AS occupationlatitude, 
+    #                 longitude AS occupationlongitude,
+    #                 chemistry,
+    #                 toxicity,
+    #                 infauna,
+    #                 grainsize,
+    #                 microplastics,
+    #                 microplasticsfieldblank,
+    #                 pfas,
+    #                 pfasfieldblank,
+    #                 equipmentblank,
+    #                 comments
+    #             FROM 
+    #                 tbl_grabevent
+    #             WHERE UPPER(projectid) = 'BIGHT'
+    #         """, eng)
+    #         #needs to be changed to BIGHT instead of EMPA
+    #         # NOTE - changed to BIGHT by robert on 9/7/2023
+    #         # NOTE on 9/27/2023 i noticed that the variable name changed to "old", and i saw it unused, so i commented it out - Robert
+
 
     df_occupation.insert(5, 'collectiontype', 'Grab')
-    df_occupation.insert(6, 'vessel', 'NR')
+    df_occupation.insert(6, 'vessel', 'Other')
     df_occupation.insert(7, 'navtype', 'GPS')
     df_occupation.insert(8, 'salinity', -88)
     df_occupation.insert(9, 'salinityunits', 'psu')
-    df_occupation.insert(10, 'weather', 'NR')
-    df_occupation.insert(11, 'windspeed', 'NR')
+    df_occupation.insert(10, 'weather', 'Not Recorded')
+    df_occupation.insert(11, 'windspeed', -88)
     df_occupation.insert(12, 'windspeedunits', 'kts')
     df_occupation.insert(13, 'winddirection', 'NR')
-    df_occupation.insert(14, 'swellheight', 'NR')
+    df_occupation.insert(14, 'swellheight', -88)
     df_occupation.insert(15, 'swellheightunits', 'ft')
     df_occupation.insert(16, 'swellperiod', -88)
     df_occupation.insert(17, 'swelldirection', 'NR')
     df_occupation.insert(18, 'swellperiodunits', 'seconds')
-    df_occupation.insert(19, 'seastate', 'NR')
+    df_occupation.insert(19, 'seastate', 'Not Recorded')
     df_occupation.insert(20, 'abandoned', 'No')
     df_occupation.insert(21, 'stationfail', 'None or No Failure')
     df_occupation.insert(23, 'occupationdepthunits', 'm')
@@ -665,21 +582,60 @@ def sedchem_translator():
     df_occupation.rename(columns={"sieve_or_depth": "occupationdepth", 'sampletimezone': 'occupationtimezone', 'sampletime': 'occupationtime', 'datum': 'occupationdatum'}, inplace=True)
 
     df_grab.insert(9, 'stationwaterdepthunits', 'm')
-    df_grab.insert(19, 'grabfail', 'No')
+    df_grab.insert(19, 'grabfail', 'None or No Failure')
     df_grab.insert(19, 'debrisdetected', '')
     df_grab.insert(11, 'penetrationunits', 'cm')
-    df_grab.insert(11, 'penetration', '')
+    df_grab.insert(11, 'penetration', -88)
 
     df_grab.rename(columns={'occupationlatitude': 'latitude', 'occupationlongitude': 'longitude', 'occupationdate': 'sampledate', 'sieve_or_depth': 'stationwaterdepth', 'chemistry': 'sedimentchemistry', 'infauna': 'benthicinfauna'}, inplace=True)
 
-    file_path = os.path.join(os.getcwd(), "export", "data", 'grabevent.xlsx')
+    # deal with the issues of duplicates
+    df_occupation.drop_duplicates(inplace = True)
+    df_grab.drop_duplicates(inplace = True)
+    
 
-    with pd.ExcelWriter(file_path) as writer:
+    blob = BytesIO()
+
+    with pd.ExcelWriter(blob) as writer:
         df_occupation.to_excel(writer, sheet_name='occupation', index=False)
         df_grab.to_excel(writer, sheet_name='grab', index=False)
         #df_sql.to_excel(writer, sheet_name='test', index=False)
 
-    return send_file( file_path, as_attachment = True, download_name = 'grabevent.xlsx' )
+    # Position the BytesIO object's cursor at the beginning
+    blob.seek(0)
+
+    # Load workbook from BytesIO object
+    workbook = load_workbook(blob)
+    sheet = workbook.active
+
+    # AutoFit columns, freeze panes, add autofilters and stylize table as previously mentioned
+    for column in sheet.columns:
+        max_length = 0
+        column = [cell for cell in column]
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(cell.value)
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        sheet.column_dimensions[column[0].column_letter].width = adjusted_width
+
+    sheet.freeze_panes = "A2"
+    sheet.auto_filter.ref = sheet.dimensions
+
+    # Creating Table
+    tab = Table(displayName="Table1", ref=sheet.dimensions)
+    style = TableStyleInfo(name="TableStyleMedium9", showFirstColumn=False,
+                        showLastColumn=False, showRowStripes=True, showColumnStripes=True)
+    tab.tableStyleInfo = style
+    sheet.add_table(tab)
+
+    # Save workbook to BytesIO object
+    workbook.save(blob)
+    blob.seek(0)
+
+    return send_file( blob, as_attachment = True, download_name = 'empa_grabevent_translated_to_bight.xlsx' )
 
 
 
