@@ -327,6 +327,25 @@ def fishseines(all_dfs):
 
     print("# END OF CHECK - 9")
 
+    print("# CHECK - 17")
+        # Description: Gives a warning if netendlat or netendlongitude is empty
+        # Created Coder: Ayah Halabi
+        # Created Date: 9/28/23
+        # Last Edited Date: 
+        # Last Edited Coder: 
+        # NOTE (9/28/23): Ayah wrote this check but did not test it    
+    args.update({
+        "dataframe": fishmeta,
+        "tablename": "tbl_fish_sample_metadata",
+        "badrows": fishmeta[(fishmeta['netendlatitude'].isna()) | (fishmeta['netendlongitude'].isna())].tmp_row.tolist(), 
+        "badcolumn": 'netendlatitude,netendlongitude',
+        "error_type": "Custom Error",
+        "error_message": "netendlatitude and/or netendlongitude are empty"
+    })
+    warnings = [*warnings, checkData(**args)]
+
+    print("# END OF CHECK - 17")
+
 
 
 
