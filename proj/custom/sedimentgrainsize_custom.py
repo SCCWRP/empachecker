@@ -2,7 +2,7 @@ from inspect import currentframe
 from flask import current_app, g
 from pandas import DataFrame
 import pandas as pd
-from .functions import checkData, checkLogic, mismatch,get_primary_key
+from .functions import checkData, checkLogic, mismatch,get_primary_key, check_consecutiveness
 
 
 
@@ -147,14 +147,24 @@ def sedimentgrainsize_lab(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
 
-    #print("# CHECK - 4")
+    print("# CHECK - 4")
     # Description: Labreplicate must be consecutive within primary keys 
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 4")
+    # Created Coder: Aria Askarar
+    # Created Date: 09/28/2023
+    # Last Edited Date: 09/28/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/28/2023): Aria wrote the replicate check, it has not been tested. 
+    args.update({
+        "dataframe": sed_labbatch,
+        "tablename": "tbl_sedgrainsize_labbatch_data",
+        "badrows" : check_consecutiveness(sed_labbatch, [x for x in sed_labbatch_pkey if x != 'labreplicate'], 'labreplicate'),
+        "badcolumn": "labreplicate",
+        "error_type": "Replicate Error",
+        "error_message": f"labreplicate values must be consecutive."
+    })
+    errs = [*errs, checkData(**args)]
+    
+    print("# END OF CHECK - 4")
 
 
     ######################################################################################################################
@@ -177,16 +187,24 @@ def sedimentgrainsize_lab(all_dfs):
     ######################################################################################################################
 
 
-    #print("# CHECK - 5")
+    print("# CHECK - 5")
     # Description: Labreplicate must be consecutive within primary keys 
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - ")
+    # Created Coder: Aria Askarar
+    # Created Date: 09/28/2023
+    # Last Edited Date: 09/28/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/28/2023): Aria wrote the replicate check, it has not been tested. 
+    args.update({
+        "dataframe": sed_data,
+        "tablename": "tbl_sedgrainsize_data",
+        "badrows" : check_consecutiveness(sed_data, [x for x in sed_data_pkey if x != 'labreplicate'], 'labreplicate'),
+        "badcolumn": "labreplicate",
+        "error_type": "Replicate Error",
+        "error_message": f"labreplicate values must be consecutive."
+    })
+    errs = [*errs, checkData(**args)]
 
-
+    print("# END OF CHECK - ")
 
 
     ######################################################################################################################
