@@ -58,24 +58,47 @@ def feldspar(all_dfs):
     ######################################################################################################################
 
     print("# CHECK - 1")
-    # Description: Each data must include corresponding sample metadata when plug_extracted = yes
-    # Created Coder: Aria Askaryar
+    # Description: if plug_extracted = yes then corresponding data
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    feldmeta_filter = feldmeta[feldmeta['plug_extracted'] == 'Yes']
+    
+    args = {
+        "dataframe": feldmeta,
+        "tablename": 'tbl_feldspar_metadata',
+        "badrows": mismatch(feldmeta_filter, felddata, felddata_feldmeta_shared_pkey),
+        "badcolumn": ','.join(felddata_feldmeta_shared_pkey),
+        "error_type": "Value Error",
+        "is_core_error": False,
+        "error_message": "Since plug_extracted = yes, metadata must have corresponding records in Feldspar Data. Records are matched based on the columns listed in the Column(s) box."
+        
+    }
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 1")
+
+    print("# CHECK - 2")
+    # Description: Each record in feldspar_data must have a corresponding record in feldspar_metadata
+    # Created Coder: Aria 
     # Created Date: NA
-    # Last Edited Date: 9/21/2023
-    # Last Edited Coder: Aria Askaryar
-    # NOTE (9/21/2023):
+    # Last Edited Date: 9/28/2023
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (9/28/2023): Check was changed so the code now matched the updated check
+    print(f"these are the share pkeys {','.join(felddata_feldmeta_shared_pkey)}")
     args.update({
         "dataframe": felddata,
         "tablename": "tbl_feldspar_data",
         "badrows": mismatch(felddata,feldmeta,felddata_feldmeta_shared_pkey), 
         "badcolumn": ','.join(felddata_feldmeta_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each Feldspar data  must have corresponding records in Feldspar Metadata based on the columns: {}".format(
-            ','.join(felddata_feldmeta_shared_pkey)
-        )
+        "error_message": "Each Feldspar data  must have corresponding records in Feldspar Metadata. Records are matched based on the columns listed in the Column(s) box."
     })
     errs = [*errs, checkData(**args)]
-    print("# END OF CHECK - 1")
+    print("# END OF CHECK - 2")
+
 
 
     ######################################################################################################################
@@ -95,31 +118,10 @@ def feldspar(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
     
-    print("# CHECK - 2")
-    # Description: if plug_extracted = yes then corresponding data
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    feldmeta_filter = feldmeta[feldmeta['plug_extracted'] == 'yes']
-    args = {
-        "dataframe": feldmeta,
-        "tablename": 'tbl_feldspar_metadata',
-        "badrows": mismatch(feldmeta_filter, felddata, felddata_feldmeta_shared_pkey),
-        "badcolumn": "plug_extracted ",
-        "error_type": "Value Error",
-        "is_core_error": False,
-        "error_message": "Since plug_extracted = yes, metadata must have corresponding records in Feldspar Data based on the columns: {}".format(
-            ','.join(felddata_feldmeta_shared_pkey)
-        )
-    }
-    errs = [*errs, checkData(**args)]
+ 
+    
 
-    print("# END OF CHECK - 2")
-    
-    
-    
+
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
     # ------------------------------------------------ END OF Feldspar Meta Checks ------------------------------------- #
@@ -131,14 +133,15 @@ def feldspar(all_dfs):
 
 
 
-
-
-
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
     # ------------------------------------------------ Feldspar Data Checks -------------------------------------------- #
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
+
+
+
+
 
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
