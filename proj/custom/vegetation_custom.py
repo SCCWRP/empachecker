@@ -3,7 +3,7 @@
 from inspect import currentframe
 from flask import current_app, g
 import pandas as pd
-from .functions import checkData, checkLogic, mismatch,get_primary_key
+from .functions import checkData, checkLogic, mismatch,get_primary_key, check_consecutiveness
 print('before vegatation funcntion')
 
 def vegetation(all_dfs):
@@ -201,13 +201,23 @@ def vegetation(all_dfs):
 
     print("# CHECK - 7")
     # Description: Transectreplicate must be consecutive within primary keys
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 09/14/2023
-    # Last Edited Coder: Ayah
-    # NOTE (09/14/2023): Adjust code to match coding standard
-
+    # Created Coder: Aria Askaryar
+    # Created Date: 09/28/2023
+    # Last Edited Date:  09/28/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE ( 09/28/2023): Aria wrote the check, it has not been tested yet
+    
+    args.update({
+        "dataframe": vegmeta,
+        "tablename": "tbl_vegetation_sample_metadata",
+        "badrows" : check_consecutiveness(vegmeta, [x for x in vegmeta_pkey if x != 'transectreplicate'], 'transectreplicate'),
+        "badcolumn": "transectreplicate",
+        "error_type": "Replicate Error",
+        "error_message": f"transectreplicate values must be consecutive."
+    })
+    errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 7")
+
 
 
     ######################################################################################################################
@@ -315,23 +325,43 @@ def vegetation(all_dfs):
     warnings = [*warnings, checkData(**args)]
     print("# END OF CHECK - 11")
 
-    #print("# CHECK - 12")
+    print("# CHECK - 12")
     # Description: transectreplicate must be consecutive within primary keys
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 12")
+    # Created Coder: Aria Askaryar
+    # Created Date: 09/28/2023
+    # Last Edited Date:  09/28/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE ( 09/28/2023): Aria wrote the check, it has not been tested yet
+    
+    args.update({
+        "dataframe": vegdata,
+        "tablename": "tbl_vegetativecover_data",
+        "badrows" : check_consecutiveness(vegdata, [x for x in vegdata_pkey if x != 'transectreplicate'], 'transectreplicate'),
+        "badcolumn": "transectreplicate",
+        "error_type": "Replicate Error",
+        "error_message": f"transectreplicate values must be consecutive."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 12")
 
-    #print("# CHECK - 13")
+    print("# CHECK - 13")
     # Description: plotreplicate must be  consecutive within primary keys
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - 13")
+    # Created Coder: Aria Askaryar
+    # Created Date: 09/28/2023
+    # Last Edited Date:  09/28/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE ( 09/28/2023): Aria wrote the check, it has not been tested yet
+    
+    args.update({
+        "dataframe": vegdata,
+        "tablename": "tbl_vegetativecover_data",
+        "badrows" : check_consecutiveness(vegdata, [x for x in vegdata_pkey if x != 'plotreplicate'], 'plotreplicate'),
+        "badcolumn": "plotreplicate",
+        "error_type": "Replicate Error",
+        "error_message": f"plotreplicate values must be consecutive."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 13")
 
 
 
