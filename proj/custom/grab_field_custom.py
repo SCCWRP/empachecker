@@ -338,7 +338,7 @@ def grab_field(all_dfs):
 
     print("# CHECK - 10a")
     # Description: If sampletype is "infauna" then a value for sieve_or_depth field must be pulled from lu_benthicsievesize. 
-    # Created Coder: Aria
+    # Created Coder: Aria Askaryar
     # Created Date: 09/02/2023
     # Last Edited Date: 09/28/2023
     # Last Edited Coder: Aria Askaryar 
@@ -375,7 +375,7 @@ def grab_field(all_dfs):
     
     print("# CHECK - 10b")
     # Description: If sampletype is "infauna" then a value needs to be set for the sieve_or_depthunits field (lu_benthicsievesizeunits).
-    # Created Coder: Aria
+    # Created Coder: Aria Askaryar
     # Created Date: 09/28/2023
     # Last Edited Date: 09/28/2023
     # Last Edited Coder: Aria Askaryar 
