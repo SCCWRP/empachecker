@@ -190,6 +190,9 @@ def fill_commonname(all_dfs):
                     com_name = row['commonname']
                     if pd.isna(com_name) and pd.notna(sci_name):
                         common_name_df = pd.read_sql(f"SELECT commonname FROM {lu_list} WHERE scientificname = '{sci_name}'", g.eng)
+                        if common_name_df.empty:
+                            print(f"cannot fill commonname for {sci_name} - not found in lu list")
+                            continue
                         new_common_name = str(common_name_df.iat[0,0])
                         df.loc[label, 'commonname'] = new_common_name
                         all_dfs[tbl] = df
@@ -207,6 +210,9 @@ def fill_status(all_dfs):
                     status = row['status']
                     if pd.isna(status) and pd.notna(sci_name):
                         status_df = pd.read_sql(f"SELECT status FROM {lu_list} WHERE scientificname = '{sci_name}'", g.eng)
+                        if status_df.empty:
+                            print(f"cannot fill status for {sci_name} - not found in lu list")
+                            continue
                         new_status = str(status_df.iat[0,0])
                         df.loc[label, 'status'] = new_status
                         all_dfs[tbl] = df
@@ -329,10 +335,12 @@ def clean_data(all_dfs):
     # Description: fill commonname based on scientificname from appropriate lookup list
     # Created Coder: Caspian Thackeray
     # Created Date:  08/28/23
-    # Last Edited Date: 08/29/23
-    # Last Edited Coder: Caspian Thackeray
+    # Last Edited Date: 09/28/23
+    # Last Edited Coder: Duy
     # NOTE (08/28/23): Begin writing this check
     # NOTE (08/29/23): Finished writing this check
+    # NOTE (09/28/23): Code would crash if scientificname not in lookup list, so Duy made the code not to fill it if scientificname is not in lu list.
+    # Need to refactor the code in the near future.
     all_dfs = fill_commonname(all_dfs)
     print("# end data filling - 2")
     
@@ -343,11 +351,14 @@ def clean_data(all_dfs):
     # Description: fill status based on scienticficname,commonname from appropriate lookup lists
     # Created Coder: Caspian Thackeray
     # Created Date:  08/29/23
-    # Last Edited Date: 08/29/23
-    # Last Edited Coder: Caspian Thackeray
+    # Last Edited Date: 09/28/23
+    # Last Edited Coder: Duy
     # NOTE (08/29/23): Wrote this check
-    all_dfs = fill_status(all_dfs)
+    # NOTE (09/28/23): Code would crash if scientificname not in lookup list, so Duy made the code not to fill it if scientificname is not in lu list.
+    # Need to refactor the code in the near future.
+    
     print("# end data filling - 3")
+    all_dfs = fill_status(all_dfs)
     
     
     

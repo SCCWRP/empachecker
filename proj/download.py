@@ -590,7 +590,11 @@ def grab_translator():
     df_grab.rename(columns={'occupationlatitude': 'latitude', 'occupationlongitude': 'longitude', 'occupationdate': 'sampledate', 'sieve_or_depth': 'stationwaterdepth', 'chemistry': 'sedimentchemistry', 'infauna': 'benthicinfauna'}, inplace=True)
 
     # deal with the issues of duplicates
-    df_occupation.drop_duplicates(inplace = True)
+    df_occupation.drop_duplicates(
+        subset = [col for col in df_occupation.columns if col not in ()], 
+        keep = 'first',
+        inplace = True
+    )
     df_grab.drop_duplicates(inplace = True)
     
 
@@ -618,24 +622,18 @@ def grab_translator():
                     max_length = len(cell.value)
             except:
                 pass
-        adjusted_width = (max_length + 2)
+        adjusted_width = (max_length + 4)
         sheet.column_dimensions[column[0].column_letter].width = adjusted_width
 
     sheet.freeze_panes = "A2"
     sheet.auto_filter.ref = sheet.dimensions
 
-    # Creating Table
-    tab = Table(displayName="Table1", ref=sheet.dimensions)
-    style = TableStyleInfo(name="TableStyleMedium9", showFirstColumn=False,
-                        showLastColumn=False, showRowStripes=True, showColumnStripes=True)
-    tab.tableStyleInfo = style
-    sheet.add_table(tab)
+    # Save workbook to a new BytesIO object
+    output_blob = BytesIO()
+    workbook.save(output_blob)
+    output_blob.seek(0)
 
-    # Save workbook to BytesIO object
-    workbook.save(blob)
-    blob.seek(0)
-
-    return send_file( blob, as_attachment = True, download_name = 'empa_grabevent_translated_to_bight.xlsx' )
+    return send_file( output_blob, as_attachment = True, download_name = 'empa_grabevent_translated_to_bight.xlsx' )
 
 
 
