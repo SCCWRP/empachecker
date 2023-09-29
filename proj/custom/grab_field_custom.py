@@ -353,13 +353,13 @@ def grab_field(all_dfs):
         "dataframe": grabeventdet,
         "tablename": "tbl_grabevent_details",
         "badrows":grabeventdet[
-            (grabeventdet['sampletype'] == 'infauna') & 
+            (grabeventdet['sampletype'] == 'infauna') &
             (
                 (~grabeventdet['sieve_or_depth'].isin(lu_benthicsievesize)) | 
                 (~grabeventdet['sieve_or_depthunits'].isin(lu_benthicsievesizeunits))
             )
         ].tmp_row.tolist(),
-        "badcolumn": "sieve_or_depthunits",
+        "badcolumn": "sieve_or_depthunits,sieve_or_depth",
         "error_type": "mismatched value",
         "is_core_error": False,
         "error_message": 
