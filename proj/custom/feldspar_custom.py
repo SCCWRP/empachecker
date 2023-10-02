@@ -4,6 +4,7 @@ from inspect import currentframe
 from flask import current_app, g
 import datetime as dt
 import pandas as pd
+import numpy as np
 from datetime import date
 from .functions import checkData, mismatch, multicol_lookup_check, get_primary_key
 def feldspar(all_dfs):
@@ -33,7 +34,7 @@ def feldspar(all_dfs):
 
     felddata_pkey = get_primary_key('tbl_feldspar_data',g.eng)
     feldmeta_pkey = get_primary_key('tbl_feldspar_metadata',g.eng)
-    felddata_feldmeta_shared_pkey = list(set(felddata_pkey).intersection(set(feldmeta_pkey)))
+    felddata_feldmeta_shared_pkey = [x for x in felddata_pkey if x in feldmeta_pkey]
 
     errs = []
     warnings = []
@@ -87,7 +88,6 @@ def feldspar(all_dfs):
     # Last Edited Date: 9/28/2023
     # Last Edited Coder: Ayah Halabi
     # NOTE (9/28/2023): Check was changed so the code now matched the updated check
-    print(f"these are the share pkeys {','.join(felddata_feldmeta_shared_pkey)}")
     args.update({
         "dataframe": felddata,
         "tablename": "tbl_feldspar_data",
@@ -139,7 +139,35 @@ def feldspar(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
 
-
+    print("# CHECK - 3")
+    # Description: average field needed to be the average of sideone,sidetwo,sidethree,sidefour excluding -88 values
+    # Created Coder: Duy Nguyen
+    # Created Date: 10/02/2023
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (10/02/2023): Check created by Duy. QA'ed
+    badrows = felddata[
+        felddata.apply(
+            lambda row: row['average'] != np.nanmean(
+                [
+                    row[side_no]
+                    for side_no in ['sideone','sidetwo','sidethree','sidefour']
+                    if row[side_no] != -88
+                ]
+            ),
+            axis=1
+        )
+    ].tmp_row.tolist()
+    args.update({
+        "dataframe": felddata,
+        "tablename": "tbl_feldspar_data",
+        "badrows": badrows, 
+        "badcolumn": 'average',
+        "error_type": "Value Error",
+        "error_message": "average field needed to be the average of sideone,sidetwo,sidethree,sidefour excluding -88 values"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 3")
 
 
 
@@ -149,102 +177,4 @@ def feldspar(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
 
-    '''
-    ############################### --Start of Logic Checks -- #############################################################
-    print("Begin fieldspar Logic Checks...")
-
-    #check 1: Each data must include corresponding sample metadata
-    print('Start logic check 1')
-    eng = g.eng
-    sql = eng.execute("SELECT *  FROM tbl_feldspar_metadata ")
-    db_feldmeta = pd.DataFrame(sql.fetchall())
-    db_feldmeta.columns = sql.keys()
-    groupcols = ['siteid','estuaryname', 'samplecollectiondate','stationno','projectid']
-    args = {
-        "dataframe": felddata,
-        "tablename": 'tbl_feldspar_data',
-        "badrows": mismatch(felddata,db_feldmeta,groupcols),
-        "badcolumn": "siteid, estuaryname, samplecollectiondate, stationno,projectid ",
-        "error_type": "Logic Error",
-        "is_core_error": False,
-        "error_message": "Records in tbl_feldspar_metadata must have corresponding records in tnl_feldspar_data."
-    }
-    errs = [*errs, checkData(**args)]
-    print('check ')
-    print('End of logic check 1')
-    print("END fieldspar Logic Checks...")
-    ############################### --End of Logic Checks -- #############################################################
-
-
-    ############################### --Start of Custom Checks -- #############################################################
-    print("Begin fieldspar custom Checks...")
-    #Check 2: Siteid/Estuaryname  pair must match lookup list (multicolumn check)
-    print('check 2 begin feldspar:')
-    lookup_sql = f"SELECT * FROM lu_siteid;"
-    lu_siteid = pd.read_sql(lookup_sql, g.eng)
-    check_cols = ['siteid','estuaryname']
-    lookup_cols = ['siteid','estuary']
-    args = {
-        "dataframe": felddata,
-        "tablename": 'tbl_feldspar_data',
-        "badrows": multicol_lookup_check(felddata,lu_siteid,check_cols,lookup_cols),
-        "badcolumn": "siteid, estuaryname, samplecollectiondate, stationno,projectid ",
-        "error_type": "Logic Error",
-        "is_core_error": False,
-        "error_message": f'The siteid/estuaryname entry did not match the lookup list '
-                        '<a '
-                        f'href="/{lu_list_script_root}/scraper?action=help&layer=lu_siteid" '
-                        'target="_blank">lu_siteid</a>'
-    }
-
-    #check 3: if plug_extracted = yes then corresponding data
-    print('Start check 3')
-    feldmeta_filter = feldmeta[feldmeta['plug_extracted'] == 'yes']
-
-    groupcols = ['siteid','estuaryname', 'samplecollectiondate','stationno','projectid']
-    args = {
-        "dataframe": feldmeta,
-        "tablename": 'tbl_feldspar_metadata',
-        "badrows": mismatch(feldmeta_filter, felddata, groupcols),
-        "badcolumn": "plug_extracted ",
-        "error_type": "Value Error",
-        "is_core_error": False,
-        "error_message": "if plug_extracted = yes then corresponding data"
-    }
-    errs = [*errs, checkData(**args)]
-    print('End of check 3 ')
-
-    # Example of appending an error (same logic applies for a warning)
-    # args.update({
-    #   "badrows": get_badrows(df[df.temperature != 'asdf']),
-    #   "badcolumn": "temperature",
-    #   "error_type" : "Not asdf",
-    #   "error_message" : "This is a helpful useful message for the user"
-    # })
-    # errs = [*errs, checkData(**args)]
-
-     # likely deleting this custom check warning
-    args.update({
-        "dataframe": felddata,
-        "tablename": "tbl_feldspar_data",
-        "badrows":felddata['samplecollectiondate'] == felddata['samplecollectiondate'].dt.date.index.tolist(),
-        "badcolumn": "samplecollectiondate",
-        "error_type" : "Date Value out of range",
-        "error_message" : "Your Date format is not correct, must be YYYY-MM-DD."
-    })
-    errs = [*warnings, checkData(**args)]
-    
-    args.update({
-        "dataframe": feldmeta,
-        "tablename": "tbl_feldspar_metadata",
-        "badrows":feldmeta['samplecollectiondate'] == feldmeta['samplecollectiondate'].dt.date.index.tolist(),
-        "badcolumn": "samplecollectiondate",
-        "error_type" : "Date Value out of range",
-        "error_message" : "Your Date format is not correct, must be YYYY-MM-DD."
-    })
-    errs = [*warnings, checkData(**args)]
-
-    print("END fieldspar Logic Checks...")
-    ############################### --End of Logic Checks -- #############################################################
-    '''
     return {'errors': errs, 'warnings': warnings}
