@@ -657,7 +657,9 @@ def get_test_data():
     
     try:
         data = BytesIO()
-
+        # Pick a random site first, but this should be unique across tbl
+        siteid_df = pd.read_sql(f"SELECT DISTINCT siteid FROM {[x for x in dataset.get('tables') if x != 'tbl_protocol_metadata'][0]} LIMIT 1", eng)
+        print(siteid_df)
         with pd.ExcelWriter(data, engine='openpyxl') as writer:
             for tbl in dataset.get('tables'):
                 print(tbl)
@@ -665,7 +667,6 @@ def get_test_data():
                     df = pd.read_sql(f'SELECT * FROM {tbl}', eng)
                     df.to_excel(writer, sheet_name=tbl, index=False)
                 else:
-                    siteid_df = pd.read_sql(f"SELECT DISTINCT siteid FROM {tbl} LIMIT 1", eng)
                     if siteid_df.empty:
                         df = pd.read_sql(f"SELECT * FROM {tbl}", eng)
                         df.to_excel(writer, sheet_name=tbl, index=False)
