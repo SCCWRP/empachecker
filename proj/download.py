@@ -583,7 +583,7 @@ def grab_translator():
 
     df_grab.insert(9, 'stationwaterdepthunits', 'm')
     df_grab.insert(19, 'grabfail', 'None or No Failure')
-    df_grab.insert(19, 'debrisdetected', '')
+    df_grab.insert(19, 'debrisdetected', 'No')
     df_grab.insert(11, 'penetrationunits', 'cm')
     df_grab.insert(11, 'penetration', -88)
 
@@ -591,7 +591,7 @@ def grab_translator():
 
     # deal with the issues of duplicates
     df_occupation.drop_duplicates(
-        subset = [col for col in df_occupation.columns if col not in ()], 
+        subset = [col for col in df_occupation.columns if col not in ('comments', 'occupationlatitude', 'occupationlongitude')], 
         keep = 'first',
         inplace = True
     )
