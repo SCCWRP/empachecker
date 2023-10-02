@@ -109,44 +109,45 @@ def fix_case(all_dfs: dict):
     return all_dfs
 
 def fill_daubenmiremidpoint(all_dfs):
-    if 'tbl_vegetativecover_data' in all_dfs.keys():
-        df = all_dfs['tbl_vegetativecover_data']
-        lu_estimatedcover = pd.read_sql('SELECT * from lu_estimatedcover', g.eng)
+    print('begin fill_daubenmiremidpoint')
+    for key in all_dfs.keys():
+        if key in ['tbl_vegetativecover_data','tbl_algaecover_data']:
+            df = all_dfs[key]
+            lu_estimatedcover = pd.read_sql('SELECT * from lu_estimatedcover', g.eng)
+            lu_dict = {
+                (a,b): (c,d) 
+                for a,b,c,d in zip(
+                    lu_estimatedcover['estimatedcover_min'],
+                    lu_estimatedcover['estimatedcover_max'],
+                    lu_estimatedcover['percentcovercode'],
+                    lu_estimatedcover['daubenmiremidpoint']
+                )
+            }
 
-        lu_dict = {
-            (a,b): (c,d) 
-            for a,b,c,d in zip(
-                lu_estimatedcover['estimatedcover_min'],
-                lu_estimatedcover['estimatedcover_max'],
-                lu_estimatedcover['percentcovercode'],
-                lu_estimatedcover['daubenmiremidpoint']
+            def find_key_by_value(dictionary, value):
+                if value == 0:
+                    return (0,0)
+                for key in dictionary.keys():
+                    if key[0] < value <= key[1]:
+                        return key
+                return None
+            
+            df['percentcovercode'] = df.apply(
+                lambda row: lu_dict.get(
+                    find_key_by_value(lu_dict, row['estimatedcover']), 
+                    (row['percentcovercode'], None)
+                )[0],
+                axis=1    
             )
-        }
-
-        def find_key_by_value(dictionary, value):
-            if value == 0:
-                return (0,0)
-            for key in dictionary.keys():
-                if key[0] < value <= key[1]:
-                    return key
-            return None
-        
-        df['percentcovercode'] = df.apply(
-            lambda row: lu_dict.get(
-                find_key_by_value(lu_dict, row['estimatedcover']), 
-                (row['percentcovercode'], None)
-            )[0],
-            axis=1    
-        )
-        df['daubenmiremidpoint'] = df.apply(
-            lambda row: lu_dict.get(
-                find_key_by_value(lu_dict, row['estimatedcover']), 
-                (None, row['daubenmiremidpoint'])
-            )[1],
-            axis=1    
-        )
-        all_dfs['tbl_vegetativecover_data'] = df
-
+            df['daubenmiremidpoint'] = df.apply(
+                lambda row: lu_dict.get(
+                    find_key_by_value(lu_dict, row['estimatedcover']), 
+                    (None, row['daubenmiremidpoint'])
+                )[1],
+                axis=1    
+            )
+            all_dfs[key] = df
+    print('end fill_daubenmiremidpoint')
     return all_dfs
 
 fishmacro_tbls = [
@@ -322,9 +323,10 @@ def clean_data(all_dfs):
     # Description: fill in daubenmiremidpoint values if estimatedcover and percent cover code match in the table and lookup list
     # Created Coder: Ayah 
     # Created Date: Ayah 
-    # Last Edited Date: 08/18/23
+    # Last Edited Date: 10/02/23
     # Last Edited Coder: Duy Nguyen
     # NOTE (08/17/23): Duy adjusts the format so it follows the coding standard.
+    # NOTE (10/02/23): Added tbl_algaecover for datatype microalgae to the table to be filled.
     all_dfs = fill_daubenmiremidpoint(all_dfs)
     print("# end data filling - 1")
     
