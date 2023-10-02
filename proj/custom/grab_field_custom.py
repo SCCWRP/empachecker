@@ -139,6 +139,45 @@ def grab_field(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
 
+    #print("# CHECK - 12")
+    # Description: At least one of the datatype identifiers (toxicity,grainsize,infauna,chemistry,nutrients,edna,microplastic) needed to be yes
+    # Created Coder: Duy
+    # Created Date: 10/02/2023
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (10/02/2023): Duy created the check.
+    badrows = grabevent[
+        grabevent.apply(
+            lambda row: all(
+                [
+                    row['infauna'].lower() == 'no',    
+                    row['chemistry'].lower() == 'no',    
+                    row['toxicity'].lower() == 'no',    
+                    row['grainsize'].lower() == 'no',    
+                    row['microplastics'].lower() == 'no',    
+                    row['pfas'].lower() == 'no',    
+                    row['pfasfieldblank'].lower() == 'no',    
+                    row['microplasticsfieldblank'].lower() == 'no',    
+                    row['equipmentblank'].lower() == 'no',    
+                    row['nutrients'].lower() == 'no',    
+                ]
+            ),
+            axis=1    
+        )
+    ].tmp_row.tolist()
+    args.update({
+        "dataframe": grabevent,
+        "tablename":'tbl_grabevent',
+        "badrows": badrows,
+        "badcolumn": 'infauna,chemistry,toxicity,grainsize,microplastics,pfas,pfasfieldblank,microplasticsfieldblank,equipmentblank,nutrients',
+        "error_type": "Value Error",
+        "is_core_error": False,
+        "error_message": "At least one of the datatype identifiers (toxicity,grainsize,infauna,chemistry,nutrients,edna,microplastic) needed to be yes"
+    })
+    errs = [*errs, checkData(**args)] 
+    #print("# END OF CHECK - 12")
+
+
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
     # ------------------------------------------------END OF GrabEvent Checks ------------------------------------------ #
