@@ -93,11 +93,11 @@ def vegetation(all_dfs):
     # NOTE (9/19/2023): Updated the shared_pkeys, was matching the wrong keys with the wrong tables 
     args.update({
         "dataframe": vegdata,
-        "tablename": "tbl_vegetation_sample_metadata",
+        "tablename": "tbl_vegetativecover_data",
         "badrows": mismatch(vegdata, vegmeta, vegdata_vegmeta_shared_pkey), 
         "badcolumn": ','.join(vegdata_vegmeta_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Records in vegetationcover_data should have the corresponding records in  vegetation_sample_metadata based on these columns {}".format(
+        "error_message": "Records in vegetationcover_data should have the corresponding records in vegetation_sample_metadata based on these columns {}".format(
             ','.join(vegdata_vegmeta_shared_pkey))
     })
     errs = [*errs, checkData(**args)]
@@ -146,38 +146,42 @@ def vegetation(all_dfs):
     # Description: Range for coordinates for transectbeginlongitude must be greater than -114.043 or transectendlongitude must be less than -124.502 (within CA)
     # Created Coder:
     # Created Date: 
-    # Last Edited Date: 09/14/2023
-    # Last Edited Coder: Ayah
+    # Last Edited Date: 09/29/2023
+    # Last Edited Coder: Caspian
     # NOTE (09/14/2023): Adjust code to match coding standard
+    # NOTE (09/29/2023): transectbeginlongitude has been removed from this table
 
-    args.update({
-        "dataframe": vegmeta,
-        "tablename": "tbl_vegetation_sample_metadata",
-        "badrows":vegmeta[(vegmeta['transectbeginlongitude'] < -114.0430560959) | (vegmeta['transectendlongitude'] > -124.5020404709)].tmp_row.tolist(),
-        "badcolumn": "transectbeginlongitude,transectendlongitude",
-        "error_type" : "Value out of range",
-        "error_message" : "Your longitude coordinates are outside of california, check your minus sign in your longitude data."
-    })
-    warnings = [*warnings, checkData(**args)]    
+    # args.update({
+    #     "dataframe": vegmeta,
+    #     "tablename": "tbl_vegetation_sample_metadata",
+    #     "badrows":vegmeta[(vegmeta['transectbeginlongitude'] < -114.0430560959) | (vegmeta['transectendlongitude'] > -124.5020404709)].tmp_row.tolist(),
+    #     "badcolumn": "transectbeginlongitude,transectendlongitude",
+    #     "error_type" : "Value out of range",
+    #     "error_message" : "Your longitude coordinates are outside of california, check your minus sign in your longitude data."
+    # })
+    # warnings = [*warnings, checkData(**args)]    
     print("# END OF CHECK - 4")
 
     print("# CHECK - 5")
     # Description: Range for coordinates for transectbeginlatitude must be greater than 28 or transectendlatitude must be less than 41.992 (within CA including Baja)
     # Created Coder:
     # Created Date: 
-    # Last Edited Date: 09/14/2023
-    # Last Edited Coder: Ayah
+    # Last Edited Date: 09/29/2023
+    # Last Edited Coder: Caspian
     # NOTE (09/14/2023): Adjust code to match coding standard
+    # NOTE (09/29/2023): transectbeginlatitude has been removed from this table
 
-    args.update({
-        "dataframe": vegmeta,
-        "tablename": "tbl_vegetation_sample_metadata",
-        "badrows":vegmeta[(vegmeta['transectbeginlatitude'] < 32.5008497379) | (vegmeta['transectendlatitude'] > 41.9924715343)].tmp_row.tolist(),
-        "badcolumn": "transectbeginlatitude,transectendlatitude",
-        "error_type" : "Value out of range",
-        "error_message" : "Your latitude coordinates are outside of california."
-    })
-    warnings = [*warnings, checkData(**args)]
+    # args.update({
+    #     "dataframe": vegmeta,
+    #     "tablename": "tbl_vegetation_sample_metadata",
+    #     "badrows":vegmeta[(vegmeta['transectbeginlatitude'] < 32.5008497379) | (vegmeta['transectendlatitude'] > 41.9924715343)].tmp_row.tolist(),
+    #     "badcolumn": "transectbeginlatitude,transectendlatitude",
+    #     "error_type" : "Value out of range",
+    #     "error_message" : "Your latitude coordinates are outside of california."
+    # })
+    # warnings = [*warnings, checkData(**args)]
+
+
     print("# END OF CHECK - 5")
 
     print("# CHECK - 6")
@@ -282,15 +286,16 @@ def vegetation(all_dfs):
     # Description: Multicolumn Lookup Check for EstimatedCover/PercentCoverCode/DaubenmireMidpoint
     # Created Coder:
     # Created Date:
-    # Last Edited Date: 09/14/2023
-    # Last Edited Coder: Ayah
+    # Last Edited Date: 09/29/2023
+    # Last Edited Coder: Caspian
     # NOTE (09/14/2023): Adjust code to match coding standard
-
-    del badrows
+    # NOTE (09/29/2023): Added check for badrows in locals(). However estimated cover values are marked as out of range when they are equal to the max or min of the range.f
+    if 'badrows' in locals():
+        del badrows
     lookup_sql = f"SELECT * FROM lu_estimatedcover;"
     lu_estimatedcover = pd.read_sql(lookup_sql, g.eng)
     merged = pd.merge(vegdata, lu_estimatedcover, how="left", on=['daubenmiremidpoint','percentcovercode'])
-    badrows = merged[(merged['estimatedcover_x'] < merged['estimatedcover_min' ]) | (merged['estimatedcover_x'] >= merged['estimatedcover_max'])].tmp_row.tolist()
+    badrows = merged[(merged['estimatedcover_x'] <= merged['estimatedcover_min' ]) | (merged['estimatedcover_x'] >= merged['estimatedcover_max'])].tmp_row.tolist()
    
     args.update({
         "dataframe": vegdata,
@@ -322,7 +327,7 @@ def vegetation(all_dfs):
         "error_type" : "Value is out of range.",
         "error_message" : "Height should be between 0 to 3 metres"
     })
-    warnings = [*warnings, checkData(**args)]
+    errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 11")
 
     print("# CHECK - 12")
@@ -351,6 +356,8 @@ def vegetation(all_dfs):
     # Last Edited Date:  09/28/2023
     # Last Edited Coder: Aria Askaryar
     # NOTE ( 09/28/2023): Aria wrote the check, it has not been tested yet
+
+    print(vegdata_pkey)
     
     args.update({
         "dataframe": vegdata,
