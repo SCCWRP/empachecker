@@ -1,7 +1,7 @@
 from inspect import currentframe
 from flask import current_app, g
 import pandas as pd
-from .functions import checkData, checkLogic, mismatch, get_primary_key, check_replicate, check_consecutiveness, check_date_order, match
+from .functions import checkData, checkLogic, mismatch, get_primary_key, check_consecutiveness, check_date_order, match
 import re
 
 def crabtrap(all_dfs):
@@ -290,18 +290,7 @@ def crabtrap(all_dfs):
     # NOTE (09/21/2023): Aria Fixed crabmeta_pkey_norepcol the old one used .remove('replicate') which results in a empty list. the updated version should correctly bring a list excluding replicate
     crabmeta_pkey = list(get_primary_key('tbl_crabtrap_metadata', g.eng))
     crabmeta_pkey_norepcol = [x for x in crabmeta_pkey if x != 'replicate']
-
-    def check_replicate(tablename,rep_column,pkeys):
-        badrows = []
-        for _, subdf in tablename.groupby([x for x in pkeys if x != rep_column]):
-                df = subdf.filter(items=[*pkeys,*['tmp_row']])
-                df = df.sort_values(by=f'{rep_column}').fillna(0)
-                rep_diff = df[f'{rep_column}'].diff().dropna()
-                all_values_are_one = (rep_diff == 1).all()
-                if not all_values_are_one:
-                    badrows.extend(df.tmp_row.tolist())
-        return badrows
-
+    
     args.update({
         "dataframe": crabmeta,
         "tablename": "tbl_crabtrap_metadata",
