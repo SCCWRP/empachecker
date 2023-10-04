@@ -507,18 +507,26 @@ def grab_translator():
     eng = g.eng
 
     agencycode = request.args.get('agency')
+    project = request.args.get('project')
 
     if (agencycode is not None) and (agencycode not in pd.read_sql("SELECT DISTINCT agencycode FROM lu_agency", eng).agencycode.values) :
         return "Invalid Agency Code"
+    
+    if (project is not None) and (project not in pd.read_sql("SELECT DISTINCT projectid FROM lu_project", eng).projectid.values) :
+        return "Invalid Project Code"
 
     # Because of the above if statement, this query should never come up empty, 
     #   so safe to assume there should be at least one row in the query result
-    agency = pd.read_sql(f"SELECT agencyname FROM lu_agency WHERE agencycode = '{agencycode}'", eng).agencyname.values[0]
 
+    agency = pd.read_sql(f"SELECT agencyname FROM lu_agency WHERE agencycode = '{agencycode}'", eng).agencyname.values[0] \
+        if agencycode is not None else None
+    
     # Define the SQL query string in a well-formatted and readable manner
-    sql_query = """SELECT * FROM vw_fieldgrab_bightformat {}""".format(
-            f"WHERE samplingorganization = '{agency}' " if agency is not None else ""
-        )
+    sql_query = """SELECT * FROM vw_fieldgrab_bightformat WHERE TRUE """
+    sql_query += f" AND samplingorganization = '{agency}' " if agency is not None else ""
+    sql_query += f" AND projectid = '{project}' " if project is not None else ""
+    sql_query += ";"
+    
 
     # Execute the SQL query and assign the result to the dataframe
     df_sql = pd.read_sql(sql_query, eng)
