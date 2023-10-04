@@ -30,6 +30,10 @@ def sedimentgrainsize_lab(all_dfs):
     sed_labbatch = all_dfs['tbl_sedgrainsize_labbatch_data']
     grabeventdetails = pd.read_sql("SELECT * FROM tbl_grabevent_details", g.eng)
 
+    sed_data['tmp_row'] = sed_data.index
+    sed_labbatch['tmp_row'] = sed_labbatch.index
+    grabeventdetails['tmp_row'] = grabeventdetails.index
+
     sed_data_pkey = get_primary_key('tbl_sedgrainsize_data', g.eng)
     sed_labbatch_pkey = get_primary_key('tbl_sedgrainsize_labbatch_data', g.eng)
     grabeventdetails_pkey = get_primary_key('tbl_grabevent_details', g.eng)
@@ -81,9 +85,7 @@ def sedimentgrainsize_lab(all_dfs):
         "badrows": mismatch(sed_labbatch, grabeventdetails, sed_labbatch_grabevntdetails_shared_key), 
         "badcolumn": ','.join(sed_labbatch_grabevntdetails_shared_key),
         "error_type": "Logic Error",
-        "error_message": "Each labbatch data must have corresponding records in the grabeventdetails table based on the columns: {}".format(
-            ','.join(sed_labbatch_grabevntdetails_shared_key)
-        )
+        "error_message": "Each labbatch data must have corresponding records in the grabeventdetails. Records are matched based on the columns listed in the Column(s) box."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 1")
@@ -97,13 +99,11 @@ def sedimentgrainsize_lab(all_dfs):
     # NOTE (09/15/2021): Ayah wrote logic check
     args.update({
         "dataframe": sed_labbatch,
-        "tablename": "tbl_sedgrainsize_data",
+        "tablename": "tbl_sedgrainsize_labbatch_data",
         "badrows": mismatch(sed_labbatch, sed_data, sed_data_sed_labbatch_shared_pkey), 
         "badcolumn": ','.join(sed_data_sed_labbatch_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each labbatch data must have corresponding records in the data table based on the columns: {}".format(
-            ','.join(sed_data_sed_labbatch_shared_pkey)
-        )
+        "error_message": "Each labbatch data must have corresponding records in the data table. Records are matched based on the columns listed in the Column(s) box."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 2")
@@ -122,9 +122,7 @@ def sedimentgrainsize_lab(all_dfs):
         "badrows": mismatch(sed_data, sed_labbatch, sed_data_sed_labbatch_shared_pkey), 
         "badcolumn": ','.join(sed_data_sed_labbatch_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each  data must have corresponding records in the labbatch data table based on the columns: {}".format(
-            ','.join(sed_data_sed_labbatch_shared_pkey)
-        )
+        "error_message": "Each  data must have corresponding records in the labbatch data table. Records are matched based on the columns listed in the Column(s) box."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 3")    

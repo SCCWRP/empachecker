@@ -32,7 +32,7 @@ def sedchem_lab(all_dfs):
 
     sedlabbatch['tmp_row'] = sedlabbatch.index
     seddata['tmp_row'] = seddata.index
-    grabeventdetails['tmp_row'] = grabeventdetails
+    grabeventdetails['tmp_row'] = grabeventdetails.index
 
     errs = []
     warnings = []
@@ -184,28 +184,28 @@ def sedchem_lab(all_dfs):
     # ------------------------------------------------------ SedChemData Checks -------------------------------------------------------- #
     # ---------------------------------------------------------------------------------------------------------------------------------- #
     ######################################################################################################################################
-    # print("# CHECK - 5")
-    # # Description: If there is a value in result column, mdl cannot be empty (🛑 ERROR 🛑)
-    # # Created Coder: Ayah
-    # # Created Date: 09/12/2023
-    # # Last Edited Date: 
-    # # Last Edited Coder: 
-    # # NOTE (09/12/2023): Ayah wrote the check, it has not been tested yet
+    print("# CHECK - 5")
+    # Description: If there is a value in result column, mdl cannot be empty (🛑 ERROR 🛑)
+    # Created Coder: Ayah
+    # Created Date: 09/12/2023
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (09/12/2023): Ayah wrote the check, it has not been tested yet
     
-    # args.update({
-    #     "dataframe": seddata,
-    #     "tablename": "tbl_sedchem_data",
-    #     "badrows" : seddata[
-    #         (seddata['results'].notna()) & 
-    #         (seddata['mdl'].isna())
-    #     ].tmp_row.tolist(),
-    #     "badcolumn": "mdl",
-    #     "error_type": "Empty Value Error",
-    #     "error_message": f"If there is a value in result column, mdl cannot be empty"
-    # })
-    # errs = [*errs, checkData(**args)]
+    args.update({
+        "dataframe": seddata,
+        "tablename": "tbl_sedchem_data",
+        "badrows" : seddata[
+            (seddata['results'].notna()) & 
+            (seddata['mdl'].isna())
+        ].tmp_row.tolist(),
+        "badcolumn": "mdl",
+        "error_type": "Empty Value Error",
+        "error_message": f"If there is a value in result column, mdl cannot be empty"
+    })
+    errs = [*errs, checkData(**args)]
 
-    # print("# END OF CHECK - 5")       
+    print("# END OF CHECK - 5")       
 
 
     print("# CHECK - 6")
