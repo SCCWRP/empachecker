@@ -133,9 +133,10 @@ def edna_lab(all_dfs):
     # Description: Each labbatch data must correspond to grabeventdetails in database
     # Created Coder: Ayah H
     # Created Date: 09/08/2023
-    # Last Edited Date: 09/13/23
-    # Last Edited Coder: Caspian Thackeray
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (09/14/2023): Check updated to match other similar checks
+    # NOTE (10/05/2023): Aria revised the error message
 
     args.update({
         "dataframe": ednased,
@@ -144,7 +145,9 @@ def edna_lab(all_dfs):
         "badcolumn": ','.join(sed_labbatch_grabdeets_shared_pkey),
         "error_type": "Logic Error",
         "is_core_error": False,
-        "error_message": "Each sed lab batch record must have corresponding record in the grab event details table in database"
+        "error_message": "Each sed lab batch record must have corresponding record in the grab event details table in database.  Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(sed_labbatch_grabdeets_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
 
@@ -155,7 +158,9 @@ def edna_lab(all_dfs):
         "badcolumn": ','.join(water_labbatch_grabdeets_shared_pkey),
         "error_type": "Logic Error",
         "is_core_error": False,
-        "error_message": "Each water lab batch record must have corresponding record in the grab event details table in database"
+        "error_message": "Each water lab batch record must have corresponding record in the grab event details table in database.  Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(water_labbatch_grabdeets_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
 
@@ -167,9 +172,10 @@ def edna_lab(all_dfs):
     # Description: Each data must correspond to grabeventdetails in database
     # Created Coder: Caspian Thackeray
     # Created Date: 09/14/23
-    # Last Edited Date: 09/14/23
-    # Last Edited Coder: Caspian Thackeray
-    # NOTE 09/14/23: Check written
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/14/2023): Check written
+    # NOTE (10/05/2023): Aria revised the error message
 
     args.update({
         "dataframe": ednadata,
@@ -178,7 +184,9 @@ def edna_lab(all_dfs):
         "badcolumn": ','.join(data_grabdeets_shared_pkey),
         "error_type": "Logic Error",
         "is_core_error": False,
-        "error_message": "Each eDNA data record must have corresponding record in the grab event details table in database"
+        "error_message": "Each eDNA data record must have corresponding record in the grab event details table in database. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(data_grabdeets_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
 
@@ -190,9 +198,10 @@ def edna_lab(all_dfs):
     # Description: Each labbatch data must correspond to data within submission
     # Created Coder: Caspian Thackeray
     # Created Date: 09/14/23
-    # Last Edited Date: 09/14/23
-    # Last Edited Coder: Caspian Thackeray
-    # NOTE 09/14/23: Check written
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/14/2023): Check written
+    # NOTE (10/05/2023): Aria revised the error message
     
     args.update({
         "dataframe": ednased,
@@ -201,7 +210,9 @@ def edna_lab(all_dfs):
         "badcolumn": ','.join(sed_labbatch_data_shared_pkey),
         "error_type": "Logic Error",
         "is_core_error": False,
-        "error_message": "Each sed lab batch record must have corresponding eDNA data record"
+        "error_message": "Each sed lab batch record must have corresponding eDNA data record. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(sed_labbatch_data_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     
@@ -212,7 +223,9 @@ def edna_lab(all_dfs):
         "badcolumn": ','.join(water_labbatch_data_shared_pkey),
         "error_type": "Logic Error",
         "is_core_error": False,
-        "error_message": "Each water lab batch record must have corresponding eDNA data record"
+        "error_message": "Each water lab batch record must have corresponding eDNA data record. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(water_labbatch_data_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     
@@ -224,9 +237,10 @@ def edna_lab(all_dfs):
     # Description: Each data must correspond to labbatch data within submission
     # Created Coder: Caspian Thackeray
     # Created Date: 09/14/23
-    # Last Edited Date: 09/14/23
-    # Last Edited Coder: Caspian Thackeray
-    # NOTE 09/14/23: Check written
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/14/2023): Check written
+    # NOTE (10/05/2023): Aria revised the error message
 
     args.update({
         "dataframe": ednadata,
@@ -235,7 +249,9 @@ def edna_lab(all_dfs):
         "badcolumn": ','.join(sed_labbatch_data_shared_pkey),
         "error_type": "Logic Error",
         "is_core_error": False,
-        "error_message": "Each eDNA data record must have corresponding sed lab batch record"
+        "error_message": "Each eDNA data record must have corresponding sed lab batch record. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(sed_labbatch_data_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
 
@@ -246,7 +262,9 @@ def edna_lab(all_dfs):
         "badcolumn": ','.join(water_labbatch_data_shared_pkey),
         "error_type": "Logic Error",
         "is_core_error": False,
-        "error_message": "Each eDNA data record must have corresponding water lab batch record"
+        "error_message": "Each eDNA data record must have corresponding water lab batch record. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(water_labbatch_data_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
 
