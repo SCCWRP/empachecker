@@ -107,16 +107,19 @@ def benthicinfauna_lab(all_dfs):
     # Description: Each labbatch data must include corresponding abundance data within session submission
     # Created Coder: Aria Askaryar
     # Created Date: NA
-    # Last Edited Date:  9/14/2023
+    # Last Edited Date:  10/05/2023
     # Last Edited Coder: Aria Askaryar
     # NOTE (9/14/2023): Aria adjusts the format so it follows the coding standard.
+    # NOTE (10/05/2023): Aria revised the error message
     args.update({
         "dataframe": benthiclabbatch,
         "tablename": "tbl_benthicinfauna_labbatch",
         "badrows": mismatch(benthiclabbatch, benthicabundance, labbatch_abundance_shared_pkey), 
         "badcolumn": ','.join(labbatch_abundance_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Records in benthicinfauna_labbatch must have corresponding records in benthicabundance. Missing records in benthicinfauna_abundance."
+        "error_message": "Records in benthicinfauna_labbatch must have corresponding records in benthicabundance. Missing records in benthicinfauna_abundance. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(labbatch_abundance_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]  
     print("# END OF CHECK - 2")
@@ -125,16 +128,19 @@ def benthicinfauna_lab(all_dfs):
     # Description: Each abundance data must include corresponding labbatch data within session submission
     # Created Coder: Aria Askaryar
     # Created Date: NA
-    # Last Edited Date:  9/14/2023
+    # Last Edited Date:  10/05/2023
     # Last Edited Coder: Aria Askaryar
     # NOTE (9/14/2023): Aria adjusts the format so it follows the coding standard.
+    # NOTE (10/05/2023): Aria revised the error message
     args.update({
         "dataframe": benthicabundance,
         "tablename": "tbl_benthicinfauna_abundance",
         "badrows": mismatch(benthicabundance, benthiclabbatch, abundance_labbatch_shared_pkey), 
         "badcolumn": ','.join(abundance_labbatch_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Records in benthic abundance must have corresponding records in benthicinfuana_labbatch. Missing records in benthiclabbatch."
+        "error_message": "Records in benthic abundance must have corresponding records in benthicinfuana_labbatch. Missing records in benthiclabbatch. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(abundance_labbatch_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 3")
@@ -144,16 +150,19 @@ def benthicinfauna_lab(all_dfs):
     # Description: Each record in benthicinfauna_abundance must include corresponding record in benthicinfauna_biomass
     # Created Coder: Ayah Halabi
     # Created Date: NA
-    # Last Edited Date:  9/26/2023
-    # Last Edited Coder: Ayah Halabi
-    # NOTE (9/14/2023): Ayah changed old check 4 to new logic check 4 from products QA.  
+    # Last Edited Date:  10/05/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (9/14/2023): Ayah changed old check 4 to new logic check 4 from products QA. 
+    # NOTE (10/05/2023): Aria revised the error message 
     args.update({
         "dataframe": benthicabundance,
         "tablename": "tbl_benthicinfauna_abundance",
         "badrows": mismatch(benthicabundance, benthicbiomass,abundance_biomass_shared_pkey),
         "badcolumn": ','.join(abundance_biomass_shared_pkey),
         "error_type" : "Logic Warning",
-        "error_message" : "Records in benthic infauna abundance do not include corresponding records in benthic infauna biomass.Records are matched based on the columns listed in the Column(s) box. "
+        "error_message" : "Records in benthic infauna abundance do not include corresponding records in benthic infauna biomass. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(abundance_biomass_shared_pkey)
+        )
     })
     warnings = [*warnings, checkData(**args)]
     print("# END OF CHECK - 4")
@@ -162,16 +171,19 @@ def benthicinfauna_lab(all_dfs):
     # Description: Each record in benthicinfauna_abundance must include corresponding record in benthicinfauna_biomass
     # Created Coder: Ayah Halabi
     # Created Date: NA
-    # Last Edited Date:  9/26/2023
-    # Last Edited Coder: Ayah Halabi
-    # NOTE (9/14/2023): Ayah changed old check 4 to new logic check 4.  
+    # Last Edited Date:  10/05/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (9/14/2023): Ayah changed old check 4 to new logic check 4 from products QA. 
+    # NOTE (10/05/2023): Aria revised the error message 
     args.update({
         "dataframe": benthicbiomass,
         "tablename": "tbl_benthicinfauna_biomass",
         "badrows": mismatch(benthicbiomass, benthicabundance,abundance_biomass_shared_pkey),
         "badcolumn": ','.join(abundance_biomass_shared_pkey),
         "error_type" : "Logic Warning",
-        "error_message" : "Records in benthic biomass  do not include corresponding records in benthic_infauna_biomass.Records are matched based on the columns listed in the Column(s) box. "
+        "error_message" : "Records in benthic biomass  do not include corresponding records in benthic_infauna_biomass.  Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(abundance_biomass_shared_pkey)
+        )
     })
     warnings = [*warnings, checkData(**args)]
     print("# END OF CHECK - 5")
