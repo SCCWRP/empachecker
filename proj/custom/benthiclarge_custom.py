@@ -81,16 +81,19 @@ def benthiclarge(all_dfs):
     # Description: Each record in benthiclarge_metadata must include corresponding record in benthiclarge_abundance (🛑 ERROR 🛑)
     # Created Coder: Duy
     # Created Date: 9/28/2023
-    # Last Edited Date: 
-    # Last Edited Coder:
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (9/28/2023): Duy created the check, has not QA'ed yet. 
+    # NOTE (10/05/2023): Aria revised the error message 
     args.update({
         "dataframe": benthiclargemeta,
         "tablename": "tbl_benthiclarge_metadata",
         "badrows": mismatch(benthiclargemeta, benthiclargeabundance, benthiclargemeta_benthiclargeabundance_shared_pkey), 
         "badcolumn": ','.join(benthiclargemeta_benthiclargeabundance_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each record in benthiclarge_metadata must include corresponding record in benthiclarge_abundance"
+        "error_message": "Each record in benthiclarge_metadata must include corresponding record in benthiclarge_abundance. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(benthiclargemeta_benthiclargeabundance_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
 
@@ -100,16 +103,19 @@ def benthiclarge(all_dfs):
     # Description: Each record in benthiclarge_abundance must include corresponding record in benthiclarge_metadata (🛑 ERROR 🛑)
     # Created Coder: Duy
     # Created Date: 9/28/2023
-    # Last Edited Date: 
-    # Last Edited Coder:
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (9/28/2023): Duy created the check, has not QA'ed yet. 
+    # NOTE (10/05/2023): Aria revised the error message 
     args.update({
         "dataframe": benthiclargeabundance,
         "tablename": "tbl_benthiclarge_abundance",
         "badrows": mismatch(benthiclargeabundance, benthiclargemeta, benthiclargemeta_benthiclargeabundance_shared_pkey), 
         "badcolumn": ','.join(benthiclargemeta_benthiclargeabundance_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each record in benthiclarge_abundance must include corresponding record in benthiclarge_metadata"
+        "error_message": "Each record in benthiclarge_abundance must include corresponding record in benthiclarge_metadata. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(benthiclargemeta_benthiclargeabundance_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
 
