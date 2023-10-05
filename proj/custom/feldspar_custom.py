@@ -96,7 +96,7 @@ def feldspar(all_dfs):
         "badrows": mismatch(felddata,feldmeta,felddata_feldmeta_shared_pkey), 
         "badcolumn": ','.join(felddata_feldmeta_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each Feldspar data  must have corresponding records in Feldspar Metadata.  Please submit the metadata for these records first based on these columns: {}".format(
+        "error_message": "Each Feldspar data must have corresponding records in Feldspar Metadata. Please submit the metadata for these records first based on these columns: {}".format(
             ','.join(felddata_feldmeta_shared_pkey)
         )
     })
