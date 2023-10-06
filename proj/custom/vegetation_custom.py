@@ -39,9 +39,9 @@ def vegetation(all_dfs):
     vegdata_pkey = get_primary_key('tbl_vegetativecover_data',g.eng)
     epidata_pkey = get_primary_key('tbl_epifauna_data',g.eng)
 
-    vegmeta_vegdata_shared_pkey = list(set(vegmeta_pkey).intersection(set(vegdata_pkey)))
-    vegdata_vegmeta_shared_pkey = list(set(vegdata_pkey).intersection(set(vegmeta_pkey)))
-    epidata_vegmata_shareed_pkey = list(set(epidata_pkey).intersection(set(vegmeta_pkey)))
+    vegmeta_vegdata_shared_pkey = [x for x in vegmeta_pkey if x in vegdata_pkey]
+    vegdata_vegmeta_shared_pkey = [x for x in vegdata_pkey if x in vegmeta_pkey]
+    epidata_vegmata_shareed_pkey = [x for x in epidata_pkey if x in vegmeta_pkey]
 
 
     errs = []
@@ -70,16 +70,19 @@ def vegetation(all_dfs):
     # Description: Each sample metadata must include corresponding cover data
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 9/19/2023
+    # Last Edited Date: 10/05/2023
     # Last Edited Coder: Aria Askaryar
     # NOTE (9/19/2023): Updated the shared_pkeys, was matching the wrong keys with the wrong tables 
+    # NOTE (10/05/2023): Aria revised the error message
     args.update({
         "dataframe": vegmeta,
         "tablename": "tbl_vegetation_sample_metadata",
         "badrows": mismatch(vegmeta, vegdata, vegmeta_vegdata_shared_pkey), 
         "badcolumn": ','.join(vegmeta_vegdata_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Records in sample_metadata must have corresponding records in vegetationcover_data."
+        "error_message": "Records in sample_metadata must have corresponding records in vegetationcover_data. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(vegmeta_vegdata_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 1")
@@ -88,9 +91,10 @@ def vegetation(all_dfs):
     # Description: Each cover data must include corresponding sample metadata
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 9/19/2023
+    # Last Edited Date: 10/05/2023
     # Last Edited Coder: Aria Askaryar
     # NOTE (9/19/2023): Updated the shared_pkeys, was matching the wrong keys with the wrong tables 
+    # NOTE (10/05/2023): Aria revised the error message
     args.update({
         "dataframe": vegdata,
         "tablename": "tbl_vegetativecover_data",
@@ -108,16 +112,19 @@ def vegetation(all_dfs):
     # Description: Each epifauna data must include corresponding sample metadata (but not vice versa)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 09/19/2023
+    # Last Edited Date: 10/05/2023
     # Last Edited Coder: Aria Askaryar
     # NOTE (09/19/2023): Updated code, was not matching correct tables so changed "vegdata" to "vegmeta" which is what the checks wants. 
+    # NOTE (10/05/2023): Aria revised the error message
     args.update({
         "dataframe": epidata,
         "tablename": "tbl_epifauna_data",
         "badrows": mismatch(epidata, vegmeta, epidata_vegmata_shareed_pkey),
         "badcolumn": ','.join(epidata_vegmata_shareed_pkey),
         "error_type": "Logic Error",
-        "error_message": "Records in epifauna data must have corresponding records in vegetationcover_data base."
+        "error_message": "Records in epifauna data must have corresponding records in vegetationcover_data base. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(epidata_vegmata_shareed_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 3")
@@ -186,21 +193,22 @@ def vegetation(all_dfs):
 
     print("# CHECK - 6")
     # Description: If value is not plant then lat and long are req, but if it is plant then lat and long can be -88
-    # Created Coder:
-    # Created Date: 
-    # Last Edited Date: 09/14/2023
-    # Last Edited Coder: Ayah
-    # NOTE (09/14/2023): Adjust code to match coding standard
+    # Created Coder: Aria Askaryar
+    # Created Date: 10/04/2023
+    # Last Edited Date: 10/04/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (10/04/2023): Created check 6
 
     args.update({
         "dataframe": vegmeta,
         "tablename": "tbl_vegetation_sample_metadata",
-        "badrows": vegmeta[(vegmeta['elevation_ellipsoid'].notna() | vegmeta['elevation_orthometric'].notna()) & ( vegmeta['elevation_time'].isna() | (vegmeta['elevation_time'] == -88))].tmp_row.tolist(),
-        "badcolumn": "elevation_time",
-        "error_type": "Empty value",
-        "error_message": "Elevation_time is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+        "badrows" : check_consecutiveness(vegmeta, [x for x in vegmeta_pkey if x != 'transectreplicate'], 'transectreplicate'),
+        "badcolumn": "transectreplicate",
+        "error_type": "Replicate Error",
+        "error_message": f"transectreplicate values must be consecutive."
     })
     errs = [*errs, checkData(**args)]
+
     print("# END OF CHECK - 6")
 
     print("# CHECK - 7")
