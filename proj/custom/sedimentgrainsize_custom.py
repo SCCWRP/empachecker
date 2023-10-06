@@ -76,16 +76,19 @@ def sedimentgrainsize_lab(all_dfs):
     # Description: Each labbatch data must correspond to grabeventdetails in database
     # Created Coder: Ayah
     # Created Date: 09/15/2021
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (09/15/2021): Ayah wrote logic check
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/12/2023): Ayah created logic check, has not tested yet
+    # NOTE (10/05/2023): Aria revised the error message
     args.update({
         "dataframe": sed_labbatch,
         "tablename": "tbl_sedgrainsize_labbatch_data",
         "badrows": mismatch(sed_labbatch, grabeventdetails, sed_labbatch_grabevntdetails_shared_key), 
         "badcolumn": ','.join(sed_labbatch_grabevntdetails_shared_key),
         "error_type": "Logic Error",
-        "error_message": "Each labbatch data must have corresponding records in the grabeventdetails. Records are matched based on the columns listed in the Column(s) box."
+        "error_message": "Each labbatch data must have corresponding records in the grabeventdetails.  Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(sed_labbatch_grabevntdetails_shared_key)
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 1")
@@ -94,16 +97,19 @@ def sedimentgrainsize_lab(all_dfs):
     # Description: Each labbatch data must include corresponding data within session submission
     # Created Coder: Ayah
     # Created Date: 09/15/2021
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (09/15/2021): Ayah wrote logic check
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/12/2023): Ayah created logic check, has not tested yet
+    # NOTE (10/05/2023): Aria revised the error message
     args.update({
         "dataframe": sed_labbatch,
         "tablename": "tbl_sedgrainsize_labbatch_data",
         "badrows": mismatch(sed_labbatch, sed_data, sed_data_sed_labbatch_shared_pkey), 
         "badcolumn": ','.join(sed_data_sed_labbatch_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each labbatch data must have corresponding records in the data table. Records are matched based on the columns listed in the Column(s) box."
+        "error_message": "Each labbatch data must have corresponding records in the data table. R Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(sed_data_sed_labbatch_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 2")
@@ -113,16 +119,19 @@ def sedimentgrainsize_lab(all_dfs):
     # Description: Each data must include corresponding labbatch data within session submission
     # Created Coder: Ayah
     # Created Date: 09/15/2021
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (09/15/2021): Ayah wrote logic check
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/12/2023): Ayah created logic check, has not tested yet
+    # NOTE (10/05/2023): Aria revised the error message
     args.update({
         "dataframe": sed_data,
         "tablename": "tbl_sedgrainsize_data",
         "badrows": mismatch(sed_data, sed_labbatch, sed_data_sed_labbatch_shared_pkey), 
         "badcolumn": ','.join(sed_data_sed_labbatch_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each  data must have corresponding records in the labbatch data table. Records are matched based on the columns listed in the Column(s) box."
+        "error_message": "Each  data must have corresponding records in the labbatch data table.  Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(sed_data_sed_labbatch_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 3")    
