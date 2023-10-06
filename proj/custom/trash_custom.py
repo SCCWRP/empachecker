@@ -204,7 +204,7 @@ def trash(all_dfs):
             badrows=trashtally[(trashtally.debriscategory == 'Plastic') & (~trashtally.debrisitem.isin(lu_trashplastic))].tmp_row.tolist(),
             badcolumn='debrisitem',
             error_type='Undefined Error',
-            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashplastic>lu_trashplastic</a>'
+            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashplastic target="_blank">lu_trashplastic</a>'
         )
     )
 
@@ -228,7 +228,7 @@ def trash(all_dfs):
             badrows=trashtally[(trashtally.debriscategory.str.lower() == 'fabric_cloth') & (~trashtally.debrisitem.isin(lu_trashfabricandcloth))].tmp_row.tolist(),
             badcolumn='debrisitem',
             error_type='Undefined Error',
-            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashfabricandcloth>lu_trashfabricandcloth</a>'
+            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashfabricandcloth target="_blank">lu_trashfabricandcloth</a>'
         )
     )
 
@@ -252,7 +252,7 @@ def trash(all_dfs):
             badrows=trashtally[(trashtally.debriscategory.str.lower() == 'large') & (~trashtally.debrisitem.isin(lu_trashlarge))].tmp_row.tolist(),
             badcolumn='debrisitem',
             error_type='Undefined Error',
-            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashlarge>lu_trashlarge</a>'
+            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashlarge target="_blank">lu_trashlarge</a>'
             )
     )
     print("# END CHECK - 7")
@@ -275,7 +275,7 @@ def trash(all_dfs):
             badrows=trashtally[(trashtally.debriscategory.str.lower() == 'biodegradable') & (~trashtally.debrisitem.isin(lu_biodegradable))].tmp_row.tolist(),
             badcolumn='debrisitem',
             error_type='Undefined Error',
-            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashbiodegradable>lu_trashbiodegradable</a>'
+            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashbiodegradable target="_blank">lu_trashbiodegradable</a>'
         )
     )
     print("# END CHECK - 8")
@@ -297,7 +297,7 @@ def trash(all_dfs):
             badrows=trashtally[(trashtally.debriscategory.str.lower() == 'biohazard') & (~trashtally.debrisitem.isin(lu_biohazard))].tmp_row.tolist(),
             badcolumn='debrisitem',
             error_type='Undefined Error',
-            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_biohazard>lu_biohazard</a>'
+            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_biohazard target="_blank">lu_biohazard</a>'
         )
     )
     print("# END CHECK - 9")
@@ -319,7 +319,7 @@ def trash(all_dfs):
             badrows=trashtally[(trashtally.debriscategory.str.lower() == 'construction') & (~trashtally.debrisitem.isin(lu_construction))].tmp_row.tolist(),
             badcolumn='debrisitem',
             error_type='Undefined Error',
-            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashconstruction>lu_trashconstruction</a>'
+            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashconstruction target="_blank">lu_trashconstruction</a>'
         )
     )
     print("# END CHECK - 10")
@@ -341,7 +341,7 @@ def trash(all_dfs):
             badrows=trashtally[(trashtally.debriscategory.str.lower() == 'glass') & (~trashtally.debrisitem.isin(lu_glass))].tmp_row.tolist(),
             badcolumn='debrisitem',
             error_type='Undefined Error',
-            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashglass>lu_trashglass</a>'
+            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashglass target="_blank">lu_trashglass</a>'
             )
     )
     print("# END CHECK - 11")
@@ -363,7 +363,7 @@ def trash(all_dfs):
             badrows=trashtally[(trashtally.debriscategory.str.lower() == 'metal') & (~trashtally.debrisitem.isin(lu_metal))].tmp_row.tolist(),
             badcolumn='debrisitem',
             error_type='Undefined Error',
-            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashmetal>lu_trashmetal</a>'
+            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashmetal target="_blank">lu_trashmetal</a>'
         )
     )
     print("# END CHECK - 12")
@@ -385,7 +385,7 @@ def trash(all_dfs):
             badrows=trashtally[(trashtally.debriscategory.str.lower() == 'miscellaneous') & (~trashtally.debrisitem.isin(lu_miscellaneous))].tmp_row.tolist(),
             badcolumn='debrisitem',
             error_type='Undefined Error',
-            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashmiscellaneous>lu_trashmiscellaneous</a>'
+            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashmiscellaneous target="_blank">lu_trashmiscellaneous</a>'
         )
     )
     print("# END CHECK - 12")

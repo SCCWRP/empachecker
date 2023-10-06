@@ -184,8 +184,28 @@ def vegetation(all_dfs):
 
     print("# END OF CHECK - 5")
 
-    print("# CHECK - 6")
-    # Description: If value is not plant then lat and long are req, but if it is plant then lat and long can be -88
+    print("# CHECK - 6a")
+    # Description: If method is obs_plant, vegetated_cover and non_vegetated_cover >= 0 or -88
+    # Created Coder:
+    # Created Date: 
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Ayah
+    # NOTE (09/14/2023): Adjust code to match coding standard 
+
+    args.update({
+        "dataframe": vegmeta,
+        "tablename": "tbl_vegetation_sample_metadata",
+        "badrows": vegmeta[(vegmeta['method'] == 'obs_plant') & (vegmeta['vegetated_cover'] != -88) | (vegmeta['non_vegetated_cover'] != -88)].tmp_row.tolist(),
+        "badcolumn": "vegetated_cover,non_vegetated_cover",
+        "error_type": "Empty value",
+        "error_message": "Method is obs_plant. Vegetated_cover and non_vegetated_cover must be -88 or empty."
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 6a")
+
+    print("# CHECK - 6b")
+    # Description: If method is not equal to obs_plant, combined vegetated_cover and non_vegetated_cover must equal 100
     # Created Coder:
     # Created Date: 
     # Last Edited Date: 09/14/2023
@@ -195,13 +215,14 @@ def vegetation(all_dfs):
     args.update({
         "dataframe": vegmeta,
         "tablename": "tbl_vegetation_sample_metadata",
-        "badrows": vegmeta[(vegmeta['elevation_ellipsoid'].notna() | vegmeta['elevation_orthometric'].notna()) & ( vegmeta['elevation_time'].isna() | (vegmeta['elevation_time'] == -88))].tmp_row.tolist(),
-        "badcolumn": "elevation_time",
+        "badrows": vegmeta[(vegmeta['method'] != 'obs_plant') & (vegmeta['vegetated_cover'] + vegmeta['non_vegetated_cover'] != 100)].tmp_row.tolist(),
+        "badcolumn": "vegetated_cover,non_vegetated_cover",
         "error_type": "Empty value",
-        "error_message": "Elevation_time is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
+        "error_message": "Method is something other than obs_plant. vegetated_cover and non_vegetated_cover are required and must equal 100. If either vegetated_cover or non_vegetated_cover are 100, a 0 must be recorded for the other."
     })
     errs = [*errs, checkData(**args)]
-    print("# END OF CHECK - 6")
+
+    print("# END OF CHECK - 6b")
 
     print("# CHECK - 7")
     # Description: Transectreplicate must be consecutive within primary keys
@@ -220,6 +241,7 @@ def vegetation(all_dfs):
         "error_message": f"transectreplicate values must be consecutive."
     })
     errs = [*errs, checkData(**args)]
+    
     print("# END OF CHECK - 7")
 
 
@@ -344,7 +366,7 @@ def vegetation(all_dfs):
         "badrows" : check_consecutiveness(vegdata, [x for x in vegdata_pkey if x != 'transectreplicate'], 'transectreplicate'),
         "badcolumn": "transectreplicate",
         "error_type": "Replicate Error",
-        "error_message": f"transectreplicate values must be consecutive."
+        "error_message": f"transectreplicate must be consecutive within primary keys (siteid, estuaryname, stationno, samplecollectiondate, transectreplicate, plotreplicate, covertype, scientificname, live_dead, unknownreplicate, projectid)"
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 12")
@@ -365,7 +387,7 @@ def vegetation(all_dfs):
         "badrows" : check_consecutiveness(vegdata, [x for x in vegdata_pkey if x != 'plotreplicate'], 'plotreplicate'),
         "badcolumn": "plotreplicate",
         "error_type": "Replicate Error",
-        "error_message": f"plotreplicate values must be consecutive."
+        "error_message": f"plotreplicate must be  consecutive within primary keys (siteid, estuaryname, stationno, samplecollectiondate, transectreplicate, plotreplicate, covertype, scientificname, live_dead, unknownreplicate, projectid)"
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 13")
@@ -405,7 +427,7 @@ def vegetation(all_dfs):
         "badrows":epidata[(epidata['burrows'] == 'Yes') & (epidata['enteredabundance'].apply(lambda x: x < 0))].tmp_row.tolist(),
         "badcolumn": "enteredabundance",
         "error_type" : "Value out of range",
-        "error_message" : "Your recorded entered abundance value must be greater than 0 and cannot be -88."
+        "error_message" : 'If burrows is "yes" then entered abundance must be greater than or equal to 0 and cannot be -88.'
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 14")
