@@ -186,16 +186,15 @@ def vegetation(all_dfs):
 
     print("# CHECK - 6a")
     # Description: If method is obs_plant, vegetated_cover and non_vegetated_cover >= 0 or -88
-    # Created Coder:
-    # Created Date: 
-    # Last Edited Date: 09/14/2023
-    # Last Edited Coder: Ayah
-    # NOTE (09/14/2023): Adjust code to match coding standard 
+    # Created Coder: Caspian
+    # Created Date: 10/6/2023
+    # Last Edited Date: 10/6/2023
+    # Last Edited Coder: Caspian
 
     args.update({
         "dataframe": vegmeta,
         "tablename": "tbl_vegetation_sample_metadata",
-        "badrows": vegmeta[(vegmeta['method'] == 'obs_plant') & (vegmeta['vegetated_cover'] != -88) | (vegmeta['non_vegetated_cover'] != -88)].tmp_row.tolist(),
+        "badrows": vegmeta[(vegmeta['method'] == 'obs_plant') & (((vegmeta['vegetated_cover'] != -88) & (vegmeta['vegetated_cover'].notna())) | ((vegmeta['non_vegetated_cover'] != -88) & (vegmeta['non_vegetated_cover'].notna())))].tmp_row.tolist(),
         "badcolumn": "vegetated_cover,non_vegetated_cover",
         "error_type": "Empty value",
         "error_message": "Method is obs_plant. Vegetated_cover and non_vegetated_cover must be -88 or empty."
@@ -206,11 +205,10 @@ def vegetation(all_dfs):
 
     print("# CHECK - 6b")
     # Description: If method is not equal to obs_plant, combined vegetated_cover and non_vegetated_cover must equal 100
-    # Created Coder:
-    # Created Date: 
-    # Last Edited Date: 09/14/2023
-    # Last Edited Coder: Ayah
-    # NOTE (09/14/2023): Adjust code to match coding standard
+    # Created Coder: Caspian
+    # Created Date: 10/6/2023
+    # Last Edited Date: 10/6/2023
+    # Last Edited Coder: Caspian
 
     args.update({
         "dataframe": vegmeta,
