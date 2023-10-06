@@ -4,6 +4,8 @@ from inspect import currentframe
 from flask import current_app, g
 import pandas as pd
 from .functions import checkData, checkLogic, mismatch,get_primary_key, check_consecutiveness
+import itertools
+
 
 def macroalgae(all_dfs):
     
@@ -299,17 +301,78 @@ def macroalgae(all_dfs):
     # Last Edited Date:  09/28/2023
     # Last Edited Coder: Aria Askaryar
     # NOTE ( 09/28/2023): Aria wrote the check, it has not been tested yet
-
+    groupby_cols = ['projectid','siteid','estuaryname','stationno','samplecollectiondate','transectreplicate','covertype','scientificname','replicate']
     args.update({
         "dataframe": algaecover,
         "tablename": "tbl_algaecover_data",
-        "badrows" : check_consecutiveness(algaecover, [x for x in algaecover_pkey if x != 'plotreplicate'], 'plotreplicate'),
+        "badrows" : check_consecutiveness(algaecover, groupby_cols, 'plotreplicate'),
         "badcolumn": "plotreplicate",
         "error_type": "Replicate Error",
         "error_message": f"plotreplicate values must be consecutive."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 11")
+
+    print("# CHECK - 13")
+    # Description: For every plot – total cover and open cover required in cover type
+    # Created Coder: Duy
+    # Created Date: 10/05/23
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (10/05/23): Duy created the check
+
+    badrows = list(
+        itertools.chain.from_iterable(
+            algaecover.groupby(
+                ['projectid','siteid','estuaryname','stationno','samplecollectiondate','transectreplicate','plotreplicate']
+            ).apply(
+                lambda subdf: subdf.tmp_row.tolist() 
+                if any(['open' not in subdf['covertype'].tolist(), 'total' not in subdf['covertype'].tolist()])
+                else []
+            )
+        )
+    )
+    args.update({
+        "dataframe": algaecover,
+        "tablename": "tbl_algaecover_data",
+        "badrows" : badrows,
+        "badcolumn": "covertype",
+        "error_type": "Value Error",
+        "error_message": f"For every plotreplicate - total cover and open cover are required in covertype column"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 13")
+
+
+    print("# CHECK - 14")
+    # Description: estimatedcover for 'open cover' in covertype + estimatedcover for 'total cover' must be 100
+    # Created Coder: Duy
+    # Created Date: 10/05/23
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (10/05/23): Duy created the check
+
+    badrows = list(
+        itertools.chain.from_iterable(
+            algaecover.groupby(
+                ['projectid','siteid','estuaryname','stationno','samplecollectiondate','transectreplicate','plotreplicate']
+            ).apply(
+                lambda subdf: subdf.tmp_row.tolist() 
+                if sum(subdf[subdf['covertype'].isin(['open','cover'])]['estimatedcover']) != 100
+                else []
+            )
+        )
+    )
+    args.update({
+        "dataframe": algaecover,
+        "tablename": "tbl_algaecover_data",
+        "badrows" : badrows,
+        "badcolumn": "covertype, estimatedcover",
+        "error_type": "Value Error",
+        "error_message": f"estimatedcover for 'open cover' in covertype + estimatedcover for 'total cover' must be 100"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 14")
 
 
     ######################################################################################################################
