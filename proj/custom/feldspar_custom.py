@@ -74,7 +74,7 @@ def feldspar(all_dfs):
         "badcolumn": ','.join(felddata_feldmeta_shared_pkey),
         "error_type": "Value Error",
         "is_core_error": False,
-        "error_message": "Since plug_extracted = yes, metadata must have corresponding records in Feldspar Data.  Please submit the metadata for these records first based on these columns: {}".format(
+        "error_message": "Since plug_extracted = yes, metadata must have corresponding records in Feldspar Data. Records are matched based on these columns: {}".format(
             ','.join(felddata_feldmeta_shared_pkey)
         )
     }
@@ -96,7 +96,7 @@ def feldspar(all_dfs):
         "badrows": mismatch(felddata,feldmeta,felddata_feldmeta_shared_pkey), 
         "badcolumn": ','.join(felddata_feldmeta_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each Feldspar data must have corresponding records in Feldspar Metadata. Please submit the metadata for these records first based on these columns: {}".format(
+        "error_message": "Each Feldspar data must have corresponding records in Feldspar Metadata. Records are matched based on these columns: {}".format(
             ','.join(felddata_feldmeta_shared_pkey)
         )
     })

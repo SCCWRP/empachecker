@@ -80,9 +80,10 @@ def sedchem_lab(all_dfs):
         "badcolumn": ','.join(sedlabbatch_grabeventdetails_shared_pkey),
         "error_type": "Logic Error",
         "error_message": 
-            "Each record in sedchem_labbatch_data must have a corresponding field record. You must submit the field data to the checker first. The Field template can be downloaded on empa.sccwrp.org (Field Grab table).  Please submit the metadata for these records first based on these columns: {}".format(
-            ','.join(sedlabbatch_grabeventdetails_shared_pkey)
-        )
+            "Each record in sedchem_labbatch_data must have a corresponding field record. You must submit the field data to the checker first. "+\
+            "The Field template can be downloaded on "+\
+            "<a href='/checker/templater?datatype=grab_field' target='_blank'>Field Template</a>. "
+            "Records are matched based on these columns: {}".format(','.join(sedlabbatch_grabeventdetails_shared_pkey))
     })
     errs = [*errs, checkData(**args)]
 
@@ -106,9 +107,8 @@ def sedchem_lab(all_dfs):
         "badrows": mismatch(sedlabbatch, seddata, sedlabbatch_seddata_shared_pkey), 
         "badcolumn": ','.join(sedlabbatch_seddata_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each record in sedchem_labbatch_data must have a corresponding record in sedchem_data. Please submit the metadata for these records first based on these columns: {}".format(
-            ','.join(sedlabbatch_seddata_shared_pkey)
-        )
+        "error_message": "Each record in sedchem_labbatch_data must have a corresponding record in sedchem_data. "+\
+            "Records are matched based on these columns: {}".format(','.join(sedlabbatch_seddata_shared_pkey))
     })
     errs = [*errs, checkData(**args)]
 
@@ -129,9 +129,8 @@ def sedchem_lab(all_dfs):
         "badrows": mismatch(seddata,sedlabbatch,sedlabbatch_seddata_shared_pkey), 
         "badcolumn": ','.join(sedlabbatch_seddata_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each record in sedchem_data must have a corresponding record in sedchem_labbatch_data. Please submit the metadata for these records first based on these columns: {}".format(
-            ','.join(sedlabbatch_seddata_shared_pkey)
-        )
+        "error_message": "Each record in sedchem_data must have a corresponding record in sedchem_labbatch_data. "+\
+            "Please submit the metadata for these records first based on these columns: {}".format(','.join(sedlabbatch_seddata_shared_pkey))
     })
     errs = [*errs, checkData(**args)]
 
@@ -164,14 +163,14 @@ def sedchem_lab(all_dfs):
     # Last Edited Coder: Duy
     # NOTE (09/12/2023): I made the variable "seddata_pkey_norepcol" because the error message must output all the pkey columns except for replicate ones
     # NOTE (09/18/23): Duy made a function to check for consecutive values
-    
+    groupby_cols = [x for x in sedlabbatch_pkey if x != 'samplereplicate']
     args.update({
         "dataframe": sedlabbatch,
         "tablename": "tbl_sedchem_labbatch_data",
-        "badrows" : check_consecutiveness(sedlabbatch, [x for x in sedlabbatch_pkey if x != 'samplereplicate'], 'samplereplicate'),
+        "badrows" : check_consecutiveness(sedlabbatch, groupby_cols, 'samplereplicate'),
         "badcolumn": "samplereplicate",
         "error_type": "Replicate Error",
-        "error_message": f"samplereplicate values must be consecutive."
+        "error_message": f"samplereplicate values must be consecutive. Records are grouped by {','.join(groupby_cols)}"
     })
     errs = [*errs, checkData(**args)]
 
@@ -226,13 +225,14 @@ def sedchem_lab(all_dfs):
     # NOTE (09/12/2023): Ayah wrote the replicate check, it has not been tested. 
     # NOTE (09/12/2023): I made the variable "seddata_pkey_norepcol" because the error message must output all the pkeys except for any rep columns
     # NOTE (09/18/23): Duy made a function to check for consecutive values
+    groupby_cols = [x for x in seddata_pkey if x != 'labreplicate']
     args.update({
         "dataframe": seddata,
         "tablename": "tbl_sedchem_data",
-        "badrows" : check_consecutiveness(seddata, [x for x in seddata_pkey if x != 'labreplicate'], 'labreplicate'),
+        "badrows" : check_consecutiveness(seddata, groupby_cols, 'labreplicate'),
         "badcolumn": "labreplicate",
         "error_type": "Replicate Error",
-        "error_message": f"labreplicate values must be consecutive."
+        "error_message": f"labreplicate values must be consecutive. Records are grouped by {','.join(groupby_cols)}"
     })
     errs = [*errs, checkData(**args)]
 
@@ -247,13 +247,14 @@ def sedchem_lab(all_dfs):
     # NOTE (09/12/2023): Ayah wrote the replicate check, it has not been tested. 
     # NOTE (09/12/2023): I made the variable "seddata_pkey_norepcol" because the error message must output all the pkey columns except for replicate ones
     # NOTE (09/18/23): Duy made a function to check for consecutive values
+    groupby_cols = [x for x in seddata_pkey if x != 'samplereplicate']
     args.update({
         "dataframe": seddata,
         "tablename": "tbl_sedchem_data",
-        "badrows" : check_consecutiveness(seddata, [x for x in seddata_pkey if x != 'samplereplicate'], 'samplereplicate'),
+        "badrows" : check_consecutiveness(seddata, groupby_cols, 'samplereplicate'),
         "badcolumn": "samplereplicate",
         "error_type": "Replicate Error",
-        "error_message": f"samplereplicate values must be consecutive."
+        "error_message": f"samplereplicate values must be consecutive. Records are grouped by {','.join(groupby_cols)}"
     })
     errs = [*errs, checkData(**args)]
 

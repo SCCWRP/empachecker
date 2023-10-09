@@ -519,13 +519,14 @@ def fishseines(all_dfs):
     # NOTE (8/23/23): Duy wrote this check but did not test it
     # NOTE (8/25/23): Duy tested the code.
     # NOTE (9/21/23): Duy used the check_consecutiveness function
+    groupby_cols = [x for x in fishdata_pkey if x != 'replicate']
     args.update({
         "dataframe": fishdata,
         "tablename": "tbl_fish_length_data",
-        "badrows": check_consecutiveness(fishdata, [x for x in fishdata_pkey if x != 'replicate'], 'replicate'),
+        "badrows": check_consecutiveness(fishdata, groupby_cols, 'replicate'),
         "badcolumn": "replicate",
         "error_type": "Custom Error",
-        "error_message": "Replicate must be consecutive."
+        "error_message": f"Replicate must be consecutive. Records are grouped based on {','.join(groupby_cols)}"
     })
     errs = [*errs, checkData(**args)]
 

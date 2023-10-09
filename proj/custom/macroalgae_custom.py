@@ -76,7 +76,8 @@ def macroalgae(all_dfs):
         "badrows": mismatch(algaemeta, algaecover, algaemeta_algaecover_shared_pkey), 
         "badcolumn":  ','.join(algaemeta_algaecover_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Records in Algae metadata should have corresponding records in AlgeaCover data in the database. Please submit the metadata for these records first based on these columns: {}".format(
+        "error_message": "Records in Algae metadata should have corresponding records in AlgeaCover data in the database. "+\
+            "Please submit the metadata for these records first based on these columns: {}".format(
             ', '.join(algaemeta_algaecover_shared_pkey)
         )
     })
@@ -97,7 +98,8 @@ def macroalgae(all_dfs):
         "badrows": mismatch(algaecover, algaemeta, algaemeta_algaecover_shared_pkey), 
         "badcolumn":  ','.join(algaemeta_algaecover_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Records in AlgeaCover data  should have corresponding records in Algae metadata. Please submit the metadata for these records first based on these columns: {}".format(
+        "error_message": "Each record in algaecover_data must include a corresponding record in macroalgae_sample_metadata. "+\
+            "Records are matched based on these columns: {}".format(
             ', '.join(algaemeta_algaecover_shared_pkey)
         )
     })
@@ -118,7 +120,8 @@ def macroalgae(all_dfs):
         "badrows": mismatch(algaemeta, algaefloating, algaemeta_algaefloating_shared_pkey), 
         "badcolumn":  ','.join(algaemeta_algaefloating_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Records in Algae metadata should have corresponding records in Algae Floating data. Please submit the metadata for these records first based on these columns: {}".format(
+        "error_message": "Each record in macroalgae_sample_metadata must include a corresponding record in floating_data. "+\
+            "Records are matched based on these columns: {}".format(
             ', '.join(algaemeta_algaefloating_shared_pkey)
         )
     })
@@ -138,7 +141,8 @@ def macroalgae(all_dfs):
         "badrows": mismatch(algaefloating, algaemeta, algaemeta_algaefloating_shared_pkey), 
         "badcolumn":  ','.join(algaemeta_algaefloating_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Records in AlgaeFloating should have corresponding records in AlgeaCover data. Please submit the data for these records first based on these columns: {}".format(
+        "error_message": "Each record in floating_data must include a corresponding record in macroalgae_sample_metadata "+\
+            "Records are matched based on these columns: {}".format(
             ', '.join(algaemeta_algaefloating_shared_pkey)
         )
     })
@@ -210,14 +214,14 @@ def macroalgae(all_dfs):
     # Last Edited Date:  09/28/2023
     # Last Edited Coder: Aria Askaryar
     # NOTE ( 09/28/2023): Aria wrote the check, it has not been tested yet
-    
+    groupby_cols = [x for x in algaemeta_pkey if x != 'transectreplicate']
     args.update({
         "dataframe": algaemeta,
         "tablename": "tbl_macroalgae_sample_metadata",
-        "badrows" : check_consecutiveness(algaemeta, [x for x in algaemeta_pkey if x != 'transectreplicate'], 'transectreplicate'),
+        "badrows" : check_consecutiveness(algaemeta, groupby_cols, 'transectreplicate'),
         "badcolumn": "transectreplicate",
         "error_type": "Replicate Error",
-        "error_message": f"transectreplicate values must be consecutive."
+        "error_message": f"transectreplicate values must be consecutive. Records are grouped by {','.join(groupby_cols)}"
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 7")
@@ -308,7 +312,7 @@ def macroalgae(all_dfs):
         "badrows" : check_consecutiveness(algaecover, groupby_cols, 'plotreplicate'),
         "badcolumn": "plotreplicate",
         "error_type": "Replicate Error",
-        "error_message": f"plotreplicate values must be consecutive."
+        "error_message": f"plotreplicate values must be consecutive. Records are grouped by {','.join(groupby_cols)}"
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 11")

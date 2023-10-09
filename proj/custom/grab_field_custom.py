@@ -80,11 +80,8 @@ def grab_field(all_dfs):
     
     # Loop through the sampletypes and check data accordingly
     for sampletype in sampletypes:
-        
         filtered_grabevent = grabevent[ grabevent[sampletype] == 'Yes' ]
-        
         filtered_grabdetail = grabeventdet[grabeventdet['sampletype'] == sampletype]
-                
         args.update({
             "dataframe":grabevent,
             "tablename":'tbl_grabevent',
@@ -92,14 +89,12 @@ def grab_field(all_dfs):
             "badcolumn": ','.join([*grabevent_grabeventdet_shared_pkey, *[sampletype]]),
             "error_type": "Logic Error",
             "is_core_error": False,
-            "error_message": "If you indicate that you collect data for a datatype (for example: you input 'Yes' in nutrients column in grab_event), then you should have the corresponding records for that datatype in the grabevent_details based on these columns {}, and the value in sampletype column should match".format(
-                ','.join(grabevent_grabeventdet_shared_pkey))
+            "error_message": 
+                "If you indicate that you collect data for a datatype (for example: you input 'Yes' in nutrients column in grab_event), "+\
+                "then you should have the corresponding records for that datatype in the grabevent_details based on these columns {}, "+\
+                "and the value in sampletype column should match".format(','.join(grabevent_grabeventdet_shared_pkey))
         })
-        print("Done calling mismatch")
-        
-        print("Calling checkData")
         errs = [*errs, checkData(**args)] 
-        print("Done calling checkData")
     print("# END OF CHECK - 1")
     
     
@@ -175,7 +170,7 @@ def grab_field(all_dfs):
         "error_message": "At least one of the datatype identifiers (toxicity,grainsize,infauna,chemistry,nutrients,edna,microplastic) needed to be yes"
     })
     errs = [*errs, checkData(**args)] 
-    #print("# END OF CHECK - 12")
+
 
 
     ######################################################################################################################
@@ -403,9 +398,7 @@ def grab_field(all_dfs):
         "badcolumn": "sieve_or_depthunits,sieve_or_depth",
         "error_type": "mismatched value",
         "is_core_error": False,
-        "error_message": 
-            f"""If sampletype is 'infauna' then a value for sieve_or_depth field must come from <a href="scraper?action=help&layer=lu_benthicsievesize" target="_blank">lu_benthicsievesize</a> .</a>
-            """  
+        "error_message": "If sampletype is 'infauna' then a value for sieve_or_depth field must come from <a href='/checker/scraper?action=help&layer=lu_benthicsievesize' target='_blank'>lu_benthicsievesize</a>"  
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 10a")
@@ -426,9 +419,7 @@ def grab_field(all_dfs):
         "badcolumn": "sieve_or_depthunits",
         "error_type": "mismatched value",
         "is_core_error": False,
-        "error_message": 
-            f"""If sampletype is 'infauna' then a sieve_or_depthunits must come from <a href="scraper?action=help&layer=lu_benthicsievesizeunits" target="_blank">lu_benthicsievesizeunits.</a>
-            """  
+        "error_message": "If sampletype is 'infauna' then a sieve_or_depthunits must come from <a href='/checker/scraper?action=help&layer=lu_benthicsievesizeunits' target='_blank'>lu_benthicsievesizeunits.</a>"  
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 10b")
@@ -440,13 +431,14 @@ def grab_field(all_dfs):
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (09/26/2023): Duy created the check
+    groupby_cols = [x for x in grabevent_pkey if x not in ['latitude','longitude','samplereplicate']]
     args.update({
         "dataframe": grabeventdet,
         "tablename": "tbl_grabevent_details",
-        "badrows" : check_consecutiveness(grabeventdet, [x for x in grabevent_pkey if x not in ['latitude','longitude','samplereplicate']], 'samplereplicate'),
+        "badrows" : check_consecutiveness(grabeventdet, groupby_cols, 'samplereplicate'),
         "badcolumn": "samplereplicate",
         "error_type": "Replicate Error",
-        "error_message": f"samplereplicate values must be consecutive."
+        "error_message": f"samplereplicate values must be consecutive. Records are grouped by {','.join(groupby_cols)}"
     })
     errs = [*errs, checkData(**args)]
 

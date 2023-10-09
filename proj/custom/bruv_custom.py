@@ -158,10 +158,11 @@ def bruv_lab(all_dfs):
         "dataframe": bruvdata,
         "tablename": "tbl_bruv_data",
         "badrows": mismatch(bruvdata, bruvmeta, bruvmeta_bruvdata_shared_pkey), 
-        "badcolumn":  ','.join(bruvmeta_bruvdata_shared_pkey),
+        "badcolumn": ','.join(bruvmeta_bruvdata_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Records in tbl_bruv_data should have corresponding metadata records. Please submit the metadata first. Records are matched based on these columns: {}".format(
-            ','.join(bruvmeta_bruvdata_shared_pkey)
+        "error_message": "Records in tbl_bruv_data should have corresponding field records. "+\
+            "The field data template can be found on <a href='/checker/templater?datatype=bruv_field' target='_blank'>BRUV Field Template</a>. "+\
+            "Records are matched based on these columns: {}".format(','.join(bruvmeta_bruvdata_shared_pkey)
         )
     })
     errs = [*errs, checkData(**args)]
@@ -210,7 +211,7 @@ def bruv_lab(all_dfs):
         "badrows": mismatch(bruvideo_filtered, bruvdata, bruvdata_bruvvideo_shared_pkey), 
         "badcolumn": ','.join(bruvdata_bruvvideo_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Since Fish is 'Yes' and bait is 'visible',these records in bruv_videolog should have corresponding records in bruvdata on the following columns {}".format(
+        "error_message": "Since Fish is 'Yes' and bait is 'visible', these records in bruv_videolog should have corresponding records in bruvdata on the following columns {}".format(
             ','.join(bruvdata_bruvvideo_shared_pkey)
         )
     })

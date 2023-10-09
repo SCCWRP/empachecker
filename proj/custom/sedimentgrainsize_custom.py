@@ -38,9 +38,9 @@ def sedimentgrainsize_lab(all_dfs):
     sed_labbatch_pkey = get_primary_key('tbl_sedgrainsize_labbatch_data', g.eng)
     grabeventdetails_pkey = get_primary_key('tbl_grabevent_details', g.eng)
 
-    sed_labbatch_grabevntdetails_shared_pkey = list(set(sed_labbatch_pkey).intersection(set(grabeventdetails_pkey)))
-    sed_labbatch_grabevntdetails_shared_key = list(set(sed_data_pkey).intersection(set(grabeventdetails_pkey)))
-    sed_data_sed_labbatch_shared_pkey = list(set(sed_data_pkey).intersection(set(sed_labbatch_pkey)))
+    sed_labbatch_grabevntdetails_shared_pkey = [x for x in sed_labbatch_pkey if x in grabeventdetails_pkey]
+    sed_labbatch_grabevntdetails_shared_key = [x for x in sed_data_pkey if x in grabeventdetails_pkey]
+    sed_data_sed_labbatch_shared_pkey = [x for x in sed_data_pkey if x in sed_labbatch_pkey]
 
 
     errs = []
@@ -86,9 +86,11 @@ def sedimentgrainsize_lab(all_dfs):
         "badrows": mismatch(sed_labbatch, grabeventdetails, sed_labbatch_grabevntdetails_shared_key), 
         "badcolumn": ','.join(sed_labbatch_grabevntdetails_shared_key),
         "error_type": "Logic Error",
-        "error_message": "Each labbatch data must have corresponding records in the grabeventdetails.  Please submit the metadata for these records first based on these columns: {}".format(
-            ','.join(sed_labbatch_grabevntdetails_shared_key)
-        )
+        "error_message": 
+            "Each record in sedgrainsize_labbatch_data must have a corresponding field record. You must submit the field data to the checker first. "+\
+            "The Field template can be downloaded on "+\
+            "<a href='/checker/templater?datatype=grab_field' target='_blank'>Field Template</a>. "
+            "Records are matched based on these columns: {}".format(','.join(sed_labbatch_grabevntdetails_shared_key))
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 1")
@@ -107,9 +109,8 @@ def sedimentgrainsize_lab(all_dfs):
         "badrows": mismatch(sed_labbatch, sed_data, sed_data_sed_labbatch_shared_pkey), 
         "badcolumn": ','.join(sed_data_sed_labbatch_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each labbatch data must have corresponding records in the data table. R Please submit the metadata for these records first based on these columns: {}".format(
-            ','.join(sed_data_sed_labbatch_shared_pkey)
-        )
+        "error_message": "Each record in sedgrainsize_labbatch_data must have a corresponding record in sedgrainsize_data. "+\
+            "Records are matched based on these columns: {}".format(','.join(sed_data_sed_labbatch_shared_pkey))
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 2")
@@ -129,9 +130,8 @@ def sedimentgrainsize_lab(all_dfs):
         "badrows": mismatch(sed_data, sed_labbatch, sed_data_sed_labbatch_shared_pkey), 
         "badcolumn": ','.join(sed_data_sed_labbatch_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each  data must have corresponding records in the labbatch data table.  Please submit the metadata for these records first based on these columns: {}".format(
-            ','.join(sed_data_sed_labbatch_shared_pkey)
-        )
+        "error_message": "Each record in sedgrainsize_data must have a corresponding record in sedgrainsize_labbatch_data. "+\
+            "Records are matched based on these columns: {}".format(','.join(sed_data_sed_labbatch_shared_pkey))
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 3")    
@@ -160,14 +160,15 @@ def sedimentgrainsize_lab(all_dfs):
     # Created Date: 09/28/2023
     # Last Edited Date: 09/28/2023
     # Last Edited Coder: Aria Askaryar
-    # NOTE (09/28/2023): Aria wrote the replicate check, it has not been tested. 
+    # NOTE (09/28/2023): Aria wrote the replicate check, it has not been tested.
+    groupby_cols =  [x for x in sed_labbatch_pkey if x != 'labreplicate']
     args.update({
         "dataframe": sed_labbatch,
         "tablename": "tbl_sedgrainsize_labbatch_data",
-        "badrows" : check_consecutiveness(sed_labbatch, [x for x in sed_labbatch_pkey if x != 'labreplicate'], 'labreplicate'),
+        "badrows" : check_consecutiveness(sed_labbatch, groupby_cols, 'labreplicate'),
         "badcolumn": "labreplicate",
         "error_type": "Replicate Error",
-        "error_message": f"labreplicate values must be consecutive."
+        "error_message": f"labreplicate values must be consecutive. Records are grouped by {','.join(groupby_cols)}"
     })
     errs = [*errs, checkData(**args)]
     
@@ -201,17 +202,18 @@ def sedimentgrainsize_lab(all_dfs):
     # Last Edited Date: 09/28/2023
     # Last Edited Coder: Aria Askaryar
     # NOTE (09/28/2023): Aria wrote the replicate check, it has not been tested. 
+    groupby_cols = [x for x in sed_data_pkey if x != 'labreplicate']
     args.update({
         "dataframe": sed_data,
         "tablename": "tbl_sedgrainsize_data",
-        "badrows" : check_consecutiveness(sed_data, [x for x in sed_data_pkey if x != 'labreplicate'], 'labreplicate'),
+        "badrows" : check_consecutiveness(sed_data, groupby_cols, 'labreplicate'),
         "badcolumn": "labreplicate",
         "error_type": "Replicate Error",
-        "error_message": f"labreplicate values must be consecutive."
+        "error_message": f"labreplicate values must be consecutive. Records are grouped by {','.join(groupby_cols)}"
     })
     errs = [*errs, checkData(**args)]
 
-    print("# END OF CHECK - ")
+    print("# END OF CHECK - 5")
 
 
     ######################################################################################################################

@@ -74,7 +74,6 @@ def benthiclarge(all_dfs):
     benthiclargemeta_pkey = get_primary_key('tbl_benthiclarge_metadata', g.eng)
     benthiclargeabundance_pkey = get_primary_key('tbl_benthiclarge_abundance', g.eng)
 
-
     benthiclargemeta_benthiclargeabundance_shared_pkey = [x for x in benthiclargemeta_pkey if x in benthiclargeabundance_pkey]
 
     print("# CHECK - 1")
@@ -91,9 +90,8 @@ def benthiclarge(all_dfs):
         "badrows": mismatch(benthiclargemeta, benthiclargeabundance, benthiclargemeta_benthiclargeabundance_shared_pkey), 
         "badcolumn": ','.join(benthiclargemeta_benthiclargeabundance_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each record in benthiclarge_metadata must include corresponding record in benthiclarge_abundance. Please submit the metadata for these records first based on these columns: {}".format(
-            ','.join(benthiclargemeta_benthiclargeabundance_shared_pkey)
-        )
+        "error_message": "Each record in benthiclarge_metadata must include a corresponding record in benthiclarge_abundance. "+\
+            "Records are matched based on these columns: {}".format(','.join(benthiclargemeta_benthiclargeabundance_shared_pkey))
     })
     errs = [*errs, checkData(**args)]
 
@@ -113,9 +111,8 @@ def benthiclarge(all_dfs):
         "badrows": mismatch(benthiclargeabundance, benthiclargemeta, benthiclargemeta_benthiclargeabundance_shared_pkey), 
         "badcolumn": ','.join(benthiclargemeta_benthiclargeabundance_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each record in benthiclarge_abundance must include corresponding record in benthiclarge_metadata. Please submit the metadata for these records first based on these columns: {}".format(
-            ','.join(benthiclargemeta_benthiclargeabundance_shared_pkey)
-        )
+        "error_message": "Each record in benthiclarge_abundance must include a corresponding record in benthiclarge_metadata. "+\
+            "Records are matched based on these columns: {}".format(','.join(benthiclargemeta_benthiclargeabundance_shared_pkey))
     })
     errs = [*errs, checkData(**args)]
 
