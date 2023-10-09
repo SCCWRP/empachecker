@@ -3,7 +3,9 @@
 from inspect import currentframe
 from flask import current_app, g
 import pandas as pd
-from .functions import checkData, checkLogic, mismatch
+from .functions import checkData, checkLogic, mismatch,get_primary_key, check_consecutiveness
+import itertools
+
 
 def macroalgae(all_dfs):
     
@@ -33,9 +35,16 @@ def macroalgae(all_dfs):
     algaecover['tmp_row'] = algaecover.index
     algaefloating['tmp_row'] = algaefloating.index
 
+    algaemeta_pkey = get_primary_key('tbl_macroalgae_sample_metadata',g.eng)
+    algaecover_pkey = get_primary_key('tbl_algaecover_data',g.eng)
+    algaefloating_pkey = get_primary_key('tbl_floating_data',g.eng)
+
+    algaemeta_algaecover_shared_pkey = [x for x in algaemeta_pkey if x in algaecover_pkey]
+    algaemeta_algaefloating_shared_pkey = [x for x in algaemeta_pkey if x in algaefloating_pkey]
 
     errs = []
     warnings = []
+
 
     # Alter this args dictionary as you add checks and use it for the checkData function
     # for errors that apply to multiple columns, separate them with commas
@@ -48,99 +57,127 @@ def macroalgae(all_dfs):
         "is_core_error": False,
         "error_message": ""
     }
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ Macroalgae Logic Checks ----------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
 
-    # generalizing multicol_lookup_check
-    def multicol_lookup_check(df_to_check, lookup_df, check_cols, lookup_cols):
-        assert set(check_cols).issubset(set(df_to_check.columns)), "columns do not exists in the dataframe"
-        assert isinstance(lookup_cols, list), "lookup columns is not a list"
-
-        lookup_df = lookup_df.assign(match="yes")
-        #bug fix: read 'status' as string to avoid merging on float64 (from df_to_check) and object (from lookup_df) error
-        if 'status' in df_to_check.columns.tolist():
-            df_to_check['status'] = df_to_check['status'].astype(str)
-        
-        for c in check_cols:
-            df_to_check[c] = df_to_check[c].apply(lambda x: str(x).lower().strip())
-        for c in lookup_cols:
-            lookup_df[c] = lookup_df[c].apply(lambda x: str(x).lower().strip())
-        
-        merged = pd.merge(df_to_check, lookup_df, how="left", left_on=check_cols, right_on=lookup_cols)
-        badrows = merged[pd.isnull(merged.match)].tmp_row.tolist()
-        return(badrows)
-
-    # Example of appending an error (same logic applies for a warning)
-    # args.update({
-    #   "badrows": get_badrows(df[df.temperature != 'asdf']),
-    #   "badcolumn": "temperature",
-    #   "error_type" : "Not asdf",
-    #   "error_message" : "This is a helpful useful message for the user"
-    # })
-    # errs = [*errs, checkData(**args)]
-    print("----------------------START SAMPLE METADATA CHECKS---------------------------------")
-
-    #check 1: Siteid/estuaryname pair must match lookup list
-    print("Begin check 1: Macroalgae Multicol Checks for matching SiteID to EstuaryName...")
-    lookup_sql = f"SELECT * FROM lu_siteid;"
-    lu_siteid = pd.read_sql(lookup_sql, g.eng)
-    check_cols = ['siteid','estuaryname']
-    lookup_cols = ['siteid','estuary']
-    
-    # Multicol - algaemeta
+    print("# CHECK - 1")
+    # Description: Each metadata must include a corresponding coverdata
+    # Created Coder: Ayah
+    # Created Date:09/15/2023
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (09/15/2023): Ayah wrote check
     args.update({
         "dataframe": algaemeta,
         "tablename": "tbl_macroalgae_sample_metadata",
-        "badrows": multicol_lookup_check(algaemeta,lu_siteid, check_cols, lookup_cols),
-        "badcolumn":"siteid, estuaryname",
-        "error_type": "Multicolumn Lookup Error",
-        "error_message": f'The siteid/estuaryname entry did not match the lookup list '
-                        '<a '
-                        f'href="/{lu_list_script_root}/scraper?action=help&layer=lu_siteid" '
-                        'target="_blank">lu_siteid</a>'
-        
+        "badrows": mismatch(algaemeta, algaecover, algaemeta_algaecover_shared_pkey), 
+        "badcolumn":  ','.join(algaemeta_algaecover_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Records in Algae metadata should have corresponding records in AlgeaCover data in the database. "+\
+            "Please submit the metadata for these records first based on these columns: {}".format(
+            ', '.join(algaemeta_algaecover_shared_pkey)
+        )
     })
-    print("check ran - multicol lookup, siteid and estuaryname - algaemeta")
     errs = [*errs, checkData(**args)]
-    
-    # Multicol - algaecover
-    #check 8: Siteid/estuaryname pair must match lookup list
-    print("begin check 8")
+    print("# END OF CHECK - 1")
+
+    print("# CHECK - 2")
+    # Description: Each cover data must include a corresponding metadata
+    # Created Coder:
+    # Created Coder: Ayah
+    # Created Date:09/15/2023
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (09/15/2023): Ayah wrote check
     args.update({
         "dataframe": algaecover,
         "tablename": "tbl_algaecover_data",
-        "badrows": multicol_lookup_check(algaecover,lu_siteid, check_cols, lookup_cols),
-        "badcolumn":"siteid, estuaryname",
-        "error_type": "Multicolumn Lookup Error",
-        "error_message": f'The siteid/estuaryname entry did not match the lookup list '
-                        '<a '
-                        f'href="/{lu_list_script_root}/scraper?action=help&layer=lu_siteid" '
-                        'target="_blank">lu_siteid</a>'
-        
+        "badrows": mismatch(algaecover, algaemeta, algaemeta_algaecover_shared_pkey), 
+        "badcolumn":  ','.join(algaemeta_algaecover_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Each record in algaecover_data must include a corresponding record in macroalgae_sample_metadata. "+\
+            "Records are matched based on these columns: {}".format(
+            ', '.join(algaemeta_algaecover_shared_pkey)
+        )
     })
-    print("check ran - multicol lookup, siteid and estuaryname - algaecover")
     errs = [*errs, checkData(**args)]
-    # Multicol - algaefloating
-    #check 13: Siteid/estuaryname pair must match lookup list algaefloating
-    print("begin check 13")
+    print("# END OF CHECK - 2")
+
+    print("# CHECK - 3")
+    # Description: Each metadata must include a corresponding floating data
+    # Created Coder:
+    # Created Coder: Ayah
+    # Created Date:09/15/2023
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (09/15/2023): Ayah wrote check
+    args.update({
+        "dataframe": algaemeta,
+        "tablename": "tbl_macroalgae_sample_metadata",
+        "badrows": mismatch(algaemeta, algaefloating, algaemeta_algaefloating_shared_pkey), 
+        "badcolumn":  ','.join(algaemeta_algaefloating_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Each record in macroalgae_sample_metadata must include a corresponding record in floating_data. "+\
+            "Records are matched based on these columns: {}".format(
+            ', '.join(algaemeta_algaefloating_shared_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 3")
+
+    print("# CHECK - 4")
+    # Description: Each floating data must include a corresponding metadata
+    # Created Coder: Ayah
+    # Created Date:09/15/2023
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (09/15/2023): Ayah wrote check
     args.update({
         "dataframe": algaefloating,
         "tablename": "tbl_floating_data",
-        "badrows": multicol_lookup_check(algaefloating,lu_siteid, check_cols, lookup_cols),
-        "badcolumn":"siteid, estuaryname",
-        "error_type": "Multicolumn Lookup Error",
-        "error_message": f'The siteid/estuaryname entry did not match the lookup list '
-                        '<a '
-                        f'href="/{lu_list_script_root}/scraper?action=help&layer=lu_siteid" '
-                        'target="_blank">lu_siteid</a>'
-        
+        "badrows": mismatch(algaefloating, algaemeta, algaemeta_algaefloating_shared_pkey), 
+        "badcolumn":  ','.join(algaemeta_algaefloating_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Each record in floating_data must include a corresponding record in macroalgae_sample_metadata "+\
+            "Records are matched based on these columns: {}".format(
+            ', '.join(algaemeta_algaefloating_shared_pkey)
+        )
     })
-    print("check ran - multicol lookup, siteid and estuaryname - algaefloating")
     errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 4")
 
-    print("End check 1, 8, and 13: Macroalgae Multicol Checks for matching SiteID to EstuaryName...")
 
 
-    # Check 2: transectreplicate must be positive or -88 for tbl_macroalgae_sample_metadata
-    print('begin check 2')
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------END OF Macroalgae Logic Checks ----------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ Sample Metadata Checks ------------------------------------------ #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    #print("# CHECK - 5")
+    # Description: Transectreplicate must be greater than 0
+    # Created Coder: Ayah
+    # Created Date:09/15/2023
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (09/15/2023): Ayah wrote check
     args.update({
         "dataframe": algaemeta,
         "tablename": "tbl_macroalgae_sample_metadata",
@@ -150,95 +187,15 @@ def macroalgae(all_dfs):
         "error_message" : "TransectReplicate must be greater than 0."
     })
     errs = [*errs, checkData(**args)]
-    print("check ran - positive transectreplicate - algaemeta")
-    print('end check 2')
+    #print("# END OF CHECK - 5")
 
-    # Check 3: transectreplicate must be positive or -88 for tbl_algaecover_data
-    print('begin check 3')
-    args.update({
-        "dataframe": algaecover,
-        "tablename": "tbl_algaecover_data",
-        "badrows": algaecover[(algaecover['transectreplicate'] <= 0) & (algaecover['transectreplicate'] != -88)].tmp_row.tolist(),
-        "badcolumn": "transectreplicate",
-        "error_type" : "Value Error",
-        "error_message" : "TransectReplicate must be greater than 0."
-    })
-    errs = [*errs, checkData(**args)]
-    print("check ran - positive transectreplicate - algaecover")
-    print('end check 3')
-
-    # #Check 16: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_time is required
-    # print("Check 16 begin:")
-    # args.update({
-    #     "dataframe": algaemeta,
-    #     "tablename": "tbl_macroalgae_sample_metadata",
-    #     "badrows": algaemeta[(~algaemeta['elevation_ellipsoid'].isna() | ~algaemeta['elevation_orthometric'].isna()) & ( algaemeta['elevation_time'].isna() | (algaemeta['elevation_time'] == -88))].tmp_row.tolist(),
-    #     "badcolumn": "elevation_time",
-    #     "error_type": "Empty value",
-    #     "error_message": "Elevation_time is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    # })
-    # errs = [*errs, checkData(**args)]
-
-    # print('check 16 ran - ele_ellip or ele_ortho is reported then ele_time is required')
-
-    # #Check 17: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_units is required
-    # print("Check 17 begin:")
-    # args.update({
-    #     "dataframe": algaemeta,
-    #     "tablename": "tbl_macroalgae_sample_metadata",
-    #     "badrows": algaemeta[(~algaemeta['elevation_ellipsoid'].isna() | ~algaemeta['elevation_orthometric'].isna()) & ( algaemeta['elevation_units'].isna() | (algaemeta['elevation_units'] == -88))].tmp_row.tolist(),
-    #     "badcolumn": "elevation_units",
-    #     "error_type": "Empty value",
-    #     "error_message": "Elevation_units is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    # })
-    # errs = [*errs, checkData(**args)]
-
-    # print('check 17 ran - ele_ellip or ele_ortho is reported then ele_units is required')
-
-    # #Check 18: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Corr is required
-    # print("Check 18 begin:")
-    # args.update({
-    #     "dataframe": algaemeta,
-    #     "tablename": "tbl_macroalgae_sample_metadata",
-    #     "badrows": algaemeta[(~algaemeta['elevation_ellipsoid'].isna() | ~algaemeta['elevation_orthometric'].isna()) & ( algaemeta['elevation_corr'].isna() | (algaemeta['elevation_corr'] == -88))].tmp_row.tolist(),
-    #     "badcolumn": "Elevation_Corr",
-    #     "error_type": "Empty value",
-    #     "error_message": "Elevation_Corr is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    # })
-    # errs = [*errs, checkData(**args)]
-
-    # print('check 18 ran - ele_ellip or ele_ortho is reported then Elevation_Corr is required')
-
-    # #Check 19: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Elevation_Datum is required
-    # print("Check 19 begin:")
-    # args.update({
-    #     "dataframe": algaemeta,
-    #     "tablename": "tbl_macroalgae_sample_metadata",
-    #     "badrows": algaemeta[(~algaemeta['elevation_ellipsoid'].isna() | ~algaemeta['elevation_orthometric'].isna()) & ( algaemeta['elevation_datum'].isna() | (algaemeta['elevation_datum'] == -88))].tmp_row.tolist(),
-    #     "badcolumn": "Elevation_Datum",
-    #     "error_type": "Empty value",
-    #     "error_message": "Elevation_Datum is required since Elevation_ellipsoid and/or Elevation_orthometric has been reported"
-    # })
-    # errs = [*errs, checkData(**args)]
-
-    # print('check 19 ran - ele_ellip or ele_ortho is reported then Elevation_Datum is required')
-
-    # Check 10: plotreplicate must be positive or -88 for tbl_algaecover_data
-    print('begin check 10')
-    args.update({
-        "dataframe": algaecover,
-        "tablename": "tbl_algaecover_data",
-        "badrows": algaecover[(algaecover['plotreplicate'] <= 0) & (algaecover['plotreplicate'] != -88)].tmp_row.tolist(),
-        "badcolumn": "plotreplicate",
-        "error_type" : "Value Error",
-        "error_message" : "PlotReplicate must be greater than 0."
-    })
-    errs = [*errs, checkData(**args)]
-    print("check 10 ran - positive plotreplicate - algaecover")
-
-
-    #check 9: transectlength_m must be postive (> 0)
-    print('begin check 9')
+    print("# CHECK - 6")
+    # Description: Transectlength_m must be greater than 0
+    # Created Coder: Ayah
+    # Created Date:09/15/2023
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (09/15/2023): Ayah wrote check
     args.update({
         "dataframe": algaemeta,
         "tablename": "tbl_macroalgae_sample_metadata",
@@ -248,76 +205,88 @@ def macroalgae(all_dfs):
         "error_message" : "Transect length must be greater than 0."
     })
     errs = [*errs, checkData(**args)]
-    print("check 9 ran - positive transect_length_m - algaemeta")
-    
-   # return {'errors': errs, 'warnings': warnings}
-   ################################################################################################################
-    print("Begin Macroalgae Logic Checks...")
-    # Logic Checks: sample_metadata & algaecover_data
-    # Logic Check 4: algaemeta records not found in algaecover
-    print('begin check 4')
-    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'transectreplicate']
+    print("# END OF CHECK - 6")
 
+    print("# CHECK - 7")
+    # Description: Transectreplicate must be consecutive within primary keys
+    # Created Coder: Aria Askaryar
+    # Created Date: 09/28/2023
+    # Last Edited Date:  09/28/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE ( 09/28/2023): Aria wrote the check, it has not been tested yet
+    groupby_cols = [x for x in algaemeta_pkey if x != 'transectreplicate']
     args.update({
         "dataframe": algaemeta,
         "tablename": "tbl_macroalgae_sample_metadata",
-        "badrows": mismatch(algaemeta, algaecover, groupcols), 
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, transectreplicate",
-        "error_type": "Logic Error",
-        "error_message": "Records in sample_metadata must have corresponding records in Algaecover_data."
+        "badrows" : check_consecutiveness(algaemeta, groupby_cols, 'transectreplicate'),
+        "badcolumn": "transectreplicate",
+        "error_type": "Replicate Error",
+        "error_message": f"transectreplicate values must be consecutive. Records are grouped by {','.join(groupby_cols)}"
     })
     errs = [*errs, checkData(**args)]
-    print("check 4 ran - logic - sample_metadata records not found in algaecover_data") 
+    print("# END OF CHECK - 7")
 
-    # Logic Check 5: algaemeta records missing for records provided by algaecover
-    print('begin check 5')
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------END OF  Sample Metadata Checks ----------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ Cover Data Checks ----------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    #print("# CHECK - 8")
+    # Description: Transectreplicate must be greater than 0
+    # Created Coder: NA
+    # Created Date:NA
+    # Last Edited Date: 09/15/2023
+    # Last Edited Coder: Ayah
+    # NOTE (09/15/2023): Ayah ajusted code to match coding standard
     args.update({
         "dataframe": algaecover,
         "tablename": "tbl_algaecover_data",
-        "badrows": mismatch(algaecover, algaemeta, groupcols), 
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, transectreplicate",
-        "error_type": "Logic Error",
-        "error_message": "Records in Algaecover_data must have corresponding records in sample_metadata."
+        "badrows": algaecover[(algaecover['transectreplicate'] <= 0) & (algaecover['transectreplicate'] != -88)].tmp_row.tolist(),
+        "badcolumn": "transectreplicate",
+        "error_type" : "Value Error",
+        "error_message" : "TransectReplicate must be greater than 0."
     })
     errs = [*errs, checkData(**args)]
-    print("check 5 ran - logic - sample_metadata records missing for records provided in algaecover_data") 
+    #print("# END OF CHECK - 8")
 
-    #check 6: Each metadata must include a corresponding floating data
-    print("begin check 6")
-    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'transectreplicate', 'projectid']
+    #print("# CHECK - 9")
+    # Description: Plotreplicate must be greater than 0
+    # Created Coder: NA
+    # Created Date:NA
+    # Last Edited Date: 09/15/2023
+    # Last Edited Coder: Ayah
+    # NOTE (09/15/2023): Ayah ajusted code to match coding standard
     args.update({
-        "dataframe": algaemeta,
-        "tablename": "tbl_macroalgae_sample_metadata",
-        "badrows": mismatch(algaemeta, algaefloating, groupcols), 
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, transectreplicate, projectid",
-        "error_type": "Logic Error",
-        "error_message": "Records in tbl_macroalgae_sample_metadata must have corresponding records in algaefloating. Missing records in algaefloating."
+        "dataframe": algaecover,
+        "tablename": "tbl_algaecover_data",
+        "badrows": algaecover[(algaecover['plotreplicate'] <= 0) & (algaecover['plotreplicate'] != -88)].tmp_row.tolist(),
+        "badcolumn": "plotreplicate",
+        "error_type" : "Value Error",
+        "error_message" : "PlotReplicate must be greater than 0."
     })
     errs = [*errs, checkData(**args)]
-    print("check ran - logic - missing algaefloating records")
-    print("end check 6")
+    
+    
+    print("# END OF CHECK - 9")
 
-    #check 7: Each floating data must include a corresponding metadata
-    print("begin check 7")
-    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'scientificname', 'projectid']
-    args.update({
-        "dataframe": algaefloating,
-        "tablename": "tbl_floating_data",
-        "badrows": mismatch(algaefloating, algaemeta, groupcols), 
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, scientificname, projectid",
-        "error_type": "Logic Error",
-        "error_message": "Records in tbl_floating_data must have corresponding records in algaemeta. Missing records in algaemeta."
-    })
-    errs = [*errs, checkData(**args)]
-    print("check ran 7- logic - missing algaemeta records")
-    print("end check 7")
- 
-    print("End Macroalgae Logic Checks...")
-    ##########  - END OF LOGIC CHECKS  -   ###############################################################################################################################
-
-    # check 11: CoverType & Species Check: if covertype is plant, then scientificname CANNOT be 'Not recorded'
-    # if covertype is not plant, then scientificname can be 'Not recorded' - no check needs to be written for this one
-    print('begin check 11')
+    print("# CHECK - 10")
+    # Description: If covertype is "plant" then scientificname cannot be "Not recorded"
+    # Created Coder: NA
+    # Created Date:NA
+    # Last Edited Date: 09/15/2023
+    # Last Edited Coder: Ayah
+    # NOTE (09/15/2023): Ayah ajusted code to match coding standard
     args.update({
         "dataframe": algaecover,
         "tablename": "tbl_algaecover_data",
@@ -327,39 +296,116 @@ def macroalgae(all_dfs):
         "error_message": "CoverType is 'plant' so the ScientificName must be a value other than 'Not recorded'."
     })
     errs = [*errs, checkData(**args)]
-    print("check 11 ran - algaecover_data - covertype is plant, sciname must be an actual plant") 
+    print("# END OF CHECK - 10")
 
-    #check 12 : Scientificname/commoname pair for species must match lookup
-    print('begin check 12')
-    lookup_sql = f"SELECT * FROM lu_plantspecies;"
-    lu_species = pd.read_sql(lookup_sql, g.eng)
-    #check_cols = ['scientificname', 'commonname', 'status']
-    check_cols = ['scientificname', 'commonname']
-    #lookup_cols = ['scientificname', 'commonname', 'status']
-    lookup_cols = ['scientificname', 'commonname']
-
-    badrows = multicol_lookup_check(algaecover, lu_species, check_cols, lookup_cols)
-
+    print("# CHECK - 11")
+    # Description: Plotreplicate must be consecutive within primary keys
+    # Created Coder: Aria Askaryar
+    # Created Date: 09/28/2023
+    # Last Edited Date:  09/28/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE ( 09/28/2023): Aria wrote the check, it has not been tested yet
+    groupby_cols = ['projectid','siteid','estuaryname','stationno','samplecollectiondate','transectreplicate','covertype','scientificname','replicate']
     args.update({
         "dataframe": algaecover,
         "tablename": "tbl_algaecover_data",
-        "badrows": multicol_lookup_check(algaecover, lu_species, check_cols, lookup_cols),
-        "badcolumn":"commonname",
-        "error_type": "Multicolumn Lookup Error",
-        "error_message": f'The scientificname/commonname entry did not match the lookup list '
-                        '<a '
-                        f'href="/{lu_list_script_root}/scraper?action=help&layer=lu_plantspecies" '
-                        'target="_blank">lu_plantspecies</a>' # need to add href for lu_species
-        
+        "badrows" : check_consecutiveness(algaecover, groupby_cols, 'plotreplicate'),
+        "badcolumn": "plotreplicate",
+        "error_type": "Replicate Error",
+        "error_message": f"plotreplicate values must be consecutive. Records are grouped by {','.join(groupby_cols)}"
     })
-
     errs = [*errs, checkData(**args)]
-    print("check 12 ran - algeacover_data - multicol species") 
+    print("# END OF CHECK - 11")
 
-    # ALGAE FLOATING DATA CHECKS
-    # check 14: If estimatedcover is 0 then scientificname must be "Not recorded"
-    # EstimatedCover & ScientificName Check: if estimatedcover is 0, then scientificname MUST be 'Not recorded'
-    print('begin check 14')
+    print("# CHECK - 13")
+    # Description: For every plot – total cover and open cover required in cover type
+    # Created Coder: Duy
+    # Created Date: 10/05/23
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (10/05/23): Duy created the check
+
+    badrows = list(
+        itertools.chain.from_iterable(
+            algaecover.groupby(
+                ['projectid','siteid','estuaryname','stationno','samplecollectiondate','transectreplicate','plotreplicate']
+            ).apply(
+                lambda subdf: subdf.tmp_row.tolist() 
+                if any(['open' not in subdf['covertype'].tolist(), 'total' not in subdf['covertype'].tolist()])
+                else []
+            )
+        )
+    )
+    args.update({
+        "dataframe": algaecover,
+        "tablename": "tbl_algaecover_data",
+        "badrows" : badrows,
+        "badcolumn": "covertype",
+        "error_type": "Value Error",
+        "error_message": f"For every plotreplicate - total cover and open cover are required in covertype column"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 13")
+
+
+    print("# CHECK - 14")
+    # Description: estimatedcover for 'open cover' in covertype + estimatedcover for 'total cover' must be 100
+    # Created Coder: Duy
+    # Created Date: 10/05/23
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (10/05/23): Duy created the check
+
+    badrows = list(
+        itertools.chain.from_iterable(
+            algaecover.groupby(
+                ['projectid','siteid','estuaryname','stationno','samplecollectiondate','transectreplicate','plotreplicate']
+            ).apply(
+                lambda subdf: subdf.tmp_row.tolist() 
+                if sum(subdf[subdf['covertype'].isin(['open','cover'])]['estimatedcover']) != 100
+                else []
+            )
+        )
+    )
+    args.update({
+        "dataframe": algaecover,
+        "tablename": "tbl_algaecover_data",
+        "badrows" : badrows,
+        "badcolumn": "covertype, estimatedcover",
+        "error_type": "Value Error",
+        "error_message": f"estimatedcover for 'open cover' in covertype + estimatedcover for 'total cover' must be 100"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 14")
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------END OF Cover Data Checks ----------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ Floating Data Checks -------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    #print("# CHECK - 12")
+    # Description: If estimatedcover is 0 then scientificname must be "Not recorded"
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
     args.update({
         "dataframe": algaefloating,
         "tablename": "tbl_floating_data",
@@ -369,76 +415,13 @@ def macroalgae(all_dfs):
         "error_message": "EstimatedCover is 0. The ScientificName MUST be 'Not recorded'."
     })
     errs = [*errs, checkData(**args)]
-    print("check 14 ran - floating_data - estimatedcover is 0, sciname must be NR") 
+    #print("# END OF CHECK - 12")
 
 
-    #check 15: Scientificname/commoname pair for species must match lookup
-    print('begin check 15')
-    # badrows = multicol_lookup_check(algaefloating, lu_species, check_cols, lookup_cols)
-    args.update({
-        "dataframe": algaefloating,
-        "tablename": "tbl_floating_data",
-        "badrows":  multicol_lookup_check(algaefloating, lu_species, check_cols, lookup_cols),
-        "badcolumn": "commonname",
-        "error_type": "Multicolumn Lookup Error",
-        "error_message": f'The scientificname/commonname entry did not match the lookup list '
-                        '<a '
-                        f'href="/{lu_list_script_root}/scraper?action=help&layer=lu_plantspecies" '
-                        'target="_blank">lu_plantspecies</a>' # need to add href for lu_species
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF Floating Data Checks ------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
 
-    })
-
-    errs = [*errs, checkData(**args)]
-    print("check 15 ran - floating_data - multicol species") 
-
-    
     return {'errors': errs, 'warnings': warnings}
-
-'''
-    #TransectBeginLatitude, TransectEndLatitude
-    args.update({
-        "dataframe": algaemeta,
-        "tablename": "tbl_macroalgae_sample_metadata",
-        "badrows":algaemeta[(algaemeta['transectbeginlatitude'] < 32.5008497379)].tmp_row.tolist(),
-        "badcolumn": "transectbeginlatitude",
-        "error_type" : "Value out of range",
-        "error_message" : "Your latitude coordinate is outside of california."
-    })
-    errs = [*warnings, checkData(**args)]
-
-    
-    args.update({
-        "dataframe": algaemeta,
-        "tablename": "tbl_macroalgae_sample_metadata",
-        "badrows":algaemeta[(algaemeta['transectendlatitude'] > 41.9924715343)].tmp_row.tolist(),
-        "badcolumn": "transectendlatitude",
-        "error_type" : "Value out of range",
-        "error_message" : "Your latitude coordinate is outside of california."
-    })
-    errs = [*warnings, checkData(**args)]
-
-
-
-
-
-    args.update({
-        "dataframe": algaemeta,
-        "tablename": "tbl_macroalgae_sample_metadata",
-        "badrows":algaemeta[(algaemeta['transectbeginlongitude'] < 32.5008497379)].tmp_row.tolist(),
-        "badcolumn": "transectbeginlongitude",
-        "error_type" : "Value out of range",
-        "error_message" : "Your longitude coordinate is  outside of california."
-    })
-    errs = [*warnings, checkData(**args)]
-
-    
-    args.update({
-        "dataframe": algaemeta,
-        "tablename": "tbl_macroalgae_sample_metadata",
-        "badrows":algaemeta[(algaemeta['transectendlongitude'] > 41.9924715343)].tmp_row.tolist(),
-        "badcolumn": "transectendlongitude",
-        "error_type" : "Value out of range",
-        "error_message" : "Your longitude coordinate is outside of california."
-    })
-    errs = [*warnings, checkData(**args)]
-'''

@@ -4,7 +4,64 @@ from inspect import currentframe
 from flask import current_app, g
 import pandas as pd
 from datetime import date
-from .functions import checkData
+from .functions import checkData,get_primary_key, mismatch, multicol_lookup_check
+
+def edna_field(all_dfs):
+    
+    current_function_name = str(currentframe().f_code.co_name)
+    
+    # function should be named after the dataset in app.datasets in __init__.py
+    assert current_function_name in current_app.datasets.keys(), \
+        f"function {current_function_name} not found in current_app.datasets.keys() - naming convention not followed"
+
+    expectedtables = set(current_app.datasets.get(current_function_name).get('tables'))
+    assert expectedtables.issubset(set(all_dfs.keys())), \
+        f"""In function {current_function_name} - {expectedtables - set(all_dfs.keys())} not found in keys of all_dfs ({','.join(all_dfs.keys())})"""
+
+    # define errors and warnings list
+    errs = []
+    warnings = []
+
+
+    # since often times checks are done by merging tables (Paul calls those logic checks)
+    # we assign dataframes of all_dfs to variables and go from there
+    # This is the convention that was followed in the old checker
+    
+    # This data type should only have tbl_example
+    edna_metadata = all_dfs['tbl_edna_metadata']
+
+    # Alter this args dictionary as you add checks and use it for the checkData function
+    # for errors that apply to multiple columns, separate them with commas
+    # args = {
+    #     "dataframe": edna_metadata,
+    #     "tablename": 'tbl_edna_metadata',
+    #     "badrows": [],
+    #     "badcolumn": "",
+    #     "error_type": "",
+    #     "is_core_error": False,
+    #     "error_message": ""
+    # }
+
+    # Example of appending an error (same logic applies for a warning)
+    # args.update({
+    #   "badrows": df[df.temperature != 'asdf'].index.tolist(),
+    #   "badcolumn": "temperature",
+    #   "error_type" : "Not asdf",
+    #   "error_message" : "This is a helpful useful message for the user"
+    # })
+    # errs = [*errs, checkData(**args)]
+
+    # Example of how to document a custom check
+    #print("# CHECK - ")
+    # Description:
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - ")
+
+    return {'errors': errs, 'warnings': warnings}
 
 def edna_lab(all_dfs):
     
@@ -31,7 +88,9 @@ def edna_lab(all_dfs):
     ednawater = all_dfs['tbl_edna_water_labbatch_data']
     ednadata= all_dfs['tbl_edna_data']
 
-    
+    grabdeets = pd.read_sql("SELECT * FROM tbl_grabevent_details", g.eng)
+    grabdeets_pkey = get_primary_key('tbl_grabevent_details', g.eng)
+
     ednased['tmp_row'] = ednased.index
     ednawater['tmp_row'] = ednawater.index
     ednadata['tmp_row'] = ednadata.index
@@ -52,225 +111,373 @@ def edna_lab(all_dfs):
         "error_message": ""
     }
     
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # --------------------------------------------- EDNA Logic Checks ---------------------------------------------------#
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+    
+    sed_labbatch_pkey = get_primary_key('tbl_edna_sed_labbatch_data', g.eng)
+    water_labbatch_pkey = get_primary_key('tbl_edna_water_labbatch_data', g.eng)
+    data_pkey = get_primary_key('tbl_edna_data', g.eng)
 
-    # Example of appending an error (same logic applies for a warning)
-    # args.update({
-    #   "badrows": get_badrows(df[df.temperature != 'asdf']),
-    #   "badcolumn": "temperature",
-    #   "error_type" : "Not asdf",
-    #   "error_message" : "This is a helpful useful message for the user"
-    # })
-    # errs = [*errs, checkData(**args)]
+    sed_labbatch_grabdeets_shared_pkey = list(set(sed_labbatch_pkey).intersection(set(grabdeets_pkey)))
+    water_labbatch_grabdeets_shared_pkey = list(set(water_labbatch_pkey).intersection(set(grabdeets_pkey)))
+    
+    sed_labbatch_data_shared_pkey = list(set(sed_labbatch_pkey).intersection(set(data_pkey)))
+    water_labbatch_data_shared_pkey = list(set(water_labbatch_pkey).intersection(set(data_pkey)))
 
-    ############################### --Start of sed labbatch data checks -- #############################################################
-    print("Begin eDNA lab checks...")
-    #check 1: Samplecollectiondate should be before preparationdate
-    print('begin edna-custom-check 1')
+    data_grabdeets_shared_pkey = list(set(data_pkey).intersection(set(grabdeets_pkey)))
+    
+    print("# CHECK - 1")
+    # Description: Each labbatch data must correspond to grabeventdetails in database
+    # Created Coder: Ayah H
+    # Created Date: 09/08/2023
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/14/2023): Check updated to match other similar checks
+    # NOTE (10/05/2023): Aria revised the error message
+
     args.update({
         "dataframe": ednased,
-        "tablename": "tbl_edna_sed_labbatch_data",
-        "badrows": ednased[ednased.preparationdate.apply(pd.Timestamp) > ednased.samplecollectiondate.apply(pd.Timestamp)].tmp_row.tolist(),
-        "badcolumn": "preparationdate,samplecollectiondate",
-        "error_type" : "Value out of range",
-        "error_message" : "Your Collection date should be before your preparation date."
-    })
-    errs = [*warnings, checkData(**args)]
-    print('end labbatch-custom-check 1')
-
-    ##### THIS HAS BEEN COMMENTED OUT BECAUSE IT WILL BE IMPLEMENTED AS A GLOBAL CORE CHECK #########
-    ############################################################################################
-    # #check 3: Samplecollection time format must be 24 hours clock
-    # print('begin edna-custom-check 3')
-    # args.update({
-    #     "dataframe": ednased,
-    #     "tablename": "tbl_edna_sed_labbatch_data",
-    #     "badrows": ednased['samplecollectiontime'] == ednased['samplecollectiontime'].apply(lambda x: x.strftime("%I:%M:%S %p") if str(x) != 'nan' else str(x)).tmp_row.tolist(),
-    #     "badcolumn": "samplecollectiontime",
-    #     "error_type" : "Time format error",
-    #     "error_message" : "Your collection time format should be 12 HR AM/PM."
-    # })
-    # errs = [*errs, checkData(**args)]
-    # print('end edna-custom-check 3')
-
-    # #check 4: Preparationtime format must be must be 24 hours clock
-    # print('begin edna-custom-check 4')
-    # args.update({
-    #     "dataframe": ednased,
-    #     "tablename": "tbl_edna_sed_labbatch_data",
-    #     "badrows": ednased['preparationtime'] == ednased['preparationtime'].apply(lambda x: x.strftime("%I:%M:%S %p") if str(x) != 'nan' else str(x)).tmp_row.tolist(),
-    #     "badcolumn": "preparationtime",
-    #     "error_type" : "Time format error",
-    #     "error_message" : "Your preparation time format should be 12 HR AM/PM."
-    # })
-    # errs = [*errs, checkData(**args)]
-    # print('end edna-custom-check 4')
-    # ##################################################################################################################################
-
-    #check 2: Preparationtime should be before samplecollectiontime
-    print("begin edna-custom-check 2")
-    args.update({
-        "dataframe": ednased,
-        "tablename": "tbl_edna_sed_labbatch_data",
-        "badrows": ednased[ednased.preparationtime.apply(pd.Timestamp) > ednased.samplecollectiontime.apply(pd.Timestamp)].tmp_row.tolist(),
-        "badcolumn": "preparationtime, collectiontime",
-        "error_type" : "Value out of range",
-        "error_message" : "Your preparation time should be before collection time."
-    })
-    errs = [*errs, checkData(**args)]
-    print("end edna-custom-check 2")
-
-##### THIS HAS BEEN COMMENTED OUT BECAUSE IT WILL BE IMPLEMENTED AS A GLOBAL CORE CHECK #########
-############################################################################################
-    # #NOTE @Duy or Robert this is not conssitent with the rest of checks please check Data Product Review logs for notes on check 6 -aria
-    # #check 6: samplecollectiontime time format should be must be 24 hours clock????????????????????????????????????? 
-    # print("begin edna-custom-check 6")
-    # args.update({
-    #     "dataframe": ednawater,
-    #     "tablename": "tbl_edna_water_labbatch_data",
-    #     "badrows": ednawater['samplecollectiontime'] == ednawater['samplecollectiontime'].apply(lambda x: x.strftime("%I:%M:%S %p") if str(x) != 'nan' else str(x)).tmp_row.tolist(),
-    #     "badcolumn": "samplecollectiontime",
-    #     "error_type" : "Value out of range",
-    #     "error_message" : "Your collection time format should be 12 HR AM/PM"
-    # })
-    # errs = [*errs,checkData(**args)]
-    # print("end edna-custom-check 6")
-
-    # #NOTE THIS IS ALSO NOT CONSISTENT -Aria
-    # #check 7: Preparationtime format should be must be 24 hours clock
-    # print("begin edna-custom-check 7")
-    # args.update({
-    #     "dataframe": ednawater,
-    #     "tablename": "tbl_edna_water_labbatch_data",
-    #     "badrows": ednawater['preparationtime'] == ednawater['preparationtime'].apply(lambda x: x.strftime("%I:%M:%S %p") if str(x) != 'nan' else str(x)).tmp_row.tolist(),
-    #     "badcolumn": "preparationtime",
-    #     "error_type" : "Value out of range",
-    #     "error_message" : "Your preparation time format should be 12 HR AM/PM"
-    # })
-    # errs = [*errs,checkData(**args)]
-    # print("end edna-custom-check 7")
-############################################################################################################
-
-
-    #check 3: Preparationtime should be before samplecollectiontime
-    print("begin edna-custom-check 3")
-    args.update({
-        "dataframe": ednawater,
-        "tablename": "tbl_edna_water_labbatch_data",
-        "badrows": ednawater[ednawater.preparationtime.apply(pd.Timestamp) > ednawater.samplecollectiontime.apply(pd.Timestamp)].tmp_row.tolist(),
-        "badcolumn": "preparationtime,samplecollectiontime",
-        "error_type" : "Value out of range",
-        "error_message" : "Your preparation time should be before your collection time"
-    })
-    errs = [*errs,checkData(**args)]
-    print("end edna-custom-check 3")
-
-    #check 4: Preparationdate should be before samplecollectiondate
-    print("begin edna-custom-check 4")
-    args.update({
-        "dataframe": ednawater,
-        "tablename": "tbl_edna_water_labbatch_data",
-        "badrows": ednawater[ednawater.preparationdate.apply(pd.Timestamp) > ednawater.samplecollectiondate.apply(pd.Timestamp)].tmp_row.tolist(),
-        "badcolumn": "preparationdate,samplecollectiondate",
-        "error_type" : "Value out of range",
-        "error_message" : "Your preparation date should be before your collection date."
-    })
-    errs = [*warnings, checkData(**args)]
-    print("end edna-custom-check 4")
-   
-    return {'errors': errs, 'warnings': warnings}
-    print("End of eDNA data custom checks! ")
-    ###################################################################################
-
-def edna_field(all_dfs):
-    
-    current_function_name = str(currentframe().f_code.co_name)
-    lu_list_script_root = current_app.script_root
-    
-    # function should be named after the dataset in app.datasets in __init__.py
-    assert current_function_name in current_app.datasets.keys(), \
-        f"function {current_function_name} not found in current_app.datasets.keys() - naming convention not followed"
-
-    expectedtables = set(current_app.datasets.get(current_function_name).get('tables'))
-    assert expectedtables.issubset(set(all_dfs.keys())), \
-        f"""In function {current_function_name} - {expectedtables - set(all_dfs.keys())} not found in keys of all_dfs ({','.join(all_dfs.keys())})"""
-
-    # since often times checks are done by merging tables (Paul calls those logic checks)
-    # we assign dataframes of all_dfs to variables and go from there
-    # This is the convention that was followed in the old checker
-    
-    # This data type should only have tbl_example
-    # example = all_dfs['tbl_example']
-
-    # These are the dataframes that got submitted for edna
-
-    ednameta = all_dfs['tbl_edna_metadata']
-
-    errs = []
-    warnings = []
-
-    # Alter this args dictionary as you add checks and use it for the checkData function
-    # for errors that apply to multiple columns, separate them with commas
-    
-    args = {
-        "dataframe": pd.DataFrame({}),
-        "tablename":'',
-        "badrows": [],
-        "badcolumn": "",
-        "error_type": "",
+        "tablename": 'tbl_edna_sed_labbatch_data',
+        "badrows": mismatch(ednased, grabdeets, sed_labbatch_grabdeets_shared_pkey),
+        "badcolumn": ','.join(sed_labbatch_grabdeets_shared_pkey),
+        "error_type": "Logic Error",
         "is_core_error": False,
-        "error_message": ""
-    }
-    
-
-    # Example of appending an error (same logic applies for a warning)
-    # args.update({
-    #   "badrows": get_badrows(df[df.temperature != 'asdf']),
-    #   "badcolumn": "temperature",
-    #   "error_type" : "Not asdf",
-    #   "error_message" : "This is a helpful useful message for the user"
-    # })
-    # errs = [*errs, checkData(**args)]
-
-    # Multi column Lookup Check 
-    def multicol_lookup_check(df_to_check, lookup_df, check_cols, lookup_cols):
-        assert set(check_cols).issubset(set(df_to_check.columns)), "columns do not exists in the dataframe"
-        assert isinstance(lookup_cols, list), "lookup columns is not a list"
-
-        lookup_df = lookup_df.assign(match="yes")
-        #bug fix: read 'status' as string to avoid merging on float64 (from df_to_check) and object (from lookup_df) error
-        if 'status' in df_to_check.columns.tolist():
-            df_to_check['status'] = df_to_check['status'].astype(str)
-        
-        for c in check_cols:
-            df_to_check[c] = df_to_check[c].apply(lambda x: str(x).lower().strip())
-        for c in lookup_cols:
-            lookup_df[c] = lookup_df[c].apply(lambda x: str(x).lower().strip())
-
-        merged = pd.merge(df_to_check, lookup_df, how="left", left_on=check_cols, right_on=lookup_cols)
-        badrows = merged[pd.isnull(merged.match)].tmp_row.tolist()
-        return(badrows)
-
-    print("Begin eDNA Multicol Checks to check SiteID/EstuaryName pair...")
-    lookup_sql = f"SELECT * FROM lu_siteid"
-    lu_siteid = pd.read_sql(lookup_sql, g.eng)
-    check_cols = ['siteid','estuaryname']
-    lookup_cols = ['siteid','estuary']
-
-    # Multicol - algaemeta
-    args.update({
-        "dataframe": ednameta,
-        "tablename": "tbl_edna_metadata",
-        "badrows": multicol_lookup_check(ednameta,lu_siteid, check_cols, lookup_cols),
-        "badcolumn":"siteid, estuaryname",
-        "error_type": "Multicolumn Lookup Error",
-        "error_message": f'The siteid/estuaryname entry did not match the lookup list '
-                        '<a '
-                        f'href="/{lu_list_script_root}/scraper?action=help&layer=lu_siteid" '
-                        'target="_blank">lu_siteid</a>'
-        
+        "error_message": "Each sed lab batch record must have corresponding record in the grab event details table in database.  Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(sed_labbatch_grabdeets_shared_pkey)
+        )
     })
-    print("check ran - multicol lookup, siteid and estuaryname - ednameta")
     errs = [*errs, checkData(**args)]
-    print("End eDNA Multicol Checks to check SiteID/EstuaryName pair.")
+
+    args.update({
+        "dataframe": ednawater,
+        "tablename": 'tbl_edna_sed_labbatch_data',
+        "badrows": mismatch(ednawater, grabdeets, water_labbatch_grabdeets_shared_pkey),
+        "badcolumn": ','.join(water_labbatch_grabdeets_shared_pkey),
+        "error_type": "Logic Error",
+        "is_core_error": False,
+        "error_message": "Each water lab batch record must have corresponding record in the grab event details table in database.  Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(water_labbatch_grabdeets_shared_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 1")
+
+
+
+    print("# CHECK - 2")
+    # Description: Each data must correspond to grabeventdetails in database
+    # Created Coder: Caspian Thackeray
+    # Created Date: 09/14/23
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/14/2023): Check written
+    # NOTE (10/05/2023): Aria revised the error message
+
+    args.update({
+        "dataframe": ednadata,
+        "tablename": 'tbl_edna_data',
+        "badrows": mismatch(ednadata, grabdeets, data_grabdeets_shared_pkey),
+        "badcolumn": ','.join(data_grabdeets_shared_pkey),
+        "error_type": "Logic Error",
+        "is_core_error": False,
+        "error_message": "Each eDNA data record must have corresponding record in the grab event details table in database. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(data_grabdeets_shared_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 2")
+    
+    
+    
+    print("# CHECK - 3")
+    # Description: Each labbatch data must correspond to data within submission
+    # Created Coder: Caspian Thackeray
+    # Created Date: 09/14/23
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/14/2023): Check written
+    # NOTE (10/05/2023): Aria revised the error message
+    
+    args.update({
+        "dataframe": ednased,
+        "tablename": 'tbl_sed_labbatch_data',
+        "badrows": mismatch(ednased, ednadata, sed_labbatch_data_shared_pkey),
+        "badcolumn": ','.join(sed_labbatch_data_shared_pkey),
+        "error_type": "Logic Error",
+        "is_core_error": False,
+        "error_message": "Each sed lab batch record must have corresponding eDNA data record. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(sed_labbatch_data_shared_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+    
+    args.update({
+        "dataframe": ednawater,
+        "tablename": 'tbl_water_labbatch_data',
+        "badrows": mismatch(ednawater, ednadata, water_labbatch_data_shared_pkey),
+        "badcolumn": ','.join(water_labbatch_data_shared_pkey),
+        "error_type": "Logic Error",
+        "is_core_error": False,
+        "error_message": "Each water lab batch record must have corresponding eDNA data record. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(water_labbatch_data_shared_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+    
+    print("# END OF CHECK - 3")
+    
+    
+    
+    print("# CHECK - 4")
+    # Description: Each data must correspond to labbatch data within submission
+    # Created Coder: Caspian Thackeray
+    # Created Date: 09/14/23
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/14/2023): Check written
+    # NOTE (10/05/2023): Aria revised the error message
+
+    args.update({
+        "dataframe": ednadata,
+        "tablename": 'tbl_edna_data',
+        "badrows": mismatch(ednadata, ednawater, sed_labbatch_data_shared_pkey),
+        "badcolumn": ','.join(sed_labbatch_data_shared_pkey),
+        "error_type": "Logic Error",
+        "is_core_error": False,
+        "error_message": "Each eDNA data record must have corresponding sed lab batch record. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(sed_labbatch_data_shared_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+
+    args.update({
+        "dataframe": ednadata,
+        "tablename": 'tbl_edna_data',
+        "badrows": mismatch(ednadata, ednawater, water_labbatch_data_shared_pkey),
+        "badcolumn": ','.join(water_labbatch_data_shared_pkey),
+        "error_type": "Logic Error",
+        "is_core_error": False,
+        "error_message": "Each eDNA data record must have corresponding water lab batch record. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(water_labbatch_data_shared_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 4")
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # --------------------------------------------- END OF EDNA Logic Checks --------------------------------------------#
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # --------------------------------------------- Sed Labbatch Data Checks --------------------------------------------#
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    correct_time_format = r'^(0?[0-9]|1\d|2[0-3]):([0-5]\d)$'
+
+    print("# CHECK - 5")
+    # Description: Samplecollectiondate should be before preparationdate
+    # Created Coder: Caspian Thackeray
+    # Created Date: 09/14/23
+    # Last Edited Date: 09/14/23
+    # Last Edited Coder: Caspian Thackeray
+    # NOTE 09/14/23: Check written
+    
+    # formatting dates
+    ednased['preparationdate'] = pd.to_datetime(ednased['preparationdate'], format='%d/%m/%Y').dt.date
+    ednased['samplecollectiondate'] = pd.to_datetime(ednased['samplecollectiondate'], format='%d/%m/%Y').dt.date
+    
+    
+    args.update({
+        "dataframe": ednased,
+        "tablename": 'tbl_edna_sed_labbatch_data',
+        "badrows": ednased[(ednased["preparationdate"] > ednased["samplecollectiondate"])].tmp_row.tolist(),
+        "badcolumn": "preparationdate",
+        "error_type": "Logic Error",
+        "is_core_error": False,
+        "error_message": "Preparation date should be before sample collection date"
+    })
+    errs = [*errs, checkData(**args)]
+    
+    print("# END OF CHECK - 5")
+    
+    
+    print("# CHECK - 6")
+    # Description: Preparationtime should be before samplecollectiontime
+    # Created Coder: Caspian Thackeray
+    # Created Date: 09/14/23
+    # Last Edited Date: 09/14/23
+    # Last Edited Coder: Caspian Thackeray
+    # NOTE 09/14/23: Check written
+
+    if (
+        all(
+            [
+                ednased['preparationtime'].apply(lambda x: bool(re.match(correct_time_format, x))).all(), 
+                ednased['samplecollectiontime'].apply(lambda x: bool(re.match(correct_time_format, x))).all()
+            ]
+        )
+    ):
+        
+        ednased['preparationtime'] = pd.to_datetime(ednased['preparationtime'], format='%H:%M').dt.time
+        ednased['samplecollectiontime'] = pd.to_datetime(ednased['samplecollectiontime'], format='%H:%M').dt.time
+
+        args.update({
+            "dataframe": ednased,
+            "tablename": 'tbl_edna_sed_labbatch_data',
+            "badrows": ednased[(ednased["preparationtime"] > ednased["samplecollectiontime"])].tmp_row.tolist(),
+            "badcolumn": 'preparationtime',
+            "error_type": 'Undefined Error',
+            "is_core_error": False,
+            "error_message": 'Preparation time should be before sample collection time'
+        })
+        errs = [*errs, checkData(**args)]
+    
+    print("# END OF CHECK - 6")
+    
+    
+    
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # --------------------------------------------- END OF Sed Labbatch Data Checks -------------------------------------#
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+    
+    
+    
+    
+    
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # --------------------------------------------- Water Labbatch Data Checks ------------------------------------------#
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    print("# CHECK - 7")
+    # Description: Preparationtime should be before samplecollectiontime
+    # Created Coder: Caspian Thackeray
+    # Created Date: 09/14/23
+    # Last Edited Date: 09/14/23
+    # Last Edited Coder: Caspian Thackeray
+    # NOTE 09/14/23: Check written
+
+    if (
+        all(
+            [
+                ednawater['preparationtime'].apply(lambda x: bool(re.match(correct_time_format, x))).all(), 
+                ednawater['samplecollectiontime'].apply(lambda x: bool(re.match(correct_time_format, x))).all()
+            ]
+        )
+    ):
+        
+        ednawater['preparationtime'] = pd.to_datetime(ednawater['preparationtime'], format='%H:%M').dt.time
+        ednawater['samplecollectiontime'] = pd.to_datetime(ednawater['samplecollectiontime'], format='%H:%M').dt.time
+
+        args.update({
+            "dataframe": ednawater,
+            "tablename": 'tbl_edna_water_labbatch_data',
+            "badrows": ednawater[(ednawater["preparationtime"] > ednawater["samplecollectiontime"])].tmp_row.tolist(),
+            "badcolumn": 'preparationtime',
+            "error_type": 'Undefined Error',
+            "is_core_error": False,
+            "error_message": 'Preparation time should be before sample collection time'
+        })
+        errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 7")
+
+    print("# CHECK - 8")
+    # Description: Preparationdate should be before samplecollectiondate
+    # Created Coder: Caspian Thackeray
+    # Created Date: 09/14/23
+    # Last Edited Date: 09/14/23
+    # Last Edited Coder: Caspian Thackeray
+    # NOTE 09/14/23: Check written
+
+    ednawater['preparationdate'] = pd.to_datetime(ednawater['preparationdate'], format='%d/%m/%Y').dt.date
+    ednawater['samplecollectiondate'] = pd.to_datetime(ednawater['samplecollectiondate'], format='%d/%m/%Y').dt.date
+    
+    
+    args.update({
+        "dataframe": ednawater,
+        "tablename": 'tbl_edna_water_labbatch_data',
+        "badrows": ednawater[(ednawater["preparationdate"] > ednawater["samplecollectiondate"])].tmp_row.tolist(),
+        "badcolumn": "preparationdate",
+        "error_type": "Logic Error",
+        "is_core_error": False,
+        "error_message": "Preparation date should be before sample collection date"
+    })
+    errs = [*errs, checkData(**args)]
+    
+    print("# END OF CHECK - 8")
+
+    
+    
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # --------------------------------------------- END OF Water Labbatch Data Checks -----------------------------------#
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+    
+    
+    
+    
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # --------------------------------------------- Edna Data Checks ----------------------------------------------------#
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    print("# CHECK - 9")
+    # Description: labreplicate must be consecutive within primary keys
+    # Created Coder: Caspian Thackeray
+    # Created Date: 09/14/23
+    # Last Edited Date: 09/14/23
+    # Last Edited Coder: Caspian Thackeray
+    # NOTE 09/14/23: Check written
+    # NOTE 09/14/23: Error message will need to be re-written with the actual primary keys
+
+    badrows = []
+    for _, subdf in ednadata.groupby([x for x in data_pkey if x != 'labreplicate']):
+        df = subdf.filter(items=[*data_pkey,*['tmp_row']])
+        df = df.sort_values(by='labreplicate').fillna(0)
+        rep_diff = df['labreplicate'].diff().dropna()
+        all_values_are_one = (rep_diff == 1).all()
+        if not all_values_are_one:
+            badrows = [*badrows, *df.tmp_row.tolist()]
+
+    args.update({
+        "dataframe": ednadata,
+        "tablename": "tbl_edna_data",
+        "badrows": badrows,
+        "badcolumn": "labreplicate",
+        "error_type": "Custom Error",
+        "error_message": "Replicate must be consecutive within a primary key group"
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 9")
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # --------------------------------------------- END OF Edna Data Checks ---------------------------------------------#
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
 
     return {'errors': errs, 'warnings': warnings}
+

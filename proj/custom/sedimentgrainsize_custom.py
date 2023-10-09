@@ -2,7 +2,10 @@ from inspect import currentframe
 from flask import current_app, g
 from pandas import DataFrame
 import pandas as pd
-from .functions import checkData, checkLogic, mismatch
+from .functions import checkData, checkLogic, mismatch,get_primary_key, check_consecutiveness
+
+
+
 
 def sedimentgrainsize_lab(all_dfs):
     
@@ -23,8 +26,22 @@ def sedimentgrainsize_lab(all_dfs):
     # This data type should only have tbl_example
     # example = all_dfs['tbl_example']
     
-    sed = all_dfs['tbl_sedgrainsize_data']
-    sedbatch = all_dfs['tbl_sedgrainsize_labbatch_data']
+    sed_data = all_dfs['tbl_sedgrainsize_data']
+    sed_labbatch = all_dfs['tbl_sedgrainsize_labbatch_data']
+    grabeventdetails = pd.read_sql("SELECT * FROM tbl_grabevent_details", g.eng)
+
+    sed_data['tmp_row'] = sed_data.index
+    sed_labbatch['tmp_row'] = sed_labbatch.index
+    grabeventdetails['tmp_row'] = grabeventdetails.index
+
+    sed_data_pkey = get_primary_key('tbl_sedgrainsize_data', g.eng)
+    sed_labbatch_pkey = get_primary_key('tbl_sedgrainsize_labbatch_data', g.eng)
+    grabeventdetails_pkey = get_primary_key('tbl_grabevent_details', g.eng)
+
+    sed_labbatch_grabevntdetails_shared_pkey = [x for x in sed_labbatch_pkey if x in grabeventdetails_pkey]
+    sed_labbatch_grabevntdetails_shared_key = [x for x in sed_data_pkey if x in grabeventdetails_pkey]
+    sed_data_sed_labbatch_shared_pkey = [x for x in sed_data_pkey if x in sed_labbatch_pkey]
+
 
     errs = []
     warnings = []
@@ -32,7 +49,7 @@ def sedimentgrainsize_lab(all_dfs):
     # Alter this args dictionary as you add checks and use it for the checkData function
     # for errors that apply to multiple columns, separate them with commas
     args = {
-        "dataframe": sed,
+        "dataframe": sed_data,
         "tablename": 'tbl_sedgrainsize_data',
         "badrows": [],
         "badcolumn": "",
@@ -50,158 +67,160 @@ def sedimentgrainsize_lab(all_dfs):
     # })
     # errs = [*errs, checkData(**args)]
 
-    # Logic Checks
-    eng = g.eng
-    sql = eng.execute("SELECT * FROM tbl_sedgrainsize_metadata")
-    sql_df = DataFrame(sql.fetchall())
-    sql_df.columns = sql.keys()
-    sedmeta = sql_df
-    del sql_df
-
-    ############################### --Start of Logic Checks -- #############################################################
-    print("Begin Sediment Grain Size Lab Logic Checks...")
-
-    # Logic Check 1: Siteid/estuaryname pair must match lookup list -- sedimentgrainsize_metadata (db) & sediment_labbatch_data (submission), sedimentgrainsize_metadata records do not exist in database
-    print("begin check 1")
-    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'matrix', 'samplelocation','projectid']
-    args = {
-        "dataframe": sedbatch,
-        "tablename": 'tbl_sedgrainsize_labbatch_data',
-        "badrows": mismatch(sedbatch, sedmeta, groupcols),
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, matrix, samplelocation",
-        "error_type": "Logic Error",
-        "error_message": "Field submission for sediment grain size labbatch data is missing. Please verify that the sediment grain size field data has been previously submitted."
-    }
-    errs = [*errs, checkData(**args)]
-    print("check ran - logic - sediment grain size metadata records do not exist in database for sediment grain size labbatch data submission")
-    print("end check 1")
-
-    # Logic Check 2: sedgrainsize_labbatch_data & sedgrainsize_data must have corresponding records within session submission
-    # Logic Check 2a: sedgrainsize_data missing records provided by sedgrainsize_labbatch_data
-    print("begin check 2a")
-    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'samplelocation', 'preparationbatchid', 'labreplicate', 'matrix', 'projectid']
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ SedGrainSize Logic Checks --------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+    print("# CHECK - 1")
+    # Description: Each labbatch data must correspond to grabeventdetails in database
+    # Created Coder: Ayah
+    # Created Date: 09/15/2021
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/12/2023): Ayah created logic check, has not tested yet
+    # NOTE (10/05/2023): Aria revised the error message
     args.update({
-        "dataframe": sedbatch,
+        "dataframe": sed_labbatch,
         "tablename": "tbl_sedgrainsize_labbatch_data",
-        "badrows": mismatch(sedbatch, sed, groupcols), 
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, samplelocation, preparationbatchid, labreplicate",
+        "badrows": mismatch(sed_labbatch, grabeventdetails, sed_labbatch_grabevntdetails_shared_key), 
+        "badcolumn": ','.join(sed_labbatch_grabevntdetails_shared_key),
         "error_type": "Logic Error",
-        "error_message": "Records in sedimentgrainsize_labbatch_data must have corresponding records in sedgrainsize_data. Missing records in sedgrainsize_data."
+        "error_message": 
+            "Each record in sedgrainsize_labbatch_data must have a corresponding field record. You must submit the field data to the checker first. "+\
+            "The Field template can be downloaded on "+\
+            "<a href='/checker/templater?datatype=grab_field' target='_blank'>Field Template</a>. "
+            "Records are matched based on these columns: {}".format(','.join(sed_labbatch_grabevntdetails_shared_key))
     })
     errs = [*errs, checkData(**args)]
-    print("check ran - logic - missing sedgrainsize_data records")
-    print("end check 2a")
+    print("# END OF CHECK - 1")
 
-    # Logic Check 2b: sedgrainsize_labbatch_data missing records provided by sedgrainsize_data
-    print("begin check 2b")
-    tmp = sed.merge(
-        sedbatch.assign(present = 'yes'), 
-        on = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'samplelocation', 'preparationbatchid', 'matrix', 'labreplicate', 'projectid'],
-        how = 'left'
-    )
-    # badrows = tmp[pd.isnull(tmp.present)].tmp_row.tolist()
+    print("# CHECK - 2")
+    # Description: Each labbatch data must include corresponding data within session submission
+    # Created Coder: Ayah
+    # Created Date: 09/15/2021
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/12/2023): Ayah created logic check, has not tested yet
+    # NOTE (10/05/2023): Aria revised the error message
     args.update({
-        "dataframe": sed,
+        "dataframe": sed_labbatch,
+        "tablename": "tbl_sedgrainsize_labbatch_data",
+        "badrows": mismatch(sed_labbatch, sed_data, sed_data_sed_labbatch_shared_pkey), 
+        "badcolumn": ','.join(sed_data_sed_labbatch_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Each record in sedgrainsize_labbatch_data must have a corresponding record in sedgrainsize_data. "+\
+            "Records are matched based on these columns: {}".format(','.join(sed_data_sed_labbatch_shared_pkey))
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 2")
+
+
+    print("# CHECK - 3")
+    # Description: Each data must include corresponding labbatch data within session submission
+    # Created Coder: Ayah
+    # Created Date: 09/15/2021
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/12/2023): Ayah created logic check, has not tested yet
+    # NOTE (10/05/2023): Aria revised the error message
+    args.update({
+        "dataframe": sed_data,
         "tablename": "tbl_sedgrainsize_data",
-        "badrows": tmp[pd.isnull(tmp.present)].tmp_row.tolist(),
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, samplelocation, preparationbatchid, matrix, labreplicate, 'projectid",
+        "badrows": mismatch(sed_data, sed_labbatch, sed_data_sed_labbatch_shared_pkey), 
+        "badcolumn": ','.join(sed_data_sed_labbatch_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Records in sedgrainsize_data must have corresponding records in sedgrainsize_labbatch_data. Missing records in sedgrainsize_labbatch_data."
+        "error_message": "Each record in sedgrainsize_data must have a corresponding record in sedgrainsize_labbatch_data. "+\
+            "Records are matched based on these columns: {}".format(','.join(sed_data_sed_labbatch_shared_pkey))
     })
     errs = [*errs, checkData(**args)]
-    print("check ran - logic - missing sedgrainsize_labbatch_data records")
-    print("begin check 2b")
-    print("End Sediment Grain Size Lab Logic Checks...")
+    print("# END OF CHECK - 3")    
 
-    
-    return {'errors': errs, 'warnings': warnings}
 
-def sedimentgrainsize_field(all_dfs):
-    
-    current_function_name = str(currentframe().f_code.co_name)
-    lu_list_script_root = current_app.script_root
-    
-    # function should be named after the dataset in app.datasets in __init__.py
-    assert current_function_name in current_app.datasets.keys(), \
-        f"function {current_function_name} not found in current_app.datasets.keys() - naming convention not followed"
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF SedGrainSize Logic Checks -------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
 
-    expectedtables = set(current_app.datasets.get(current_function_name).get('tables'))
-    assert expectedtables.issubset(set(all_dfs.keys())), \
-        f"""In function {current_function_name} - {expectedtables - set(all_dfs.keys())} not found in keys of all_dfs ({','.join(all_dfs.keys())})"""
 
-    # since often times checks are done by merging tables (Paul calls those logic checks)
-    # we assign dataframes of all_dfs to variables and go from there
-    # This is the convention that was followed in the old checker
-    
-    # This data type should only have tbl_example
-    # example = all_dfs['tbl_example']
-    
-    meta = all_dfs['tbl_sedgrainsize_metadata']
 
-    errs = []
-    warnings = []
 
-    # Alter this args dictionary as you add checks and use it for the checkData function
-    # for errors that apply to multiple columns, separate them with commas
-    args = {
-        "dataframe": meta,
-        "tablename": 'tbl_sedgrainsize_metadata',
-        "badrows": [],
-        "badcolumn": "",
-        "error_type": "",
-        "is_core_error": False,
-        "error_message": ""
-    }
 
-    # Example of appending an error (same logic applies for a warning)
-    # args.update({
-    #   "badrows": get_badrows(df[df.temperature != 'asdf']),
-    #   "badcolumn": "temperature",
-    #   "error_type" : "Not asdf",
-    #   "error_message" : "This is a helpful useful message for the user"
-    # })
-    # errs = [*errs, checkData(**args)]
 
-    # Multi column Lookup Check 
-    def multicol_lookup_check(df_to_check, lookup_df, check_cols, lookup_cols):
-        assert set(check_cols).issubset(set(df_to_check.columns)), "columns do not exists in the dataframe"
-        assert isinstance(lookup_cols, list), "lookup columns is not a list"
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ Sedgrainsize LabBatch Checks ------------------------------------ #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
 
-        lookup_df = lookup_df.assign(match="yes")
-        #bug fix: read 'status' as string to avoid merging on float64 (from df_to_check) and object (from lookup_df) error
-        if 'status' in df_to_check.columns.tolist():
-            df_to_check['status'] = df_to_check['status'].astype(str)
-        
-        for c in check_cols:
-            df_to_check[c] = df_to_check[c].apply(lambda x: str(x).lower().strip())
-        for c in lookup_cols:
-            lookup_df[c] = lookup_df[c].apply(lambda x: str(x).lower().strip())
-        
-        merged = pd.merge(df_to_check, lookup_df, how="left", left_on=check_cols, right_on=lookup_cols)
-        badrows = merged[pd.isnull(merged.match)].index.tolist()
-        return(badrows)
-
-    print("Begin SedGrainSize Multicol Checks to check SiteID/EstuaryName pair...")
-    lookup_sql = f"SELECT * FROM lu_siteid"
-    lu_siteid = pd.read_sql(lookup_sql, g.eng)
-    check_cols = ['siteid','estuaryname']
-    lookup_cols = ['siteid','estuary']
-
-    # Multicol - sedgrainsize_meta
+    print("# CHECK - 4")
+    # Description: Labreplicate must be consecutive within primary keys 
+    # Created Coder: Aria Askarar
+    # Created Date: 09/28/2023
+    # Last Edited Date: 09/28/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/28/2023): Aria wrote the replicate check, it has not been tested.
+    groupby_cols =  [x for x in sed_labbatch_pkey if x != 'labreplicate']
     args.update({
-        "dataframe": meta,
-        "tablename": "tbl_sedgrainsize_metadata",
-        "badrows": multicol_lookup_check(meta, lu_siteid, check_cols, lookup_cols),
-        "badcolumn":"siteid, estuaryname",
-        "error_type": "Multicolumn Lookup Error",
-        "error_message": f'The siteid/estuaryname entry did not match the lookup list '
-                        '<a '
-                        f'href="/{lu_list_script_root}/scraper?action=help&layer=lu_siteid" '
-                        'target="_blank">lu_siteid</a>'
-        
+        "dataframe": sed_labbatch,
+        "tablename": "tbl_sedgrainsize_labbatch_data",
+        "badrows" : check_consecutiveness(sed_labbatch, groupby_cols, 'labreplicate'),
+        "badcolumn": "labreplicate",
+        "error_type": "Replicate Error",
+        "error_message": f"labreplicate values must be consecutive. Records are grouped by {','.join(groupby_cols)}"
     })
-    print("check ran - multicol lookup, siteid and estuaryname - sedgrainsize_metadata")
     errs = [*errs, checkData(**args)]
-    print("End Multicol Checks to check SiteID/EstuaryName pair.")
+    
+    print("# END OF CHECK - 4")
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF Sedgrainsize LabBatch Checks ----------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ Sedgrainsize Data Checks ---------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+    print("# CHECK - 5")
+    # Description: Labreplicate must be consecutive within primary keys 
+    # Created Coder: Aria Askarar
+    # Created Date: 09/28/2023
+    # Last Edited Date: 09/28/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/28/2023): Aria wrote the replicate check, it has not been tested. 
+    groupby_cols = [x for x in sed_data_pkey if x != 'labreplicate']
+    args.update({
+        "dataframe": sed_data,
+        "tablename": "tbl_sedgrainsize_data",
+        "badrows" : check_consecutiveness(sed_data, groupby_cols, 'labreplicate'),
+        "badcolumn": "labreplicate",
+        "error_type": "Replicate Error",
+        "error_message": f"labreplicate values must be consecutive. Records are grouped by {','.join(groupby_cols)}"
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 5")
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF Sedgrainsize Data Checks --------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
     
     return {'errors': errs, 'warnings': warnings}

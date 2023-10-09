@@ -1,8 +1,6 @@
-# Dont touch this file! This is intended to be a template for implementing new custom checks
-
 from inspect import currentframe
 from flask import current_app, g
-from .functions import checkData
+from .functions import checkData,mismatch,get_primary_key,check_consecutiveness
 import pandas as pd
 
 def grab_field(all_dfs):
@@ -36,6 +34,11 @@ def grab_field(all_dfs):
     grabeventdet['tmp_row'] = grabeventdet.index
     grabevent['tmp_row'] = grabevent.index 
 
+    grabeventdet_pkey = get_primary_key('tbl_grabevent_details',g.eng)
+    grabevent_pkey = get_primary_key('tbl_grabevent',g.eng)
+    grabevent_grabeventdet_shared_pkey = [x for x in grabevent_pkey if x in grabeventdet_pkey]
+
+
     # Alter this args dictionary as you add checks and use it for the checkData function
     # for errors that apply to multiple columns, separate them with commas
     args = {
@@ -47,185 +50,414 @@ def grab_field(all_dfs):
         "is_core_error": False,
         "error_message": ""
     }
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ Logic Checks ---------------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+    print("# CHECK - 1")
+    # Description: Records in the grabevent should have the corresponding records in the grabeventdetails when the sampletype identifying column is yes (for example: toxicity column in grabevent)
+    # Created Coder: Ayah
+    # Created Date: NA
+    # Last Edited Date: 09/25/2023
+    # Last Edited Coder: Duy
+    # NOTE (09/12/2023): Ayah wrote logic check. Since we are only checking records when any sampletype is yea, I created a filtered df containing all the rows where one or more sampletype identifier is "Yes"
+    
+    # NOTE (09/22/2023): Got a critical error submitting Prop50 data - "list index out of range" - Robert
+    #                    Remember that we need a matching record such that when a sampletype column is "Yes" there has to be a matching record in 
+    #                    Grab Event Details such that the sampletype is the same as the column name in Grab Event
+    #                    For this reason, i'll need to adjust this
+    
+    # lowercase the sampletypes 
+    # and put in alphabetical order, just because
+    # NOTE (09/25/2023): Duy changed the code so it marks the badrows in grabevent, added the sampletype column to badcolumns, clarified the error message
+    sampletypes = pd.read_sql("SELECT DISTINCT LOWER(sampletype) AS sampletype FROM lu_sampletype ORDER BY 1",g.eng).sampletype.tolist()
 
-    print("Begin Grab Field Custom Checks..")
-
-#Check: IF sampletype is benthuc infauna and the matrix is sediment then sieve or depth is required
-    args = {
+    # If there is a sampletype that is not in the grabevent dataframe columns, then we set something up incorrectly
+    assert \
+        set(sampletypes).issubset(set(grabevent.columns)), \
+        f"Sampletypes {set(sampletypes) - set(grabevent.columns)} not found in columns of grabevent table"
+    
+    # Loop through the sampletypes and check data accordingly
+    for sampletype in sampletypes:
+        filtered_grabevent = grabevent[ grabevent[sampletype] == 'Yes' ]
+        filtered_grabdetail = grabeventdet[grabeventdet['sampletype'] == sampletype]
+        args.update({
+            "dataframe":grabevent,
+            "tablename":'tbl_grabevent',
+            "badrows":mismatch(filtered_grabevent, filtered_grabdetail, grabevent_grabeventdet_shared_pkey),
+            "badcolumn": ','.join([*grabevent_grabeventdet_shared_pkey, *[sampletype]]),
+            "error_type": "Logic Error",
+            "is_core_error": False,
+            "error_message": 
+                "If you indicate that you collect data for a datatype (for example: you input 'Yes' in nutrients column in grab_event), "+\
+                "then you should have the corresponding records for that datatype in the grabevent_details based on these columns {}, "+\
+                "and the value in sampletype column should match".format(','.join(grabevent_grabeventdet_shared_pkey))
+        })
+        errs = [*errs, checkData(**args)] 
+    print("# END OF CHECK - 1")
+    
+    
+    print("# CHECK - 2")
+    # Description: Records in the grabevent_details should have the corresponding records in the grabevent based on the shared pkeys
+    # Created Coder: Ayah
+    # Created Date: NA
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Ayah
+    # NOTE (09/12/2023): Ayah wrote logic check
+    args.update({
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
-        "badrows": grabeventdet[(grabeventdet['sampletype'] == 'infauna') & (grabeventdet['matrix'] == 'sediment') & (grabeventdet['sieve_or_depth'].isna())].tmp_row.tolist(),
-        "badcolumn": "sieve_or_depth",
+        "badrows":mismatch(grabevent,grabeventdet,grabevent_grabeventdet_shared_pkey),
+        "badcolumn": ','.join(grabevent_grabeventdet_shared_pkey),
         "error_type": "empty value",
         "is_core_error": False,
-        "error_message": "Sieve_or_Depth is a required field since sampletype is Benthic infauna and matrix is sediment. Please enter the sieve size if the sample was sieved in the field. If the sample was not sieved in the field, enter -88."
+        "error_message": "Records in the grabevent_details should have the corresponding records in the grabevent based on these columns {}".format(
+            ','.join(grabevent_grabeventdet_shared_pkey))
+    })
+    errs = [*errs, checkData(**args)] 
+    print("# END OF CHECK - 2")
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF Logic Checks --------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
 
-    }
 
 
-#Check: Coresizediameter should be filled when matrix is sediment
-    print("begin check grabfield ")
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ GrabEvent Checks ------------------------------------------------ #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    #print("# CHECK - 12")
+    # Description: At least one of the datatype identifiers (toxicity,grainsize,infauna,chemistry,nutrients,edna,microplastic) needed to be yes
+    # Created Coder: Duy
+    # Created Date: 10/02/2023
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (10/02/2023): Duy created the check.
+    badrows = grabevent[
+        grabevent.apply(
+            lambda row: all(
+                [
+                    row['infauna'].lower() == 'no',    
+                    row['chemistry'].lower() == 'no',    
+                    row['toxicity'].lower() == 'no',    
+                    row['grainsize'].lower() == 'no',    
+                    row['microplastics'].lower() == 'no',    
+                    row['pfas'].lower() == 'no',    
+                    row['pfasfieldblank'].lower() == 'no',    
+                    row['microplasticsfieldblank'].lower() == 'no',    
+                    row['equipmentblank'].lower() == 'no',    
+                    row['nutrients'].lower() == 'no',    
+                ]
+            ),
+            axis=1    
+        )
+    ].tmp_row.tolist()
+    args.update({
+        "dataframe": grabevent,
+        "tablename":'tbl_grabevent',
+        "badrows": badrows,
+        "badcolumn": 'infauna,chemistry,toxicity,grainsize,microplastics,pfas,pfasfieldblank,microplasticsfieldblank,equipmentblank,nutrients',
+        "error_type": "Value Error",
+        "is_core_error": False,
+        "error_message": "At least one of the datatype identifiers (toxicity,grainsize,infauna,chemistry,nutrients,edna,microplastic) needed to be yes"
+    })
+    errs = [*errs, checkData(**args)] 
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------END OF GrabEvent Checks ------------------------------------------ #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ GrabEventDetail Checks ------------------------------------------ #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    print("# CHECK - 3")
+    # Description: coresizediameter should be filled when matrix is sediment 
+    # Created Coder: Ayah
+    # Created Date: NA
+    # Last Edited Date: 09/26/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
+    # NOTE (09/25/2023): Aria adjusted error message and changed code since coresizediamerter is numeric so -88 is the numeric equivalent to "Not Recorded"
+    # NOTE (09/26/2023): Aria changed the logic of this check (changed from Not recorded to -88 since coresizediameter is a numeric column).
+
     args.update({
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
         "badrows":grabeventdet[ 
             (grabeventdet['matrix'] == 'sediment') & 
-            (grabeventdet['coresizediameter'] == 'Not Recorded')
+            (grabeventdet['coresizediameter'] != -88)
         ].tmp_row.tolist(),
         "badcolumn": "coresizediameter",
         "error_type": "empty value",
         "is_core_error": False,
-        "error_message": "CoreSizeDiameter is a required field since matrix is water. Please enter the diameter at which the sample was collected."
+        "error_message": "When matrix is sediment, then you should put -88 for coresizediameter column"
     })
     errs = [*errs, checkData(**args)]
-    print('check ran - error check for matrix and coresizediameter')
+    print("# END OF CHECK - 3")
 
-#Check: Coresizedepth should be filled when matrix is sediment
-    print('begin check grabfield')
-    args = {
+    print("# CHECK - 4")
+    # Description: coresizedepth should be filled when matrix is sediment 
+    # Created Coder: Ayah 
+    # Created Date: NA
+    # Last Edited Date: 09/26/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
+    # NOTE (09/25/2023): Aria adjusted error message and changed code since coresizedepth is numeric so -88 is the numeric equivalent to "Not Recorded"
+    # NOTE (09/26/2023): Aria changed the logic of this check (changed from Not recorded to -88 since coresizediameter is a numeric column).
+
+    args.update({
             "dataframe":grabeventdet,
             "tablename":'tbl_grabevent_details',
-            "badrows":grabeventdet[(grabeventdet['matrix'] == 'sediment') &
-                ((grabeventdet['coresizedepth']== 'Not Recorded')) 
-                ].tmp_row.tolist(),
+            "badrows":grabeventdet[
+                (grabeventdet['matrix'] == 'sediment') &
+                (grabeventdet['coresizedepth'] != -88) 
+            ].tmp_row.tolist(),
             "badcolumn": "coresizedepth",
             "error_type": "empty value",
             "is_core_error": False,
-            "error_message": "CoreSizeDepth is a required field since matrix is water. Please enter the depth at which the sample was collected."
-    }
+            "error_message": "When matrix is sediment, then you should put -88 for coresizedepth column"
+    })
     errs = [*errs, checkData(**args)]
-    print('check ran - error check for matrix  and coresizedepth')
 
+    print("# END OF CHECK - 4")
 
-#Check: Sieve_or_depth is required when matrix is water
-    print('begin check  grabfield')
-    args = {
+    print("# CHECK - 5")
+    # Description: If the sample type is benthic infauna and the matrix is sediment then sieve_or_depth is required 
+    # Created Coder: Ayah 
+    # Created Date: NA
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Ayah
+    # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
+
+    args.update({
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
-        "badrows":grabeventdet[(grabeventdet['matrix'].isin(['blankwater','labwater','saltwater','freshwater'])) & (
-            (grabeventdet['sieve_or_depth'] == 'Not Recorded')) 
+        "badrows": grabeventdet[
+            (grabeventdet['sampletype'] == 'infauna') & 
+            (grabeventdet['matrix'] == 'sediment') & 
+            (grabeventdet['sieve_or_depth'].isna())
+        ].tmp_row.tolist(),
+        "badcolumn": "sieve_or_depth",
+        "error_type": "empty value",
+        "is_core_error": False,
+        "error_message": "Sieve_or_Depth is a required field since sampletype is Benthic infauna and matrix is sediment. Please enter the sieve size if the sample was sieved in the field. If the sample was not sieved in the field, enter -88."
+    })
+    errs = [*errs, checkData(**args)]
+    
+    print("# END OF CHECK - 5")
+
+    print("# CHECK - 6")
+    # Description: sieve_or_depth is required when matrix is water
+    # Created Coder: Ayah 
+    # Created Date: NA
+    # Last Edited Date: 09/28/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
+    # NOTE (09/14/2023): Ayah made the lu list for all water matrix for the check
+    # NOTE (09/25/2023): Aria updated code to catch error(sieve_or_depth is numeric so it has to be -88 not "Not recorded") and updated error_message
+    # NOTE (09/28/2023): Aria changed the logic of this check (changed from Not recorded to -88 since coresizediameter is a numeric column) and changed the logic from != to == -88.
+
+    lu_matrix_filtered = pd.read_sql("SELECT matrix FROM lu_matrix where matrix like '%%water';",g.eng)
+    lu_matrix_filtered = lu_matrix_filtered['matrix'].tolist()
+
+    args.update({
+        "dataframe":grabeventdet,
+        "tablename":'tbl_grabevent_details',
+        "badrows":grabeventdet[
+            (grabeventdet['matrix'].isin(lu_matrix_filtered)) & 
+            ((grabeventdet['sieve_or_depth'] == -88) | (grabeventdet['sieve_or_depth'].isna()) )
             ].tmp_row.tolist(),
         "badcolumn": "sieve_or_depth",
         "error_type": "empty value",
         "is_core_error": False,
-        "error_message": "Sience_or_Depth is a required field since matrix is water. Please enter the depth at which the sample was collected."
-    }
+        "error_message": "Sieve_or_Depth is a required field since matrix is water. Please enter the depth at which the sample was collected."
+    })
     errs = [*errs, checkData(**args)]
-    print('check ran - error check for matrix  and sieve_or_depth')
+    print("# END OF CHECK - 6")
 
-#Check: Composition should not get filled in when matrix is water
-    print('begin check grab field')
-    args = {
+    print("# CHECK - 7")
+    # Description: color should be 'Not recorded' in when matrix is water
+    # Created Coder: Ayah 
+    # Created Date: NA
+    # Last Edited Date: 09/25/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
+    # NOTE (09/14/2023): Ayah made the lu list for all water matrix for the check
+    # NOTE (09/25/2023): Aria updated code changed "Not Recored" to "Not recorded" and updated error_message
+
+    args.update({
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
-        "badrows":grabeventdet[(grabeventdet['matrix'].isin(['blankwater','labwater','saltwater','freshwater'])) &
-            (grabevent['composition'] != 'Not Recorded' ) 
-            ].tmp_row.tolist(),
-        "badcolumn": "composition",
-        "error_type": "empty value",
-        "is_core_error": False,
-        "error_message": "Compoistion should be 'Not Recorded' since matrix is water"
-    }
-    errs = [*errs, checkData(**args)]
-    print('check ran error check for matrix  and grab')
-
-#Check: Color should not get filled in when matrix is water
-    print("begin check grabfied:")
-    args = {
-        "dataframe":grabeventdet,
-        "tablename":'tbl_grabevent_details',
-        "badrows":grabeventdet[(grabeventdet['matrix'].isin(['blankwater','labwater','saltwater','freshwater'])) & 
-            (grabeventdet['color'] != 'Not Recorded')
+        "badrows":grabeventdet[(grabeventdet['matrix'].isin(lu_matrix_filtered)) & 
+            (grabeventdet['color'] != 'Not recorded')
             ].tmp_row.tolist(),
         "badcolumn": "color",
         "error_type": "empty value",
         "is_core_error": False,
-        "error_message": "Color should be 'Not Recorded' since matrix is water"
-    }
+        "error_message": "Color should be 'Not recorded' since matrix is water"
+    })
     errs = [*errs, checkData(**args)]
-    print('check ran - error check for matrix  and grab')
- 
-#Check: Odor should not get filled in when matrix is water
-    print("begin check grabfied:")
-    args = {
+
+    print("# END OF CHECK - 7")
+
+
+    print("# CHECK - 8")
+    # Description: odor should be 'Not recorded' when matrix is water
+    # Created Coder: Ayah 
+    # Created Date: NA
+    # Last Edited Date: 09/26/2023
+    # Last Edited Coder: Duy
+    # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
+    # NOTE (09/14/2023): Ayah made the lu list for all water matrix for the check
+    # NOTE (09/26/2023): This would give an error .isin([lu_matrix_filtered]) since lu_matrix_filtered is already a list. so Duy removed it.
+    args.update({
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
-        "badrows":grabeventdet[(grabeventdet['matrix'].isin(['blankwater','labwater','saltwater','freshwater']))
-        & ((grabeventdet['odor'] == 'Not Recorded'))].tmp_row.tolist(),
+        "badrows":grabeventdet[
+            (grabeventdet['matrix'].isin(lu_matrix_filtered)) & 
+            (grabeventdet['odor'] != 'Not recorded')
+        ].tmp_row.tolist(),
         "badcolumn": "odor",
         "error_type": "empty value",
         "is_core_error": False,
-        "error_message": "Odor should be 'Not Recorded' since matrix is water"
-    }
-    
+        "error_message": "Odor should be 'Not recorded' since matrix is water"
+    }) 
     errs = [*errs, checkData(**args)]
-    print('check ran - error check for matrix  and grab')
 
-#aria started here
-    #check specific to tbl_grabevent_detail: If sampletype is "infauna" then a value for sieve_or_depth field must be pulled from lu_benthicsievesize. Also a value needs to be set for the sieve_or_depthunits field (lu_benthicsievesizeunits).
-    print("begin check grabfield: ")
-    lookup_sql = f"SELECT * FROM lu_benthicsievesize;"
-    lu_benthicsievesize = pd.read_sql(lookup_sql, g.eng)
-    sievesize_list = [int(x) for x in lu_benthicsievesize['sievesize']]
-    badrows = grabeventdet[(grabeventdet['sampletype'] == 'infauna') & (grabeventdet['sieve_or_depth'].isin(sievesize_list))]
-    print("before")
-    print(f"sievesize_list: {sievesize_list}")
-    print(f"badrows: {badrows}")
+    print("# END OF CHECK - 8")
 
+    print("# CHECK - 9")
+    # Description: composition should not get filled in when matrix is water
+    # Created Coder: Ayah 
+    # Created Date: NA
+    # Last Edited Date: 09/14/2023
+    # Last Edited Coder: Ayah
+    # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
+    # NOTE (09/14/2023): Ayah made the lu list for all water matrix for the check
     args.update({
-        "dataframe": grabeventdet,
-        "tablename": "tbl_grabevent_details",
-        "badrows":grabeventdet[(grabeventdet['sampletype'] == 'infauna') & (~grabeventdet['sieve_or_depth'].isin(sievesize_list))].tmp_row.tolist(),
-        "badcolumn": "sieve_or_depth",
-        "error_type": "mismatched value",
+        "dataframe":grabeventdet,
+        "tablename":'tbl_grabevent_details',
+        "badrows":grabeventdet[
+            (grabeventdet['matrix'].isin(lu_matrix_filtered)) &
+            (grabeventdet['composition'] != 'Not recorded' ) 
+            ].tmp_row.tolist(),
+        "badcolumn": "composition",
+        "error_type": "empty value",
         "is_core_error": False,
-        # "error_message": f" If sampletype is 'infauna' then a value for sieve_or_depth field must be from lu_benthicsievesize table."
-        "error_message": f' If sampletype is "infauna" then a value for sieve_or_depth field must be from lu_benthicsievesize table.'
-            '<a '
-            f'href="/{lu_list_script_root}/scraper?action=help&layer=lu_benthicsievesize" '
-            'target="_blank">lu_benthicsievesize</a>'        
+        "error_message": "Composition should be 'Not recorded' since matrix is water"
     })
     errs = [*errs, checkData(**args)]
-    print("check ran- If sampletype is 'infauna' then a value for sieve_or_depth field must be pulled from lu_benthicsievesize.")
 
-    ##check: If sampletype is "infauna" then a value for sieve_or_depthunits field must come from (lu_benthicsievesizeunits).
-    print('begin check  grabfield')
-    lookup_sql2 = f"SELECT * FROM lu_benthicsievesizeunits;"
-    lu_benthicsievesizeunits = pd.read_sql(lookup_sql2, g.eng)
-    sievesizeunits_list = lu_benthicsievesizeunits['sievesizeunits'].tolist()
-    # badrows = grabeventdet[(grabeventdet['sampletype'] == 'infauna') & (grabeventdet['sieve_or_depthunits'].isin(sievesizeunits_list))]
+    print("# END OF CHECK - 9")
+
+    print("# CHECK - 10a")
+    # Description: If sampletype is "infauna" then a value for sieve_or_depth field must be pulled from lu_benthicsievesize. 
+    # Created Coder: Aria Askaryar
+    # Created Date: 09/02/2023
+    # Last Edited Date: 09/28/2023
+    # Last Edited Coder: Aria Askaryar 
+    # NOTE (09/12/2023): Ayah Adjusted format so it follows the coding standard
+    # NOTE (09/22/2023): Adjusted the logic for obtaining the badrows - wrapped last two conditions in parentheses
+    # NOTE (09/22/2023): Adjusted lookup list link - lu_list_script_root is not necessarily needed so long as there is no slash in front of scraper
+    # NOTE (09/28/2023): Aria and Duy -Made severe changes to the check broke the check into two checks 10a and 10b. Fixed the logic, added tmp_grabeventdet and tmp_grabeventdet, and fixed the error when empty value cant be int
+
+    lu_benthicsievesize = pd.read_sql("SELECT * FROM lu_benthicsievesize", g.eng).sievesize.tolist()
+    lu_benthicsievesizeunits = pd.read_sql("SELECT * FROM lu_benthicsievesizeunits", g.eng).sievesizeunits.tolist()
+    tmp_grabeventdet = grabeventdet[grabeventdet['sampletype'] == 'infauna']
+    tmp_grabeventdet['sieve_or_depth'] = [int(x) if not pd.isna(x) else x for x in tmp_grabeventdet['sieve_or_depth']] 
+    args.update({
+        "dataframe": grabeventdet,
+        "tablename": "tbl_grabevent_details",
+        "badrows":grabeventdet[
+            (grabeventdet['sampletype'] == 'infauna') &
+            (
+                (~grabeventdet['sieve_or_depth'].isin(lu_benthicsievesize)) | 
+                (~grabeventdet['sieve_or_depthunits'].isin(lu_benthicsievesizeunits))
+            )
+        ].tmp_row.tolist(),
+        "badcolumn": "sieve_or_depthunits,sieve_or_depth",
+        "error_type": "mismatched value",
+        "is_core_error": False,
+        "error_message": "If sampletype is 'infauna' then a value for sieve_or_depth field must come from <a href='/checker/scraper?action=help&layer=lu_benthicsievesize' target='_blank'>lu_benthicsievesize</a>"  
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 10a")
+
+    
+    print("# CHECK - 10b")
+    # Description: If sampletype is "infauna" then a value needs to be set for the sieve_or_depthunits field (lu_benthicsievesizeunits).
+    # Created Coder: Aria Askaryar
+    # Created Date: 09/28/2023
+    # Last Edited Date: 09/28/2023
+    # Last Edited Coder: Aria Askaryar 
+    # NOTE (09/28/2023): Aria wrote check 
 
     args.update({
         "dataframe": grabeventdet,
         "tablename": "tbl_grabevent_details",
-        "badrows":grabeventdet[(grabeventdet['sampletype'] == 'infauna') & (~grabeventdet['sieve_or_depthunits'].isin(sievesizeunits_list))].tmp_row.tolist(),
+        "badrows": grabeventdet[(grabeventdet['sampletype'] == 'infauna') & (~grabeventdet['sieve_or_depthunits'].isin(lu_benthicsievesizeunits))].tmp_row.tolist(),
         "badcolumn": "sieve_or_depthunits",
         "error_type": "mismatched value",
         "is_core_error": False,
-        "error_message": f' If sampletype is "infauna" then a value for sieve_or_depthunits field must come from (lu_benthicsievesizeunits)'
-            '<a '
-            f'href="/{lu_list_script_root}/scraper?action=help&layer=lu_benthicsievesizeunits" '
-            'target="_blank">lu_benthicsievesizeunits</a>'        
+        "error_message": "If sampletype is 'infauna' then a sieve_or_depthunits must come from <a href='/checker/scraper?action=help&layer=lu_benthicsievesizeunits' target='_blank'>lu_benthicsievesizeunits.</a>"  
     })
     errs = [*errs, checkData(**args)]
-    print('check ran - If sampletype is "infauna" then a value for sieve_or_depthunits field must come from (lu_benthicsievesizeunits).')
-#aria ended here
+    print("# END OF CHECK - 10b")
+
+    print("# CHECK - 11")
+    # Description: samplereplicate must be consecutive within primary keys
+    # Created Coder: Duy Nguyen
+    # Created Date: 09/26/2023
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (09/26/2023): Duy created the check
+    groupby_cols = [x for x in grabevent_pkey if x not in ['latitude','longitude','samplereplicate']]
+    args.update({
+        "dataframe": grabeventdet,
+        "tablename": "tbl_grabevent_details",
+        "badrows" : check_consecutiveness(grabeventdet, groupby_cols, 'samplereplicate'),
+        "badcolumn": "samplereplicate",
+        "error_type": "Replicate Error",
+        "error_message": f"samplereplicate values must be consecutive. Records are grouped by {','.join(groupby_cols)}"
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 11")
 
 
-# #testing time check
-#     args = {
-#             "dataframe":grabeventdet,
-#             "tablename":'tbl_grabevent_details',
-#             "badrows":time_format_check(grabeventdet),
-#             "badcolumn": "samplecollectiontime",
-#             "error_type": "empty value",
-#             "is_core_error": False,
-#             "error_message": "Samplecollectiontime is in the wrong format (HH:MM:SS). Make sure the number format of that column on the Excel sheet is set to text"
-#             }
-#     errs = [*errs, checkData(**args)]
-#     print('error check for matrix and coresizediameter')
 
-# #Ayah Finished
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF GrabEventDetail Checks ----------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+
+
 
 
     return {'errors': errs, 'warnings': warnings}

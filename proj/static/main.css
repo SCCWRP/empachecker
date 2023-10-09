@@ -162,6 +162,10 @@ span.table-not-matched {
     font-size: 0.8rem;
 }
 
+.login-form-element-container {
+    margin-bottom: 20px!important;
+}
+
 .login-info-container {
     align-content: flex-start;
     text-align: left;

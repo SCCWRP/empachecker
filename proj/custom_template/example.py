@@ -50,4 +50,14 @@ def __example__(all_dfs):
     # })
     # errs = [*errs, checkData(**args)]
 
+    # Example of how to document a custom check
+    #print("# CHECK - ")
+    # Description:
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    #print("# END OF CHECK - ")
+    #"<a href='/checker/templater?datatype=grab_field' target='_blank'>Field Template</a>.
     # return {'errors': errs, 'warnings': warnings}

@@ -88,7 +88,6 @@ def fix_case(all_dfs: dict):
             ]  
             for x in lu_info.column_name
         }
-        print(f"foreignkeys_rawvalues = {foreignkeys_rawvalues}")
         # Remove the empty lists in the dictionary's values. 
         # Empty lists indicate there are values that are not in the lu list for a certain column
         # This will be taken care of by core check.
@@ -110,44 +109,45 @@ def fix_case(all_dfs: dict):
     return all_dfs
 
 def fill_daubenmiremidpoint(all_dfs):
-    if 'tbl_vegetativecover_data' in all_dfs.keys():
-        df = all_dfs['tbl_vegetativecover_data']
-        lu_estimatedcover = pd.read_sql('SELECT * from lu_estimatedcover', g.eng)
+    print('begin fill_daubenmiremidpoint')
+    for key in all_dfs.keys():
+        if key in ['tbl_vegetativecover_data','tbl_algaecover_data']:
+            df = all_dfs[key]
+            lu_estimatedcover = pd.read_sql('SELECT * from lu_estimatedcover', g.eng)
+            lu_dict = {
+                (a,b): (c,d) 
+                for a,b,c,d in zip(
+                    lu_estimatedcover['estimatedcover_min'],
+                    lu_estimatedcover['estimatedcover_max'],
+                    lu_estimatedcover['percentcovercode'],
+                    lu_estimatedcover['daubenmiremidpoint']
+                )
+            }
 
-        lu_dict = {
-            (a,b): (c,d) 
-            for a,b,c,d in zip(
-                lu_estimatedcover['estimatedcover_min'],
-                lu_estimatedcover['estimatedcover_max'],
-                lu_estimatedcover['percentcovercode'],
-                lu_estimatedcover['daubenmiremidpoint']
+            def find_key_by_value(dictionary, value):
+                if value == 0:
+                    return (0,0)
+                for key in dictionary.keys():
+                    if key[0] < value <= key[1]:
+                        return key
+                return None
+            
+            df['percentcovercode'] = df.apply(
+                lambda row: lu_dict.get(
+                    find_key_by_value(lu_dict, row['estimatedcover']), 
+                    (row['percentcovercode'], None)
+                )[0],
+                axis=1    
             )
-        }
-
-        def find_key_by_value(dictionary, value):
-            if value == 0:
-                return (0,0)
-            for key in dictionary.keys():
-                if key[0] < value <= key[1]:
-                    return key
-            return None
-        
-        df['percentcovercode'] = df.apply(
-            lambda row: lu_dict.get(
-                find_key_by_value(lu_dict, row['estimatedcover']), 
-                (row['percentcovercode'], None)
-            )[0],
-            axis=1    
-        )
-        df['daubenmiremidpoint'] = df.apply(
-            lambda row: lu_dict.get(
-                find_key_by_value(lu_dict, row['estimatedcover']), 
-                (None, row['daubenmiremidpoint'])
-            )[1],
-            axis=1    
-        )
-        all_dfs['tbl_vegetativecover_data'] = df
-
+            df['daubenmiremidpoint'] = df.apply(
+                lambda row: lu_dict.get(
+                    find_key_by_value(lu_dict, row['estimatedcover']), 
+                    (None, row['daubenmiremidpoint'])
+                )[1],
+                axis=1    
+            )
+            all_dfs[key] = df
+    print('end fill_daubenmiremidpoint')
     return all_dfs
 
 fishmacro_tbls = [
@@ -191,6 +191,9 @@ def fill_commonname(all_dfs):
                     com_name = row['commonname']
                     if pd.isna(com_name) and pd.notna(sci_name):
                         common_name_df = pd.read_sql(f"SELECT commonname FROM {lu_list} WHERE scientificname = '{sci_name}'", g.eng)
+                        if common_name_df.empty:
+                            print(f"cannot fill commonname for {sci_name} - not found in lu list")
+                            continue
                         new_common_name = str(common_name_df.iat[0,0])
                         df.loc[label, 'commonname'] = new_common_name
                         all_dfs[tbl] = df
@@ -208,6 +211,9 @@ def fill_status(all_dfs):
                     status = row['status']
                     if pd.isna(status) and pd.notna(sci_name):
                         status_df = pd.read_sql(f"SELECT status FROM {lu_list} WHERE scientificname = '{sci_name}'", g.eng)
+                        if status_df.empty:
+                            print(f"cannot fill status for {sci_name} - not found in lu list")
+                            continue
                         new_status = str(status_df.iat[0,0])
                         df.loc[label, 'status'] = new_status
                         all_dfs[tbl] = df
@@ -317,9 +323,10 @@ def clean_data(all_dfs):
     # Description: fill in daubenmiremidpoint values if estimatedcover and percent cover code match in the table and lookup list
     # Created Coder: Ayah 
     # Created Date: Ayah 
-    # Last Edited Date: 08/18/23
+    # Last Edited Date: 10/02/23
     # Last Edited Coder: Duy Nguyen
     # NOTE (08/17/23): Duy adjusts the format so it follows the coding standard.
+    # NOTE (10/02/23): Added tbl_algaecover for datatype microalgae to the table to be filled.
     all_dfs = fill_daubenmiremidpoint(all_dfs)
     print("# end data filling - 1")
     
@@ -330,10 +337,12 @@ def clean_data(all_dfs):
     # Description: fill commonname based on scientificname from appropriate lookup list
     # Created Coder: Caspian Thackeray
     # Created Date:  08/28/23
-    # Last Edited Date: 08/29/23
-    # Last Edited Coder: Caspian Thackeray
+    # Last Edited Date: 09/28/23
+    # Last Edited Coder: Duy
     # NOTE (08/28/23): Begin writing this check
     # NOTE (08/29/23): Finished writing this check
+    # NOTE (09/28/23): Code would crash if scientificname not in lookup list, so Duy made the code not to fill it if scientificname is not in lu list.
+    # Need to refactor the code in the near future.
     all_dfs = fill_commonname(all_dfs)
     print("# end data filling - 2")
     
@@ -344,11 +353,14 @@ def clean_data(all_dfs):
     # Description: fill status based on scienticficname,commonname from appropriate lookup lists
     # Created Coder: Caspian Thackeray
     # Created Date:  08/29/23
-    # Last Edited Date: 08/29/23
-    # Last Edited Coder: Caspian Thackeray
+    # Last Edited Date: 09/28/23
+    # Last Edited Coder: Duy
     # NOTE (08/29/23): Wrote this check
-    all_dfs = fill_status(all_dfs)
+    # NOTE (09/28/23): Code would crash if scientificname not in lookup list, so Duy made the code not to fill it if scientificname is not in lu list.
+    # Need to refactor the code in the near future.
+    
     print("# end data filling - 3")
+    all_dfs = fill_status(all_dfs)
     
     
     
@@ -378,69 +390,3 @@ def clean_data(all_dfs):
 
     print("END preprocessing")
     return all_dfs
-
-
-
-
-
-'''
-def fill_speciesnames(all_dfs):
-
-    # I don't know why the code below is commented out - DUY 09-28-22
-    # lu_fishspecies = pd.read_sql('SELECT scientificname, commonname FROM lu_fishspecies', g.eng)
-    # names = {
-    #     c: s  for s, c in list(zip(lu_fishspecies.scientificname, lu_fishspecies.commonname))
-    # }
-
-    # # I dont really know how to explain the code with comments to be honest but hopefully it makes sense
-    # all_dfs['tbl_fish_abundance_data']['scientificname'] = all_dfs['tbl_fish_abundance_data'] \
-    #     .apply(
-    #         lambda x:
-    #         names[x['scientificname']] if (pd.isnull(x['commonname']) or x['commonname'] == '') else x['commonname']
-    #         ,
-    #         axis = 1
-    #     )
-    
-    # # here we need to get the key of the dictionary based on the value
-    # all_dfs['tbl_fish_abundance_data']['commonname'] = all_dfs['tbl_fish_abundance_data'] \
-    #     .apply(
-    #         lambda x:
-    #         list(names.keys())[list(names.values()).index(x['scientificname'])] if (pd.isnull(x['scientificname']) or x['scientificname'] == '') else x['scientificname']
-    #         ,
-    #         axis = 1
-    #     )
-    print("begin fill species name")
-    print(all_dfs.keys())
-    lu_list_to_fill = {
-        'tbl_bruv_data': 'lu_fishmacrospecies',
-        'tbl_fish_length_data': 'lu_fishmacrospecies',
-        'tbl_fish_abundance_data': 'lu_fishmacrospecies',
-        'tbl_vegetativecover_data': 'lu_plantspecies',
-        'tbl_crabbiomass_length': 'lu_fishmacrospecies',
-        'tbl_crabfishinvert_abundance': 'lu_fishmacrospecies'
-    }
-    for tab in all_dfs.keys():
-        if tab in lu_list_to_fill.keys():
-            print(tab)
-            lu_list = pd.read_sql(f'SELECT scientificname, commonname, status FROM {lu_list_to_fill.get(tab)}', g.eng)
-            print(lu_list)
-            names = {
-                (x,y): z  for x,y,z in list(
-                    zip(
-                        lu_list.scientificname, 
-                        lu_list.commonname,
-                        lu_list.status
-                    )
-                )
-            }
-            print(names)
-            if not all_dfs[tab].empty:
-                all_dfs[tab]['status'] = all_dfs[tab].apply(
-                    lambda row: names[(row['scientificname'], row['commonname'])]
-                    if ((row['scientificname'], row['commonname']) in names.keys()) and (pd.isnull(row['status']) or row['status'] == '') 
-                    else row['status'] ,
-                    axis=1
-                )
-    print("end fill species name")
-    return all_dfs
-'''

@@ -3,7 +3,7 @@
 from inspect import currentframe
 from flask import current_app, g
 import pandas as pd
-from .functions import checkData, checkLogic, mismatch
+from .functions import checkData, checkLogic, mismatch, get_primary_key
 
 def sav(all_dfs):
     
@@ -28,7 +28,7 @@ def sav(all_dfs):
     savmeta = all_dfs['tbl_sav_metadata']
     savper = all_dfs['tbl_savpercentcover_data']
 
-    savmeta['tmp_row'] = savmets.index
+    savmeta['tmp_row'] = savmeta.index
     savper['tmp_row'] = savper.index
     
     errs = []
@@ -39,13 +39,277 @@ def sav(all_dfs):
     
     args = {
         "dataframe":pd.DataFrame({}),
-         "tablename": '',
-         "badrows": [],
-         "badcolumn": "",
-         "error_type": "",
-         "is_core_error": False,
-         "error_message": ""
-     }
+        "tablename": '',
+        "badrows": [],
+        "badcolumn": "",
+        "error_type": "",
+        "is_core_error": False,
+        "error_message": ""
+    }
+    
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ Logic Checks ---------------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+    savmeta_pkey = get_primary_key('tbl_sav_metadata', g.eng)
+    savper_pkey = get_primary_key('tbl_savpercentcover_data', g.eng)
+    
+    savmeta_savper_shared_pkey = list(set(savmeta_pkey).intersection(set(savper_pkey)))
+    savper_savmeta_shared_pkey = list(set(savper_pkey).intersection(set(savmeta_pkey)))
+    
+    print("# CHECK - 1")
+    #Description: Each metadata must include corresponding percentcoverdata
+    #Created Coder: Andy Kapoor
+    #Created Date: 9/14/23
+    #Last Edited Date: 10/05/2023
+    #Last Edited Coder: Aria Askaryar
+    #NOTE (10/05/2023): Aria revised the error message
+    
+    # Logic Check 1: sav_metadata & savpercentcover_data
+   
+    # Logic Check 1a: savmeta records not found in savper
+    print('begin check 1a')
+    print(f"savper_savmeta_shared_pkey, {savper_savmeta_shared_pkey}")
+    args.update({
+        "dataframe": savmeta,
+        "tablename": "tbl_sav_metadata",
+        "badrows": mismatch(savmeta, savper, savmeta_savper_shared_pkey), 
+        "badcolumn": ','.join(savmeta_savper_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Records in SAV_metadata must have corresponding records in SAVpercentcover_data. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(savmeta_savper_shared_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 1")
+
+    print("# CHECK - 2")
+    # Description: Each percentcoverdata must include corresponding metadata
+    # Created Coder: Andy Kapoor
+    # Created Date: 9/14/23
+    #Last Edited Date: 10/05/2023
+    #Last Edited Coder: Aria Askaryar
+    #NOTE (10/05/2023): Aria revised the error message
+    args.update({
+        "dataframe": savper,
+        "tablename": "tbl_savpercentcover_data",
+        "badrows": mismatch(savper, savmeta, savper_savmeta_shared_pkey), 
+        "badcolumn": ','.join(savper_savmeta_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Records in SAVpercentcover_data must have corresponding records in SAV_metadata. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(savper_savmeta_shared_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 2")
+    
+    
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF Logic Checks --------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ SAV Metadata Checks --------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    print("# CHECK - 3")
+    # Description: Transectlength_m must be -88 or greater than or equal to 0 (positive)
+    # Created Coder: Andy Kapoor
+    # Created Date: 9/14/23
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    args.update({
+        "dataframe": savmeta,
+        "tablename": "tbl_sav_metadata",
+        "badrows":savmeta[(savmeta['transectlength_m'] < 0) & (savmeta['transectlength_m'] != -88)].tmp_row.tolist(),
+        "badcolumn": "transectlength_m",
+        "error_type" : "Value out of range",
+        "error_message" : "Your transect length must be -88 or greater than or equal to 0."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 3")
+
+    print("# CHECK - 4")
+    # Description: Range for transectlength_m is expected within [0, 50] or -88
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+    args.update({
+        "dataframe": savmeta,
+        "tablename": "tbl_sav_metadata",
+        "badrows":savmeta[(savmeta['transectlength_m'] < 0) | (savmeta['transectlength_m'] > 50) & (savmeta['transectlength_m'] != -88)].tmp_row.tolist(),
+        "badcolumn": "transectlength_m",
+        "error_type" : "Value out of range",
+        "error_message" : "Range for transectlength_m is expected within [0, 50] or -88"
+    })
+    warnings = [*warnings, checkData(**args)]
+    print("# END OF CHECK - 4")
+
+    print("# CHECK - 5")
+    # Description: savbedreplicate values must be consecutive when grouped by primary keys
+    # Created Coder: Caspian Thackeray
+    # Created Date: 09/15/23
+    # Last Edited Date: 09/15/23
+    # Last Edited Coder: Caspian Thackeray
+    # NOTE (09/15/23): Check written
+
+    print(f"savmeta: {savmeta.iloc[0]}")
+
+    badrows = []
+    for _, subdf in savmeta.groupby([x for x in savmeta_pkey if x != 'savbedreplicate']):
+        df = subdf.filter(items=[*savmeta_pkey,*['tmp_row']])
+        df = df.sort_values(by='savbedreplicate').fillna(0)
+        rep_diff = df['savbedreplicate'].diff().dropna()
+        all_values_are_one = (rep_diff == 1).all()
+        if not all_values_are_one:
+            badrows = [*badrows, *df.tmp_row.tolist()]
+
+    args.update({
+        "dataframe": savmeta,
+        "tablename": "tbl_sav_metadata",
+        "badrows": badrows,
+        "badcolumn": "savbedreplicate",
+        "error_type": "Custom Error",
+        "error_message": "Savbedreplicate must be consecutive within a siteid, estuaryname, stationno, samplecollectiondate, savbedreplicate, transectreplicate, and projectid group"
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 5")
+
+    #print("# CHECK - 6")
+    # Description: transectreplicate must be consecutive within primary keys
+    # Created Coder: Caspian Thackeray
+    # Created Date: 09/15/23
+    # Last Edited Date: 09/15/23
+    # Last Edited Coder: Caspian Thackeray
+    # NOTE (09/15/23): Check written
+
+    badrows = []
+    for _, subdf in savmeta.groupby([x for x in savmeta_pkey if x != 'transectreplicate']):
+        df = subdf.filter(items=[*savmeta_pkey,*['tmp_row']])
+        df = df.sort_values(by='transectreplicate').fillna(0)
+        rep_diff = df['transectreplicate'].diff().dropna()
+        print(rep_diff.to_string())
+        all_values_are_one = (rep_diff == 1).all()
+        if not all_values_are_one:
+            badrows = [*badrows, *df.tmp_row.tolist()]
+
+    args.update({
+        "dataframe": savmeta,
+        "tablename": "tbl_sav_metadata",
+        "badrows": badrows,
+        "badcolumn": "transectreplicate",
+        "error_type": "Custom Error",
+        "error_message": "Savbedreplicate must be consecutive within a siteid, estuaryname, stationno, samplecollectiondate, savbedreplicate, transectreplicate, and projectid group"
+    })
+    errs = [*errs, checkData(**args)]
+
+    #print("# END OF CHECK - 6")
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF SAV Metadata Checks -------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ SAV PercentCoverData -------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+    #print("# CHECK - 7")
+    # Description: sdquadratreplicate must be consecutive within primary keys
+    # Created Coder: Caspian Thackeray
+    # Created Date: 09/15/23
+    # Last Edited Date: 09/15/23
+    # Last Edited Coder: Caspian Thackeray
+    # NOTE (09/15/23): Check written
+
+    badrows = []
+    for _, subdf in savper.groupby([x for x in savper_pkey if x != 'sdquadratreplicate']):
+        df = subdf.filter(items=[*savper_pkey,*['tmp_row']])
+        df = df.sort_values(by='sdquadratreplicate').fillna(0)
+        rep_diff = df['sdquadratreplicate'].diff().dropna()
+        all_values_are_one = (rep_diff == 1).all()
+        if not all_values_are_one:
+            badrows = [*badrows, *df.tmp_row.tolist()]
+
+    args.update({
+        "dataframe": savper,
+        "tablename": "tbl_savpercentcover_data",
+        "badrows": badrows,
+        "badcolumn": "sdquadratreplicate",
+        "error_type": "Custom Error",
+        "error_message": "Sdquadratreplicate must be consecutive within a siteid, estuaryname, stationno, samplecollectiondate, savbedreplicate, transectreplicate, pcquadratreplicate, sdquadratreplicate, scientificname, and projectid group"
+    })
+    errs = [*errs, checkData(**args)]
+
+    #print("# END OF CHECK - 7")
+
+    #print("# CHECK - 8")
+    # Description: pcquadratreplicate must be consecutive within primary keys
+    # Created Coder: Caspian Thackeray
+    # Created Date: 09/15/23
+    # Last Edited Date: 09/15/23
+    # Last Edited Coder: Caspian Thackeray
+    # NOTE (09/15/23): Check written
+
+    badrows = []
+    for _, subdf in savper.groupby([x for x in savper_pkey if x != 'pcquadratreplicate']):
+        df = subdf.filter(items=[*savper_pkey,*['tmp_row']])
+        df = df.sort_values(by='pcquadratreplicate').fillna(0)
+        rep_diff = df['pcquadratreplicate'].diff().dropna()
+        all_values_are_one = (rep_diff == 1).all()
+        if not all_values_are_one:
+            badrows = [*badrows, *df.tmp_row.tolist()]
+
+    args.update({
+        "dataframe": savper,
+        "tablename": "tbl_savpercentcover_data",
+        "badrows": badrows,
+        "badcolumn": "pcquadratreplicate",
+        "error_type": "Custom Error",
+        "error_message": "Pcquadratreplicate must be consecutive within a siteid, estuaryname, stationno, samplecollectiondate, savbedreplicate, transectreplicate, pcquadratreplicate, sdquadratreplicate, scientificname, and projectid group"
+    })
+    errs = [*errs, checkData(**args)]
+
+    #print("# END OF CHECK - 8")
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END OF  SAV PercentCoverData ------------------------------------ #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+
+
+
+
+    '''
     #Function for multi column checks
     def multicol_lookup_check(df_to_check, lookup_df, check_cols, lookup_cols):
         assert set(check_cols).issubset(set(df_to_check.columns)), "columns do not exists in the dataframe"
@@ -72,37 +336,38 @@ def sav(all_dfs):
     # })
     # errs = [*errs, checkData(**args)]
 
-    print("Begin SAV Logic Checks...")
-    # Logic Check 1: sav_metadata & savpercentcover_data
-    groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'savbedreplicate', 'transectreplicate', 'projectid']
+            print("Begin SAV Logic Checks...")
+            # Logic Check 1: sav_metadata & savpercentcover_data
+            groupcols = ['siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'savbedreplicate', 'transectreplicate', 'projectid']
 
-    # Logic Check 1a: savmeta records not found in savper
-    print('begin check 1a')
-    args.update({
-        "dataframe": savmeta,
-        "tablename": "tbl_sav_metadata",
-        "badrows": mismatch(savmeta, savper, groupcols), 
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, savbedreplicate, transectreplicate,projectid",
-        "error_type": "Logic Error",
-        "error_message": "Records in SAV_metadata must have corresponding records in SAVpercentcover_data."
-    })
-    errs = [*errs, checkData(**args)]
-    print("check 1a ran - logic - sav_metadata records not found in savpercent_data") 
+            # Logic Check 1a: savmeta records not found in savper
+            print('begin check 1a')
+            args.update({
+                "dataframe": savmeta,
+                "tablename": "tbl_sav_metadata",
+                "badrows": mismatch(savmeta, savper, groupcols), 
+                "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, savbedreplicate, transectreplicate,projectid",
+                "error_type": "Logic Error",
+                "error_message": "Records in SAV_metadata must have corresponding records in SAVpercentcover_data."
+            })
+            errs = [*errs, checkData(**args)]
+            print("check 1a ran - logic - sav_metadata records not found in savpercent_data") 
 
-    # Logic Check 1b: savmeta records missing for records provided by savper
-    print('begin check 1b')
-    args.update({
-        "dataframe": savper,
-        "tablename": "tbl_savpercentcover_data",
-        "badrows": mismatch(savper, savmeta, groupcols), 
-        "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, savbedreplicate, transectreplicate,projectid",
-        "error_type": "Logic Error",
-        "error_message": "Records in SAVpercentcover_data must have corresponding records in SAV_metadata."
-    })
-    errs = [*errs, checkData(**args)]
-    print("check 1b ran - logic - sav_metadata records missing for records provided in  savpercent_data") 
+            # Logic Check 1b: savmeta records missing for records provided by savper
+            print('begin check 1b')
+            args.update({
+                "dataframe": savper,
+                "tablename": "tbl_savpercentcover_data",
+                "badrows": mismatch(savper, savmeta, groupcols), 
+                "badcolumn": "siteid, estuaryname, stationno, samplecollectiondate, savbedreplicate, transectreplicate,projectid",
+                "error_type": "Logic Error",
+                "error_message": "Records in SAVpercentcover_data must have corresponding records in SAV_metadata."
+            })
+            errs = [*errs, checkData(**args)]
+            print("check 1b ran - logic - sav_metadata records missing for records provided in  savpercent_data") 
 
-    print("End SAV Logic Checks...")
+            print("End SAV Logic Checks...")
+
     ################################################################################################################################
     print("START SAV Custom Checks...")
 
@@ -235,5 +500,5 @@ def sav(all_dfs):
     # errs = [*errs, checkData(**args)]
 
     # print('check 9 ran - ele_ellip or ele_ortho is reported then Elevation_Datum is required')
-
+    '''
     return {'errors': errs, 'warnings': warnings}
