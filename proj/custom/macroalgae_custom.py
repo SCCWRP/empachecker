@@ -75,7 +75,7 @@ def macroalgae(all_dfs):
         "badcolumn":  ','.join(algaemeta_algaecover_shared_pkey),
         "error_type": "Logic Error",
         "error_message": "Records in Algae metadata should have corresponding records in AlgeaCover data in the database. Please submit the metadata for these records first based on these columns: {}".format(
-            ','.join(algaemeta_algaecover_shared_pkey)
+            ', '.join(algaemeta_algaecover_shared_pkey)
         )
     })
     errs = [*errs, checkData(**args)]
@@ -96,7 +96,7 @@ def macroalgae(all_dfs):
         "badcolumn":  ','.join(algaemeta_algaecover_shared_pkey),
         "error_type": "Logic Error",
         "error_message": "Records in AlgeaCover data  should have corresponding records in Algae metadata. Please submit the metadata for these records first based on these columns: {}".format(
-            ','.join(algaemeta_algaecover_shared_pkey)
+            ', '.join(algaemeta_algaecover_shared_pkey)
         )
     })
     errs = [*errs, checkData(**args)]
@@ -116,8 +116,8 @@ def macroalgae(all_dfs):
         "badrows": mismatch(algaemeta, algaefloating, algaemeta_algaefloating_shared_pkey), 
         "badcolumn":  ','.join(algaemeta_algaefloating_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Records in Algae metadata should have corresponding records in AlgeaFloating data. Please submit the metadata for these records first based on these columns: {}".format(
-            ','.join(algaemeta_algaefloating_shared_pkey)
+        "error_message": "Records in Algae metadata should have corresponding records in Algae Floating data. Please submit the metadata for these records first based on these columns: {}".format(
+            ', '.join(algaemeta_algaefloating_shared_pkey)
         )
     })
     errs = [*errs, checkData(**args)]
@@ -137,7 +137,7 @@ def macroalgae(all_dfs):
         "badcolumn":  ','.join(algaemeta_algaefloating_shared_pkey),
         "error_type": "Logic Error",
         "error_message": "Records in AlgaeFloating should have corresponding records in AlgeaCover data. Please submit the data for these records first based on these columns: {}".format(
-            ','.join(algaemeta_algaefloating_shared_pkey)
+            ', '.join(algaemeta_algaefloating_shared_pkey)
         )
     })
     errs = [*errs, checkData(**args)]
@@ -310,6 +310,27 @@ def macroalgae(all_dfs):
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 11")
+
+    print("# CHECK - 13")
+        # Description:  For every plot – total cover and open cover required in cover type
+        # Created Coder: 
+        # Created Date: 
+        # Last Edited Date:  
+        # Last Edited Coder: 
+        # NOTE ( 09/28/2023): 
+    
+    print("# END OF CHECK - 13")
+
+    print("# CHECK - 14")
+        # Description:  estimatedcover for 'open cover' in covertype + estimatedcover for 'total cover' must be 100
+        # Created Coder: 
+        # Created Date: 
+        # Last Edited Date:  
+        # Last Edited Coder: 
+        # NOTE ( 09/28/2023): 
+    
+    print("# END OF CHECK - 14")
+    
 
 
     ######################################################################################################################
