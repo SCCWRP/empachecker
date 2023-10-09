@@ -3,7 +3,7 @@ from .logger_custom import logger_formatted, logger_meta, logger_raw
 from .discretewq_custom import discretewq
 from .sedchem_custom import sedchem_lab
 from .toxicity_custom import toxicity
-from .edna_custom import edna_lab
+from .edna_custom import edna_field, edna_lab
 from .sedimentgrainsize_custom import sedimentgrainsize_lab
 from .benthicinfauna_custom import benthicinfauna_lab
 from .benthiclarge_custom import benthiclarge

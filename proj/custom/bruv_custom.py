@@ -149,9 +149,10 @@ def bruv_lab(all_dfs):
     # Description: Each data must include corresponding metadata record in the database
     # Created Coder: Aria Askaryar
     # Created Date: NA
-    # Last Edited Date: 09/12/2023 
+    # Last Edited Date: 10/05/2023 
     # Last Edited Coder: Aria Askaryar
     # NOTE (09/12/2023): Aria adjusts the format so it follows the coding standard
+    # NOTE (10/05/2023): Aria revised the error message
 
     args.update({
         "dataframe": bruvdata,
@@ -170,9 +171,10 @@ def bruv_lab(all_dfs):
     # Description: Each data must include corresponding videolog data
     # Created Coder: Aria Askaryar
     # Created Date: NA
-    # Last Edited Date: 09/12/2023 
+    # Last Edited Date: 10/05/2023 
     # Last Edited Coder: Aria Askaryar
     # NOTE (09/12/2023): Aria adjusts the format so it follows the coding standard
+    # NOTE (10/05/2023): Aria revised the error message
 
     args.update({
         "dataframe": bruvdata,
@@ -191,10 +193,12 @@ def bruv_lab(all_dfs):
     # Description: Each videolog data must include corresponding data if fish is yes and bait is visible
     # Created Coder: Ayah Halabi
     # Created Date: NA
-    # Last Edited Date: 09/27/2023 
-    # Last Edited Coder: Duy
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (09/12/2023): Ayah wrote check 
     # NOTE (09/27/2023): Duy lowercased fish and bait column and compare against the lower case values 
+    # NOTE (10/05/2023): Aria revised the error message
+
     bruvideo_filtered = bruvvideo[ 
         (bruvvideo['fish'].str.lower() == 'yes') &
         (bruvvideo['bait'].str.lower() == 'visible')

@@ -74,9 +74,10 @@ def discretewq(all_dfs):
     #Description: Each metadata must include corresponding data (wq_metdata records not found in wq_data)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 09/05/2023
-    # Last Edited Coder: Ayah Halabi
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
+    # NOTE (10/05/23): Aria revised the error message
     watermeta_pkey = get_primary_key('tbl_waterquality_metadata', g.eng)
     waterdata_pkey = get_primary_key('tbl_waterquality_data', g.eng)
     watermeta_waterdata_shared_pkey = [x for x in watermeta_pkey if x in waterdata_pkey]
@@ -87,7 +88,9 @@ def discretewq(all_dfs):
         "badrows": mismatch(watermeta, waterdata, watermeta_waterdata_shared_pkey),
         "badcolumn": ','.join(watermeta_waterdata_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each record in waterquality_metadata must have a corresponding record in waterquality_data. Records are matched based on the columns listed in the Column(s) box"
+        "error_message": "Each record in waterquality_metadata must have a corresponding record in waterquality_data. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(watermeta_waterdata_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     print("check ran - logic - wq_metadata records not found in wq_data")
@@ -98,16 +101,19 @@ def discretewq(all_dfs):
     #Description: Each data must include corresponding metadata(wq_metadata records missing for records provided by wq_data)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 09/05/2023
-    # Last Edited Coder: Ayah Halabi
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
+    # NOTE (10/05/23): Aria revised the error message
     args.update({
         "dataframe": waterdata,
         "tablename": "tbl_waterquality_data",
         "badrows": mismatch(waterdata, watermeta, watermeta_waterdata_shared_pkey), 
         "badcolumn": ','.join(watermeta_waterdata_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each record in waterquality_data must have a corresponding record in waterquality_metadata. Records are matched based on the columns listed in the Column(s) box"
+        "error_message": "Each record in waterquality_data must have a corresponding record in waterquality_metadata. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(watermeta_waterdata_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END CHECK - 2")

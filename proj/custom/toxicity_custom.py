@@ -84,9 +84,10 @@ def toxicity(all_dfs):
     # Description: Each toxicitysummary record must have correspond record in the grabeventdetails in database
     # Created Coder: Caspian
     # Created Date: 09/01/23
-    # Last Edited Date: 9/18/23
-    # Last Edited Coder: Duy
+    # Last Edited Date: 10/05/23
+    # Last Edited Coder: Aria Askaryar
     # NOTE (9/18/23): Duy rewrites the logic check
+    # NOTE (10/05/2023): Aria revised the error message
 
     args.update({
         "dataframe": toxicitysummary,
@@ -95,7 +96,9 @@ def toxicity(all_dfs):
         "badcolumn": ','.join(toxicitysummary_grabeventdetails_shared_pkey),
         "error_type": "Logic Error",
         "error_message": 
-            "Each record in tbl_toxicitysummary must have a corresponding field record. You must submit the field data to the checker first. The Field template can be downloaded on empa.sccwrp.org (Field Grab table). Records are matched based on the columns listed in the Column(s) box."
+            "Each record in tbl_toxicitysummary must have a corresponding field record. You must submit the field data to the checker first. The Field template can be downloaded on empa.sccwrp.org (Field Grab table).  Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(toxicitysummary_grabeventdetails_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
 
@@ -105,9 +108,10 @@ def toxicity(all_dfs):
     # Description: Each toxicitysummary record must have corresponding record in toxicitybatch
     # Created Coder: Caspian
     # Created Date: 09/01/23
-    # Last Edited Date: 9/18/23
-    # Last Edited Coder: Duy
+    # Last Edited Date: 10/05/23
+    # Last Edited Coder: Aria Askaryar
     # NOTE (9/18/23): Duy rewrites the logic check
+    # NOTE (10/05/2023): Aria revised the error message
 
     args.update({
         "dataframe": toxicitysummary,
@@ -116,7 +120,9 @@ def toxicity(all_dfs):
         "badcolumn": ','.join(toxicitysummary_toxicitybatch_shared_pkey),
         "error_type": "Logic Error",
         "error_message": 
-            "Each record in tbl_toxicitysummary must have a corresponding record in tbl_toxicitybatch. Records are matched based on the columns listed in the Column(s) box"
+            "Each record in tbl_toxicitysummary must have a corresponding record in tbl_toxicitybatch.  Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(toxicitysummary_toxicitybatch_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
 
@@ -127,9 +133,10 @@ def toxicity(all_dfs):
     # Description: Each toxicitybatch record must have corresponding record in toxicitysummary
     # Created Coder: Caspian
     # Created Date: 09/01/23
-    # Last Edited Date: 9/18/23
-    # Last Edited Coder: Duy
+    # Last Edited Date: 10/05/23
+    # Last Edited Coder: Aria Askaryar
     # NOTE (9/18/23): Duy rewrites the logic check
+    # NOTE (10/05/2023): Aria revised the error message
     args.update({
         "dataframe": toxicitybatch,
         "tablename": "tbl_toxicitybatch",
@@ -137,7 +144,9 @@ def toxicity(all_dfs):
         "badcolumn": ','.join(toxicitysummary_toxicitybatch_shared_pkey),
         "error_type": "Logic Error",
         "error_message": 
-            "Each record in tbl_toxicitybatch must have a corresponding record in tbl_toxicitysummary. Records are matched based on the columns listed in the Column(s) box"
+            "Each record in tbl_toxicitybatch must have a corresponding record in tbl_toxicitysummary.  Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(toxicitysummary_toxicitybatch_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
 
@@ -148,9 +157,10 @@ def toxicity(all_dfs):
     # Description: Each toxicityresults record must have corresponding record in the toxicitybatch
     # Created Coder: Caspian
     # Created Date: 09/01/23
-    # Last Edited Date: 9/18/23
-    # Last Edited Coder: Duy
+    # Last Edited Date: 10/05/23
+    # Last Edited Coder: Aria Askaryar
     # NOTE (9/18/23): Duy rewrites the logic check
+    # NOTE (10/05/2023): Aria revised the error message
 
     args.update({
         "dataframe": toxicitybatch,
@@ -159,7 +169,9 @@ def toxicity(all_dfs):
         "badcolumn": ','.join(toxicitysummary_toxicitybatch_shared_pkey),
         "error_type": "Logic Error",
         "error_message": 
-            "Each record in tbl_toxicitybatch must have a corresponding record in tbl_toxicitysummary. Records are matched based on the columns listed in the Column(s) box"
+            "Each record in tbl_toxicitybatch must have a corresponding record in tbl_toxicitysummary.  Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(toxicitysummary_toxicitybatch_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
 

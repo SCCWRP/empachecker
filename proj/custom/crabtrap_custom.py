@@ -67,17 +67,20 @@ def crabtrap(all_dfs):
     # Description: Each record in crabtrap_metadata must include corresponding record crabfishinvert_abundance data when trapsuccess in crabtrap_metadata is yes (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 09/25/23
-    # Last Edited Coder: Duy
+    # Last Edited Date: 10/05/23
+    # Last Edited Coder: Aria Askaryar
     # NOTE (08/29/23): Zaib adjusts the format so it follows the coding standard.
     # NOTE (09/25/23): Duy modified the code, these should only match when trapsuccess is yes
+    # NOTE (10/05/23): Aria revised the error message
     args.update({
         "dataframe": crabmeta,
         "tablename": "tbl_crabtrap_metadata",
         "badrows": mismatch(crabmeta[crabmeta['trapsuccess'].str.lower() == 'yes'], crabinvert, crabmeta_crabinvert_shared_pkey), 
         "badcolumn": ','.join(crabmeta_crabinvert_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each metadata record must include corresponding abundance data when trap success is yes."
+        "error_message": "Each metadata record must include corresponding abundance data when trap success is yes. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(crabmeta_crabinvert_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     # END OF CHECK - Each sample metadata must include corresponding abundance data (🛑 ERROR 🛑)
@@ -89,16 +92,19 @@ def crabtrap(all_dfs):
     # Description: Each abundance data must include corresponding metadata (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 08/29/2023
-    # Last Edited Coder: Zaib Quraishi
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (08/29/23): Zaib adjusts the format so it follows the coding standard.
+    # NOTE (10/05/23): Aria revised the error message
     args.update({
         "dataframe": crabinvert,
         "tablename": "tbl_crabfishinvert_abundance",
         "badrows": mismatch(crabinvert, crabmeta, crabmeta_crabinvert_shared_pkey), 
         "badcolumn": ','.join(crabmeta_crabinvert_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each abundance data must include corresponding metadata"
+        "error_message": "Each abundance data must include corresponding metadata. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(crabmeta_crabinvert_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 2")
@@ -109,17 +115,20 @@ def crabtrap(all_dfs):
     # Description: Each crabtrap_metadata must include corresponding crab_biomass_length data when trap success is yes (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 09/26/2023
-    # Last Edited Coder: Caspian T.
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (08/29/23): Zaib adjusts the format so it follows the coding standard.
     # NOTE (08/29/23): Adjusted code so that trapsuccess must = yes
+    # NOTE (10/05/23): Aria revised the error message
     args.update({
         "dataframe": crabmeta,
         "tablename": "tbl_crabtrap_metadata",
         "badrows": mismatch(crabmeta[crabmeta['trapsuccess'].str.lower() == 'yes'], crabmass, crabmeta_crabmass_shared_pkey), 
         "badcolumn": ','.join(crabmeta_crabmass_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each metadata record must include corresponding length data when trap success is yes."
+        "error_message": "Each metadata record must include corresponding length data when trap success is yes. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(crabmeta_crabmass_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 3")
@@ -130,16 +139,19 @@ def crabtrap(all_dfs):
     # Description: Each length data must include corresponding metadata (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 08/29/2023
-    # Last Edited Coder: Zaib Quraishi
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (08/29/23): Zaib adjusts the format so it follows the coding standard.
+    # NOTE (10/05/23): Aria revised the error message
     args.update({
         "dataframe": crabmass,
         "tablename": "tbl_crabbiomass_length",
         "badrows": mismatch(crabmass, crabmeta, crabmeta_crabmass_shared_pkey), 
         "badcolumn": ','.join(crabmeta_crabmass_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each crabbiomass_length data must include corresponding crabtrap_metadata. Records are matched based on the columns listed in the Column(s) box."
+        "error_message": "Each crabbiomass_length data must include corresponding crabtrap_metadata. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(crabmeta_crabmass_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 4")
@@ -149,16 +161,19 @@ def crabtrap(all_dfs):
     # Description: Each abundance data must include corresponding length data (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 08/29/2023
-    # Last Edited Coder: Zaib Quraishi
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (08/29/23): Zaib adjusts the format so it follows the coding standard.
+    # NOTE (10/05/23): Aria revised the error message
     args.update({
         "dataframe": crabinvert,
         "tablename": "tbl_crabfishinvert_abundance",
         "badrows": mismatch(crabinvert, crabmass, crabinvert_crabmass_shared_pkey), 
         "badcolumn": ','.join(crabinvert_crabmass_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each tbl_crabfishinvert_abundance data must include corresponding crabbiomass_length data. Records are matched based on the columns listed in the Column(s) box."
+        "error_message": "Each tbl_crabfishinvert_abundance data must include corresponding crabbiomass_length data. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(crabinvert_crabmass_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 5")
@@ -169,16 +184,19 @@ def crabtrap(all_dfs):
     # Description: Each length data data must include corresponding abundance data (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 08/29/2023
-    # Last Edited Coder: Zaib Quraishi
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (08/29/23): Zaib adjusts the format so it follows the coding standard.
+    # NOTE (10/05/23): Aria revised the error message
     args.update({
         "dataframe": crabmass,
         "tablename": "tbl_crabbiomass_length",
         "badrows": mismatch(crabmass, crabinvert, crabinvert_crabmass_shared_pkey), 
         "badcolumn": ','.join(crabinvert_crabmass_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each crabbiomass_length data must include corresponding tbl_crabfishinvert_abundance data data. Records are matched based on the columns listed in the Column(s) box."
+        "error_message": "Each crabbiomass_length data must include corresponding tbl_crabfishinvert_abundance data data. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(crabinvert_crabmass_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 6")

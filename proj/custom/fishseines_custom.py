@@ -84,7 +84,9 @@ def fishseines(all_dfs):
         "badrows": mismatch(fishmeta, fishabud, fishmeta_fishabud_shared_pkey), 
         "badcolumn": ','.join(fishmeta_fishabud_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each sample metadata must include corresponding abundance data"
+        "error_message": "Each sample metadata must include corresponding abundance data. Records are matched based on these columns: {}".format(
+            ','.join(fishmeta_fishabud_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     # END OF CHECK - Each sample metadata must include corresponding abundance data (🛑 ERROR 🛑)
@@ -96,16 +98,19 @@ def fishseines(all_dfs):
     # Description: Each abundance data must include corresponding sample metadata (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 08/17/2023
-    # Last Edited Coder: Duy Nguyen
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (08/17/23): Duy adjusts the format so it follows the coding standard.
+    # NOTE (10/05/2023): Aria revised error message
     args.update({
         "dataframe": fishabud,
         "tablename": "tbl_fish_abundance_data",
         "badrows": mismatch(fishabud, fishmeta, fishmeta_fishabud_shared_pkey), 
         "badcolumn": ','.join(fishmeta_fishabud_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each abundance data must include corresponding sample metadata"
+        "error_message": "Each abundance data must include corresponding sample metadata. Records are matched based on these columns: {}".format(
+            ','.join(fishmeta_fishabud_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 2")
@@ -116,16 +121,19 @@ def fishseines(all_dfs):
     # Description: Each sample metadata must include corresponding length data (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 08/17/2023
-    # Last Edited Coder: Duy Nguyen
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (08/17/23): Duy adjusts the format so it follows the coding standard.
+    # NOTE (10/05/2023): Aria revised error message
     args.update({
         "dataframe": fishmeta,
         "tablename": "tbl_fish_sample_metadata",
         "badrows": mismatch(fishmeta, fishdata, fishmeta_fishdata_shared_pkey), 
         "badcolumn": ','.join(fishmeta_fishdata_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each sample metadata must include corresponding length data"
+        "error_message": "Each sample metadata must include corresponding length data. Records are matched based on these columns: {}".format(
+            ','.join(fishmeta_fishdata_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 3")
@@ -136,16 +144,19 @@ def fishseines(all_dfs):
     # Description: Each length data must include corresponding sample metadata (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 08/17/2023
-    # Last Edited Coder: Duy Nguyen
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (08/17/23): Duy adjusts the format so it follows the coding standard.
+    # NOTE (10/05/2023): Aria revised error message
     args.update({
         "dataframe": fishdata,
         "tablename": "tbl_fish_length_data",
         "badrows": mismatch(fishdata, fishmeta, fishmeta_fishdata_shared_pkey), 
         "badcolumn": ','.join(fishmeta_fishdata_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each length data must include corresponding sample metadata"
+        "error_message": "Each length data must include corresponding sample metadata. Records are matched based on these columns: {}".format(
+            ','.join(fishmeta_fishdata_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 4")
@@ -156,16 +167,19 @@ def fishseines(all_dfs):
     # Description: Each abundance data must include corresponding length data (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 08/17/2023
-    # Last Edited Coder: Duy Nguyen
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (08/17/23): Duy adjusts the format so it follows the coding standard.
+    # NOTE (10/05/2023): Aria revised error message
     args.update({
         "dataframe": fishabud,
         "tablename": "tbl_fish_abundance_data",
         "badrows": mismatch(fishabud, fishdata, fishabud_fishdata_shared_pkey), 
         "badcolumn": ','.join(fishabud_fishdata_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each abundance data must include corresponding length data"
+        "error_message": "Each abundance data must include corresponding length data. Records are matched based on these columns: {}".format(
+            ','.join(fishabud_fishdata_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 5")
@@ -176,16 +190,19 @@ def fishseines(all_dfs):
     # Description: Each length data data must include corresponding abundance data (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 08/17/2023
-    # Last Edited Coder: Duy Nguyen
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (08/17/23): Duy adjusts the format so it follows the coding standard.
+    # NOTE (10/05/2023): Aria revised error message
     args.update({
         "dataframe": fishdata,
         "tablename": "tbl_fish_length_data",
         "badrows": mismatch(fishdata, fishabud, fishabud_fishdata_shared_pkey), 
         "badcolumn": ','.join(fishabud_fishdata_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each length data data must include corresponding abundance data"
+        "error_message": "Each length data data must include corresponding abundance data. Records are matched based on these columns: {}".format(
+            ','.join(fishabud_fishdata_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 6")

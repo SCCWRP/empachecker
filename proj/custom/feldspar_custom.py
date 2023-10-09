@@ -60,11 +60,11 @@ def feldspar(all_dfs):
 
     print("# CHECK - 1")
     # Description: if plug_extracted = yes then corresponding data
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 10/05/2023 
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (10/05/2023): Aria revised the error message
     feldmeta_filter = feldmeta[feldmeta['plug_extracted'] == 'Yes']
     
     args = {
@@ -74,8 +74,9 @@ def feldspar(all_dfs):
         "badcolumn": ','.join(felddata_feldmeta_shared_pkey),
         "error_type": "Value Error",
         "is_core_error": False,
-        "error_message": "Since plug_extracted = yes, metadata must have corresponding records in Feldspar Data. Records are matched based on the columns listed in the Column(s) box."
-        
+        "error_message": "Since plug_extracted = yes, metadata must have corresponding records in Feldspar Data.  Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(felddata_feldmeta_shared_pkey)
+        )
     }
     errs = [*errs, checkData(**args)]
 
@@ -85,16 +86,19 @@ def feldspar(all_dfs):
     # Description: Each record in feldspar_data must have a corresponding record in feldspar_metadata
     # Created Coder: Aria 
     # Created Date: NA
-    # Last Edited Date: 9/28/2023
-    # Last Edited Coder: Ayah Halabi
+    # Last Edited Date: 10/05/2023 
+    # Last Edited Coder: Aria Askaryar
     # NOTE (9/28/2023): Check was changed so the code now matched the updated check
+    # NOTE (10/05/2023): Aria revised the error message
     args.update({
         "dataframe": felddata,
         "tablename": "tbl_feldspar_data",
         "badrows": mismatch(felddata,feldmeta,felddata_feldmeta_shared_pkey), 
         "badcolumn": ','.join(felddata_feldmeta_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each Feldspar data  must have corresponding records in Feldspar Metadata. Records are matched based on the columns listed in the Column(s) box."
+        "error_message": "Each Feldspar data must have corresponding records in Feldspar Metadata. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(felddata_feldmeta_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 2")

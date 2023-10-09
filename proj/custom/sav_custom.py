@@ -62,9 +62,9 @@ def sav(all_dfs):
     #Description: Each metadata must include corresponding percentcoverdata
     #Created Coder: Andy Kapoor
     #Created Date: 9/14/23
-    #Last Edited Date: 
-    #Last Edited Coder: 
-    #NOTE (Date):
+    #Last Edited Date: 10/05/2023
+    #Last Edited Coder: Aria Askaryar
+    #NOTE (10/05/2023): Aria revised the error message
     
     # Logic Check 1: sav_metadata & savpercentcover_data
    
@@ -77,7 +77,9 @@ def sav(all_dfs):
         "badrows": mismatch(savmeta, savper, savmeta_savper_shared_pkey), 
         "badcolumn": ','.join(savmeta_savper_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Records in SAV_metadata must have corresponding records in SAVpercentcover_data."
+        "error_message": "Records in SAV_metadata must have corresponding records in SAVpercentcover_data. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(savmeta_savper_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 1")
@@ -86,16 +88,18 @@ def sav(all_dfs):
     # Description: Each percentcoverdata must include corresponding metadata
     # Created Coder: Andy Kapoor
     # Created Date: 9/14/23
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
+    #Last Edited Date: 10/05/2023
+    #Last Edited Coder: Aria Askaryar
+    #NOTE (10/05/2023): Aria revised the error message
     args.update({
         "dataframe": savper,
         "tablename": "tbl_savpercentcover_data",
         "badrows": mismatch(savper, savmeta, savper_savmeta_shared_pkey), 
         "badcolumn": ','.join(savper_savmeta_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Records in SAVpercentcover_data must have corresponding records in SAV_metadata."
+        "error_message": "Records in SAVpercentcover_data must have corresponding records in SAV_metadata. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(savper_savmeta_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 2")

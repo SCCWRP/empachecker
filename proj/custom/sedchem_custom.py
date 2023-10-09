@@ -68,9 +68,10 @@ def sedchem_lab(all_dfs):
     # Description: Each labbatch data must correspond to grabeventdetails in database based on their shared pkeys (🛑 ERROR 🛑)
     # Created Coder: Ayah 
     # Created Date: 09/12/2023
-    # Last Edited Date: 
-    # Last Edited Coder: 
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (09/12/2023): Ayah created logic check, has not tested yet
+    # NOTE (10/05/2023): Aria revised the error message
 
     args.update({
         "dataframe": sedlabbatch,
@@ -79,7 +80,9 @@ def sedchem_lab(all_dfs):
         "badcolumn": ','.join(sedlabbatch_grabeventdetails_shared_pkey),
         "error_type": "Logic Error",
         "error_message": 
-            "Each record in sedchem_labbatch_data must have a corresponding field record. You must submit the field data to the checker first. The Field template can be downloaded on empa.sccwrp.org (Field Grab table). Records are matched based on the columns listed in the Column(s) box."
+            "Each record in sedchem_labbatch_data must have a corresponding field record. You must submit the field data to the checker first. The Field template can be downloaded on empa.sccwrp.org (Field Grab table).  Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(sedlabbatch_grabeventdetails_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
 
@@ -92,9 +95,10 @@ def sedchem_lab(all_dfs):
     # Description: Each labbatch data must include corresponding data within session submission (🛑 ERROR 🛑)
     # Created Coder: Ayah 
     # Created Date: 09/12/2023
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (09/12/2023): Ayah created logic check, has not tested yet   
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/12/2023): Ayah created logic check, has not tested yet
+    # NOTE (10/05/2023): Aria revised the error message 
 
     args.update({
         "dataframe": sedlabbatch,
@@ -102,7 +106,9 @@ def sedchem_lab(all_dfs):
         "badrows": mismatch(sedlabbatch, seddata, sedlabbatch_seddata_shared_pkey), 
         "badcolumn": ','.join(sedlabbatch_seddata_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each record in sedchem_labbatch_data must have a corresponding record in sedchem_data. Records are matched based on the columns listed in the Column(s) box."
+        "error_message": "Each record in sedchem_labbatch_data must have a corresponding record in sedchem_data. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(sedlabbatch_seddata_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
 
@@ -112,9 +118,10 @@ def sedchem_lab(all_dfs):
     # Description: Each data must include corresponding labbatch data within session submission (🛑 ERROR 🛑)
     # Created Coder: Ayah
     # Created Date: 09/12/2023
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (09/12/2023): Ayah created logic check, has not tested yet 
+    # Last Edited Date: 10/05/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (09/12/2023): Ayah created logic check, has not tested yet
+    # NOTE (10/05/2023): Aria revised the error message
 
     args.update({
         "dataframe": seddata,
@@ -122,7 +129,9 @@ def sedchem_lab(all_dfs):
         "badrows": mismatch(seddata,sedlabbatch,sedlabbatch_seddata_shared_pkey), 
         "badcolumn": ','.join(sedlabbatch_seddata_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each record in sedchem_data must have a corresponding record in sedchem_labbatch_data. Records are matched based on the columns listed in the Column(s) box."
+        "error_message": "Each record in sedchem_data must have a corresponding record in sedchem_labbatch_data. Please submit the metadata for these records first based on these columns: {}".format(
+            ','.join(sedlabbatch_seddata_shared_pkey)
+        )
     })
     errs = [*errs, checkData(**args)]
 
