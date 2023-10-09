@@ -314,27 +314,6 @@ def macroalgae(all_dfs):
     print("# END OF CHECK - 11")
 
     print("# CHECK - 13")
-<<<<<<< HEAD
-        # Description:  For every plot – total cover and open cover required in cover type
-        # Created Coder: 
-        # Created Date: 
-        # Last Edited Date:  
-        # Last Edited Coder: 
-        # NOTE ( 09/28/2023): 
-    
-    print("# END OF CHECK - 13")
-
-    print("# CHECK - 14")
-        # Description:  estimatedcover for 'open cover' in covertype + estimatedcover for 'total cover' must be 100
-        # Created Coder: 
-        # Created Date: 
-        # Last Edited Date:  
-        # Last Edited Coder: 
-        # NOTE ( 09/28/2023): 
-    
-    print("# END OF CHECK - 14")
-    
-=======
     # Description: For every plot – total cover and open cover required in cover type
     # Created Coder: Duy
     # Created Date: 10/05/23
@@ -394,7 +373,6 @@ def macroalgae(all_dfs):
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 14")
->>>>>>> 0f083bf1f601d45e4d1b698e9f273f8e346052b2
 
 
     ######################################################################################################################
