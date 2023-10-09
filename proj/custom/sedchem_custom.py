@@ -216,27 +216,30 @@ def sedchem_lab(all_dfs):
     print("# END OF CHECK - 5")       
 
 
-    print("# CHECK - 6")
+    #print("# CHECK - 6")
     # Description: labreplicate must be consecutive within primary keys (🛑 ERROR 🛑)
     # Created Coder: Ayah
     # Created Date: 09/12/2023
-    # Last Edited Date: 09/18/23
+    # Last Edited Date: 10/09/23
     # Last Edited Coder: Duy
     # NOTE (09/12/2023): Ayah wrote the replicate check, it has not been tested. 
     # NOTE (09/12/2023): I made the variable "seddata_pkey_norepcol" because the error message must output all the pkeys except for any rep columns
     # NOTE (09/18/23): Duy made a function to check for consecutive values
-    groupby_cols = [x for x in seddata_pkey if x != 'labreplicate']
-    args.update({
-        "dataframe": seddata,
-        "tablename": "tbl_sedchem_data",
-        "badrows" : check_consecutiveness(seddata, groupby_cols, 'labreplicate'),
-        "badcolumn": "labreplicate",
-        "error_type": "Replicate Error",
-        "error_message": f"labreplicate values must be consecutive. Records are grouped by {','.join(groupby_cols)}"
-    })
-    errs = [*errs, checkData(**args)]
-
-    print("# END OF CHECK - 6")       
+    # NOTE (10/09/23): Commented this out. See Accuracy Checklist for reason why.
+    # groupby_cols = [
+    #     'projectid','preparationbatchid','siteid','estuaryname','stationno','samplecollectiondate','matrix','sampletype',
+    #     'samplereplicate','sampleid'
+    # ]
+    # args.update({
+    #     "dataframe": seddata,
+    #     "tablename": "tbl_sedchem_data",
+    #     "badrows" : check_consecutiveness(seddata, groupby_cols, 'labreplicate'),
+    #     "badcolumn": "labreplicate",
+    #     "error_type": "Replicate Error",
+    #     "error_message": f"labreplicate values must be consecutive. Records are grouped by {','.join(groupby_cols)}"
+    # })
+    # errs = [*errs, checkData(**args)]
+    #print("# END OF CHECK - 6")       
     
     print("# CHECK - 7")
     # Description: samplereplicate must be consecutive within primary keys (🛑 ERROR 🛑)
