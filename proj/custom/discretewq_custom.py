@@ -88,12 +88,11 @@ def discretewq(all_dfs):
         "badrows": mismatch(watermeta, waterdata, watermeta_waterdata_shared_pkey),
         "badcolumn": ','.join(watermeta_waterdata_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each record in waterquality_metadata must have a corresponding record in waterquality_data. Please submit the metadata for these records first based on these columns: {}".format(
+        "error_message": "Each record in waterquality_metadata must have a corresponding record in waterquality_data. Records are matched based on these columns: {}".format(
             ','.join(watermeta_waterdata_shared_pkey)
         )
     })
     errs = [*errs, checkData(**args)]
-    print("check ran - logic - wq_metadata records not found in wq_data")
     print("#END CHECK - 1")
 
 
@@ -111,7 +110,7 @@ def discretewq(all_dfs):
         "badrows": mismatch(waterdata, watermeta, watermeta_waterdata_shared_pkey), 
         "badcolumn": ','.join(watermeta_waterdata_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each record in waterquality_data must have a corresponding record in waterquality_metadata. Please submit the metadata for these records first based on these columns: {}".format(
+        "error_message": "Each record in waterquality_data must have a corresponding record in waterquality_metadata. Records are matched based on these columns: {}".format(
             ','.join(watermeta_waterdata_shared_pkey)
         )
     })
