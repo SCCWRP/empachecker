@@ -28,7 +28,7 @@ def sedimentgrainsize_lab(all_dfs):
     
     sed_data = all_dfs['tbl_sedgrainsize_data']
     sed_labbatch = all_dfs['tbl_sedgrainsize_labbatch_data']
-    grabeventdetails = pd.read_sql("SELECT * FROM tbl_grabevent_details", g.eng)
+    grabeventdetails = pd.read_sql("SELECT * FROM tbl_grabevent_details WHERE sampletype = 'grainsize'", g.eng)
 
     sed_data['tmp_row'] = sed_data.index
     sed_labbatch['tmp_row'] = sed_labbatch.index

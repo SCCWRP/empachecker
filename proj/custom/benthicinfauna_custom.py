@@ -31,7 +31,7 @@ def benthicinfauna_lab(all_dfs):
     benthiclabbatch = all_dfs['tbl_benthicinfauna_labbatch']
     benthicabundance = all_dfs['tbl_benthicinfauna_abundance']
     benthicbiomass = all_dfs['tbl_benthicinfauna_biomass']
-    grabevent_details = pd.read_sql("SELECT * FROM tbl_grabevent_details",g.eng)
+    grabevent_details = pd.read_sql("SELECT * FROM tbl_grabevent_details WHERE sampletype = 'infauna' ",g.eng)
     
     benthiclabbatch['tmp_row'] = benthiclabbatch.index
     benthicabundance['tmp_row'] = benthicabundance.index
