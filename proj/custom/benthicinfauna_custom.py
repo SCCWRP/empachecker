@@ -93,8 +93,8 @@ def benthicinfauna_lab(all_dfs):
         "badcolumn": ','.join(labbatch_grabeventdet_shared_pkey),
         "error_type": "Logic Error",
         "error_message": 
-            "Records in benthicinfauna_labbatch must have corresponding metadata records. " +\
-            "Please submit the metadata records using this template. " +\
+            "Records in benthicinfauna_labbatch must have corresponding field records. " +\
+            "Please submit the field records using this template. " +\
             "<a href='/checker/templater?datatype=grab_field' target='_blank'>Field Template</a>."
     })
     errs = [*errs, checkData(**args)]  
