@@ -150,90 +150,76 @@ def fill_daubenmiremidpoint(all_dfs):
     print('end fill_daubenmiremidpoint')
     return all_dfs
 
-fishmacro_tbls = [
-    'tbl_bruv_data',
-    'tbl_crabbiomass_length',
-    'tbl_crabfishinvert_abundance',
-    'tbl_epifauna_data',
-    'tbl_fish_abundance_data',
-    'tbl_fish_length_data'
-]
+def fill_commonname_status(all_dfs):
+    lookup_info_df = pd.read_sql(
+        """
+            SELECT
+                DISTINCT tc."table_name",
+                ccu.table_name as lookup_table
+            FROM 
+                information_schema.table_constraints AS tc 
+                JOIN information_schema.key_column_usage AS kcu
+                ON tc.constraint_name = kcu.constraint_name
+                AND tc.table_schema = kcu.table_schema
+                JOIN information_schema.constraint_column_usage AS ccu
+                ON ccu.constraint_name = tc.constraint_name
+                AND ccu.table_schema = tc.table_schema
+            WHERE 
+                tc.constraint_type = 'FOREIGN KEY' 
+            AND ccu.table_name IN ('lu_fishmacrospecies','lu_plantspecies');
+        """, 
+        g.eng
+    )
 
-plant_tbls = [
-    'tbl_algaecover_data',
-    'tbl_floating_data',
-    'tbl_savpercentcover_data',
-    'tbl_vegetativecover_data'
-]
-# benthic_tbls = ['tbl_benthicinfauna_abundance',
-#                 'tbl_benthicinfauna_biomass',
-#                 'tbl_benthiclarge_abundance']
+    fish_tbls = lookup_info_df[lookup_info_df['lookup_table'] == 'lu_fishmacrospecies'].table_name.tolist()
+    plant_tbls = lookup_info_df[lookup_info_df['lookup_table'] == 'lu_plantspecies'].table_name.tolist()
 
-all_tbls = {
-    'fishmacro_tbls': {
-        'tbls': fishmacro_tbls,
-        'lu_list': 'lu_fishmacrospecies'
-        },
-    'plant_tbls': {
-        'tbls': plant_tbls,
-        'lu_list': 'lu_plantspecies'
-        },
-}
-
-def fill_commonname(all_dfs):
-    for _, tbl_arr in all_tbls.items():
-        lu_list = tbl_arr['lu_list']
-        for tbl in tbl_arr['tbls']:
-            if tbl in all_dfs.keys():
-                df = all_dfs[tbl]
-                for label, row in df.iterrows():
-                    sci_name = row['scientificname']
-                    com_name = row['commonname']
-                    if pd.isna(com_name) and pd.notna(sci_name):
-                        common_name_df = pd.read_sql(f"SELECT commonname FROM {lu_list} WHERE scientificname = '{sci_name}'", g.eng)
-                        if common_name_df.empty:
-                            print(f"cannot fill commonname for {sci_name} - not found in lu list")
-                            continue
-                        new_common_name = str(common_name_df.iat[0,0])
-                        df.loc[label, 'commonname'] = new_common_name
-                        all_dfs[tbl] = df
-                        print(f'filled common name for {sci_name} with {new_common_name}')
-    return all_dfs
-
-def fill_status(all_dfs):
-    for _, tbl_arr in all_tbls.items():
-        lu_list = tbl_arr['lu_list']
-        for tbl in tbl_arr['tbls']:
-            if tbl in all_dfs.keys():
-                df = all_dfs[tbl]
-                for label, row in df.iterrows():
-                    sci_name = row['scientificname']
-                    status = row['status']
-                    if pd.isna(status) and pd.notna(sci_name):
-                        status_df = pd.read_sql(f"SELECT status FROM {lu_list} WHERE scientificname = '{sci_name}'", g.eng)
-                        if status_df.empty:
-                            print(f"cannot fill status for {sci_name} - not found in lu list")
-                            continue
-                        new_status = str(status_df.iat[0,0])
-                        df.loc[label, 'status'] = new_status
-                        all_dfs[tbl] = df
-                        print(f'filled status for {sci_name} with {new_status}')
+    for tbl in all_dfs.keys():
+        df = all_dfs[tbl]
+        if all([col in all_dfs[tbl] for col in ['scientificname','commonname','status']]):
+            print("begin fill_commonname_status")
+            if tbl in fish_tbls:
+                lu_df = pd.read_sql("SELECT scientificname,commonname,status FROM lu_fishmacrospecies", g.eng)
+            elif tbl in plant_tbls:
+                lu_df = pd.read_sql("SELECT scientificname,commonname,status FROM lu_plantspecies", g.eng)
+            df['commonname'] = df.apply(
+                lambda row: dict(zip(lu_df['scientificname'], lu_df['commonname'])).get(row['scientificname'], 'checker tried to autofill commonname-scientificname not found in lookup')
+                if 
+                    pd.isna(row['commonname'])
+                else
+                    row['commonname'],
+                axis=1
+            )
+            df['status'] = df.apply(
+                lambda row: dict(zip(lu_df['scientificname'], lu_df['status'])).get(row['scientificname'], 'checker tried to autofill status-scientificname not found in lookup')
+                if 
+                    pd.isna(row['status'])
+                else
+                    row['status'],
+                axis=1
+            )
+            all_dfs[tbl] = df
+            print("end fill_commonname_status")
     return all_dfs
 
 def fill_area(all_dfs):
     if 'tbl_fish_sample_metadata' in all_dfs.keys():
+        print("begin fill_area")
         df = all_dfs['tbl_fish_sample_metadata']
-        for label, row in df.iterrows():
-            area = row['area_m2']
-            length = row['seinelength_m']
-            distance = row['seinedistance_m']
-            if pd.isna(area):
-                if pd.notna(length) and pd.notna(distance):
-                    new_area = length * distance
-                    df.loc[label, 'area_m2'] = new_area
-                    all_dfs['tbl_fish_sample_metadata'] = df
+        df['area_m2'] = df.apply(
+            lambda row: row['seinelength_m'] * row['seinedistance_m']
+            if 
+                all([pd.isna(row['area_m2']), not pd.isna(row['seinelength_m']), not pd.isna(row['seinedistance_m'])])
+            else
+                row['area_m2']
+            ,
+            axis=1
+        )
+        print("end fill_area")
     return all_dfs
-    
+
+
+
 
 def fix_projectid(all_dfs):
     '''
@@ -334,46 +320,30 @@ def clean_data(all_dfs):
     
     
     print("# begin data filling - 2")
-    # Description: fill commonname based on scientificname from appropriate lookup list
+    # Description: fill commonname, status based on scientificname from appropriate lookup list
     # Created Coder: Caspian Thackeray
     # Created Date:  08/28/23
-    # Last Edited Date: 09/28/23
-    # Last Edited Coder: Duy
+    # Last Edited Date: 10/10/23
+    # Last Edited Coder: Duy Nguyen
     # NOTE (08/28/23): Begin writing this check
     # NOTE (08/29/23): Finished writing this check
     # NOTE (09/28/23): Code would crash if scientificname not in lookup list, so Duy made the code not to fill it if scientificname is not in lu list.
     # Need to refactor the code in the near future.
-    all_dfs = fill_commonname(all_dfs)
+    # NOTE (10/10/23): Duy combined commonname, status into one function. QA'ed
+    all_dfs = fill_commonname_status(all_dfs)
     print("# end data filling - 2")
     
     
-    
-    
     print("# begin data filling - 3")
-    # Description: fill status based on scienticficname,commonname from appropriate lookup lists
-    # Created Coder: Caspian Thackeray
-    # Created Date:  08/29/23
-    # Last Edited Date: 09/28/23
-    # Last Edited Coder: Duy
-    # NOTE (08/29/23): Wrote this check
-    # NOTE (09/28/23): Code would crash if scientificname not in lookup list, so Duy made the code not to fill it if scientificname is not in lu list.
-    # Need to refactor the code in the near future.
-    
-    print("# end data filling - 3")
-    all_dfs = fill_status(all_dfs)
-    
-    
-    
-    
-    print("# begin data filling - 4")
     # Description: fill the area_m2 column if it is empty. Formula: area_m2 = seinelength_m x seinedistance_m
     # Created Coder: Caspian Thackeray
     # Created Date:  08/30/23
-    # Last Edited Date: 08/30/23
-    # Last Edited Coder: Caspian Thackeray
+    # Last Edited Date: 10/10/23
+    # Last Edited Coder: Duy Nguyen
     # NOTE (08/17/23): Wrote this check
+    # NOTE (10/10/23): Duy rewrote the check to avoid looping through every cells in a dataframe. QA'ed.
     all_dfs = fill_area(all_dfs)
-    print("# end data filling - 4")
+    print("# end data filling - 3")
 
 
     
@@ -390,3 +360,62 @@ def clean_data(all_dfs):
 
     print("END preprocessing")
     return all_dfs
+
+
+
+
+'''
+Caspian's code:
+def fill_commonname(all_dfs):
+    for _, tbl_arr in all_tbls.items():
+        lu_list = tbl_arr['lu_list']
+        for tbl in tbl_arr['tbls']:
+            if tbl in all_dfs.keys():
+                df = all_dfs[tbl]
+                for label, row in df.iterrows():
+                    sci_name = row['scientificname']
+                    com_name = row['commonname']
+                    if pd.isna(com_name) and pd.notna(sci_name):
+                        common_name_df = pd.read_sql(f"SELECT commonname FROM {lu_list} WHERE scientificname = '{sci_name}'", g.eng)
+                        if common_name_df.empty:
+                            print(f"cannot fill commonname for {sci_name} - not found in lu list")
+                            continue
+                        new_common_name = str(common_name_df.iat[0,0])
+                        df.loc[label, 'commonname'] = new_common_name
+                        all_dfs[tbl] = df
+                        print(f'filled common name for {sci_name} with {new_common_name}')
+    return all_dfs
+
+def fill_status(all_dfs):
+    for _, tbl_arr in all_tbls.items():
+        lu_list = tbl_arr['lu_list']
+        for tbl in tbl_arr['tbls']:
+            if tbl in all_dfs.keys():
+                df = all_dfs[tbl]
+                for label, row in df.iterrows():
+                    sci_name = row['scientificname']
+                    status = row['status']
+                    if pd.isna(status) and pd.notna(sci_name):
+                        status_df = pd.read_sql(f"SELECT status FROM {lu_list} WHERE scientificname = '{sci_name}'", g.eng)
+                        if status_df.empty:
+                            print(f"cannot fill status for {sci_name} - not found in lu list")
+                            continue
+                        new_status = str(status_df.iat[0,0])
+                        df.loc[label, 'status'] = new_status
+                        all_dfs[tbl] = df
+                        print(f'filled status for {sci_name} with {new_status}')
+    return all_dfs
+def fill_area(all_dfs):
+    if 'tbl_fish_sample_metadata' in all_dfs.keys():
+        df = all_dfs['tbl_fish_sample_metadata']
+        for label, row in df.iterrows():
+            area = row['area_m2']
+            length = row['seinelength_m']
+            distance = row['seinedistance_m']
+            if pd.isna(area):
+                if pd.notna(length) and pd.notna(distance):
+                    new_area = length * distance
+                    df.loc[label, 'area_m2'] = new_area
+                    all_dfs['tbl_fish_sample_metadata'] = df
+    return all_dfs
+'''
