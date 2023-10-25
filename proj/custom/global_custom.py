@@ -266,64 +266,51 @@ def global_custom(all_dfs, datatype = ''):
             print("# END GLOBAL CUSTOM CHECK - 8")
 
 
+            print("# GLOBAL CUSTOM CHECK - 9")
+            # Description: If a metadata dataset has columns 'latitude' and 'longitude' (sometimes they are named differently), 
+            # then the coordinates should be in California or Mexico (Baja California)
+            # Created Coder: Aria Askaryar
+            # Created Date: 10/24/23
+            # Last Edited Date: 10/24/23
+            # Last Edited Coder: Aria Askaryar
+            # NOTE (10/24/23): Aria - this check uses a shapefile(of California and baja california) I made and placed in 'shapes' folder, the lat and longs must be within that shapefile cordinates or it is bad points(lat/long)
+            # NOTE ():
 
+            #this is the path to the shapefile and the shapfile in geopandas format/ this uses the geopandas library -Aria
+            shapefile_path = os.path.join(os.getcwd(), 'shapes', 'california_combined.shp')
+            cali_shapefile = gpd.read_file(shapefile_path)
 
-            # print("# GLOBAL CUSTOM CHECK - 9")
-            # # Description: If a metadata dataset has columns 'latitude' and 'longitude' (sometimes they are named differently), 
-            # # then the coordinates should be in California or Mexico (Baja California)
-            # # Created Coder: Aria Askaryar
-            # # Created Date: 10/24/23
-            # # Last Edited Date: 10/24/23
-            # # Last Edited Coder: Aria Askaryar
-            # # NOTE (10/24/23): Aria - this check uses a shapefile(of California and baja california) I made and placed in 'shapes' folder, the lat and longs must be within that shapefile cordinates or it is bad points(lat/long)
-            # # NOTE ():
+            latlong_cols = current_app.datasets.get(datatype).get('latlong_cols', None)
 
-            # #this is the path to the shapefile and the shapfile in geopandas format/ this uses the geopandas library -Aria
-            # shapefile_path = os.path.join(os.getcwd(), 'shapes', 'california_combined.shp')
-            # cali_shapefile = gpd.read_file(shapefile_path)
-            # print(shapefile_path)
-            # print(cali_shapefile)
+            # latlong_cols is a list of dictionaries of the tables with lat long columns
+            if latlong_cols is not None:
+                tmp = [
+                    (x.get('latcol'), x.get('longcol'))
+                    for x in latlong_cols
+                    if x.get('tablename') == table_name
+                ][0]
+                latcol, longcol = tmp[0], tmp[1]
 
-            # latlong_cols = current_app.datasets.get(datatype).get('latlong_cols', None)
-
-            # # latlong_cols is a list of dictionaries of the tables with lat long columns
-            # if latlong_cols is not None:
-            #     tmp = [
-            #         (x.get('latcol'), x.get('longcol'))
-            #         for x in latlong_cols
-            #         if x.get('tablename') == table_name
-            #     ][0]
-            #     latcol, longcol = tmp[0], tmp[1]
-            #     print(latcol,longcol)
-
-            # def check_coordinates_in_shapefile(dataframe, shapefile_path, lat_col, long_col):
-            #     assert 'tmp_row' in df.columns, 'tmp_row not found in dataframe'
-            #     # assert os.path.exists( os.path.join(os.getcwd(), 'shapes', 'filename.shp') ) , "'filename.shp' not found"
-            #     shapefile_path = os.path.join(os.getcwd(), 'shapes', 'california_combined.shp')
-            #     cali_shapefile = gpd.read_file(shapefile_path)
-            #     if latcol in df.columns and longcol in df.columns:
-            #             print("True")
-            #             gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df[longcol], df[latcol]))
-            #             # print(f"geodataframe: \n{gdf.geometry}")
-            #             # within_shapefile = gdf.within(cali_shapefile.unary_union) #gives true or false type bool
-            #             # print(f"within_shapefile: \n{within_shapefile}")
-            #             badrows = gdf[gdf.disjoint(cali_shapefile.unary_union)]
-            #             print(f"outside points:{badrows}")
-            #             return badrows
+            def check_coordinates_in_shapefile(dataframe, shapefile_path, lat_col, long_col):
+                assert 'tmp_row' in df.columns, 'tmp_row not found in dataframe'
+                shapefile_path = os.path.join(os.getcwd(), 'shapes', 'california_combined.shp')
+                cali_shapefile = gpd.read_file(shapefile_path)
+                if latcol in df.columns and longcol in df.columns:
+                        gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df[longcol], df[latcol]))
+                        badrows = gdf[gdf.disjoint(cali_shapefile.unary_union)]
+                        return badrows
             
-            # print("Aria Check Here:")
-            # # print(df[check_coordinates_in_shapefile(df, cali_shapefile, latcol, longcol )])
-            # args = {
-            #     "dataframe": df,
-            #     "tablename": table_name,
-            #     "badrows": check_coordinates_in_shapefile(df, cali_shapefile, latcol, longcol ).tmp_row.tolist(),
-            #     "badcolumn": f"{latcol}, {longcol}",
-            #     "error_type": "Value Error",
-            #     "is_core_error": False,
-            #     "error_message": f"The values in {latcol} and {longcol} fall outside California, and/or Baja California. The points must be within California or Baja California"
-            # }
-            # errs = [*errs, checkData(**args)]
-            # print("# END GLOBAL CUSTOM CHECK - 9")
+            args = {
+                "dataframe": df,
+                "tablename": table_name,
+                "badrows": check_coordinates_in_shapefile(df, cali_shapefile, latcol, longcol ).tmp_row.tolist(),
+                "badcolumn": f"{latcol}, {longcol}",
+                "error_type": "Value Error",
+                "is_core_error": False,
+                "error_message": f"The values in {latcol} and {longcol} fall outside California, and/or Baja California. The points must be within California or Baja California"
+            }
+            errs = [*errs, checkData(**args)]
+            print("# END GLOBAL CUSTOM CHECK - 9")
 
 
 
