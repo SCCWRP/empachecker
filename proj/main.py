@@ -337,7 +337,7 @@ def main():
             # the output of global custom should look the same as the custom_output
             # Then we can do custom_output.get('errors').extend(global_custom_output.get('errors))
             # and custom_output.get('warnings').extend(global_custom_output.get('warnings))
-            global_custom_output = global_custom(all_dfs)
+            global_custom_output = global_custom(all_dfs, datatype = match_dataset)
 
             # extend the custom output
             custom_output.get('errors').extend(global_custom_output.get('errors'))
