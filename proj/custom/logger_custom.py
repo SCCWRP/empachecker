@@ -421,7 +421,7 @@ def logger_raw(all_dfs):
     # Created Date: 10/13/2023
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE (10/13/2023): Ayah created check 
+    # NOTE (10/13/2023): Ayah edited check 
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
@@ -445,8 +445,13 @@ def logger_raw(all_dfs):
     # ---------------------------------------------- Begin of Minidot Check -------------------------------------------- #
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
-
-     # Check: issue warning do_percent < 0 and not -88
+    print('Begin check 2')
+    # Description: Issue warning if do_percent < 0 and not -88
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 10/17/2023
+    # Last Edited Coder: Ayah
+    # NOTE (10/13/2023): Ayah created check 
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
@@ -458,7 +463,13 @@ def logger_raw(all_dfs):
     errs = [*errs, checkData(**args)]
     print("check ran - logger_mdot_data - do_percent")
     
-    # Check: issue warning do_percent > 110 # Jan asked for this to be a warning. 4 March 2022
+    print('Begin check 3')
+    #Description: Issue warning do_percent > 110 # Jan asked for this to be a warning. (Jan asked for this to be a warning. 4 March 2022)
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 10/17/2023
+    # Last Edited Coder: Ayah
+    # NOTE (10/13/2023): Ayah edited check 
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
@@ -470,7 +481,13 @@ def logger_raw(all_dfs):
     warnings = [*warnings, checkData(**args)]
     print("check ran - logger_mdot_data - do_percent")
     
-    #Check: Range for do_mgl must be between [0, 60] or -88
+    print('Begin check 4')
+    # Description: Range for raw_do  must be between [0, 60] or -88 when raw_do_unit is mg/L
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 10/17/2023
+    # Last Edited Coder: Ayah
+    # NOTE (10/13/2023): Ayah edited check 
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
@@ -481,9 +498,14 @@ def logger_raw(all_dfs):
     })
     errs = [*errs, checkData(**args)]
     print("check ran - logger_mdot_data - raw_do")
-
     
-    # Check: qvalue range increased from 1 to 1.1 - approved by Jan 4 March 2022
+    print('Begin check 5')
+    # Description: qvalue range increased from 1 to 1.1 - approved by Jan 4 March 2022
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 10/17/2023
+    # Last Edited Coder: Ayah
+    # NOTE (10/13/2023): Ayah edited check  
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
@@ -509,6 +531,14 @@ def logger_raw(all_dfs):
           
     # Need to add not null checks for the measurement columns
     print("Begin CTD data checks...")
+
+    print('Begin check 7')
+    # Description: Range for raw_conductivity must be between [0, 10] or -88 when raw_conductiviy_units is mscm
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 10/17/2023
+    # Last Edited Coder: Ayah
+    # NOTE (10/13/2023): Ayah edited check  
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
@@ -521,6 +551,13 @@ def logger_raw(all_dfs):
     errs = [*errs, checkData(**args)]
     print("check ran - logger_ctd_data - conductivity_mscm")
 
+    print('Begin check 9')
+    # Description: Range for salinity_ppt must be nonnegative or-88
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 10/17/2023
+    # Last Edited Coder: Ayah
+    # NOTE (10/13/2023): Ayah edited check 
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
@@ -533,6 +570,26 @@ def logger_raw(all_dfs):
     print("check ran - logger_ctd_data - raw_salinity")
 
     # # Need to add not null checks for the measurement columns
+    print('Begin check 10')
+    # Description: If sensortype is CTD, then raw_pressure should be filled and raw_pressure_unit should be cmh2o
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 10/17/2023
+    # Last Edited Coder: Ayah
+    # NOTE (10/13/2023): Ayah edited check 
+    args.update({
+        "dataframe": logger,
+        "tablename": "tbl_wq_logger_raw",
+        "badrows":logger[
+            (logger['sensortype'] == 'CTD') & (logger['raw_pressure'].isna() | logger['raw_pressure_unit']!= "cmh2o")
+        ].tmp_row.tolist(),
+        "badcolumn": "sensortype,raw_pressure,raw_pressure_unit",
+        "error_type" : "Unknown Error",
+        "error_message" : 'Since sensortype is CTD, raw_pressure should not be empty and raw_pressure_units must be "cmh2o"'
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("check ran - wqlogger - pressure_cmh2o")
     print("...End CTD data checks.")
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
@@ -547,19 +604,27 @@ def logger_raw(all_dfs):
     ######################################################################################################################
     
     
-    # args.update({
-    #     "dataframe": logger,
-    #     "tablename": "tbl_wq_logger_raw",
-    #     "badrows":logger[
-    #         (logger['sensortype'] == 'troll') & (logger['pressure_cmh2o'].notnull().any())
-    #     ].tmp_row.tolist(),
-    #     "badcolumn": "sensortype,pressure_cmh2o,pressure_mbar",
-    #     "error_type" : "Unknown Error",
-    #     "error_message" : "If the sensortype is troll, you should fill out the column pressure_mbar for pressure reading, not pressure_cmh2o"
-    # })
-    # errs = [*errs, checkData(**args)]
+    print('Begin check 12')
+    # Description: If sensortype is CTD, then raw_pressure should be filled and raw_pressure_unit should be cmh2o
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 10/17/2023
+    # Last Edited Coder: Ayah
+    # NOTE (10/13/2023): Ayah edited check 
+    args.update({
+        "dataframe": logger,
+        "tablename": "tbl_wq_logger_raw",
+        "badrows":logger[
+            (logger['sensortype'] == 'Troll') & (logger['raw_pressure'].isna() | logger['raw_pressure_unit']!= "cmh2o")
+        ].tmp_row.tolist(),
+        "badcolumn": "sensortype,raw_pressure,raw_pressure_unit",
+        "error_type" : "Unknown Error",
+        "error_message" : 'Since sensortype is CTD, raw_pressure should not be empty and raw_pressure_units must be "cmh2o"'
+    })
+    errs = [*errs, checkData(**args)]
 
-    # print("check ran - wqlogger - pressure_cmh2o")
+    print("check ran - wqlogger - pressure_cmh2o")
+    print("...End CTD data checks.")
 
     # Need to add not null checks for the measurement columns
 
@@ -575,7 +640,7 @@ def logger_raw(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
     print("Begin Tidbit data checks...")
-
+    #Only check for tidbit was for h2otemp which is already coded
     print("...End Tidbit data checks.")
 
     ######################################################################################################################
@@ -583,18 +648,19 @@ def logger_raw(all_dfs):
     # ------------------------------------------------- Begin of Other  Check ------------------------------------------ #
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
-
-
-
-
-    '''
     print("Begin Other data checks...")
 
-
+    print('Begin check 14')
+    # Description: Range for pH must be between [1, 14] or -88
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 10/17/2023
+    # Last Edited Coder: Ayah
+    # NOTE (10/13/2023): Ayah edited check 
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[(logger['ph'] < 1) | (logger['ph'] > 14)].index.tolist(),
+        "badrows":logger[(logger['raw_ph'] < 1) | (logger['raw_ph'] > 14)].index.tolist(),
         "badcolumn": "ph",
         "error_type" : "Value out of range",
         "error_message" : "pH value is out of range. Value should be between 1 and 14. If no value to provide, enter -88."
@@ -603,11 +669,17 @@ def logger_raw(all_dfs):
     print("check ran - logger_other_data - pH")
 
 
-
+    print('Begin check 15')
+    # Description: Range for turbidity_ntu must be between [0, 3000] or -88
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 10/17/2023
+    # Last Edited Coder: Ayah
+    # NOTE (10/13/2023): Ayah edited check 
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[((logger['turbidity_ntu'] < 0) & (logger['turbidity_ntu'] != -88)) | (logger['turbidity_ntu'] > 3000)].index.tolist(),
+        "badrows":logger[(logger['raw_turbidity_unit']=="ntu") & (((logger['raw_turbidity'] < 0) & (logger['raw_turbidity'] != -88)) | (logger['raw_turbidity'] > 3000))].index.tolist(),
         "badcolumn": "turbidity_ntu",
         "error_type" : "Value out of range",
         "error_message" : "Turbidity_NTU value is out of range. Value should be within 0-3000. If no value to provide, enter -88."
@@ -615,22 +687,35 @@ def logger_raw(all_dfs):
     errs = [*errs, checkData(**args)]
     print("check ran - logger_other_data - turbidity_ntu")
 
-
+    print('Begin check 16')
+    # Description: Range for do_percent must be between [-1, 300] or -88
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 10/17/2023
+    # Last Edited Coder: Ayah
+    # NOTE (10/13/2023): Ayah edited check 
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[((logger['do_percent'] < -1) & (logger['do_percent'] != -88)) | (logger['do_percent'] > 300)].index.tolist(),
+        "badrows":logger[(logger['sensortype']!='minidot') & ((logger['raw_do_pct'] < -1) & (logger['raw_do_pct'] != -88)) | (logger['raw_do_pct'] > 300)].index.tolist(),
         "badcolumn": "do_percent",
         "error_type" : "Value out of range",
-        "error_message" : "DO_percent is out of range. Value must be within 0-300. If no value, enter -88 or leave blank."
+        "error_message" : "raw_do_pct is out of range. Value must be within 0-300. If no value, enter -88 or leave blank."
     })
     errs = [*errs, checkData(**args)]
     print("check ran - logger_other_data - do_percent")
-
+    
+    print('Begin check 16')
+    # Description: Range for raw_orp must be between [999,-999] when raw_orp_unit is mv
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 10/17/2023
+    # Last Edited Coder: Ayah
+    # NOTE (10/13/2023): Ayah edited check 
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[(logger['orp_mv'] < -999) | (logger['orp_mv'] > 999)].index.tolist(),
+        "badrows":logger[(logger['raw_orp_unit']=='mv') & ((logger['raw_orp'] < -999) | (logger['raw_orp'] > 999))].index.tolist(),
         "badcolumn": "orp_mv",
         "error_type" : "Value out of range",
         "error_message" : "ORP_mV is out of range. Value must be within -999 to 999."
@@ -638,49 +723,20 @@ def logger_raw(all_dfs):
     errs = [*errs, checkData(**args)]
     print("check ran - logger_other_data - orp_mv")
 
-
     # Check: pressure_cmh2o must in the range  50 < x < 3000. We want this field in centimeters
-    args.update({
-        "dataframe": logger,
-        "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[(logger['pressure_cmh2o'] < 50) | (logger['pressure_cmh2o'] > 6000) ].tmp_row.tolist(),
-        "badcolumn": "pressure_cmh2o",
-        "error_type" : "Value out of range",
-        "error_message" : "Your pressure_cmh2o values are out of range. The values must be in centimeters."
-    })
-    errs = [*errs, checkData(**args)]
-    print("check ran - wqlogger - pressure_cmh2o")
-
-    # Check: If sensortype is CTD, then they should fill out the pressure_cmh2o field. 
-    # If sensortype is troll, then they should fill out the pressure_mbar field.
-
-    args.update({
-        "dataframe": logger,
-        "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[
-            (logger['sensortype'] == 'CTD') & (logger['pressure_mbar'].notnull().any())
-        ].tmp_row.tolist(),
-        "badcolumn": "sensortype,pressure_cmh2o,pressure_mbar",
-        "error_type" : "Unknown Error",
-        "error_message" : "If the sensortype is CTD, you should fill out the column pressure_cmh2o for pressure reading, not pressure_mbar"
-    })
-    errs = [*errs, checkData(**args)]
-    print("check ran - wqlogger - pressure_cmh2o")
+    # args.update({
+    #     "dataframe": logger,
+    #     "tablename": "tbl_wq_logger_raw",
+    #     "badrows":logger[(logger['pressure_cmh2o'] < 50) | (logger['pressure_cmh2o'] > 6000) ].tmp_row.tolist(),
+    #     "badcolumn": "pressure_cmh2o",
+    #     "error_type" : "Value out of range",
+    #     "error_message" : "Your pressure_cmh2o values are out of range. The values must be in centimeters."
+    # })
+    # errs = [*errs, checkData(**args)]
+    # print("check ran - wqlogger - pressure_cmh2o")
 
 
-    args.update({
-        "dataframe": logger,
-        "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[
-            (logger['sensortype'] == 'troll') & (logger['pressure_cmh2o'].notnull().any())
-        ].tmp_row.tolist(),
-        "badcolumn": "sensortype,pressure_cmh2o,pressure_mbar",
-        "error_type" : "Unknown Error",
-        "error_message" : "If the sensortype is troll, you should fill out the column pressure_mbar for pressure reading, not pressure_cmh2o"
-    })
-    errs = [*errs, checkData(**args)]
 
-    print("check ran - wqlogger - pressure_cmh2o")
 
     # Need to add not null checks for the measurement columns
     print("...End Other data checks.")
@@ -724,4 +780,4 @@ def logger_meta(all_dfs):
         "error_message": ""
     }
     return {'errors': errs, 'warnings': warnings}
-    '''
+    
