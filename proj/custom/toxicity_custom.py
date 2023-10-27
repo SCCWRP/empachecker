@@ -56,7 +56,7 @@ def toxicity(all_dfs):
     toxicitybatch = all_dfs['tbl_toxicitybatch'].assign(tmp_row = all_dfs['tbl_toxicitybatch'].index)
     toxicityresults = all_dfs['tbl_toxicityresults'].assign(tmp_row = all_dfs['tbl_toxicityresults'].index)
 
-    grabevent_details = pd.read_sql("SELECT * FROM tbl_grabevent_details", g.eng)
+    grabevent_details = pd.read_sql("SELECT * FROM tbl_grabevent_details WHERE sampletype = 'toxicity'", g.eng)
 
     args = {
         "dataframe": pd.DataFrame({}),

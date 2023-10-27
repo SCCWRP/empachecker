@@ -30,8 +30,8 @@ def support_jsonp(f):
 
 download = Blueprint('download', __name__)
 
-#CORS(download)
-#cors = CORS(download, resources={r"/exportdata": {"origins": "*"}})
+# CORS(download)
+# cors = CORS(download, resources={r"/exportdata": {"origins": "*"}})
 
 @download.route('/download/<submissionid>/<filename>', methods = ['GET','POST'])
 def submission_file(submissionid, filename):

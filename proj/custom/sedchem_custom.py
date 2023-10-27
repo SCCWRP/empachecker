@@ -28,7 +28,7 @@ def sedchem_lab(all_dfs):
 
     sedlabbatch = all_dfs['tbl_sedchem_labbatch_data']
     seddata = all_dfs['tbl_sedchem_data']
-    grabeventdetails = pd.read_sql("SELECT * FROM tbl_grabevent_details", g.eng)
+    grabeventdetails = pd.read_sql("SELECT * FROM tbl_grabevent_details WHERE sampletype = 'chemistry'", g.eng)
 
     sedlabbatch['tmp_row'] = sedlabbatch.index
     seddata['tmp_row'] = seddata.index
