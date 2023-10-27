@@ -76,8 +76,8 @@ def macroalgae(all_dfs):
         "badrows": mismatch(algaemeta, algaecover, algaemeta_algaecover_shared_pkey), 
         "badcolumn":  ','.join(algaemeta_algaecover_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Records in Algae metadata should have corresponding records in AlgeaCover data in the database. "+\
-            "Please submit the metadata for these records first based on these columns: {}".format(
+        "error_message": "Each record in macroalgae_sample_metadata must include a corresponding record in algaecover_data. "+\
+            "Records are matched based on these columns: {}".format(
             ', '.join(algaemeta_algaecover_shared_pkey)
         )
     })

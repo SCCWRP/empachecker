@@ -387,7 +387,7 @@ def discretewq(all_dfs):
         ].tmp_row.tolist(),
         "badcolumn": "airtemp_units",
         "error_type": "Bad Value",
-        "error_message" : " If AirTemp is reported, then AirTemp_Units cannot be 'Not Recorded'"
+        "error_message" : " If AirTemp is reported, then AirTemp_Units cannot be 'Not Recorded', unless AirTemp is -88 which then it must be 'Not Recorded'"
     })
     errs = [*errs, checkData(**args)]
     print('END CHECK 16')  
