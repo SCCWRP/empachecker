@@ -315,20 +315,34 @@ def vegetation(all_dfs):
     ######################################################################################################################
 
     print("# CHECK - 8")
-    # Description: If EstimatedCover is -88, then PercentCoverCode must be provided (cannot be -88)
+    # Description: If method is not 'obs_plant' and estimatedcover is -88, then percentcovercode must be provided (cannot be -88). If method is 'obs_plant', both estimatedcover and percentcover must be -88.
     # Created Coder:
     # Created Date:
-    # Last Edited Date: 09/14/2023
-    # Last Edited Coder: Ayah
+    # Last Edited Date: 10/30/23
+    # Last Edited Coder: Duy
     # NOTE (09/14/2023): Adjust code to match coding standard
+    # NOTE (10/30/2023): Duy changed code's logic based on Jan's request
     args = ({
         "dataframe":vegdata,
         "tablename":'tbl_vegetativecover_data',
-        "badrows":vegdata[(vegdata['estimatedcover'] == -88) & (vegdata['percentcovercode'] == -88)].tmp_row.tolist(),
-        "badcolumn": "percentcovercode",
-        "error_type": "wrong value",
+        "badrows":vegdata[
+            (
+                (vegdata['method'] != 'obs_plant') &
+                (vegdata['estimatedcover'] == -88) &
+                (vegdata['percentcovercode'] == -88) 
+            ) |
+            (
+                (vegdata['method'] == 'obs_plant') &
+                (
+                    (vegdata['estimatedcover'] != -88) |
+                    (vegdata['percentcovercode'] != -88)   
+                ) 
+            )
+        ].tmp_row.tolist(),
+        "badcolumn": "method,estimatedcover,percentcovercode",
+        "error_type": "Value Error",
         "is_core_error": False,
-        "error_message": "Since EstimatedCover is -88, PercentCoverCOde must be provided"
+        "error_message": "If method is not 'obs_plant' and estimatedcover is -88, then percentcovercode must be provided (cannot be -88). If method is 'obs_plant', both estimatedcover and percentcover must be -88."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 8")
