@@ -251,6 +251,47 @@ def vegetation(all_dfs):
     
     print("# END OF CHECK - 7")
 
+    print("# CHECK - 15")
+    # Description: If method is obs_plant, then transectreplicate must be -88
+    # Created Coder: Duy    
+    # Created Date: 10/30/23
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (10/30/23): Duy created the check
+    args.update({
+        "dataframe": vegmeta,
+        "tablename": "tbl_vegetation_sample_metadata",
+        "badrows" : vegmeta[
+            (vegmeta['method'] == 'obs_plant') & 
+            (vegmeta['transectreplicate'] != -88)
+        ].tmp_row.tolist(),
+        "badcolumn": "method,transectreplicate",
+        "error_type": "Value Error",
+        "error_message": "If method is obs_plant, then transectreplicate must be -88"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 15")
+
+    print("# CHECK - 16")
+    # Description: If method is obs_plant, then habitat must be 'site-wide'
+    # Created Coder: Duy
+    # Created Date: 10/30/23
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (10/30/23): Duy created the check
+    args.update({
+        "dataframe": vegmeta,
+        "tablename": "tbl_vegetation_sample_metadata",
+        "badrows" : vegmeta[
+            (vegmeta['method'] == 'obs_plant') & 
+            (vegmeta['habitat'].str.lower() != 'site-wide')
+        ].tmp_row.tolist(),
+        "badcolumn": "method,habitat",
+        "error_type": "Value Error",
+        "error_message": "If method is obs_plant, then habitat must be 'site-wide'"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 16")
 
 
     ######################################################################################################################
