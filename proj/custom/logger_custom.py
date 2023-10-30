@@ -227,25 +227,25 @@ def logger_raw(all_dfs):
     errs = [*errs, checkData(**args)]
     print("check ran - logger_ctd_data - raw_salinity")
 
-    # # Need to add not null checks for the measurement columns
-    print('Begin check 10')
-    # Description: If sensortype is CTD, then raw_pressure should be filled and raw_pressure_unit should be cmh2o
-    # Created Coder: NA
-    # Created Date: NA
-    # Last Edited Date: 10/17/2023
-    # Last Edited Coder: Ayah
-    # NOTE (10/13/2023): Ayah edited check 
-    args.update({
-        "dataframe": logger,
-        "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[
-            (logger['sensortype'] == 'CTD') & (logger['raw_pressure'].isna() | logger['raw_pressure_unit']!= "cmh2o")
-        ].tmp_row.tolist(),
-        "badcolumn": "sensortype,raw_pressure,raw_pressure_unit",
-        "error_type" : "Unknown Error",
-        "error_message" : 'Since sensortype is CTD, raw_pressure should not be empty and raw_pressure_units must be "cmh2o"'
-    })
-    errs = [*errs, checkData(**args)]
+    # # # Need to add not null checks for the measurement columns
+    # print('Begin check 10')
+    # # Description: If sensortype is CTD, then raw_pressure should be filled and raw_pressure_unit should be cmh2o
+    # # Created Coder: NA
+    # # Created Date: NA
+    # # Last Edited Date: 10/17/2023
+    # # Last Edited Coder: Ayah
+    # # NOTE (10/13/2023): Ayah edited check 
+    # args.update({
+    #     "dataframe": logger,
+    #     "tablename": "tbl_wq_logger_raw",
+    #     "badrows":logger[
+    #         (logger['sensortype'] == 'CTD') & (logger['raw_pressure'].isna() | logger['raw_pressure_unit']!= "cmH2O")
+    #     ].tmp_row.tolist(),
+    #     "badcolumn": "sensortype,raw_pressure,raw_pressure_unit",
+    #     "error_type" : "Unknown Error",
+    #     "error_message" : 'Since sensortype is CTD, raw_pressure should not be empty and raw_pressure_units must be "cmH2O"'
+    # })
+    # errs = [*errs, checkData(**args)]
 
     print("check ran - wqlogger - pressure_cmh2o")
     print("...End CTD data checks.")
@@ -273,11 +273,11 @@ def logger_raw(all_dfs):
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
         "badrows":logger[
-            (logger['sensortype'] == 'Troll') & (logger['raw_pressure'].isna() | logger['raw_pressure_unit']!= "cmh2o")
+            (logger['sensortype'] == 'Troll') & (logger['raw_pressure'].isna() | logger['raw_pressure_unit']!= "cmH2O")
         ].tmp_row.tolist(),
         "badcolumn": "sensortype,raw_pressure,raw_pressure_unit",
         "error_type" : "Unknown Error",
-        "error_message" : 'Since sensortype is CTD, raw_pressure should not be empty and raw_pressure_units must be "cmh2o"'
+        "error_message" : 'Since sensortype is Troll, raw_pressure should not be empty and raw_pressure_units must be "cmH2O"'
     })
     errs = [*errs, checkData(**args)]
 

@@ -17,4 +17,4 @@ proj/utils/__pycache__/
 
 docker/truedeploy.sh
 
-shapes/
+shapes

@@ -23,7 +23,7 @@ def discretewq(all_dfs):
     # This data type should only have tbl_example
     # example = all_dfs['tbl_example']
 
-    
+    lu_list_script_root = current_app.script_root
     watermeta = all_dfs['tbl_waterquality_metadata']
     waterdata = all_dfs['tbl_waterquality_data']
 
@@ -350,7 +350,7 @@ def discretewq(all_dfs):
 
     
     print('BEGIN CHECK 15')
-    # Description:  If H2OTemp is reported, then H2OTemp_Units cannot be 'Not Recorded'
+    # Description:  If H2OTemp is reported except when -88, then H2OTemp_Units cannot be 'Not Recorded'
     # Created Coder: NA
     # Created Date: NA
     # Last Edited Date: 10/30/23
@@ -404,7 +404,7 @@ def discretewq(all_dfs):
     print('END CHECK 16')  
 
     print('BEGIN CHECK 17')
-    # Description: If DO_mgL is reported, then DO_Units cannot be 'Not Recorded'
+    # Description: If DO_mgL is reported, then DO_Units cannot be 'Not Recorded' unless its -88
     # Created Coder: NA
     # Created Date: NA
     # Last Edited Date: 10/30/23
@@ -430,7 +430,7 @@ def discretewq(all_dfs):
     print('END CHECK 17')   
 
     print('START CHECK 18')
-    # Description:  If Salinity is reported, then Salinity_Units cannot be 'Not Recorded'    
+    # Description:  If Salinity is reported, then Salinity_Units cannot be 'Not Recorded' unless its -88
     # Created Coder: NA
     # Created Date: NA
     # Last Edited Date: 10/30/23
@@ -456,7 +456,7 @@ def discretewq(all_dfs):
     print('END CHECK 18') 
 
     print('START CHECK 19')
-    # Description:  If TDS_ppt is reported, then TDS_Units cannot be 'Not Recorded'
+    # Description:  If TDS_ppt is reported, then TDS_Units cannot be 'Not Recorded' unless -88
     # Created Coder: NA
     # Created Date: NA
     # Last Edited Date: 10/30/23
@@ -483,7 +483,7 @@ def discretewq(all_dfs):
 
     
     print('START CHECK 20')
-    # Description:  If Conductivity is reported, then Conductivity_Units cannot be 'Not Recorded'
+    # Description:  If Conductivity is reported, then Conductivity_Units cannot be 'Not Recorded' unless -88
     # Created Coder: NA
     # Created Date: NA
     # Last Edited Date: 10/30/23

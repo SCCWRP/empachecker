@@ -18,11 +18,11 @@ def default_exception_handler(mail_from, errmsg, maintainers, project_name, logi
     if login_info is not None:
         for k, v in login_info.items():
             msgbody += f"{k}: {v}\n"
-    msgbody += f"\nHere is the error message:\n{errmsg}"
+        msgbody += f"\nHere is the error message:\n{errmsg}"
 
-    # Do not email to the scientist if the login email is test@sccwrp.org
-    if login_info.get('login_email') == 'test@sccwrp.org':
-        maintainers = ['pauls@sccwrp.org', 'robertb@sccwrp.org', 'duyn@sccwrp.org']
+        # Do not email to the scientist if the login email is test@sccwrp.org
+        if login_info.get('login_email') == 'test@sccwrp.org':
+            maintainers = ['pauls@sccwrp.org', 'robertb@sccwrp.org', 'duyn@sccwrp.org']
 
     send_mail(
         mail_from,
