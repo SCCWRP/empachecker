@@ -353,19 +353,24 @@ def discretewq(all_dfs):
     # Description:  If H2OTemp is reported, then H2OTemp_Units cannot be 'Not Recorded'
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 09/05/2023
-    # Last Edited Coder: Ayah Halabi
+    # Last Edited Date: 10/30/23
+    # Last Edited Coder: Duy
     # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
+    # NOTE (10/30/2023): Duy fixed the code's logic
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
         "badrows": waterdata[
-            (waterdata['h2otemp'].notna()) &
-            (waterdata['h2otemp_units'] == 'Not Recorded')
+            (
+                (waterdata['h2otemp'] != -88) & (waterdata['h2otemp_units'].str.lower() == 'not recorded')
+            ) |
+            (
+                (waterdata['h2otemp'] == -88) & (waterdata['h2otemp_units'].str.lower() != 'not recorded')
+            )
         ].tmp_row.tolist(),
-        "badcolumn": "h2otemp_units",
+        "badcolumn": "h2otemp,h2otemp_units",
         "error_type": "Bad Value",
-        "error_message" : " If H2OTemp is reported, then H2OTemp_Units cannot be 'Not Recorded'"
+        "error_message" : "If h2otemp is reported, then h2otemp_units cannot be 'Not recorded'. If h2otemp is missing, please enter -88 for h2otemp and 'Not recorded' for h2otemp_units"
     })
     errs = [*errs, checkData(**args)]
     print('END CHECK 15')    
@@ -375,19 +380,25 @@ def discretewq(all_dfs):
     # Description: If AirTemp is reported except when -88, then AirTemp_Units cannot be 'Not Recorded'
     # Created Coder: NA
     # Created Date: 09/05/2023
-    # Last Edited Date: 10/25/2023
-    # Last Edited Coder: Aria Askaryar
+    # Last Edited Date: 10/30/23
+    # Last Edited Coder: Duy
     # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
     # NOTE (10/25/2023): Aria adjusted the check and description based on jans request: to exclude when value is -88 since that has to be Not Recorded. check notes in product review document check16 for more information
+    # NOTE (10/30/23): Duy fixed the code's logic
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
         "badrows": waterdata[
-            ((waterdata['airtemp'] != -88) | (waterdata['airtemp_units'] != 'Not Recorded')) & (waterdata['airtemp'].notna())
+            (
+                (waterdata['airtemp'] != -88) & (waterdata['airtemp_units'].str.lower() == 'not recorded')
+            ) |
+            (
+                (waterdata['airtemp'] == -88) & (waterdata['airtemp_units'].str.lower() != 'not recorded')
+            )
         ].tmp_row.tolist(),
-        "badcolumn": "airtemp_units",
+        "badcolumn": "airtemp,airtemp_units",
         "error_type": "Bad Value",
-        "error_message" : " If AirTemp is reported, then AirTemp_Units cannot be 'Not Recorded', unless AirTemp is -88 which then it must be 'Not Recorded'"
+        "error_message" : "If AirTemp is reported, then AirTemp_Units cannot be 'Not recorded'. If AirTemp is missing, please enter -88 for airtemp and 'Not recorded' for airtemp_units"
     })
     errs = [*errs, checkData(**args)]
     print('END CHECK 16')  
@@ -396,19 +407,24 @@ def discretewq(all_dfs):
     # Description: If DO_mgL is reported, then DO_Units cannot be 'Not Recorded'
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 09/05/2023
+    # Last Edited Date: 10/30/23
     # Last Edited Coder: Ayah Halabi
     # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
+    # NOTE (10/30/23): Duy fixed code's logic
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
         "badrows": waterdata[
-            (waterdata['do_mgl'].notna()) &
-            (waterdata['do_units'] == 'Not Recorded')
+            (
+                (waterdata['do_mgl'] != -88) & (waterdata['do_units'].str.lower() == 'not recorded')
+            ) |
+            (
+                (waterdata['do_mgl'] == -88) & (waterdata['do_units'].str.lower() != 'not recorded')
+            )
         ].tmp_row.tolist(),
-        "badcolumn": "do_units",
+        "badcolumn": "do_mgl,do_units",
         "error_type": "Bad Value",
-        "error_message" : "If DO_mgL is reported, then DO_Units cannot be 'Not Recorded'"
+        "error_message" : "If do is reported, then do_Units cannot be 'Not recorded'. If do is missing, please enter -88 for do and 'Not recorded' for do_units"
     })
     errs = [*errs, checkData(**args)]
     print('END CHECK 17')   
@@ -417,19 +433,24 @@ def discretewq(all_dfs):
     # Description:  If Salinity is reported, then Salinity_Units cannot be 'Not Recorded'    
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 09/05/2023
-    # Last Edited Coder: Ayah Halabi
+    # Last Edited Date: 10/30/23
+    # Last Edited Coder: Duy
     # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
+    # NOTE (10/30/23): Duy fixed code's logic
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
         "badrows": waterdata[
-            (waterdata['salinity'].notna()) &
-            (waterdata['salinity_units'] == 'Not Recorded')
+            (
+                (waterdata['salinity'] != -88) & (waterdata['salinity_units'].str.lower() == 'not recorded')
+            ) |
+            (
+                (waterdata['salinity'] == -88) & (waterdata['salinity_units'].str.lower() != 'not recorded')
+            )
         ].tmp_row.tolist(),
-        "badcolumn": "Salinity_Units",
+        "badcolumn": "salinity,salinity_units",
         "error_type": "Bad Value",
-        "error_message" : "If Salinity is reported, then Salinity_Units cannot be 'Not Recorded'"
+        "error_message" : "If salinity is reported, then salinity_Units cannot be 'Not Recorded'. If salinity is missing, please enter -88 for salinity and 'Not recorded' for salinity_units"
     })
     errs = [*errs, checkData(**args)]
     print('END CHECK 18') 
@@ -438,19 +459,24 @@ def discretewq(all_dfs):
     # Description:  If TDS_ppt is reported, then TDS_Units cannot be 'Not Recorded'
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 09/05/2023
-    # Last Edited Coder: Ayah Halabi
+    # Last Edited Date: 10/30/23
+    # Last Edited Coder: Duy
     # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
+    # NOTE (10/30/23): Duy fixed code's logic
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
         "badrows": waterdata[
-            (waterdata['tds'].notna()) &
-            (waterdata['tds_units'] == 'Not Recorded')
+            (
+                (waterdata['tds'] != -88) & (waterdata['tds_units'].str.lower() == 'not recorded')
+            ) |
+            (
+                (waterdata['tds'] == -88) & (waterdata['tds_units'].str.lower() != 'not recorded')
+            )
         ].tmp_row.tolist(),
-        "badcolumn": "tds_units",
+        "badcolumn": "tds,tds_units",
         "error_type": "Bad Value",
-        "error_message" : " If TDS is reported, then TDS_Units cannot be 'Not Recorded'"
+        "error_message" : "If tds is reported, then tds_Units cannot be 'Not recorded'. If tds is missing, please enter -88 for tds and 'Not recorded' for tds_units"
     })
     errs = [*errs, checkData(**args)]
     print('END CHECK 19')   
@@ -460,19 +486,24 @@ def discretewq(all_dfs):
     # Description:  If Conductivity is reported, then Conductivity_Units cannot be 'Not Recorded'
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 09/05/2023
-    # Last Edited Coder: Ayah Halabi
+    # Last Edited Date: 10/30/23
+    # Last Edited Coder: Duy
     # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
+    # NOTE (10/30/23): Duy fixed code's logic
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
         "badrows": waterdata[
-            (waterdata['conductivity'].notna()) &
-            (waterdata['conductivity_units'] == 'Not Recorded')
+            (
+                (waterdata['conductivity'] != -88) & (waterdata['conductivity_units'].str.lower() == 'not recorded')
+            ) |
+            (
+                (waterdata['conductivity'] == -88) & (waterdata['conductivity_units'].str.lower() != 'not recorded')
+            )
         ].tmp_row.tolist(),
-        "badcolumn": "Conductivity_Units",
+        "badcolumn": "conductivity,conductivity_units",
         "error_type": "Bad Value",
-        "error_message" : "If Conductivity is reported, then Conductivity_Units cannot be 'Not Recorded'"
+        "error_message" : "If conductivity is reported, then conductivity_Units cannot be 'Not recorded'. If conductivity is missing, please enter -88 for conductivity and 'Not recorded' for conductivity_units"
     })
     errs = [*errs, checkData(**args)]
     print('END CHECK 20')  
