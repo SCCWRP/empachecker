@@ -315,16 +315,17 @@ def vegetation(all_dfs):
     # Description: Range for tallestplantheight_cm must be between [0, 300]
     # Created Coder:
     # Created Date:
-    # Last Edited Date: 09/14/2023
-    # Last Edited Coder: Ayah
+    # Last Edited Date: 10/30/23
+    # Last Edited Coder: Duy
     # NOTE (09/14/2023): Adjust code to match coding standard
+    # NOTE (10/30/23): Duy adjusted the error msg
     args.update({
         "dataframe": vegdata,
         "tablename": "tbl_vegetativecover_data",
-        "badrows":vegdata[(vegdata['tallestplantheight_cm']<0) | (vegdata['tallestplantheight_cm'] > 300)].tmp_row.tolist(),
+        "badrows":vegdata[(vegdata['tallestplantheight_cm'] < 0) | (vegdata['tallestplantheight_cm'] > 300)].tmp_row.tolist(),
         "badcolumn": "tallestplantheight_cm",
         "error_type" : "Value is out of range.",
-        "error_message" : "Height should be between 0 to 3 metres"
+        "error_message" : "Height should be between 0 to 300 cm"
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 11")
