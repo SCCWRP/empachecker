@@ -302,7 +302,7 @@ def check_consecutiveness(df, groupcols, col_to_check):
     assert df[col_to_check].apply(lambda val: isinstance(val, int)).all(), f'all values in {col_to_check} needed to be integers'
 
     def is_consecutive(df):
-        df = df.sort_values(by=col_to_check)
+        df = df[df[col_to_check] != -88].sort_values(by=col_to_check)
         consecutive = (df[col_to_check].diff().dropna() == 1).all()
         if not consecutive:
             return df.tmp_row.tolist()
