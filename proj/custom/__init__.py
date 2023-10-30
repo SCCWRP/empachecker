@@ -1,5 +1,5 @@
 from .global_custom import global_custom
-from .logger_custom import logger_formatted, logger_meta, logger_raw
+from .logger_custom import logger_meta, logger_raw
 from .discretewq_custom import discretewq
 from .sedchem_custom import sedchem_lab
 from .toxicity_custom import toxicity
