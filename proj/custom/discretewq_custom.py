@@ -23,7 +23,7 @@ def discretewq(all_dfs):
     # This data type should only have tbl_example
     # example = all_dfs['tbl_example']
 
-    
+    lu_list_script_root = current_app.script_root
     watermeta = all_dfs['tbl_waterquality_metadata']
     waterdata = all_dfs['tbl_waterquality_data']
 
@@ -350,22 +350,30 @@ def discretewq(all_dfs):
 
     
     print('BEGIN CHECK 15')
-    # Description:  If H2OTemp is reported, then H2OTemp_Units cannot be 'Not Recorded'
+    # Description:  If H2OTemp is reported except when -88, then H2OTemp_Units cannot be 'Not Recorded'
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 09/05/2023
-    # Last Edited Coder: Ayah Halabi
+    # Last Edited Date: 10/25/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
+    # NOTE (10/27/2023): Aria adjusted the check and description based on jans request: to exclude when value is -88 since that has to be Not Recorded. check notes in product review document check16 for more information
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
         "badrows": waterdata[
-            (waterdata['h2otemp'].notna()) &
-            (waterdata['h2otemp_units'] == 'Not Recorded')
+            (
+                (waterdata['h2otemp'] == -88) & (waterdata['h2otemp_units'] != 'Not Recorded')
+            
+            ) |
+            (
+                (waterdata['h2otemp'] != -88) & (waterdata['h2otemp_units'] == 'Not Recorded')
+            )
         ].tmp_row.tolist(),
-        "badcolumn": "h2otemp_units",
+        "badcolumn": "h2otemp,h2otemp_units",
         "error_type": "Bad Value",
-        "error_message" : " If H2OTemp is reported, then H2OTemp_Units cannot be 'Not Recorded'"
+        "error_message" : "If a value is reported for H2OTemp, then H2OTemp_Units must be in " +\
+            f"<a href='/{lu_list_script_root}/scraper?action=help&layer=lu_h2otemp_unit' target='_blank'>lu_h2otemp_unit</a>. " +\
+            "If a value is missing for H2OTemp, then H2OTemp_Units must be entered as 'Not Recorded'."
     })
     errs = [*errs, checkData(**args)]
     print('END CHECK 15')    
@@ -383,96 +391,140 @@ def discretewq(all_dfs):
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
         "badrows": waterdata[
-            ((waterdata['airtemp'] != -88) | (waterdata['airtemp_units'] != 'Not Recorded')) & (waterdata['airtemp'].notna())
+            (
+                (waterdata['airtemp'] == -88) & (waterdata['airtemp_units'] != 'Not Recorded')
+        
+            ) |
+            (
+                (waterdata['airtemp'] != -88) & (waterdata['airtemp_units'] == 'Not Recorded')
+            )
         ].tmp_row.tolist(),
-        "badcolumn": "airtemp_units",
+        "badcolumn": "airtemp,airtemp_units",
         "error_type": "Bad Value",
-        "error_message" : " If AirTemp is reported, then AirTemp_Units cannot be 'Not Recorded', unless AirTemp is -88 which then it must be 'Not Recorded'"
+        "error_message" : "If a value is reported for airtemp, then unit must be in " +\
+            f"<a href='/{lu_list_script_root}/scraper?action=help&layer=lu_airtemp_unit' target='_blank'>lu_airtemp_unit</a>. " +\
+            "If a value is missing for airtemp, then airtemp_units must be entered as 'Not Recorded'."
     })
     errs = [*errs, checkData(**args)]
     print('END CHECK 16')  
 
     print('BEGIN CHECK 17')
-    # Description: If DO_mgL is reported, then DO_Units cannot be 'Not Recorded'
+    # Description: If DO_mgL is reported, then DO_Units cannot be 'Not Recorded' unless its -88
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 09/05/2023
-    # Last Edited Coder: Ayah Halabi
+    # Last Edited Date: 10/25/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
+    # NOTE (10/25/2023): Aria adjusted the check and description based on jans request: when value is -88 must be Not Recorded
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
         "badrows": waterdata[
-            (waterdata['do_mgl'].notna()) &
-            (waterdata['do_units'] == 'Not Recorded')
+            (
+                (waterdata['do_mgl'] == -88) & (waterdata['do_units'] != 'Not Recorded')
+        
+            ) |
+            (
+                (waterdata['do_mgl'] != -88) & (waterdata['do_units'] == 'Not Recorded')
+            )
         ].tmp_row.tolist(),
-        "badcolumn": "do_units",
+        "badcolumn": "do_mgl,do_units",
         "error_type": "Bad Value",
         "error_message" : "If DO_mgL is reported, then DO_Units cannot be 'Not Recorded'"
+        "If a value is reported for DO_mgL, then DO_Units must be in " +\
+            f"<a href='/{lu_list_script_root}/scraper?action=help&layer=lu_do_unit' target='_blank'>lu_do_unit</a>. " +\
+            "If a value is missing for DO_mgL, then DO_Units must be entered as 'Not Recorded'."
     })
     errs = [*errs, checkData(**args)]
     print('END CHECK 17')   
 
     print('START CHECK 18')
-    # Description:  If Salinity is reported, then Salinity_Units cannot be 'Not Recorded'    
+    # Description:  If Salinity is reported, then Salinity_Units cannot be 'Not Recorded' unless its -88
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 09/05/2023
-    # Last Edited Coder: Ayah Halabi
+    # Last Edited Date: 10/25/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
+    # NOTE (10/25/2023): Aria adjusted the check and description based on jans request: when value is -88 must be Not Recorded
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
         "badrows": waterdata[
-            (waterdata['salinity'].notna()) &
-            (waterdata['salinity_units'] == 'Not Recorded')
+            (
+                (waterdata['salinity'] == -88) & (waterdata['salinity_units'] != 'Not Recorded')
+        
+            ) |
+            (
+                (waterdata['salinity'] != -88) & (waterdata['salinity_units'] == 'Not Recorded')
+            )
         ].tmp_row.tolist(),
-        "badcolumn": "Salinity_Units",
+        "badcolumn": "salinity,Salinity_Units",
         "error_type": "Bad Value",
         "error_message" : "If Salinity is reported, then Salinity_Units cannot be 'Not Recorded'"
+        "If a value is reported for Salinity, then Salinity_Units must be in " +\
+            f"<a href='/{lu_list_script_root}/scraper?action=help&layer=lu_salinity_unit' target='_blank'>lu_salinity_unit</a>. " +\
+            "If a value is missing for Salinity, then Salinity_Units must be entered as 'Not Recorded'."
     })
     errs = [*errs, checkData(**args)]
     print('END CHECK 18') 
 
     print('START CHECK 19')
-    # Description:  If TDS_ppt is reported, then TDS_Units cannot be 'Not Recorded'
+    # Description:  If TDS_ppt is reported, then TDS_Units cannot be 'Not Recorded' unless -88
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 09/05/2023
-    # Last Edited Coder: Ayah Halabi
+    # Last Edited Date: 10/25/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
+    # NOTE (10/25/2023): Aria adjusted the check and description based on jans request: when value is -88 must be Not Recorded
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
         "badrows": waterdata[
-            (waterdata['tds'].notna()) &
-            (waterdata['tds_units'] == 'Not Recorded')
+            (
+                (waterdata['tds'] == -88) & (waterdata['tds_units'] != 'Not Recorded')
+        
+            ) |
+            (
+                (waterdata['tds'] != -88) & (waterdata['tds_units'] == 'Not Recorded')
+            )
         ].tmp_row.tolist(),
-        "badcolumn": "tds_units",
+        "badcolumn": "tds,tds_units",
         "error_type": "Bad Value",
-        "error_message" : " If TDS is reported, then TDS_Units cannot be 'Not Recorded'"
+        "error_message" : "If tds is reported, then tds_Units cannot be 'Not Recorded'"
+        "If a value is reported for tds, then tds_Units must be in " +\
+            f"<a href='/{lu_list_script_root}/scraper?action=help&layer=lu_tds_unit' target='_blank'>lu_tds_unit</a>. " +\
+            "If a value is missing for tds, then tds_Units must be entered as 'Not Recorded'."
     })
     errs = [*errs, checkData(**args)]
     print('END CHECK 19')   
 
     
     print('START CHECK 20')
-    # Description:  If Conductivity is reported, then Conductivity_Units cannot be 'Not Recorded'
+    # Description:  If Conductivity is reported, then Conductivity_Units cannot be 'Not Recorded' unless -88
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 09/05/2023
-    # Last Edited Coder: Ayah Halabi
+    # Last Edited Date: 10/25/2023
+    # Last Edited Coder: Aria Askaryar
     # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
+    # NOTE (10/25/2023): Aria adjusted the check and description based on jans request: when value is -88 must be Not Recorded
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
         "badrows": waterdata[
-            (waterdata['conductivity'].notna()) &
-            (waterdata['conductivity_units'] == 'Not Recorded')
+            (
+                (waterdata['conductivity'] == -88) & (waterdata['conductivity_units'] != 'Not Recorded')
+        
+            ) |
+            (
+                (waterdata['conductivity'] != -88) & (waterdata['conductivity_units'] == 'Not Recorded')
+            )
         ].tmp_row.tolist(),
-        "badcolumn": "Conductivity_Units",
+        "badcolumn": "conductivity,Conductivity_Units",
         "error_type": "Bad Value",
-        "error_message" : "If Conductivity is reported, then Conductivity_Units cannot be 'Not Recorded'"
+        "error_message" : "If conductivity is reported, then conductivity_Units cannot be 'Not Recorded'"
+        "If a value is reported for tds, then tds_Units must be in " +\
+            f"<a href='/{lu_list_script_root}/scraper?action=help&layer=lu_tds_unit' target='_blank'>lu_tds_unit</a>. " +\
+            "If a value is missing for tds, then tds_Units must be entered as 'Not Recorded'."
     })
     errs = [*errs, checkData(**args)]
     print('END CHECK 20')  
