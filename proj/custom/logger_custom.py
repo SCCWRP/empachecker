@@ -615,11 +615,19 @@ def logger_raw(all_dfs):
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
         "badrows":logger[
+<<<<<<< HEAD
             (logger['sensortype'] == 'Troll') & (logger['raw_pressure'].isna() | logger['raw_pressure_unit']!= "cmH2O")
         ].tmp_row.tolist(),
         "badcolumn": "sensortype,raw_pressure,raw_pressure_unit",
         "error_type" : "Unknown Error",
         "error_message" : 'Since sensortype is Troll, raw_pressure should not be empty and raw_pressure_units must be "cmH2O"'
+=======
+            (logger['sensortype'] == 'Troll') & (logger['raw_pressure'].isna() | logger['raw_pressure_unit']!= "cmh2o")
+        ].tmp_row.tolist(),
+        "badcolumn": "sensortype,raw_pressure,raw_pressure_unit",
+        "error_type" : "Unknown Error",
+        "error_message" : 'Since sensortype is CTD, raw_pressure should not be empty and raw_pressure_units must be "cmh2o"'
+>>>>>>> e83d035358621a867d4a3632df92915f267bec2d
     })
     errs = [*errs, checkData(**args)]
 
