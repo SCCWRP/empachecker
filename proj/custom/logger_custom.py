@@ -202,7 +202,7 @@ def logger_raw(all_dfs):
         "tablename": "tbl_wq_logger_raw",
         "badrows":logger[(((logger['raw_conductivity'] < 0) & (logger['raw_conductivity'] != -88)) | (logger['raw_conductivity'] > 10)) & \
                               (logger['raw_conductivity_unit'] == "mS/cm")].index.tolist(),
-        "badcolumn": "conductivity_mscm",
+        "badcolumn": "raw_conductivity",
         "error_type" : "Value out of range",
         "error_message" : "Your conductivity_mscm value is out of range. Value must be within 0-10. If no value to provide, enter -88."
     })
@@ -262,27 +262,27 @@ def logger_raw(all_dfs):
     ######################################################################################################################
     
     
-    print('Begin check 12')
-    # Description: If sensortype is CTD, then raw_pressure should be filled and raw_pressure_unit should be cmh2o
-    # Created Coder: NA
-    # Created Date: NA
-    # Last Edited Date: 10/17/2023
-    # Last Edited Coder: Ayah
-    # NOTE (10/13/2023): Ayah edited check 
-    args.update({
-        "dataframe": logger,
-        "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[
-            (logger['sensortype'] == 'Troll') & (logger['raw_pressure'].isna() | logger['raw_pressure_unit']!= "cmH2O")
-        ].tmp_row.tolist(),
-        "badcolumn": "sensortype,raw_pressure,raw_pressure_unit",
-        "error_type" : "Unknown Error",
-        "error_message" : 'Since sensortype is Troll, raw_pressure should not be empty and raw_pressure_units must be "cmH2O"'
-    })
-    errs = [*errs, checkData(**args)]
+    # print('Begin check 12')
+    # # Description: If sensortype is CTD, then raw_pressure should be filled and raw_pressure_unit should be cmh2o
+    # # Created Coder: NA
+    # # Created Date: NA
+    # # Last Edited Date: 10/17/2023
+    # # Last Edited Coder: Ayah
+    # # NOTE (10/13/2023): Ayah edited check 
+    # args.update({
+    #     "dataframe": logger,
+    #     "tablename": "tbl_wq_logger_raw",
+    #     "badrows":logger[
+    #         (logger['sensortype'] == 'troll') & (logger['raw_pressure'].isna() | logger['raw_pressure_unit']!= "cmH2O")
+    #     ].tmp_row.tolist(),
+    #     "badcolumn": "sensortype,raw_pressure,raw_pressure_unit",
+    #     "error_type" : "Unknown Error",
+    #     "error_message" : 'Since sensortype is Troll, raw_pressure should not be empty and raw_pressure_units must be "cmH2O"'
+    # })
+    # errs = [*errs, checkData(**args)]
 
-    print("check ran - wqlogger - pressure_cmh2o")
-    print("...End CTD data checks.")
+    # print("check ran - wqlogger - pressure_cmh2o")
+    # print("...End troll  data checks.")
 
     # Need to add not null checks for the measurement columns
 
