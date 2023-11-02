@@ -17,7 +17,7 @@
 
             let missingFields = [];
             Array.from(loginForm.querySelectorAll('.login-form-element')).forEach(elem => {
-                if (elem.value === '') {
+                if (elem.value === '' && elem.parentElement.classList.contains('hidden') === false ) {
                     let tmp = elem.getAttribute('name').trim().toLowerCase().replace('login_','').replace(/_/,' ').replace(/\w\S*/g, (w) => (w.replace(/^\w/, (c) => c.toUpperCase())));
                     missingFields.push(tmp)
                 }
