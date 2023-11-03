@@ -7,7 +7,7 @@ from .functions import checkData, checkLogic, mismatch, get_primary_key, check_b
 import re
 import time
 import os
-
+import geopandas as gpd
 
 
 def global_custom(all_dfs, datatype = ''):
@@ -31,7 +31,9 @@ def global_custom(all_dfs, datatype = ''):
     lu_plantspecies = pd.read_sql('Select scientificname, commonname, status from lu_plantspecies', g.eng)
     lu_fishmacrospecies = pd.read_sql('Select scientificname, commonname, status from lu_fishmacrospecies', g.eng)
 
-
+    # the spatial_empa_sites is for the site map check
+    spatial_empa_sites = gpd.read_postgis("SELECT * FROM spatial_empa_sites", g.eng, geom_col='geometry')
+    spatial_empa_sites = spatial_empa_sites.to_crs(epsg=4326)
     for table_name in all_dfs:
         if all_dfs[table_name].empty:
             continue
@@ -267,12 +269,48 @@ def global_custom(all_dfs, datatype = ''):
 
             print("# GLOBAL CUSTOM CHECK - 9")
             # Description: A (lat,long) for a siteid needs to be either in its associate polygon or within a mile if it is outside 
-            # Created Coder:
-            # Created Date:
+            # Created Coder: Duy
+            # Created Date: 11/3/23
             # Last Edited Date:
             # Last Edited Coder:
-            # NOTE ():
+            # NOTE (11/3/23): Created the check. Need to QA and this check does not consider 1 mile buffer.
 
+            latlong_cols = current_app.datasets.get(datatype).get('latlong_cols', None)
+
+            # latlong_cols is a list of dictionaries of the tables with lat long columns
+            if latlong_cols is not None:
+                tmp = [
+                    (x.get('latcol'), x.get('longcol'))
+                    for x in latlong_cols
+                    if x.get('tablename') == table_name
+                ][0]
+                latcol, longcol = tmp[0], tmp[1]
+
+            meta = gpd.GeoDataFrame(
+                df, 
+                geometry=gpd.points_from_xy(df[longcol], df[latcol])
+            )
+            meta = meta.merge(
+                spatial_empa_sites[['siteid','geometry']],
+                how='left',
+                on=['siteid'],
+                suffixes=('_point', '_polygon')
+            )
+            args = {
+                "dataframe": df,
+                "tablename": table_name,
+                "badrows": meta[
+                    meta.apply(
+                        lambda row: not row['geometry_point'].within(row['geometry_polygon']), 
+                        axis=1
+                    )
+                ].tmp_row.tolist(),
+                "badcolumn": f"{latcol}, {longcol}",
+                "error_type": "Value Error",
+                "is_core_error": False,
+                "error_message": "Your points are not within their associated polygon. Please check the map. If they are correct, then ignore warnings."
+            }
+            warnings = [*warnings, checkData(**args)]
             print("# END GLOBAL CUSTOM CHECK - 9")
 
 
