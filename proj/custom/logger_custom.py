@@ -131,7 +131,7 @@ def logger_raw(all_dfs):
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[(logger['raw_do_pct'] > 110)].index.tolist(),
+        "badrows":logger[(logger['raw_do_pct'] > 110) & (logger['sensortype']=='minidot')].index.tolist(),
         "badcolumn": "raw_do_pct",
         "error_type" : "Value out of range",
         "error_message" : "Your raw_do_pct is greater than 110. This is an unexpected value, but will be accepted."
@@ -319,7 +319,7 @@ def logger_raw(all_dfs):
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
         "badrows":logger[(logger['raw_ph'] < 1) | (logger['raw_ph'] > 14)].index.tolist(),
-        "badcolumn": "ph",
+        "badcolumn": "raw_ph",
         "error_type" : "Value out of range",
         "error_message" : "pH value is out of range. Value should be between 1 and 14. If no value to provide, enter -88."
     })
@@ -337,8 +337,8 @@ def logger_raw(all_dfs):
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[(logger['raw_turbidity_unit']=="ntu") & (((logger['raw_turbidity'] < 0) & (logger['raw_turbidity'] != -88)) | (logger['raw_turbidity'] > 3000))].index.tolist(),
-        "badcolumn": "turbidity_ntu",
+        "badrows":logger[(logger['raw_turbidity_unit']=="NTU") & (((logger['raw_turbidity'] < 0) & (logger['raw_turbidity'] != -88)) | (logger['raw_turbidity'] > 3000))].index.tolist(),
+        "badcolumn": "raw_turbidity",
         "error_type" : "Value out of range",
         "error_message" : "Turbidity_NTU value is out of range. Value should be within 0-3000. If no value to provide, enter -88."
     })
@@ -356,14 +356,14 @@ def logger_raw(all_dfs):
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
         "badrows":logger[(logger['sensortype']!='minidot') & ((logger['raw_do_pct'] < -1) & (logger['raw_do_pct'] != -88)) | (logger['raw_do_pct'] > 300)].index.tolist(),
-        "badcolumn": "do_percent",
+        "badcolumn": "raw_do_pct",
         "error_type" : "Value out of range",
         "error_message" : "raw_do_pct is out of range. Value must be within 0-300. If no value, enter -88 or leave blank."
     })
     errs = [*errs, checkData(**args)]
     print("check ran - logger_other_data - do_percent")
     
-    print('Begin check 16')
+    print('Begin check 17')
     # Description: Range for raw_orp must be between [999,-999] when raw_orp_unit is mv
     # Created Coder: NA
     # Created Date: NA
@@ -373,22 +373,28 @@ def logger_raw(all_dfs):
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[(logger['raw_orp_unit']=='mv') & ((logger['raw_orp'] < -999) | (logger['raw_orp'] > 999))].index.tolist(),
-        "badcolumn": "orp_mv",
+        "badrows":logger[(logger['raw_orp_unit']=='mV') & ((logger['raw_orp'] < -999) | (logger['raw_orp'] > 999))].index.tolist(),
+        "badcolumn": "raw_orp",
         "error_type" : "Value out of range",
         "error_message" : "ORP_mV is out of range. Value must be within -999 to 999."
     })
     errs = [*errs, checkData(**args)]
     print("check ran - logger_other_data - orp_mv")
 
-    # Check: pressure_cmh2o must in the range  50 < x < 3000. We want this field in centimeters
+    print('Begin check 18')
+    # Description: Range for raw-pressure must be between [50,6000] when raw_pressure_unit is cmh
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 11/02/2023
+    # Last Edited Coder: Ayah
+    # NOTE (10/13/2023): Ayah edited check
     # args.update({
     #     "dataframe": logger,
     #     "tablename": "tbl_wq_logger_raw",
-    #     "badrows":logger[(logger['pressure_cmh2o'] < 50) | (logger['pressure_cmh2o'] > 6000) ].tmp_row.tolist(),
-    #     "badcolumn": "pressure_cmh2o",
+    #     "badrows":logger[(logger['raw_pressure'] < 50 | logger['raw_pressure'] > 6000) & (logger['raw_pressure_unit'] == 'cmH2O') ].tmp_row.tolist(),
+    #     "badcolumn": "raw_pressure",
     #     "error_type" : "Value out of range",
-    #     "error_message" : "Your pressure_cmh2o values are out of range. The values must be in centimeters."
+    #     "error_message" : "Your raw_pressure values are out of range. The values must be in centimeters."
     # })
     # errs = [*errs, checkData(**args)]
     # print("check ran - wqlogger - pressure_cmh2o")
