@@ -274,7 +274,7 @@ def global_custom(all_dfs, datatype = ''):
             # Last Edited Date:
             # Last Edited Coder:
             # NOTE (11/3/23): Created the check. Need to QA and this check does not consider 1 mile buffer.
-
+            # NOTE (11/6/23): Fixed an error where sites in submitted file do not exist in the spatial_empa_sites table and cause null in geometry column after merging.
             latlong_cols = current_app.datasets.get(datatype).get('latlong_cols', None)
 
             # latlong_cols is a list of dictionaries of the tables with lat long columns
@@ -296,11 +296,24 @@ def global_custom(all_dfs, datatype = ''):
                 on=['siteid'],
                 suffixes=('_point', '_polygon')
             )
+            meta_matched = meta[~meta['geometry_polygon'].isna()]
+            meta_unmatched = meta[meta['geometry_polygon'].isna()]
             args = {
                 "dataframe": df,
                 "tablename": table_name,
-                "badrows": meta[
-                    meta.apply(
+                "badrows": meta_unmatched.tmp_row.tolist(),
+                "badcolumn": f"{latcol}, {longcol}",
+                "error_type": "Value Error",
+                "is_core_error": False,
+                "error_message": f"These sites ({','.join(list(set(meta_unmatched['siteid'])))}) were not checked if their locations are valid because their associated polygons were not created. Please contact Jan Walker (janw@sccwrp.org)"
+            }
+            warnings = [*warnings, checkData(**args)]
+
+            args = {
+                "dataframe": df,
+                "tablename": table_name,
+                "badrows": meta_matched[
+                    meta_matched.apply(
                         lambda row: not row['geometry_point'].within(row['geometry_polygon']), 
                         axis=1
                     )
@@ -308,7 +321,7 @@ def global_custom(all_dfs, datatype = ''):
                 "badcolumn": f"{latcol}, {longcol}",
                 "error_type": "Value Error",
                 "is_core_error": False,
-                "error_message": "Your points are not within their associated polygon. Please check the map. If they are correct, then ignore warnings."
+                "error_message": "Your points are not within their associated polygon. Please check the Map tab. If you believe their locations are correct, then ignore warnings and submit the data."
             }
             warnings = [*warnings, checkData(**args)]
             print("# END GLOBAL CUSTOM CHECK - 9")
