@@ -1,7 +1,7 @@
 # Dont touch this file! This is intended to be a template for implementing new custom checks
 
 from inspect import currentframe
-from flask import current_app, g
+from flask import current_app, g, session
 import pandas as pd
 from .functions import checkData, checkLogic, mismatch, get_primary_key, check_bad_time_format, check_bad_start_end_time, check_elevation_columns
 import re
@@ -286,45 +286,51 @@ def global_custom(all_dfs, datatype = ''):
                 ][0]
                 latcol, longcol = tmp[0], tmp[1]
 
-            meta = gpd.GeoDataFrame(
-                df, 
-                geometry=gpd.points_from_xy(df[longcol], df[latcol])
-            )
-            meta = meta.merge(
-                spatial_empa_sites[['siteid','geometry']],
-                how='left',
-                on=['siteid'],
-                suffixes=('_point', '_polygon')
-            )
-            meta_matched = meta[~meta['geometry_polygon'].isna()]
-            meta_unmatched = meta[meta['geometry_polygon'].isna()]
-            args = {
-                "dataframe": df,
-                "tablename": table_name,
-                "badrows": meta_unmatched.tmp_row.tolist(),
-                "badcolumn": f"{latcol}, {longcol}",
-                "error_type": "Value Error",
-                "is_core_error": False,
-                "error_message": f"These sites ({','.join(list(set(meta_unmatched['siteid'])))}) were not checked if their locations are valid because their associated polygons were not created. Please contact Jan Walker (janw@sccwrp.org)"
-            }
-            warnings = [*warnings, checkData(**args)]
-
-            args = {
-                "dataframe": df,
-                "tablename": table_name,
-                "badrows": meta_matched[
+                meta = gpd.GeoDataFrame(
+                    df, 
+                    geometry=gpd.points_from_xy(df[longcol], df[latcol])
+                )
+                meta_merged = meta.merge(
+                    spatial_empa_sites[['siteid','geometry']],
+                    how='left',
+                    on=['siteid'],
+                    suffixes=('_point', '_polygon')
+                )
+                meta_matched = meta_merged[~meta_merged['geometry_polygon'].isna()]
+                meta_unmatched = meta_merged[meta_merged['geometry_polygon'].isna()]
+                meta_matched_bad = meta_matched[
                     meta_matched.apply(
                         lambda row: not row['geometry_point'].within(row['geometry_polygon']), 
                         axis=1
                     )
-                ].tmp_row.tolist(),
-                "badcolumn": f"{latcol}, {longcol}",
-                "error_type": "Value Error",
-                "is_core_error": False,
-                "error_message": "Your points are not within their associated polygon. Please check the Map tab. If you believe their locations are correct, then ignore warnings and submit the data."
-            }
-            warnings = [*warnings, checkData(**args)]
-            print("# END GLOBAL CUSTOM CHECK - 9")
+                ]
+                save_path = os.path.join(os.getcwd(), "files", str(session.get('submissionid')))
+
+                meta[meta['siteid'].isin(meta_matched_bad['siteid'])].to_file(os.path.join(save_path, "bad-points-geojson.json"), driver='GeoJSON')
+                spatial_empa_sites[spatial_empa_sites['siteid'].isin(meta_matched_bad['siteid'])].to_file(os.path.join(save_path, "polygons-geojson.json"), driver='GeoJSON')
+
+                args = {
+                    "dataframe": df,
+                    "tablename": table_name,
+                    "badrows": meta_unmatched.tmp_row.tolist(),
+                    "badcolumn": f"{latcol}, {longcol}",
+                    "error_type": "Value Error",
+                    "is_core_error": False,
+                    "error_message": f"These sites ({','.join(list(set(meta_unmatched['siteid'])))}) were not checked if their locations are valid because their associated polygons were not created. Please contact Jan Walker (janw@sccwrp.org)"
+                }
+                warnings = [*warnings, checkData(**args)]
+
+                args = {
+                    "dataframe": df,
+                    "tablename": table_name,
+                    "badrows": meta_matched_bad.tmp_row.tolist(),
+                    "badcolumn": f"{latcol}, {longcol}",
+                    "error_type": "Value Error",
+                    "is_core_error": False,
+                    "error_message": "Your points are not within their associated polygon. Please check the Map tab. If you believe their locations are correct, then ignore warnings and submit the data."
+                }
+                warnings = [*warnings, checkData(**args)]
+                print("# END GLOBAL CUSTOM CHECK - 9")
 
 
 

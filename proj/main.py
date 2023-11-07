@@ -434,7 +434,11 @@ def main():
 
     # -------------------------------------------------------------------------------- #
 
-
+    if match_dataset not in ['logger_raw']:
+        station_visual_map = True
+    else:
+        station_visual_map = False
+        
     # These are the values we are returning to the browser as a json
     returnvals = {
         "filename" : filename,
@@ -447,7 +451,8 @@ def main():
         "submissionid": session.get("submissionid"),
         "critical_error": False,
         "all_datasets": list(current_app.datasets.keys()),
-        "table_to_tab_map" : session['table_to_tab_map']
+        "table_to_tab_map" : session['table_to_tab_map'],
+        "has_visual_map": station_visual_map
     }
 
     if match_dataset == 'logger_raw':
