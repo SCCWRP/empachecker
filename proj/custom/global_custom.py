@@ -327,7 +327,7 @@ def global_custom(all_dfs, datatype = ''):
                     "badcolumn": f"{latcol}, {longcol}",
                     "error_type": "Value Error",
                     "is_core_error": False,
-                    "error_message": "Your points are not within their associated polygon. Please check the Map tab. If you believe their locations are correct, then ignore warnings and submit the data."
+                    "error_message": f"The sites ({','.join(meta_matched_bad['siteid'])}) are not in their associated polygon. Please check the Stations Visual Map tab. If you believe their locations are correct, then ignore warnings and submit the data."
                 }
                 warnings = [*warnings, checkData(**args)]
                 print("# END GLOBAL CUSTOM CHECK - 9")
