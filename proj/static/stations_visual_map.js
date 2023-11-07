@@ -77,23 +77,31 @@ require([
                 longitude: sitesData[i]['geometry']['coordinates'][0],
                 latitude: sitesData[i]['geometry']['coordinates'][1]
             }
-            let siteid = sitesData[i]['properties']['siteid']
+            let lat = sitesData[i]['properties']['latitude']
+            let long = sitesData[i]['properties']['longitude']
             let attr = {
-                siteid: siteid
+                lat: lat,
+                long: long
             };
             let popUp = {
-                title: "Sites",
+                title: "Points",
                 content: [
                     {
                         type: "fields",
                         fieldInfos: [
                             {
-                                fieldName: "siteid"
+                                fieldName: "lat", // Latitude field
+                                label: "Latitude" // Optional: you can give it a label
+                            },
+                            {
+                                fieldName: "long", // Longitude field
+                                label: "Longitude" // Optional: you can give it a label
                             }
+                            // Add more fields if necessary
                         ]
                     }
                 ]
-            }
+            };
             let pointGraphic = new Graphic({
                 geometry: coord,
                 symbol: simpleMarkerSymbol,
@@ -126,7 +134,7 @@ require([
                 siteid: siteid
             };
             let popUp = {
-                title: "Catchments",
+                title: "Sites",
                 content: [
                     {
                         type: "fields",

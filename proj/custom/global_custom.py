@@ -316,7 +316,7 @@ def global_custom(all_dfs, datatype = ''):
                     "badcolumn": f"{latcol}, {longcol}",
                     "error_type": "Value Error",
                     "is_core_error": False,
-                    "error_message": f"These sites ({','.join(list(set(meta_unmatched['siteid'])))}) were not checked if their locations are valid because their associated polygons were not created. Please contact Jan Walker (janw@sccwrp.org)"
+                    "error_message": f"These points were not checked if their locations are valid because their associated polygons (SiteIDs: {','.join(list(set(meta_unmatched['siteid'])))})  were not created. Please contact Jan Walker (janw@sccwrp.org)"
                 }
                 warnings = [*warnings, checkData(**args)]
 
@@ -327,7 +327,7 @@ def global_custom(all_dfs, datatype = ''):
                     "badcolumn": f"{latcol}, {longcol}",
                     "error_type": "Value Error",
                     "is_core_error": False,
-                    "error_message": f"The sites ({','.join(meta_matched_bad['siteid'])}) are not in their associated polygon. Please check the Stations Visual Map tab. If you believe their locations are correct, then ignore warnings and submit the data."
+                    "error_message": f"These points are not in their associated polygon (SiteIDs: {','.join(meta_matched_bad['siteid'])}). Please check the Stations Visual Map tab. If you believe their locations are correct, then ignore warnings and submit the data."
                 }
                 warnings = [*warnings, checkData(**args)]
                 print("# END GLOBAL CUSTOM CHECK - 9")
