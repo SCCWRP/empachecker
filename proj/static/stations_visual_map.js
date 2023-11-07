@@ -71,44 +71,59 @@ require([
                 width: 2
             }
         };
-        for (let i = 0; i < sitesData.length; i++){
-            let coord = {
-                type: 'point',
-                longitude: sitesData[i]['geometry']['coordinates'][0],
-                latitude: sitesData[i]['geometry']['coordinates'][1]
+
+        if (sitesData !== 'None'){
+            for (let i = 0; i < sitesData.length; i++){
+                let coord = {
+                    type: 'point',
+                    longitude: sitesData[i]['geometry']['coordinates'][0],
+                    latitude: sitesData[i]['geometry']['coordinates'][1]
+                }
+                let lat = sitesData[i]['properties']['latitude']
+                let long = sitesData[i]['properties']['longitude']
+                let tmp_row = parseInt(sitesData[i]['properties']['tmp_row']) + 2
+                let siteid = sitesData[i]['properties']['siteid']
+
+                let attr = {
+                    lat: lat,
+                    long: long,
+                    tmp_row,
+                    siteid
+                };
+                let popUp = {
+                    title: "Points",
+                    content: [
+                        {
+                            type: "fields",
+                            fieldInfos: [
+                                {
+                                    fieldName: "lat", 
+                                    label: "Latitude"
+                                },
+                                {
+                                    fieldName: "long",
+                                    label: "Longitude"
+                                },
+                                {
+                                    fieldName: "tmp_row",
+                                    label: "Row in Excel File"
+                                },
+                                {
+                                    fieldName: "siteid",
+                                    label: "Associated SiteID"
+                                }
+                            ]
+                        }
+                    ]
+                };
+                let pointGraphic = new Graphic({
+                    geometry: coord,
+                    symbol: simpleMarkerSymbol,
+                    attributes: attr,
+                    popupTemplate: popUp
+                });
+                graphicsLayer.add(pointGraphic);
             }
-            let lat = sitesData[i]['properties']['latitude']
-            let long = sitesData[i]['properties']['longitude']
-            let attr = {
-                lat: lat,
-                long: long
-            };
-            let popUp = {
-                title: "Points",
-                content: [
-                    {
-                        type: "fields",
-                        fieldInfos: [
-                            {
-                                fieldName: "lat", // Latitude field
-                                label: "Latitude" // Optional: you can give it a label
-                            },
-                            {
-                                fieldName: "long", // Longitude field
-                                label: "Longitude" // Optional: you can give it a label
-                            }
-                            // Add more fields if necessary
-                        ]
-                    }
-                ]
-            };
-            let pointGraphic = new Graphic({
-                geometry: coord,
-                symbol: simpleMarkerSymbol,
-                attributes: attr,
-                popupTemplate: popUp
-            });
-            graphicsLayer.add(pointGraphic);
         }
 
         // ////////////////////////////////////////////////////////////
@@ -124,35 +139,38 @@ require([
             }
         };
         
-        for (let i = 0; i < catchmentsData.length; i++){
-            let coord = {
-                type: 'polygon',
-                rings: catchmentsData[i]['geometry']['coordinates'][0]
+
+        if (catchmentsData !== 'None'){
+            for (let i = 0; i < catchmentsData.length; i++){
+                let coord = {
+                    type: 'polygon',
+                    rings: catchmentsData[i]['geometry']['coordinates'][0]
+                }
+                let siteid = catchmentsData[i]['properties']['siteid']
+                let attr = {
+                    siteid: siteid
+                };
+                let popUp = {
+                    title: "Sites",
+                    content: [
+                        {
+                            type: "fields",
+                            fieldInfos: [
+                                {
+                                    fieldName: "siteid"
+                                }
+                            ]
+                        }
+                    ]
+                }
+                var polygonGraphic  = new Graphic({
+                    geometry: coord,
+                    symbol: simpleFillSymbol,
+                    attributes: attr,
+                    popupTemplate: popUp
+                });
+                graphicsLayer.add(polygonGraphic);
             }
-            let siteid = catchmentsData[i]['properties']['siteid']
-            let attr = {
-                siteid: siteid
-            };
-            let popUp = {
-                title: "Sites",
-                content: [
-                    {
-                        type: "fields",
-                        fieldInfos: [
-                            {
-                                fieldName: "siteid"
-                            }
-                        ]
-                    }
-                ]
-            }
-            var polygonGraphic  = new Graphic({
-                geometry: coord,
-                symbol: simpleFillSymbol,
-                attributes: attr,
-                popupTemplate: popUp
-            });
-            graphicsLayer.add(polygonGraphic);
         }
         ////////////////////////////////////////////////////////////
     })

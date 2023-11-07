@@ -17,11 +17,20 @@ def send_geojson():
 
     arcgis_api_key = os.environ.get('ARCGIS_API_KEY')
     
-    with open((os.path.join(os.getcwd(), "files", str(session.get('submissionid')), "bad-points-geojson.json")), 'r') as f:
-        sites = json.load(f)
+    path_to_points_json = os.path.join(os.getcwd(), "files", str(session.get('submissionid')), "bad-points-geojson.json")
+    path_to_polygons_json = os.path.join(os.getcwd(), "files", str(session.get('submissionid')), "polygons-geojson.json")
+
+    if os.path.exists(path_to_points_json):
+        with open(path_to_points_json, 'r') as f:
+            sites = json.load(f)
+    else:
+        sites = "None"
       
-    with open((os.path.join(os.getcwd(), "files", str(session.get('submissionid')), "polygons-geojson.json")), 'r') as f:
-        catchments = json.load(f)
+    if os.path.exists(path_to_points_json):
+        with open(path_to_polygons_json, 'r') as f:
+            catchments = json.load(f)
+    else:
+        catchments = "None"
      
     return jsonify(arcgis_api_key=arcgis_api_key, sites=sites, catchments=catchments)
 

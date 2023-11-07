@@ -304,10 +304,17 @@ def global_custom(all_dfs, datatype = ''):
                         axis=1
                     )
                 ]
-                save_path = os.path.join(os.getcwd(), "files", str(session.get('submissionid')))
 
-                meta[meta['siteid'].isin(meta_matched_bad['siteid'])].to_file(os.path.join(save_path, "bad-points-geojson.json"), driver='GeoJSON')
-                spatial_empa_sites[spatial_empa_sites['siteid'].isin(meta_matched_bad['siteid'])].to_file(os.path.join(save_path, "polygons-geojson.json"), driver='GeoJSON')
+                # Write geoJSON files
+                save_path = os.path.join(os.getcwd(), "files", str(session.get('submissionid')))
+                meta[meta['siteid'].isin(meta_matched_bad['siteid'])].to_file(
+                    os.path.join(save_path, "bad-points-geojson.json"), 
+                    driver='GeoJSON'
+                )
+                spatial_empa_sites[spatial_empa_sites['siteid'].isin(meta_matched_bad['siteid'])].to_file(
+                    os.path.join(save_path, "polygons-geojson.json"), 
+                    driver='GeoJSON'
+                )
 
                 args = {
                     "dataframe": df,
@@ -316,7 +323,7 @@ def global_custom(all_dfs, datatype = ''):
                     "badcolumn": f"{latcol}, {longcol}",
                     "error_type": "Value Error",
                     "is_core_error": False,
-                    "error_message": f"These points were not checked if their locations are valid because their associated polygons (SiteIDs: {','.join(list(set(meta_unmatched['siteid'])))})  were not created. Please contact Jan Walker (janw@sccwrp.org)"
+                    "error_message": f"These points were not checked if their locations are valid because their associated polygons (SiteIDs: {','.join(list(set(meta_unmatched['siteid'])))})  were not created. Please contact Jan Walker (janw@sccwrp.org) to have the polygons added."
                 }
                 warnings = [*warnings, checkData(**args)]
 
