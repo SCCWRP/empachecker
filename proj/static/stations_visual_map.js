@@ -65,7 +65,7 @@ require([
         siteSelect.id = 'zoomToSiteSelect';
         const defaultOption = document.createElement('option');
         defaultOption.value = '';
-        defaultOption.textContent = 'Select a site to view:';
+        defaultOption.textContent = 'Select a point to view:';
         siteSelect.appendChild(defaultOption);
         // Append the select element to the view's UI, for example in the top-right corner
         view.ui.add(siteSelect, 'top-right');
