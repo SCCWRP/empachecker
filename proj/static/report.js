@@ -194,7 +194,6 @@ const buildReport = (res) => {
 
     // Now append the rows with the error information
     warnings_tables.map(tblname => {
-        console.log(tblname);
         let tbl = document.querySelector(`#${tblname}-warnings-tab-body div.warnings-tab-rows`);
         tbl.innerHTML = res.warnings.map(e => {
             if (e.table === tblname) {

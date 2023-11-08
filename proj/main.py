@@ -433,8 +433,8 @@ def main():
     print("DONE - Marking Excel file")
 
     # -------------------------------------------------------------------------------- #
-
-    if match_dataset not in ['logger_raw']:
+    # Only display the map if lat, long are in the metadata
+    if current_app.datasets.get(match_dataset).get('latlong_cols') is not None:
         station_visual_map = True
     else:
         station_visual_map = False

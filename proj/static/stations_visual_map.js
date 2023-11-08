@@ -60,7 +60,17 @@ require([
         // Create a graphics layer
         const graphicsLayer = new GraphicsLayer();
         map.add(graphicsLayer);
-        
+        // Create a select element
+        const siteSelect = document.createElement('select');
+        siteSelect.id = 'zoomToSiteSelect';
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = 'Select a site to view:';
+        siteSelect.appendChild(defaultOption);
+        // Append the select element to the view's UI, for example in the top-right corner
+        view.ui.add(siteSelect, 'top-right');
+
+
         // ////////////////// Ploting the sites //////////////////
         let simpleMarkerSymbol = {
             type: "simple-marker",
@@ -124,8 +134,29 @@ require([
                 });
                 graphicsLayer.add(pointGraphic);
             }
+            sitesData.forEach((site, i) => {
+                const option = document.createElement('option');
+                option.value = i; // Index of the site
+                option.textContent = `Row in Excel: ${parseInt(site['properties']['tmp_row']) + 2}`; // Text to show in the dropdown
+                siteSelect.appendChild(option);
+            });
+            
+            // Add the change event listener to the select element
+            siteSelect.addEventListener('change', function() {
+                const selectedSiteIndex = this.value;
+                if (selectedSiteIndex) {
+                    const selectedSite = sitesData[selectedSiteIndex];
+                    // Zoom to the selected site's coordinates
+                    view.goTo({
+                        center: [
+                            selectedSite['geometry']['coordinates'][0],
+                            selectedSite['geometry']['coordinates'][1]
+                        ],
+                        zoom: 15 // Adjust zoom level as needed
+                    });
+                }
+            });
         }
-
         // ////////////////////////////////////////////////////////////
 
         // ////////////////// Ploting the catchments //////////////////
@@ -171,7 +202,9 @@ require([
                 });
                 graphicsLayer.add(polygonGraphic);
             }
+
         }
+
         ////////////////////////////////////////////////////////////
     })
 });

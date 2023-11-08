@@ -85,9 +85,7 @@
         });
         document.getElementById("loader-gif-container").classList.add("hidden");
         document.querySelector(".after-submit").classList.remove("hidden");
-        console.log(response);
         const result = await response.json();
-        console.log(result);
 
         // handling the case where there was a critical error
         if (result.critical_error) {

@@ -275,6 +275,7 @@ def global_custom(all_dfs, datatype = ''):
             # Last Edited Coder:
             # NOTE (11/3/23): Created the check. Need to QA and this check does not consider 1 mile buffer.
             # NOTE (11/6/23): Fixed an error where sites in submitted file do not exist in the spatial_empa_sites table and cause null in geometry column after merging.
+            # NOTE (11/8/23): Duy adjusted the check, comments were left below
             latlong_cols = current_app.datasets.get(datatype).get('latlong_cols', None)
 
             # latlong_cols is a list of dictionaries of the tables with lat long columns
@@ -296,26 +297,9 @@ def global_custom(all_dfs, datatype = ''):
                     on=['siteid'],
                     suffixes=('_point', '_polygon')
                 )
-                meta_matched = meta_merged[~meta_merged['geometry_polygon'].isna()]
+
+                # Display warnings when the points are associated with undelineated polygons
                 meta_unmatched = meta_merged[meta_merged['geometry_polygon'].isna()]
-                meta_matched_bad = meta_matched[
-                    meta_matched.apply(
-                        lambda row: not row['geometry_point'].within(row['geometry_polygon']), 
-                        axis=1
-                    )
-                ]
-
-                # Write geoJSON files
-                save_path = os.path.join(os.getcwd(), "files", str(session.get('submissionid')))
-                meta[meta['siteid'].isin(meta_matched_bad['siteid'])].to_file(
-                    os.path.join(save_path, "bad-points-geojson.json"), 
-                    driver='GeoJSON'
-                )
-                spatial_empa_sites[spatial_empa_sites['siteid'].isin(meta_matched_bad['siteid'])].to_file(
-                    os.path.join(save_path, "polygons-geojson.json"), 
-                    driver='GeoJSON'
-                )
-
                 args = {
                     "dataframe": df,
                     "tablename": table_name,
@@ -326,17 +310,48 @@ def global_custom(all_dfs, datatype = ''):
                     "error_message": f"These points were not checked if their locations are valid because their associated polygons (SiteIDs: {','.join(list(set(meta_unmatched['siteid'])))})  were not created. Please contact Jan Walker (janw@sccwrp.org) to have the polygons added."
                 }
                 warnings = [*warnings, checkData(**args)]
+                
+                # Display warnings when the points are outside of their associated polygons
+                meta_matched = meta_merged[~meta_merged['geometry_polygon'].isna()]
+                meta_matched_bad = meta_matched[
+                    meta_matched.apply(
+                        lambda row: not row['geometry_point'].within(row['geometry_polygon']), 
+                        axis=1
+                    )
+                ]
 
-                args = {
-                    "dataframe": df,
-                    "tablename": table_name,
-                    "badrows": meta_matched_bad.tmp_row.tolist(),
-                    "badcolumn": f"{latcol}, {longcol}",
-                    "error_type": "Value Error",
-                    "is_core_error": False,
-                    "error_message": f"These points are not in their associated polygon (SiteIDs: {','.join(meta_matched_bad['siteid'])}). Please check the Stations Visual Map tab. If you believe their locations are correct, then ignore warnings and submit the data."
-                }
-                warnings = [*warnings, checkData(**args)]
+                # Only write geojson when there are points that are outside polygon
+                if not meta_matched_bad.empty:
+                    # Write geoJSON files
+                    save_path = os.path.join(os.getcwd(), "files", str(session.get('submissionid')))
+                    meta[meta['tmp_row'].isin(meta_matched_bad['tmp_row'])] \
+                        .rename(
+                            columns={latcol: 'latitude', longcol: 'longitude'}   
+                        ) \
+                        .to_file(
+                            os.path.join(save_path, "bad-points-geojson.json"), 
+                            driver='GeoJSON'
+                        )
+                    spatial_empa_sites[spatial_empa_sites['siteid'].isin(meta_matched_bad['siteid'])]\
+                        .rename(
+                            columns={latcol: 'latitude', longcol: 'longitude'}
+                        ) \
+                        .to_file(
+                            os.path.join(save_path, "polygons-geojson.json"), 
+                            driver='GeoJSON'
+                        )
+                    args = {
+                        "dataframe": df,
+                        "tablename": table_name,
+                        "badrows": meta_matched_bad.tmp_row.tolist(),
+                        "badcolumn": f"{latcol}, {longcol}",
+                        "error_type": "Value Error",
+                        "is_core_error": False,
+                        "error_message": f"These points are not in their associated polygon (SiteIDs: {','.join(meta_matched_bad['siteid'])}). Please check the Stations Visual Map tab. If you believe their locations are correct, then ignore warnings and submit the data."
+                    }
+                    warnings = [*warnings, checkData(**args)]
+
+
                 print("# END GLOBAL CUSTOM CHECK - 9")
 
 
