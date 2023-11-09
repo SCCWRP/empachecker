@@ -1,5 +1,8 @@
 import json, os, re
 import pandas as pd
+import geopandas as gpd
+
+
 
 def checkData(tablename, badrows, badcolumn, error_type, is_core_error = False, error_message = "Error", errors_list = [], q = None, **kwargs):
     
@@ -299,8 +302,8 @@ def check_consecutiveness(df, groupcols, col_to_check):
     assert df[col_to_check].apply(lambda val: isinstance(val, int)).all(), f'all values in {col_to_check} needed to be integers'
 
     def is_consecutive(df):
-        df = df.sort_values(by=col_to_check)
-        consecutive = (df[col_to_check].diff().dropna() == 1).all()
+        df = df[df[col_to_check] != -88].sort_values(by=col_to_check)
+        consecutive = (df[col_to_check].drop_duplicates().sort_values().diff().dropna() == 1).all()
         if not consecutive:
             return df.tmp_row.tolist()
         else:
@@ -316,4 +319,15 @@ def check_date_order(df, before_date, after_date):
     df[after_date] = pd.to_datetime(df[after_date], format='%d/%m/%Y').dt.date
     
     return df[(df[before_date] > df[after_date])].tmp_row.tolist()
+
+
+
+def check_coordinates_in_shapefile(df, shapefile_path, lat_col, long_col):
+    assert 'tmp_row' in df.columns, 'tmp_row not found in dataframe'
+    shapefile_path = os.path.join(os.getcwd(), 'shapes', 'california_combined.shp')
+    cali_shapefile = gpd.read_file(shapefile_path)
+    if lat_col in df.columns and long_col in df.columns:
+            gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df[longcol], df[latcol]))
+            badrows = gdf[gdf.disjoint(cali_shapefile.unary_union)]
+            return badrows
     

@@ -326,7 +326,7 @@ def main():
             # the output of global custom should look the same as the custom_output
             # Then we can do custom_output.get('errors').extend(global_custom_output.get('errors))
             # and custom_output.get('warnings').extend(global_custom_output.get('warnings))
-            global_custom_output = global_custom(all_dfs)
+            global_custom_output = global_custom(all_dfs, datatype = match_dataset)
 
             # extend the custom output
             custom_output.get('errors').extend(global_custom_output.get('errors'))
@@ -422,8 +422,12 @@ def main():
     print("DONE - Marking Excel file")
 
     # -------------------------------------------------------------------------------- #
-
-
+    # Only display the map if lat, long are in the metadata
+    if current_app.datasets.get(match_dataset).get('latlong_cols') is not None:
+        station_visual_map = True
+    else:
+        station_visual_map = False
+        
     # These are the values we are returning to the browser as a json
     returnvals = {
         "filename" : filename,
@@ -436,7 +440,8 @@ def main():
         "submissionid": session.get("submissionid"),
         "critical_error": False,
         "all_datasets": list(current_app.datasets.keys()),
-        "table_to_tab_map" : session['table_to_tab_map']
+        "table_to_tab_map" : session['table_to_tab_map'],
+        "has_visual_map": station_visual_map
     }
 
     if match_dataset == 'logger_raw':

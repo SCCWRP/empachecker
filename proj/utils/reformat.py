@@ -3,6 +3,7 @@ import csv
 import pandas as pd
 import re
 from .loggervars import TIMEZONE_MAP, TEMPLATE_COLUMNS, SUPPORTED_SENSORTYPES
+from flask import session
 
 def read_tidbit(tidbit_path):
     # this csv has a different encoding, which is weird
@@ -103,6 +104,9 @@ def read_ctd(ctd_path):
         'raw_pressure': 'Pressure',
         'raw_h2otemp': 'Temperature'
     }
+    
+
+
 
     raw_columns = list(template_to_raw_map.keys())
     ctd_data[raw_columns] = ctd_data[raw_columns].apply(
@@ -112,6 +116,11 @@ def read_ctd(ctd_path):
     ctd_data['sensorid'] = ctd_data['SerialNumber']
     ctd_data = ctd_data[TEMPLATE_COLUMNS]
 
+    ctd_data['raw_conductivity_unit'] = session['login_info'].get('login_ctd_conductivityunit')
+    ctd_data['raw_pressure_unit'] = session['login_info'].get('login_ctd_pressureunit')
+    ctd_data['raw_h2otemp_unit'] = session['login_info'].get('login_ctd_temperatureunit')
+    ctd_data['samplecollectiontimezone'] = session['login_info'].get('login_ctd_timezone')
+    
     return ctd_data
 
 def read_troll(troll_path):
@@ -166,6 +175,9 @@ def read_troll(troll_path):
     )
     troll_data['raw_pressure_unit'] = troll_data['raw_pressure_unit'].apply(
         lambda x: x.lower() if x == 'mBar' else x
+    )
+    troll_data['raw_depth_unit'] = troll_data['raw_depth_unit'].apply(
+        lambda x: x.lower()
     )
 
     troll_data = troll_data[TEMPLATE_COLUMNS]

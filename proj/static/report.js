@@ -194,7 +194,6 @@ const buildReport = (res) => {
 
     // Now append the rows with the error information
     warnings_tables.map(tblname => {
-        console.log(tblname);
         let tbl = document.querySelector(`#${tblname}-warnings-tab-body div.warnings-tab-rows`);
         tbl.innerHTML = res.warnings.map(e => {
             if (e.table === tblname) {
@@ -233,14 +232,14 @@ const buildReport = (res) => {
         tabIDs = tabIDs
     )
 
+    if (res.has_visual_map){
+        // display the map if applicable
+        document.getElementById("map-report-header")?.classList.remove("hidden")
+        document.getElementById('visual-map').setAttribute('src',`/${script_root}/map/${res.submissionid}`)
+    }
+  
 
-    // display the map if applicable
-    document.getElementById('visual-map').setAttribute('src',`/${script_root}/map/${res.submissionid}/${res.match_dataset}`)
 
-
-
-    
-    
 
 }
 

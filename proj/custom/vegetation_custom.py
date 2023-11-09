@@ -7,11 +7,9 @@ from .functions import checkData, checkLogic, mismatch,get_primary_key, check_co
 print('before vegatation funcntion')
 
 def vegetation(all_dfs):
-    print('vegatation funcntion')
     current_function_name = str(currentframe().f_code.co_name)
     lu_list_script_root = current_app.script_root
-    print('inside vegatation funcntion')
-
+  
     # function should be named after the dataset in app.datasets in __init__.py
     assert current_function_name in current_app.datasets.keys(), \
         f"function {current_function_name} not found in current_app.datasets.keys() - naming convention not followed"
@@ -251,6 +249,47 @@ def vegetation(all_dfs):
     
     print("# END OF CHECK - 7")
 
+    print("# CHECK - 15")
+    # Description: If method is obs_plant, then transectreplicate must be -88
+    # Created Coder: Duy    
+    # Created Date: 10/30/23
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (10/30/23): Duy created the check
+    args.update({
+        "dataframe": vegmeta,
+        "tablename": "tbl_vegetation_sample_metadata",
+        "badrows" : vegmeta[
+            (vegmeta['method'] == 'obs_plant') & 
+            (vegmeta['transectreplicate'] != -88)
+        ].tmp_row.tolist(),
+        "badcolumn": "method,transectreplicate",
+        "error_type": "Value Error",
+        "error_message": "If method is obs_plant, then transectreplicate must be -88"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 15")
+
+    print("# CHECK - 16")
+    # Description: If method is obs_plant, then habitat must be 'site-wide'
+    # Created Coder: Duy
+    # Created Date: 10/30/23
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (10/30/23): Duy created the check
+    args.update({
+        "dataframe": vegmeta,
+        "tablename": "tbl_vegetation_sample_metadata",
+        "badrows" : vegmeta[
+            (vegmeta['method'] == 'obs_plant') & 
+            (vegmeta['habitat'].str.lower() != 'site-wide')
+        ].tmp_row.tolist(),
+        "badcolumn": "method,habitat",
+        "error_type": "Value Error",
+        "error_message": "If method is obs_plant, then habitat must be 'site-wide'"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 16")
 
 
     ######################################################################################################################
@@ -274,20 +313,34 @@ def vegetation(all_dfs):
     ######################################################################################################################
 
     print("# CHECK - 8")
-    # Description: If EstimatedCover is -88, then PercentCoverCode must be provided (cannot be -88)
+    # Description: If method is not 'obs_plant' and estimatedcover is -88, then percentcovercode must be provided (cannot be -88). If method is 'obs_plant', both estimatedcover and percentcover must be -88.
     # Created Coder:
     # Created Date:
-    # Last Edited Date: 09/14/2023
-    # Last Edited Coder: Ayah
+    # Last Edited Date: 10/30/23
+    # Last Edited Coder: Duy
     # NOTE (09/14/2023): Adjust code to match coding standard
+    # NOTE (10/30/2023): Duy changed code's logic based on Jan's request
     args = ({
         "dataframe":vegdata,
         "tablename":'tbl_vegetativecover_data',
-        "badrows":vegdata[(vegdata['estimatedcover'] == -88) & (vegdata['percentcovercode'] == -88)].tmp_row.tolist(),
-        "badcolumn": "percentcovercode",
-        "error_type": "wrong value",
+        "badrows":vegdata[
+            (
+                (vegdata['method'] != 'obs_plant') &
+                (vegdata['estimatedcover'] == -88) &
+                (vegdata['percentcovercode'] == -88) 
+            ) |
+            (
+                (vegdata['method'] == 'obs_plant') &
+                (
+                    (vegdata['estimatedcover'] != -88) |
+                    (vegdata['percentcovercode'] != -88)   
+                ) 
+            )
+        ].tmp_row.tolist(),
+        "badcolumn": "method,estimatedcover,percentcovercode",
+        "error_type": "Value Error",
         "is_core_error": False,
-        "error_message": "Since EstimatedCover is -88, PercentCoverCOde must be provided"
+        "error_message": "If method is not 'obs_plant' and estimatedcover is -88, then percentcovercode must be provided (cannot be -88). If method is 'obs_plant', both estimatedcover and percentcover must be -88."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 8")
@@ -315,16 +368,21 @@ def vegetation(all_dfs):
     # Description: Range for tallestplantheight_cm must be between [0, 300]
     # Created Coder:
     # Created Date:
-    # Last Edited Date: 09/14/2023
-    # Last Edited Coder: Ayah
+    # Last Edited Date: 10/31/23
+    # Last Edited Coder: Duy
     # NOTE (09/14/2023): Adjust code to match coding standard
+    # NOTE (10/30/23): Duy adjusted the error msg
+    # NOTE (10/31/23): Ignored -88 values
     args.update({
         "dataframe": vegdata,
         "tablename": "tbl_vegetativecover_data",
-        "badrows":vegdata[(vegdata['tallestplantheight_cm']<0) | (vegdata['tallestplantheight_cm'] > 300)].tmp_row.tolist(),
+        "badrows":vegdata[
+            (vegdata['tallestplantheight_cm'] != -88) &
+            (vegdata['tallestplantheight_cm'] < 0) | (vegdata['tallestplantheight_cm'] > 300)
+        ].tmp_row.tolist(),
         "badcolumn": "tallestplantheight_cm",
         "error_type" : "Value is out of range.",
-        "error_message" : "Height should be between 0 to 3 metres"
+        "error_message" : "Height should be between 0 to 300 cm"
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 11")
@@ -333,14 +391,16 @@ def vegetation(all_dfs):
     # Description: transectreplicate must be consecutive within primary keys
     # Created Coder: Aria Askaryar
     # Created Date: 09/28/2023
-    # Last Edited Date:  09/28/2023
-    # Last Edited Coder: Aria Askaryar
-    # NOTE ( 09/28/2023): Aria wrote the check, it has not been tested yet
+    # Last Edited Date:  11/1/23
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (09/28/2023): Aria wrote the check, it has not been tested yet
+    # NOTE (11/1/23): transecreplicate should be consecutive within a station for a given site 
     
+    groupby_cols = ['projectid','siteid','estuaryname','stationno','samplecollectiondate']
     args.update({
         "dataframe": vegdata,
         "tablename": "tbl_vegetativecover_data",
-        "badrows" : check_consecutiveness(vegdata, [x for x in vegdata_pkey if x != 'transectreplicate'], 'transectreplicate'),
+        "badrows" : check_consecutiveness(vegdata, groupby_cols, 'transectreplicate'),
         "badcolumn": "transectreplicate",
         "error_type": "Replicate Error",
         "error_message": f"transectreplicate must be consecutive within primary keys (siteid, estuaryname, stationno, samplecollectiondate, transectreplicate, plotreplicate, covertype, scientificname, live_dead, unknownreplicate, projectid)"
@@ -349,19 +409,19 @@ def vegetation(all_dfs):
     print("# END OF CHECK - 12")
 
     print("# CHECK - 13")
-    # Description: plotreplicate must be  consecutive within primary keys
+    # Description: plotreplicate must be consecutive within primary keys
     # Created Coder: Aria Askaryar
     # Created Date: 09/28/2023
     # Last Edited Date:  09/28/2023
     # Last Edited Coder: Aria Askaryar
-    # NOTE ( 09/28/2023): Aria wrote the check, it has not been tested yet
-
-    print(vegdata_pkey)
+    # NOTE (09/28/2023): Aria wrote the check, it has not been tested yet
+    # NOTE (11/1/23): plotreplicate must be consecutive for a given transectreplicate
     
+    groupby_cols = ['projectid','siteid','estuaryname','stationno','samplecollectiondate','transectreplicate']
     args.update({
         "dataframe": vegdata,
         "tablename": "tbl_vegetativecover_data",
-        "badrows" : check_consecutiveness(vegdata, [x for x in vegdata_pkey if x != 'plotreplicate'], 'plotreplicate'),
+        "badrows" : check_consecutiveness(vegdata, groupby_cols, 'plotreplicate'),
         "badcolumn": "plotreplicate",
         "error_type": "Replicate Error",
         "error_message": f"plotreplicate must be consecutive within primary keys (siteid, estuaryname, stationno, samplecollectiondate, transectreplicate, plotreplicate, covertype, scientificname, live_dead, unknownreplicate, projectid)"

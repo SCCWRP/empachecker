@@ -17,7 +17,7 @@
 
             let missingFields = [];
             Array.from(loginForm.querySelectorAll('.login-form-element')).forEach(elem => {
-                if (elem.value === '') {
+                if (elem.value === '' && elem.parentElement.classList.contains('hidden') === false ) {
                     let tmp = elem.getAttribute('name').trim().toLowerCase().replace('login_','').replace(/_/,' ').replace(/\w\S*/g, (w) => (w.replace(/^\w/, (c) => c.toUpperCase())));
                     missingFields.push(tmp)
                 }
@@ -85,9 +85,7 @@
         });
         document.getElementById("loader-gif-container").classList.add("hidden");
         document.querySelector(".after-submit").classList.remove("hidden");
-        console.log(response);
         const result = await response.json();
-        console.log(result);
 
         // handling the case where there was a critical error
         if (result.critical_error) {
