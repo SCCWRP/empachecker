@@ -1,21 +1,24 @@
 <!DOCTYPE html>
 
 <html>
+
 <head>
     <title>Table Information</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <style>
-        .table td, .table th {
-            border: 1px solid #ddd; /* Light grey border */
+        .table td,
+        .table th {
+            border: 1px solid #ddd;
+            /* Light grey border */
         }
     </style>
-    
+
     </style>
 </head>
+
 <body>
     <div>
-        <p>Choose a datatype:</p>
-    {% if datatypes_list %}
+        {% if datatypes_list %}
         {% for dtyp in datatypes_list %}
         <ul>
             <li>
@@ -23,91 +26,270 @@
             </li>
         </ul>
         {% endfor %}
-    {% else %}
+        {% else %}
     </div>
     <div class="container d-flex flex-column align-items-center justify-content-center">
-    <h1>Schema Information for {{datatype}}</h1>
-    <br>
-    <button id="return-main-app"> Return to main page </button>
-    <br>
-    <button id="download-schema"> Download as an Excel file </button>
-    <br>
-    {# metadata is essentially the schema information about all tables in the datatype #}
-    
-    {% for tablename, table in metadata.items() %}
+        <h1>Schema Information for {{datatype}}</h1>
+        <br>
+        <div>
+
+            <!-- Button trigger modal -->
+            <button id="loginButton" type="button" class="btn btn-primary" data-toggle="modal"
+                data-target="#adminPasswordModal">
+                Login as Admin
+            </button>
+            <!-- Placeholder for logout button -->
+            <div id="logoutSection"></div>
+
+            <!-- Modal -->
+            <div class="modal fade" id="adminPasswordModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+                aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLabel">Admin Login Form</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <label for="userPassword">Please enter admin password:</label>
+                            <input type="password" class="form-control" id="userPassword"
+                                placeholder="Enter admin password">
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="checkPassword()">Login</button>
+                            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <br>
+        <button id="return-main-app"> Return to main page </button>
+        <br>
+        <button id="download-schema"> Download as an Excel file </button>
+        <br>
+        {# metadata is essentially the schema information about all tables in the datatype #}
+
+        {% for tablename, table in metadata.items() %}
         <div class="table-info-container">
             <div class="table-name-container">
                 <h3><strong>{{tablename}}</strong></h3>
             </div>
             <div class="table-content-container">
-                <table class="table table-striped table-hover" style="border-collapse: collapse;"> {# Added border-collapse for cleaner borders #}              
+                <table class="table table-striped table-hover" style="border-collapse: collapse;"> {# Added
+                    border-collapse for cleaner borders #}
                     {% for row in table %}
-                        {# for the first loop, add the table header #}
-                        {% if loop.index0 == 0 %}
-                        <thead>
-                            {% for k, v in row.items() %}
-                            <th style="color:#C00000;text-transform:uppercase;background-color:#BFBFBF;border:1px solid black;">
-                                <!-- {{ k | replace("_", " ") }} -->
-                                {% if k == 'column_name' %}
-                                field name
-                                {% elif k == 'datatype' %}
-                                type
-                                {% elif k == 'character_limit' %}
-                                size
-                                {% elif k == 'lookuplist_table_name' %}
-                                lookup list
-                                {% else %}
-                                {{ k | replace("_", " ") }}
-                                {% endif %}
-                            </th>
-                            {% endfor %}
-                        </thead>
-                        {% endif %}
-                        <tr 
-                            {% if row.primary_key == 'YES' %} class="primary-key-row" {% endif %}
-                            {# Only for the IM plan. I don't necessarily want to keep this styling. #}
-                            {% if loop.index0 % 2 != 0 %} style="background-color:#D9D9D9" {% else %} style="background-color:#FFFFFF"{% endif %}
-                        >
-                            {% for k, v in row.items() %}
-                            <td style="border:1px solid black;">{{v | safe}}</td> {# Added border styling here #}
-                            {% endfor %}    
-                        </tr>
+                    {# for the first loop, add the table header #}
+                    {% if loop.index0 == 0 %}
+                    <thead>
+                        {% for k, v in row.items() %}
+                        <th
+                            style="color:#C00000;text-transform:uppercase;background-color:#BFBFBF;border:1px solid black;">
+                            <!-- {{ k | replace("_", " ") }} -->
+                            {% if k == 'column_name' %}
+                            field name
+                            {% elif k == 'datatype' %}
+                            type
+                            {% elif k == 'character_limit' %}
+                            size
+                            {% elif k == 'lookuplist_table_name' %}
+                            lookup list
+                            {% else %}
+                            {{ k | replace("_", " ") }}
+                            {% endif %}
+                        </th>
+                        {% endfor %}
+                    </thead>
+                    {% endif %}
+                    <tr {% if row.primary_key=='YES' %} class="primary-key-row" {% endif %} {# Only for the IM plan. I
+                        don't necessarily want to keep this styling. #} {% if loop.index0 % 2 !=0 %}
+                        style="background-color:#D9D9D9" {% else %} style="background-color:#FFFFFF" {% endif %}>
+                        {% for k, v in row.items() %}
+                        <td style="border:1px solid black;">{{v | safe}}</td> {# Added border styling here #}
+                        {% endfor %}
+                    </tr>
                     {% endfor %}
                 </table>
             </div>
-            
+
         </div>
         <br><br>
-    {% endfor %}
+        {% endfor %}
     </div>
 
     {% endif %}
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script>
+        // JavaScript function to check the password and update the UI
+        function checkPassword() {
+            var userPassword = {
+                adminpw: document.getElementById('userPassword').value
+            }
+
+            // Make the fetch call to the server
+            fetch('/checker/adminauth', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(userPassword)
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            }).then(data => {
+                authorized = data['message']
+                if (authorized === 'true') {
+                    // Hide the modal
+                    $('#adminPasswordModal').modal('hide');
+
+                    // Replace the login button with a message and a logout button
+                    document.getElementById('loginButton').style.display = 'none';
+                    var logoutSection = document.getElementById('logoutSection');
+                    logoutSection.innerHTML = `
+                        <div>
+                            <span class="d-inline-block">You are logged in as <b>Admin</b>. 
+                            You can make changes to the Description field. Changes will be saved automatically when you click out of the cell.
+                            </span>
+                            <button onclick="logout()" class="btn btn-danger d-inline-block ml-2">Logout</button>
+                        </div>
+                        `;
+                    makeEditable(true);
+                } else {
+                    alert('Incorrect password!');
+                }
+            }).catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+
+        // Logout function to revert to the original state
+        function logout() {
+            // Clear the logout section
+            document.getElementById('logoutSection').innerHTML = '';
+
+            // Show the login button again
+            document.getElementById('loginButton').style.display = 'block';
+        }
+        // Toggle contenteditable attribute for description fields
+        function makeEditable(isEditable) {
+
+            // Assuming 'description' is the inner text of the header cell for the description column
+            var descriptionHeaders = document.querySelectorAll('th');
+            var descriptionIndex;
+            for (var i = 0; i < descriptionHeaders.length; i++) {
+                if (descriptionHeaders[i].innerText.trim().toLowerCase() === 'description') {
+                    descriptionIndex = i;
+                    break;
+                }
+            }
+            if (descriptionIndex !== undefined) {
+                var tableRows = document.querySelectorAll('.table-info-container table tbody tr');
+                tableRows.forEach(function (row) {
+                    var cells = row.querySelectorAll('td');
+                    if (cells.length > descriptionIndex) {
+                        var descriptionCell = cells[descriptionIndex];
+                        if (isEditable) {
+                            descriptionCell.setAttribute('contenteditable', 'true');
+                            descriptionCell.style.backgroundColor = "#EFEFEF";
+                            
+                            // Store the initial content to compare later
+                            var initialContent = descriptionCell.innerText.trim();
+
+                            descriptionCell.addEventListener('blur', function () {
+                                // get table name
+                                var tableContainer = event.target.closest('.table-info-container');
+                                var tableNameElement = tableContainer.querySelector('.table-name-container strong');
+                                var tableName = tableNameElement ? tableNameElement.innerText : 'Unknown Table';
+
+                                // get field name
+                                var fieldNameCell = event.target.parentNode.querySelector('td:first-child');
+                                var fieldName = fieldNameCell ? fieldNameCell.innerText.trim() : 'Unknown Field';
+
+                                // get description
+                                var newValue = this.innerText.trim();
+              
+                                if (newValue !== initialContent){
+                                    initialContent = newValue
+                                    // Prepare the data to send in the fetch call
+                                    var updateData = {
+                                        table_name: tableName,
+                                        field_name: fieldName,
+                                        new_description: newValue.trim()
+                                    };
+                                    // Make the fetch call to the server
+                                    fetch('/checker/update_column_description', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json'
+                                        },
+                                        body: JSON.stringify(updateData)
+                                    }).then(response => {
+                                        if (!response.ok) {
+                                            throw new Error('Network response was not ok');
+                                        }
+                                        return response.json();
+                                    }).then(data => {
+                                        console.log('Updated successfully');
+                                    }).catch((error) => {
+                                        console.error('Error:', error);
+                                    });
+                                }
+                            });
+                        } else {
+                            descriptionCell.removeAttribute('contenteditable');
+                            descriptionCell.style.backgroundColor = ""; 
+                        }
+                    }
+                });
+            }
+        }
+
+        // Logout function to revert to the original state
+        function logout() {
+            // Clear the logout section
+            document.getElementById('logoutSection').innerHTML = '';
+
+            // Show the login button again
+            document.getElementById('loginButton').style.display = 'block';
+
+            // Make the description fields non-editable
+            makeEditable(false);
+        }
+    </script>
 </body>
 <script>
 
     const downloadButton = document.getElementById("download-schema")
 
-    if ( downloadButton !== null ){
-        const dlFileName = {{ dl_filename | tojson }};
-        
-        downloadButton.addEventListener("click", function(){
+    if (downloadButton !== null) {
+        const dlFileName = {{ dl_filename | tojson
+    }};
 
-            var link = document.createElement("a");
-            link.href = `{{request.script_root}}/download_schema/${dlFileName}`;
-            link.target = "_blank"; // Open the URL in a new tab/window
+    downloadButton.addEventListener("click", function () {
 
-            // Trigger a click event on the link
-            var event = new MouseEvent("click", {
-                view: window,
-                bubbles: false,
-                cancelable: true
-            });
+        var link = document.createElement("a");
+        link.href = `{{request.script_root}}/download_schema/${dlFileName}`;
+        link.target = "_blank"; // Open the URL in a new tab/window
 
-            link.dispatchEvent(event);
-        })
+        // Trigger a click event on the link
+        var event = new MouseEvent("click", {
+            view: window,
+            bubbles: false,
+            cancelable: true
+        });
 
-        const returnMain = document.getElementById("return-main-app")
-        returnMain.addEventListener("click", function(){
+        link.dispatchEvent(event);
+    })
+
+    const returnMain = document.getElementById("return-main-app")
+    returnMain.addEventListener("click", function () {
 
         var link = document.createElement("a");
         link.href = `{{request.script_root}}/schema`;
@@ -120,9 +302,9 @@
         });
 
         link.dispatchEvent(event);
-        })
+    })
 
     }
 </script>
-</html>
 
+</html>

@@ -1,4 +1,4 @@
-import os, time
+import os, time, re
 import pandas as pd
 from bs4 import BeautifulSoup
 from flask import Blueprint, g, current_app, render_template, redirect, url_for, session, request, jsonify
@@ -97,7 +97,7 @@ def schema():
                 df_to_download.to_excel(writer, sheet_name=key, index=False)
 
         print("return_object")
-   
+        print(return_object)
 
         return render_template('schema.html', metadata=return_object, datatype=datatype, authorized=authorized, dl_filename=dl_filename)
         
@@ -260,7 +260,39 @@ def adminauth():
         return render_template('admin_password.html', redirect_route=request.args.get("redirect_to"))
     
     adminpw = request.get_json().get('adminpw')
+
     if adminpw == os.environ.get("ADMIN_FUNCTION_PASSWORD"):
         session['AUTHORIZED_FOR_ADMIN_FUNCTIONS'] = True
+    else:
+        session['AUTHORIZED_FOR_ADMIN_FUNCTIONS'] = False
     
     return jsonify(message=str(session.get("AUTHORIZED_FOR_ADMIN_FUNCTIONS")).lower())
+
+
+@admin.route('/update_column_description', methods = ['POST'])
+def update_column_description():
+
+    data = request.get_json()
+    
+    # I am trying to prevent sql injection - Duy
+    table_name = re.sub(r"[^\w\s']", '', data.get('table_name').strip()) 
+    field_name = re.sub(r"[^\w\s']", '', data.get('field_name').strip())
+    new_description = re.sub(r"[^\w\s']", '', data.get('new_description').strip())
+
+    update_query = f"COMMENT ON COLUMN {table_name}.{field_name} IS '{new_description}';"
+
+    # connect with psycopg2
+    connection = psycopg2.connect(
+        host=os.environ.get("DB_HOST"),
+        database=os.environ.get("DB_NAME"),
+        user=os.environ.get("DB_USER"),
+        password=os.environ.get("PGPASSWORD"),
+    )
+
+    connection.set_session(autocommit=True)
+
+    with connection.cursor() as cursor:
+        command = sql.SQL(update_query)
+        cursor.execute(command)
+
+    return jsonify(message="updated successfully")
