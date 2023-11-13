@@ -63,9 +63,6 @@ def trash(all_dfs):
     
     trashvisualassessment = all_dfs['tbl_trashvisualassessment']
     trashvisualassessment['tmp_row'] = trashvisualassessment.index
-    
-    trashphotodoc = all_dfs['tbl_trashphotodoc']
-    trashphotodoc['tmp_row'] = trashphotodoc.index
 
 
     trashsiteinfo_args = {
@@ -98,15 +95,15 @@ def trash(all_dfs):
         "error_message": ""
     }
 
-    trashphotodoc_args = {
-        "dataframe": trashphotodoc,
-        "tablename": 'tbl_trashphotodoc',
-        "badrows": [],
-        "badcolumn": "",
-        "error_type": "",
-        "is_core_error": False,
-        "error_message": ""
-    }
+    # trashphotodoc_args = {
+    #     "dataframe": trashphotodoc,
+    #     "tablename": 'tbl_trashphotodoc',
+    #     "badrows": [],
+    #     "badcolumn": "",
+    #     "error_type": "",
+    #     "is_core_error": False,
+    #     "error_message": ""
+    # }
     
     print(" after args")
 
