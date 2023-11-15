@@ -102,8 +102,8 @@ def schema():
         return render_template('schema.html', metadata=return_object, datatype=datatype, authorized=authorized, dl_filename=dl_filename)
         
     # only executes if "datatypes" not given
-    datatypes_list = current_app.datasets.keys()
-    return render_template('schema.html', datatypes_list=datatypes_list, authorized=authorized, dl_filename=dl_filename)
+    datatypes = current_app.datasets
+    return render_template('schema.html', datatypes=datatypes, authorized=authorized, dl_filename=dl_filename)
 
 @admin.route('/column-order', methods = ['GET','POST'])
 def column_order():
