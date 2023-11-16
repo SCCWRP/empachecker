@@ -64,6 +64,10 @@ def trash(all_dfs):
     trashvisualassessment = all_dfs['tbl_trashvisualassessment']
     trashvisualassessment['tmp_row'] = trashvisualassessment.index
 
+    #aria - i added this in since there was no df for tbl_trashsamplearea
+    trashsamplearea = all_dfs['tbl_trashsamplearea']
+    trashsamplearea['tmp_row'] = trashsamplearea.index
+
 
     trashsiteinfo_args = {
         "dataframe": trashsiteinfo,
@@ -95,6 +99,17 @@ def trash(all_dfs):
         "error_message": ""
     }
 
+    #Aria - I added this in since there was no df for tbl_trashsamplearea
+    trashsamplearea_args = {
+        "dataframe": trashsamplearea,
+        "tablename": 'tbl_trashsamplearea',
+        "badrows": [],
+        "badcolumn": "",
+        "error_type": "",
+        "is_core_error": False,
+        "error_message": ""
+    }
+
     # trashphotodoc_args = {
     #     "dataframe": trashphotodoc,
     #     "tablename": 'tbl_trashphotodoc',
@@ -113,6 +128,69 @@ def trash(all_dfs):
     #--------------------------------------------------------------------------------------------------------------------#
     ###################################################################################################################### 
 
+    print("# LOGIC CHECK - 2")
+    # Description: The number of quadrats listed in trashsiteinfo should have corresponding row in trashsamplearea
+    # Created Coder: Aria Askaryar  
+    # Created Date: 11/15/2023
+    # Last Edited Date: 11/15/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (11/15/2023): Aria - Created logic check 2
+
+    # print("Aria start here ")
+    # print(trashsiteinfo.columns)
+    # #trashsiteinfo columns: ['projectid', 'siteid', 'estuaryname', 'sampledate', 'stationno','starttime', 'endtime', 'numberofquadrats', 'transect','transectlength', 'fieldcrew', 'comments',
+    # print(trashsamplearea.columns)
+    # #trashsamplearea columns: ['projectid', 'siteid', 'estuaryname', 'stationno', 'sampledate','transect', 'crossrackline', 'quadrat', 'trash', 'habitat', 'latitude','longitude', 'datum_latlon', 'comments']
+
+    # shared_pk = ["projectid","siteid","stationno","sampledate","transect"]
+    # max_quadrats = trashsamplearea.groupby(shared_pk)['quadrat'].max().reset_index(name='max_quadrat')
+
+    # # Merge this with trashsiteinfo
+    # check_df = pd.merge(
+    #     trashsiteinfo,
+    #     max_quadrats,
+    #     on=shared_pk + ['transect'],
+    #     how='left',
+    #     suffixes=('', '_max')
+    # )
+
+    # # Check for mismatches where numberofquadrats in trashsiteinfo doesn't match the counted quadrats in trashsamplearea
+    # check_df['mismatch'] = check_df['numberofquadrats'] != check_df['max_quadrats']
+    # mismatched_rows = check_df[check_df['mismatch']]
+
+    # errs.append( 
+    #     checkData(
+    #         tablename='tbl_trashsiteinfo',
+    #         badrows= mismatched_rows.tmp_row.tolist(),
+    #         badcolumn='numberofquadrats',
+    #         error_type='Undefined Error',
+    #         error_message="The number of quadrats listed in trashsiteinfo should have corresponding row in trashsamplearea"
+    #         )
+    # )
+    print("# END LOGIC CHECK - 2")
+
+    print("# LOGIC CHECK - 3")
+    # Description: If trash is 'Yes' in trashsamplearea, then information should exist in trashquadrattally – at least one row
+    # Created Coder: Aria Askaryar
+    # Created Date: 11/14/23
+    # Last Edited Date: 11/14/23
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (11/14/23): Aria - wrote logic check 3
+    ids_trashsamplearea_yes = set(trashsamplearea[trashsamplearea['trash'] == 'Yes'][['projectid', 'siteid', 'sampledate', 'transect', 'quadrat', 'estuaryname', 'stationno']].apply(tuple, axis=1))
+    ids_trashquadrattally = set(trashtally[['projectid', 'siteid', 'sampledate', 'transect', 'quadrat', 'estuaryname', 'stationno']].apply(tuple, axis=1))
+    missing_entries = ids_trashsamplearea_yes - ids_trashquadrattally
+    
+    errs.append(
+        checkData(
+            tablename='tbl_trashsamplearea',
+            badrows= trashsamplearea[trashsamplearea[['projectid', 'siteid', 'sampledate', 'transect', 'quadrat', 'estuaryname', 'stationno']].apply(tuple, axis=1).isin(missing_entries)].tmp_row.tolist(),
+            badcolumn='trash',
+            error_type='Undefined Error',
+            error_message='If trash is "Yes" in trashsamplearea, then information should exist in trashquadrattally.'
+        )
+    )
+
+    print("# END LOGIC CHECK - 3")
 
     ######################################################################################################################
     #--------------------------------------------------------------------------------------------------------------------#
@@ -162,10 +240,11 @@ def trash(all_dfs):
     # Description: If debriscategory contains Other then comment is required
     # Created Coder: Unknown
     # Created Date: Unknown
-    # Last Edited Date: 08/23/23
-    # Last Edited Coder: Caspian Thackeray
+    # Last Edited Date: 11/14/23
+    # Last Edited Coder: Aria Askaryar
     # NOTE (08/23/23): Copied from SMC and added formatting comments
-    
+    # NOTE (11/14/23): Aria -QA'ed check
+   
     errs.append(
         checkData(
             tablename='tbl_trashquadrattally',
@@ -401,6 +480,6 @@ def trash(all_dfs):
             )
     )
     print("# END CHECK - 14")
-    
+
     return {'errors': errs, 'warnings': warnings}
     
