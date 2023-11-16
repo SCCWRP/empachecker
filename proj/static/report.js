@@ -231,13 +231,21 @@ const buildReport = (res) => {
         tabClass = 'warnings-tab', 
         tabIDs = tabIDs
     )
-
+    
+    // display the stations visual map if applicable
     if (res.has_visual_map){
-        // display the map if applicable
+        
         document.getElementById("map-report-header")?.classList.remove("hidden")
         document.getElementById('visual-map').setAttribute('src',`/${script_root}/map/${res.submissionid}`)
     }
-  
+
+    // display the logger visual if applicable
+    let submissionType = document.getElementById('submission-type').innerText
+    if ( submissionType !== 'logger_raw' ){
+      document.getElementById('data-visual-report-header').classList.add('hidden')
+    } else {
+      document.getElementById('data-visual-report-header').classList.remove('hidden')
+    }
 
 
 

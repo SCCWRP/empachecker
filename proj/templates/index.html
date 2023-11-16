@@ -515,13 +515,7 @@
 <script src="{{url_for('static', filename='main.js')}}"></script>
 <script>
   
-  let datatypeSelect = document.getElementById('datatype-select')?.value
-  
-  if ( datatypeSelect !== 'logger_raw' ){
-    document.getElementById('data-visual-report-header').classList.add('hidden')
-  } else {
-    document.getElementById('data-visual-report-header').classList.remove('hidden')
-  }
+
   
   if (document.querySelector('input[name="filetype-selection"]') != null){
     updateSession()
