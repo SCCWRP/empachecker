@@ -1,7 +1,6 @@
-import json, os
+import os
 import pandas as pd
-from flask import current_app, Blueprint, session, g, send_file, request
-from sqlalchemy import create_engine
+from flask import current_app, Blueprint, render_template, g, send_file, request, make_response
 from itertools import chain
 
 from .core.functions import get_primary_key
@@ -18,6 +17,9 @@ def template():
     system_fields = current_app.system_fields
     datatype = request.args.get("datatype")
     template_info = current_app.datasets
+
+    if datatype is None:
+        return render_template("templates.jinja2", datasets=template_info, project_name = current_app.project_name)
 
     tables = template_info.get(datatype).get('tables')
     file_prefix = template_info.get(datatype).get('template_prefix')
@@ -151,27 +153,62 @@ def template():
     all_pkeys = list(chain(*[get_primary_key(x, eng) for x in  tables]))
     all_fkeys = list(lookup_df.column_name)
 
-    column_comment_df = pd.read_sql(
-        """
+    tables_str = ",".join([f"'{x}'" for x in tables])
+
+    print(tables_str)
+    qry = f"""
+        SELECT A.COLUMN_NAME,
+        (
+            CASE
+                
+                WHEN b.lookup_list IS NOT NULL THEN A.column_comment || ' -Use lookup list: ' || b.lookup_list 
+                ELSE A.column_comment
+            END
+        ) AS column_comment
+        FROM
+            (
             SELECT
-                cols.COLUMN_NAME AS column_name,
+                cols.TABLE_NAME AS TABLE_NAME,
+                cols.COLUMN_NAME AS COLUMN_NAME,
                 (
-                    SELECT
-                        pg_catalog.col_description ( C.oid, cols.ordinal_position :: INT ) 
-                    FROM
-                        pg_catalog.pg_class C 
-                    WHERE
-                        C.oid = ( SELECT ( '"' || cols.table_name || '"' ) :: regclass :: oid ) 
-                    AND C.relname = cols.table_name 
+                SELECT
+                    pg_catalog.col_description ( C.oid, cols.ordinal_position :: INT ) 
+                FROM
+                    pg_catalog.pg_class C 
+                WHERE
+                    C.oid = ( SELECT ( '"' || cols.TABLE_NAME || '"' ) :: regclass :: oid ) 
+                    AND C.relname = cols.TABLE_NAME 
                 ) AS column_comment 
             FROM
                 information_schema.COLUMNS cols 
-            WHERE 
-                cols.table_name IN ('{}')
-            GROUP BY column_name, column_comment
-        """.format("','".join(tables)),
-        eng
-    )
+            WHERE
+                cols.TABLE_NAME IN ( {tables_str} ) 
+            GROUP BY
+                cols.TABLE_NAME,
+                cols.COLUMN_NAME,
+                column_comment 
+            )
+            A LEFT JOIN (
+            SELECT
+                tc.TABLE_NAME,
+                kcu.COLUMN_NAME,
+                ccu.TABLE_NAME AS lookup_list 
+            FROM
+                information_schema.table_constraints AS tc
+                JOIN information_schema.key_column_usage AS kcu ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME 
+                AND tc.table_schema = kcu.table_schema
+                JOIN information_schema.constraint_column_usage AS ccu ON ccu.CONSTRAINT_NAME = tc.CONSTRAINT_NAME 
+                AND ccu.table_schema = tc.table_schema 
+            WHERE
+                tc.constraint_type = 'FOREIGN KEY' 
+                AND tc.TABLE_NAME IN ( {tables_str} ) 
+                AND ccu.TABLE_NAME LIKE'lu_%%' 
+            ) b ON A.TABLE_NAME = b.TABLE_NAME 
+            AND A.COLUMN_NAME = b.COLUMN_NAME
+    """
+    
+    print(qry)
+    column_comment_df = pd.read_sql(qry,eng)
     
     # fill missing descriptions with N/A
     column_comment_df['column_comment'] = column_comment_df['column_comment'].fillna("N/A")
@@ -236,10 +273,15 @@ def template():
     ########################################   END EXPORTING FORMATTING   ################################################################
     ######################################################################################################################################
 
+    # Make a response object to set a custom cookie
+    resp = make_response(send_file(f"{os.getcwd()}/export/routine/{file_prefix}-TEMPLATE.xlsx", as_attachment=True, download_name=f'{file_prefix}-TEMPLATE.xlsx'))
+    
+    # Set a cookie to let browser know that the file has been sent
+    resp.set_cookie('template_file_sent', 'true', max_age=1)
 
     print("End Templater")
-    return send_file(f"{os.getcwd()}/export/routine/{file_prefix}-TEMPLATE.xlsx", as_attachment=True, download_name=f'{file_prefix}-TEMPLATE.xlsx')
-    
+
+    return resp
 
 
 

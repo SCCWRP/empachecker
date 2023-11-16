@@ -13,16 +13,15 @@
         }
     </style>
 
-    </style>
 </head>
 
 <body>
     <div>
-        {% if datatypes_list %}
-        {% for dtyp in datatypes_list %}
+        {% if datatypes %}
+        {% for dtyp, dtyp_info in datatypes.items() %}
         <ul>
             <li>
-                <a href="{{request.script_root}}/schema?datatype={{dtyp}}">{{dtyp}}</a>
+                <a href="{{request.script_root}}/schema?datatype={{dtyp}}">{{dtyp_info.label}}</a>
             </li>
         </ul>
         {% endfor %}
