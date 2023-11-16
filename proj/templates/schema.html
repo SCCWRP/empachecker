@@ -17,7 +17,9 @@
 
 <body>
     <div>
+        
         {% if datatypes %}
+        <h2>Table Information for each datatype</h2>
         {% for dtyp, dtyp_info in datatypes.items() %}
         <ul>
             <li>
@@ -65,9 +67,11 @@
             </div>
         </div>
         <br>
+        <a class="btn btn-primary" href="{{request.script_root}}/templater?datatype={{datatype}}" role="button"> Download a submission template </a>
+        <br>
         <button id="return-main-app"> Return to main page </button>
         <br>
-        <button id="download-schema"> Download as an Excel file </button>
+        <button id="download-schema"> Download schema information as an Excel file </button>
         <br>
         {# metadata is essentially the schema information about all tables in the datatype #}
 
