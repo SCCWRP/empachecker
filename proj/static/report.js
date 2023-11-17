@@ -231,10 +231,10 @@ const buildReport = (res) => {
         tabClass = 'warnings-tab', 
         tabIDs = tabIDs
     )
+
     
     // display the stations visual map if applicable
     if (res.has_visual_map){
-        
         document.getElementById("map-report-header")?.classList.remove("hidden")
         document.getElementById('visual-map').setAttribute('src',`/${script_root}/map/${res.submissionid}`)
     }

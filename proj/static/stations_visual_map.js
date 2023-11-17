@@ -82,7 +82,7 @@ require([
             }
         };
 
-        if (sitesData !== 'None'){
+        if (typeof sitesData !== 'undefined' && sitesData !== 'None'){
             for (let i = 0; i < sitesData.length; i++){
                 let coord = {
                     type: 'point',
@@ -171,7 +171,7 @@ require([
         };
         
 
-        if (catchmentsData !== 'None'){
+        if (typeof catchmentsData !== 'undefined' && catchmentsData !== 'None'){
             for (let i = 0; i < catchmentsData.length; i++){
                 let coord = {
                     type: 'polygon',
