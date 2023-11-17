@@ -2,7 +2,7 @@
 
 from inspect import currentframe
 from flask import current_app, g
-from .functions import checkData
+from .functions import checkData, check_consecutiveness,get_primary_key
 import re
 import pandas as pd
 import datetime as dt
@@ -67,6 +67,11 @@ def trash(all_dfs):
     #aria - i added this in since there was no df for tbl_trashsamplearea
     trashsamplearea = all_dfs['tbl_trashsamplearea']
     trashsamplearea['tmp_row'] = trashsamplearea.index
+
+    trashsiteinfo_pkey = get_primary_key('tbl_trashsiteinfo', g.eng)
+    trashsamplearea_pkey = get_primary_key('tbl_trashsamplearea', g.eng)
+    trashtally_pkey = get_primary_key('tbl_trashquadrattally', g.eng)
+    site_area_shared_pkey =  [x for x in trashsiteinfo_pkey if x in trashsamplearea_pkey]
 
 
     trashsiteinfo_args = {
@@ -170,27 +175,49 @@ def trash(all_dfs):
     print("# END LOGIC CHECK - 2")
 
     print("# LOGIC CHECK - 3")
+    # Description: quadrat must be consecutive within primary keys ('projectid','siteid','sampledate','quadrat','stationno','estuaryname','transect')
+    # Created Coder: Ayah Halabi  
+    # Created Date: 11/16/2023
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    trashsamplearea_pkey_filter = [x for x in trashsiteinfo_pkey if x !='quadrat']
+    errs.append(
+        checkData(
+            tablename='tbl_trashsamplearea',
+            badrows= check_consecutiveness(trashsamplearea,trashsamplearea_pkey_filter,'quadrat'),
+            badcolumn='comments',
+            error_type='Undefined Error',
+            error_message=f"quadrat values must be consecutive in tbl_trashsamplearea. Records are grouped by {','.join(trashsamplearea_pkey)}"
+        )
+    )
+    
+
+    print("# END LOGIC CHECK - 3")
+
+    print("# LOGIC CHECK - 4")
     # Description: If trash is 'Yes' in trashsamplearea, then information should exist in trashquadrattally – at least one row
     # Created Coder: Aria Askaryar
     # Created Date: 11/14/23
-    # Last Edited Date: 11/14/23
-    # Last Edited Coder: Aria Askaryar
+    # Last Edited Date: 11/16/23
+    # Last Edited Coder: Ayah Halabi
     # NOTE (11/14/23): Aria - wrote logic check 3
-    ids_trashsamplearea_yes = set(trashsamplearea[trashsamplearea['trash'] == 'Yes'][['projectid', 'siteid', 'sampledate', 'transect', 'quadrat', 'estuaryname', 'stationno']].apply(tuple, axis=1))
-    ids_trashquadrattally = set(trashtally[['projectid', 'siteid', 'sampledate', 'transect', 'quadrat', 'estuaryname', 'stationno']].apply(tuple, axis=1))
+    # NOTE (11/16/23): Ayah - primary keys were hardcoded, so I changed their format to be more dynamic
+    
+    ids_trashsamplearea_yes = set(trashsamplearea[trashsamplearea['trash'] == 'Yes'][trashsamplearea_pkey].apply(tuple, axis=1))
+    ids_trashquadrattally = set(trashtally[trashtally_pkey].apply(tuple, axis=1))
     missing_entries = ids_trashsamplearea_yes - ids_trashquadrattally
     
     errs.append(
         checkData(
             tablename='tbl_trashsamplearea',
-            badrows= trashsamplearea[trashsamplearea[['projectid', 'siteid', 'sampledate', 'transect', 'quadrat', 'estuaryname', 'stationno']].apply(tuple, axis=1).isin(missing_entries)].tmp_row.tolist(),
+            badrows= trashsamplearea[trashsamplearea[trashsamplearea_pkey].apply(tuple, axis=1).isin(missing_entries)].tmp_row.tolist(),
             badcolumn='trash',
             error_type='Undefined Error',
             error_message='If trash is "Yes" in trashsamplearea, then information should exist in trashquadrattally.'
         )
     )
 
-    print("# END LOGIC CHECK - 3")
+    print("# END LOGIC CHECK - 4")
 
     ######################################################################################################################
     #--------------------------------------------------------------------------------------------------------------------#
