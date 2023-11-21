@@ -137,9 +137,75 @@ def trash(all_dfs):
     # Description: The number of quadrats listed in trashsiteinfo should have corresponding row in trashsamplearea
     # Created Coder: Aria Askaryar  
     # Created Date: 11/15/2023
-    # Last Edited Date: 11/15/2023
-    # Last Edited Coder: Aria Askaryar
+    # Last Edited Date: 11/17/2023
+    # Last Edited Coder: Ayah
     # NOTE (11/15/2023): Aria - Created logic check 2
+    # NOTE (11/17/2023): Ayah - Finished logic Check 2
+
+    merged_df = pd.merge(trashsiteinfo,trashsamplearea, on= site_area_shared_pkey)
+    #grouped_df contains:
+    # 1.what the number of quadrats should be ('numberofquadrats':'max') <- I put max becasue they are all the same value 
+    # 2.how many rows are in each group ('quadrat': 'count') , 
+    # 3. the index of table I am checking ('tmp_row_y': list)
+    grouped_df = merged_df.groupby(site_area_shared_pkey).agg({'numberofquadrats':'max', 'quadrat': 'count', 'tmp_row_y': list}).reset_index()
+    #The output I get from grouped_df is in this from [[],[],[]] so I need to change it to [   ]
+    badrows_list = grouped_df[grouped_df['numberofquadrats'] != grouped_df['quadrat']].tmp_row_y.to_list() 
+    badrows = []
+    for i in badrows_list: 
+        badrows = badrows + i
+    badrows = sorted(badrows)
+
+    errs.append( 
+        checkData(
+            tablename='tbl_trashsamplearea',
+            badrows= badrows,
+            badcolumn='quadrat',
+            error_type='Undefined Error',
+            error_message=f"The number of quadrats listed in trashsamplearea does not match numberofquadrats in trashsiteinfor for group based on these columns {','.join(site_area_shared_pkey)}"
+            )
+    )
+
+    grouped_df = merged_df.groupby(site_area_shared_pkey).agg({'numberofquadrats':'max', 'quadrat': 'count', 'tmp_row_x': 'max'}).reset_index()
+    badrows = grouped_df[grouped_df['numberofquadrats'] != grouped_df['quadrat']].tmp_row_x.to_list()
+    badrows = sorted(badrows)
+
+    errs.append( 
+        checkData(
+            tablename='tbl_trashsiteinfo',
+            badrows= badrows,
+            badcolumn='numberofquadrats',
+            error_type='Undefined Error',
+            error_message=f"The value of numberofquadrats in trashsiteinfor does not match the total quadrats in trashsamplearea for the groups based on these columns {','.join(site_area_shared_pkey)}"
+            )
+    )
+
+    # )
+    print("# END LOGIC CHECK - 2")
+
+
+
+    print("# LOGIC CHECK - 3")
+    # Description: If trash is 'Yes' in trashsamplearea, then information should exist in trashquadrattally – at least one row
+    # Created Coder: Aria Askaryar
+    # Created Date: 11/14/23
+    # Last Edited Date: 11/16/23
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (11/14/23): Aria - wrote logic check 3
+    # NOTE (11/16/23): Ayah - primary keys were hardcoded, so I changed their format to be more dynamic
+    
+    ids_trashsamplearea_yes = set(trashsamplearea[trashsamplearea['trash'] == 'Yes'][trashsamplearea_pkey].apply(tuple, axis=1))
+    ids_trashquadrattally = set(trashtally[trashtally_pkey].apply(tuple, axis=1))
+    missing_entries = ids_trashsamplearea_yes - ids_trashquadrattally
+    
+    errs.append(
+        checkData(
+            tablename='tbl_trashsamplearea',
+            badrows= trashsamplearea[trashsamplearea[trashsamplearea_pkey].apply(tuple, axis=1).isin(missing_entries)].tmp_row.tolist(),
+            badcolumn='trash',
+            error_type='Undefined Error',
+            error_message='If trash is "Yes" in trashsamplearea, then information should exist in trashquadrattally.'
+        )
+    )
 
     # print("Aria start here ")
     # print(trashsiteinfo.columns)
@@ -171,10 +237,9 @@ def trash(all_dfs):
     #         error_type='Undefined Error',
     #         error_message="The number of quadrats listed in trashsiteinfo should have corresponding row in trashsamplearea"
     #         )
-    # )
-    print("# END LOGIC CHECK - 2")
+    print("# END LOGIC CHECK - 3")
 
-    print("# LOGIC CHECK - 3")
+    print("# LOGIC CHECK - 4")
     # Description: quadrat must be consecutive within primary keys ('projectid','siteid','sampledate','quadrat','stationno','estuaryname','transect')
     # Created Coder: Ayah Halabi  
     # Created Date: 11/16/2023
@@ -185,37 +250,12 @@ def trash(all_dfs):
         checkData(
             tablename='tbl_trashsamplearea',
             badrows= check_consecutiveness(trashsamplearea,trashsamplearea_pkey_filter,'quadrat'),
-            badcolumn='comments',
+            badcolumn='quadrat',
             error_type='Undefined Error',
             error_message=f"quadrat values must be consecutive in tbl_trashsamplearea. Records are grouped by {','.join(trashsamplearea_pkey)}"
         )
     )
     
-
-    print("# END LOGIC CHECK - 3")
-
-    print("# LOGIC CHECK - 4")
-    # Description: If trash is 'Yes' in trashsamplearea, then information should exist in trashquadrattally – at least one row
-    # Created Coder: Aria Askaryar
-    # Created Date: 11/14/23
-    # Last Edited Date: 11/16/23
-    # Last Edited Coder: Ayah Halabi
-    # NOTE (11/14/23): Aria - wrote logic check 3
-    # NOTE (11/16/23): Ayah - primary keys were hardcoded, so I changed their format to be more dynamic
-    
-    ids_trashsamplearea_yes = set(trashsamplearea[trashsamplearea['trash'] == 'Yes'][trashsamplearea_pkey].apply(tuple, axis=1))
-    ids_trashquadrattally = set(trashtally[trashtally_pkey].apply(tuple, axis=1))
-    missing_entries = ids_trashsamplearea_yes - ids_trashquadrattally
-    
-    errs.append(
-        checkData(
-            tablename='tbl_trashsamplearea',
-            badrows= trashsamplearea[trashsamplearea[trashsamplearea_pkey].apply(tuple, axis=1).isin(missing_entries)].tmp_row.tolist(),
-            badcolumn='trash',
-            error_type='Undefined Error',
-            error_message='If trash is "Yes" in trashsamplearea, then information should exist in trashquadrattally.'
-        )
-    )
 
     print("# END LOGIC CHECK - 4")
 
@@ -281,7 +321,7 @@ def trash(all_dfs):
             error_message='debriscategory field is Other (comment required). Comments field is required.'
         )
     )
-
+    print(trashtally[(trashtally.debriscategory == 'Other') & (trashtally.comments.isna())].tmp_row.tolist())
     print("# END CHECK - 4")
 
    
@@ -486,7 +526,7 @@ def trash(all_dfs):
             error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashmiscellaneous target="_blank">lu_trashmiscellaneous</a>'
         )
     )
-    print("# END CHECK - 12")
+    print("# END CHECK - 13")
 
 
     print("# CHECK - 14")
