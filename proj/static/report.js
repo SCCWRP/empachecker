@@ -241,10 +241,10 @@ const buildReport = (res) => {
 
     // display the logger visual if applicable
     let submissionType = document.getElementById('submission-type').innerText
-    if ( submissionType !== 'logger_raw' ){
-      document.getElementById('data-visual-report-header').classList.add('hidden')
-    } else {
+    if ( ['logger_formatted','logger_raw'].includes(submissionType) ){
       document.getElementById('data-visual-report-header').classList.remove('hidden')
+    } else {
+      document.getElementById('data-visual-report-header').classList.add('hidden')
     }
 
 
