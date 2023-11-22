@@ -2,7 +2,7 @@
 
 from inspect import currentframe
 from flask import current_app, g
-from .functions import checkData, check_consecutiveness,get_primary_key
+from .functions import checkData, check_consecutiveness,get_primary_key,mismatch
 import re
 import pandas as pd
 import datetime as dt
@@ -64,16 +64,22 @@ def trash(all_dfs):
     trashvisualassessment = all_dfs['tbl_trashvisualassessment']
     trashvisualassessment['tmp_row'] = trashvisualassessment.index
 
-    #aria - i added this in since there was no df for tbl_trashsamplearea
+    trashtimesearchtally = all_dfs['tbl_trashtimesearchtally']
+    trashtimesearchtally['tmp_row'] = trashtimesearchtally.index
+
     trashsamplearea = all_dfs['tbl_trashsamplearea']
     trashsamplearea['tmp_row'] = trashsamplearea.index
 
     trashsiteinfo_pkey = get_primary_key('tbl_trashsiteinfo', g.eng)
     trashsamplearea_pkey = get_primary_key('tbl_trashsamplearea', g.eng)
     trashtally_pkey = get_primary_key('tbl_trashquadrattally', g.eng)
+    trashtimesearchtally_pkey = get_primary_key('tbl_trashtimesearchtally',g.eng)
+    trashvisualassessment_pkey = get_primary_key('tbl_trashvisualassessment',g.eng)
+
     site_area_shared_pkey =  [x for x in trashsiteinfo_pkey if x in trashsamplearea_pkey]
-
-
+    visualassessment_searchtally_shared_pkey = [x for x in trashtimesearchtally_pkey if x in trashvisualassessment_pkey]
+    trashtally_trashsamplearea_shared_pkey =  [x for x in trashtally_pkey if x in trashsamplearea_pkey]
+    
     trashsiteinfo_args = {
         "dataframe": trashsiteinfo,
         "tablename": 'tbl_trashsiteinfo',
@@ -104,7 +110,6 @@ def trash(all_dfs):
         "error_message": ""
     }
 
-    #Aria - I added this in since there was no df for tbl_trashsamplearea
     trashsamplearea_args = {
         "dataframe": trashsamplearea,
         "tablename": 'tbl_trashsamplearea',
@@ -115,6 +120,7 @@ def trash(all_dfs):
         "error_message": ""
     }
 
+    
     # trashphotodoc_args = {
     #     "dataframe": trashphotodoc,
     #     "tablename": 'tbl_trashphotodoc',
@@ -132,6 +138,41 @@ def trash(all_dfs):
     #--------------------------------------------- Logic Checks ---------------------------------------------------------#
     #--------------------------------------------------------------------------------------------------------------------#
     ###################################################################################################################### 
+    print("# LOGIC CHECK - 15")
+        # Description: Recs in trashtimesearchtally must have matching records in trashvisualassessment and vise versa on shared primary keys
+        # Created Coder: Ayah Halabi
+        # Created Date: 11/21/2023
+        # Last Edited Date: 
+
+    errs.append( 
+        checkData(
+            tablename='tbl_trashtimesearchtally',
+            badrows= mismatch(trashtimesearchtally,trashvisualassessment,visualassessment_searchtally_shared_pkey),
+            badcolumn=','.join(visualassessment_searchtally_shared_pkey),
+            error_type='Undefined Error',
+            error_message=f"Records in the trashtimesearchtally should have the corresponding records in the trashvisualassessment based on these columns  {','.join(visualassessment_searchtally_shared_pkey)}"
+            )
+    )
+
+    print("# END LOGIC CHECK - 15")
+
+    print("# LOGIC CHECK - 16")
+        # Description: Recs in trashtimesearchtally must have matching records in trashvisualassessment and vise versa on shared primary keys
+        # Created Coder: Ayah Halabi
+        # Created Date: 11/21/2023
+        # Last Edited Date:
+    
+    errs.append( 
+        checkData(
+            tablename='tbl_trashvisualassessment',
+            badrows= mismatch(trashvisualassessment,trashtimesearchtally,visualassessment_searchtally_shared_pkey),
+            badcolumn=','.join(visualassessment_searchtally_shared_pkey),
+            error_type='Undefined Error',
+            error_message=f"Records in the trashvisualassessment should have the corresponding records in the trashtimesearchtally based on these columns  {','.join(visualassessment_searchtally_shared_pkey)}"
+            )
+    )
+
+    print("# END LOGIC CHECK - 16")
 
     print("# LOGIC CHECK - 2")
     # Description: The number of quadrats listed in trashsiteinfo should have corresponding row in trashsamplearea
@@ -164,6 +205,7 @@ def trash(all_dfs):
             error_message=f"The number of quadrats listed in trashsamplearea does not match numberofquadrats in trashsiteinfor for group based on these columns {','.join(site_area_shared_pkey)}"
             )
     )
+    print("# END LOGIC CHECK - 2")
 
     grouped_df = merged_df.groupby(site_area_shared_pkey).agg({'numberofquadrats':'max', 'quadrat': 'count', 'tmp_row_x': 'max'}).reset_index()
     badrows = grouped_df[grouped_df['numberofquadrats'] != grouped_df['quadrat']].tmp_row_x.to_list()
@@ -179,7 +221,7 @@ def trash(all_dfs):
             )
     )
 
-    # )
+    
     print("# END LOGIC CHECK - 2")
 
 
@@ -207,39 +249,36 @@ def trash(all_dfs):
         )
     )
 
-    # print("Aria start here ")
-    # print(trashsiteinfo.columns)
-    # #trashsiteinfo columns: ['projectid', 'siteid', 'estuaryname', 'sampledate', 'stationno','starttime', 'endtime', 'numberofquadrats', 'transect','transectlength', 'fieldcrew', 'comments',
-    # print(trashsamplearea.columns)
-    # #trashsamplearea columns: ['projectid', 'siteid', 'estuaryname', 'stationno', 'sampledate','transect', 'crossrackline', 'quadrat', 'trash', 'habitat', 'latitude','longitude', 'datum_latlon', 'comments']
-
-    # shared_pk = ["projectid","siteid","stationno","sampledate","transect"]
-    # max_quadrats = trashsamplearea.groupby(shared_pk)['quadrat'].max().reset_index(name='max_quadrat')
-
-    # # Merge this with trashsiteinfo
-    # check_df = pd.merge(
-    #     trashsiteinfo,
-    #     max_quadrats,
-    #     on=shared_pk + ['transect'],
-    #     how='left',
-    #     suffixes=('', '_max')
+    # #if trash is 'No' in trashsamplearea, then the corresponding record should have None in trashdebriscategory and debrisitem should say 'No Trash present'
+    # merged_tally_area = pd.merge(trashtally,trashsamplearea, on= trashtally_trashsamplearea_shared_pkey)
+    # badrows = merged_tally_area[(merged_tally_area['trash'] == 'No') \
+    #                             & (merged_tally_area['debrisitem'] != 'No Trash Present') \
+    #                                 & (merged_tally_area['debriscategory'] != 'None')].tmp_row_x.tolist()
+    # errs.append(
+    #     checkData(
+    #         tablename='tbl_trashquadrattally',
+    #         badrows= badrows,
+    #         badcolumn='debriscategory,debrisitem',
+    #         error_type='Undefined Error',
+    #         error_message=f"Trash is 'No' in trashsamplearea for these record, however trashdebriscategory is no 'None' and debrisitem is not 'No Trash present' for these rows based on {','.join(trashtally_trashsamplearea_shared_pkey)}."
+    #     )
+    # )
+    # badrows = merged_tally_area[(merged_tally_area['trash'] == 'No') \
+    #                             & (merged_tally_area['debrisitem'] != 'No Trash Present') \
+    #                                 & (merged_tally_area['debriscategory'] != 'None')].tmp_row_y.tolist()
+    # errs.append(
+    #     checkData(
+    #         tablename='tbl_trashsamplearea',
+    #         badrows= badrows,
+    #         badcolumn='trash',
+    #         error_type='Undefined Error',
+    #         error_message=f"Trash is indicated to be 'Yes' however Trashdebriscategory is  'None' and debrisitem is 'No Trash present' in trashquadtrally for these rows based on {','.join(trashtally_trashsamplearea_shared_pkey)}."
+    #     )
     # )
 
-    # # Check for mismatches where numberofquadrats in trashsiteinfo doesn't match the counted quadrats in trashsamplearea
-    # check_df['mismatch'] = check_df['numberofquadrats'] != check_df['max_quadrats']
-    # mismatched_rows = check_df[check_df['mismatch']]
+    # print("# END LOGIC CHECK - 3")
 
-    # errs.append( 
-    #     checkData(
-    #         tablename='tbl_trashsiteinfo',
-    #         badrows= mismatched_rows.tmp_row.tolist(),
-    #         badcolumn='numberofquadrats',
-    #         error_type='Undefined Error',
-    #         error_message="The number of quadrats listed in trashsiteinfo should have corresponding row in trashsamplearea"
-    #         )
-    print("# END LOGIC CHECK - 3")
-
-    print("# LOGIC CHECK - 4")
+    print("# LOGIC CHECK - 18")
     # Description: quadrat must be consecutive within primary keys ('projectid','siteid','sampledate','quadrat','stationno','estuaryname','transect')
     # Created Coder: Ayah Halabi  
     # Created Date: 11/16/2023
@@ -257,11 +296,11 @@ def trash(all_dfs):
     )
     
 
-    print("# END LOGIC CHECK - 4")
+    print("# END LOGIC CHECK - 18")
 
     ######################################################################################################################
     #--------------------------------------------------------------------------------------------------------------------#
-    #---------------------------------------------END OF Logic Checks 00000----------------------------------------------#
+    #--------------------------------------------- END OF Logic Checks --------------------------------------------------#
     #--------------------------------------------------------------------------------------------------------------------#
     ###################################################################################################################### 
 
