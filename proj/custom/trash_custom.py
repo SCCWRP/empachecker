@@ -138,7 +138,7 @@ def trash(all_dfs):
     #--------------------------------------------- Logic Checks ---------------------------------------------------------#
     #--------------------------------------------------------------------------------------------------------------------#
     ###################################################################################################################### 
-    print("# LOGIC CHECK - 15")
+    print("# LOGIC CHECK - 1")
         # Description: Recs in trashtimesearchtally must have matching records in trashvisualassessment and vise versa on shared primary keys
         # Created Coder: Ayah Halabi
         # Created Date: 11/21/2023
@@ -154,7 +154,7 @@ def trash(all_dfs):
             )
     )
 
-    print("# END LOGIC CHECK - 15")
+    print("# END LOGIC CHECK - 1")
 
     print("# LOGIC CHECK - 16")
         # Description: Recs in trashtimesearchtally must have matching records in trashvisualassessment and vise versa on shared primary keys
@@ -205,7 +205,7 @@ def trash(all_dfs):
             error_message=f"The number of quadrats listed in trashsamplearea does not match numberofquadrats in trashsiteinfor for group based on these columns {','.join(site_area_shared_pkey)}"
             )
     )
-    print("# END LOGIC CHECK - 2")
+
 
     grouped_df = merged_df.groupby(site_area_shared_pkey).agg({'numberofquadrats':'max', 'quadrat': 'count', 'tmp_row_x': 'max'}).reset_index()
     badrows = grouped_df[grouped_df['numberofquadrats'] != grouped_df['quadrat']].tmp_row_x.to_list()
@@ -224,59 +224,87 @@ def trash(all_dfs):
     
     print("# END LOGIC CHECK - 2")
 
-
-
     print("# LOGIC CHECK - 3")
+
+    #Aria's code
     # Description: If trash is 'Yes' in trashsamplearea, then information should exist in trashquadrattally – at least one row
     # Created Coder: Aria Askaryar
     # Created Date: 11/14/23
     # Last Edited Date: 11/16/23
     # Last Edited Coder: Ayah Halabi
-    # NOTE (11/14/23): Aria - wrote logic check 3
-    # NOTE (11/16/23): Ayah - primary keys were hardcoded, so I changed their format to be more dynamic
-    
-    ids_trashsamplearea_yes = set(trashsamplearea[trashsamplearea['trash'] == 'Yes'][trashsamplearea_pkey].apply(tuple, axis=1))
-    ids_trashquadrattally = set(trashtally[trashtally_pkey].apply(tuple, axis=1))
-    missing_entries = ids_trashsamplearea_yes - ids_trashquadrattally
-    
-    errs.append(
-        checkData(
-            tablename='tbl_trashsamplearea',
-            badrows= trashsamplearea[trashsamplearea[trashsamplearea_pkey].apply(tuple, axis=1).isin(missing_entries)].tmp_row.tolist(),
-            badcolumn='trash',
-            error_type='Undefined Error',
-            error_message='If trash is "Yes" in trashsamplearea, then information should exist in trashquadrattally.'
-        )
-    )
+    # NOTE (11/16/2023) Pkeys were hardcoded so I changed them to the dynamic form - Ayah 
+   
+    # ids_trashsamplearea_yes = set(trashsamplearea[trashsamplearea['trash'] == 'Yes'][trashsamplearea_pkey].apply(tuple, axis=1))
+    # ids_trashquadrattally = set(trashtally[trashtally_pkey].apply(tuple, axis=1))
+    # missing_entries = ids_trashsamplearea_yes - ids_trashquadrattally
 
-    # #if trash is 'No' in trashsamplearea, then the corresponding record should have None in trashdebriscategory and debrisitem should say 'No Trash present'
-    # merged_tally_area = pd.merge(trashtally,trashsamplearea, on= trashtally_trashsamplearea_shared_pkey)
-    # badrows = merged_tally_area[(merged_tally_area['trash'] == 'No') \
-    #                             & (merged_tally_area['debrisitem'] != 'No Trash Present') \
-    #                                 & (merged_tally_area['debriscategory'] != 'None')].tmp_row_x.tolist()
-    # errs.append(
-    #     checkData(
-    #         tablename='tbl_trashquadrattally',
-    #         badrows= badrows,
-    #         badcolumn='debriscategory,debrisitem',
-    #         error_type='Undefined Error',
-    #         error_message=f"Trash is 'No' in trashsamplearea for these record, however trashdebriscategory is no 'None' and debrisitem is not 'No Trash present' for these rows based on {','.join(trashtally_trashsamplearea_shared_pkey)}."
-    #     )
-    # )
-    # badrows = merged_tally_area[(merged_tally_area['trash'] == 'No') \
-    #                             & (merged_tally_area['debrisitem'] != 'No Trash Present') \
-    #                                 & (merged_tally_area['debriscategory'] != 'None')].tmp_row_y.tolist()
     # errs.append(
     #     checkData(
     #         tablename='tbl_trashsamplearea',
-    #         badrows= badrows,
+    #         badrows= trashsamplearea[trashsamplearea[trashsamplearea_pkey].apply(tuple, axis=1).isin(missing_entries)].tmp_row.tolist(),
     #         badcolumn='trash',
     #         error_type='Undefined Error',
-    #         error_message=f"Trash is indicated to be 'Yes' however Trashdebriscategory is  'None' and debrisitem is 'No Trash present' in trashquadtrally for these rows based on {','.join(trashtally_trashsamplearea_shared_pkey)}."
+    #         error_message='If trash is "Yes" in trashsamplearea, then information should exist in trashquadrattally.'          
     #     )
     # )
 
-    # print("# END LOGIC CHECK - 3")
+    #I will ask duy about this on 11/28/2023
+    ## Description: trashsamplearea should have matching records in trashquadrattally
+    ## Created Coder: Ayah Halabi
+    ## Created Date: 11/21/2023
+    ## Last Edited Date:
+
+    errs.append( 
+        checkData(
+            tablename='tbl_trashsamplearea',
+            badrows= mismatch(trashsamplearea,trashtally,trashtally_trashsamplearea_shared_pkey ),
+            badcolumn=','.join(trashtally_trashsamplearea_shared_pkey ),
+            error_type='Undefined Error',
+            error_message=f"Records in the trashsamplearea should have the corresponding records in the trashquadrattally based on these columns  {','.join(trashtally_trashsamplearea_shared_pkey )}"
+            )
+    )
+
+    print("# END LOGIC CHECK - 3")    
+
+
+
+    print("# LOGIC CHECK - 17")
+    # Description: if trash is 'No' in trashsamplearea, then the corresponding record should have None in trashdebriscategory and debrisitem should say 'No Trash present'
+    # Created Coder:  Ayah Halabi
+    # Created Date: 11/20/23
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (11/14/23): Aria - wrote logic check 3
+    # NOTE (11/16/23): Ayah - primary keys were hardcoded, so I changed their format to be more dynamic
+    # NOTE (11/22/2023): Ayah - check changed completely so had to be redone. 
+    
+    merged_tally_area = pd.merge(trashtally,trashsamplearea, on= trashtally_trashsamplearea_shared_pkey)
+    badrows = merged_tally_area[(merged_tally_area['trash'] == 'No') \
+                                & (merged_tally_area['debrisitem'] != 'No Trash Present') \
+                                    & (merged_tally_area['debriscategory'] != 'None')].tmp_row_x.tolist()
+    errs.append(
+        checkData(
+            tablename='tbl_trashquadrattally',
+            badrows= badrows,
+            badcolumn='debriscategory,debrisitem',
+            error_type='Undefined Error',
+            error_message=f"Trash is 'No' in trashsamplearea for these record, however trashdebriscategory is not 'None' and debrisitem is not 'No Trash present' for these rows based on {','.join(trashtally_trashsamplearea_shared_pkey)}."
+        )
+    )
+    badrows = merged_tally_area[(merged_tally_area['trash'] == 'No') \
+                                & (merged_tally_area['debrisitem'] != 'No Trash Present') \
+                                    & (merged_tally_area['debriscategory'] != 'None')].tmp_row_y.tolist()
+    errs.append(
+        checkData(
+            tablename='tbl_trashsamplearea',
+            badrows= badrows,
+            badcolumn='trash',
+            error_type='Undefined Error',
+            error_message=f"Trash is 'No' in trashsamplearea for these record, however trashdebriscategory is not 'None' and debrisitem is not 'No Trash present' for these rows based on {','.join(trashtally_trashsamplearea_shared_pkey)}."
+        )
+    )
+
+    print("# END LOGIC CHECK - 17")
 
     print("# LOGIC CHECK - 18")
     # Description: quadrat must be consecutive within primary keys ('projectid','siteid','sampledate','quadrat','stationno','estuaryname','transect')
@@ -587,5 +615,44 @@ def trash(all_dfs):
     )
     print("# END CHECK - 14")
 
+    ######################################################################################################################
+    #--------------------------------------------------------------------------------------------------------------------#
+    #----------------------------------------------- Trash Time Search Tally --------------------------------------------#
+    #--------------------------------------------------------------------------------------------------------------------#
+    ######################################################################################################################
+    # Description: Either resulttotal or resulttotaltext needs to be filled in
+    # Created Coder: Ayah
+    # Created Date: 11/22/2023
+    # Last Edited Date: 
+    # Last Edited Coder:
+    print("# END CHECK - 19")
+    errs.append( 
+        checkData(
+            tablename='tbl_trashtimesearchtally',
+            badrows=trashtimesearchtally[(trashtimesearchtally['resulttotal'].isna()) & (trashtimesearchtally['resulttotaltext'].isna())].tmp_row.tolist(),
+            badcolumn='resulttotal, resulttotaltext',
+            error_type='Missing value Error',
+            error_message=" Both resulttotal and resulttotaltext cannot be empty, please indicate a value in one or the other"
+            )
+    )
+    print("# END CHECK - 19")
+    
+    # Description: Either resulttotal or resulttotaltext needs to be filled in
+    # Created Coder: Ayah
+    # Created Date: 11/22/2023
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    print("# END CHECK - 20")
+    errs.append( 
+        checkData(
+            tablename='tbl_trashtimesearchtally',
+            badrows=trashtimesearchtally[(trashtimesearchtally['width'] <0) &  (trashtimesearchtally['width']!= -88)].tmp_row.tolist(),
+            badcolumn='width',
+            error_type='Sign Error',
+            error_message=" Width must be non-negative"
+            )
+    )
+    print("# END CHECK - 20")
+    
     return {'errors': errs, 'warnings': warnings}
     
