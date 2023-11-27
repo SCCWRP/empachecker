@@ -227,27 +227,6 @@ def logger_raw(all_dfs):
     errs = [*errs, checkData(**args)]
     print("check ran - logger_ctd_data - raw_salinity")
 
-    # # # Need to add not null checks for the measurement columns
-    # print('Begin check 10')
-    # # Description: If sensortype is CTD, then raw_pressure should be filled and raw_pressure_unit should be cmh2o
-    # # Created Coder: NA
-    # # Created Date: NA
-    # # Last Edited Date: 10/17/2023
-    # # Last Edited Coder: Ayah
-    # # NOTE (10/13/2023): Ayah edited check 
-    # args.update({
-    #     "dataframe": logger,
-    #     "tablename": "tbl_wq_logger_raw",
-    #     "badrows":logger[
-    #         (logger['sensortype'] == 'CTD') & (logger['raw_pressure'].isna() | logger['raw_pressure_unit']!= "cmH2O")
-    #     ].tmp_row.tolist(),
-    #     "badcolumn": "sensortype,raw_pressure,raw_pressure_unit",
-    #     "error_type" : "Unknown Error",
-    #     "error_message" : 'Since sensortype is CTD, raw_pressure should not be empty and raw_pressure_units must be "cmH2O"'
-    # })
-    # errs = [*errs, checkData(**args)]
-
-    print("check ran - wqlogger - pressure_cmh2o")
     print("...End CTD data checks.")
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
@@ -269,15 +248,16 @@ def logger_raw(all_dfs):
     # # Last Edited Date: 10/17/2023
     # # Last Edited Coder: Ayah
     # # NOTE (10/13/2023): Ayah edited check 
+    # lu_pressure_unit = pd.read_sql("SELECT * FROM lu_pressure_unit;",g.eng)
     # args.update({
     #     "dataframe": logger,
     #     "tablename": "tbl_wq_logger_raw",
     #     "badrows":logger[
-    #         (logger['sensortype'] == 'troll') & (logger['raw_pressure'].isna() | logger['raw_pressure_unit']!= "cmH2O")
+    #         (logger['sensortype'] == 'troll') & (logger['raw_pressure'].isna() | ~logger['raw_pressure_unit'].isin(lu_pressure_unit))
     #     ].tmp_row.tolist(),
     #     "badcolumn": "sensortype,raw_pressure,raw_pressure_unit",
     #     "error_type" : "Unknown Error",
-    #     "error_message" : 'Since sensortype is Troll, raw_pressure should not be empty and raw_pressure_units must be "cmH2O"'
+    #     "error_message" : 'Since sensortype is Troll, raw_pressure and raw_pressure_unit should contain a value'
     # })
     # errs = [*errs, checkData(**args)]
 
@@ -388,16 +368,16 @@ def logger_raw(all_dfs):
     # Last Edited Date: 11/02/2023
     # Last Edited Coder: Ayah
     # NOTE (10/13/2023): Ayah edited check
-    # args.update({
-    #     "dataframe": logger,
-    #     "tablename": "tbl_wq_logger_raw",
-    #     "badrows":logger[(logger['raw_pressure'] < 50 | logger['raw_pressure'] > 6000) & (logger['raw_pressure_unit'] == 'cmH2O') ].tmp_row.tolist(),
-    #     "badcolumn": "raw_pressure",
-    #     "error_type" : "Value out of range",
-    #     "error_message" : "Your raw_pressure values are out of range. The values must be in centimeters."
-    # })
-    # errs = [*errs, checkData(**args)]
-    # print("check ran - wqlogger - pressure_cmh2o")
+    args.update({
+        "dataframe": logger,
+        "tablename": "tbl_wq_logger_raw",
+        "badrows":logger[((logger['raw_pressure'] < 50) | (logger['raw_pressure'] > 6000)) & (logger['raw_pressure_unit'] == 'cmH2O') ].tmp_row.tolist(),
+        "badcolumn": "raw_pressure",
+        "error_type" : "Value out of range",
+        "error_message" : "Your raw_pressure values are out of range. The values must be in centimeters."
+    })
+    errs = [*errs, checkData(**args)]
+    print("check ran - wqlogger - pressure_cmh2o")
 
 
 

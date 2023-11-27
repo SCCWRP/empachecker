@@ -34,7 +34,7 @@ require([
     Query
     ) {
 
-    fetch(`/checker/getmapinfo`, {
+    fetch(`/${script_root}/getmapinfo`, {
         method: 'POST'
     }).then(function (response) 
         {return response.json()
@@ -44,6 +44,7 @@ require([
         const catchmentsData = data['catchments']['features']
         const arcGISAPIKey = data['arcgis_api_key']
         
+
         esriConfig.apiKey = arcGISAPIKey
         
         const map = new Map({
