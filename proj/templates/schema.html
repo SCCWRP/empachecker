@@ -6,29 +6,80 @@
     <title>Table Information</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <style>
-        .table td,
-        .table th {
+        {% if datatypes %}
+        body {
+            font-family: Arial, sans-serif;
+            background: url({{url_for('static',filename='lake.png')}}) no-repeat center center fixed;
+            background-size: cover;
+            margin: 0;
+            padding-top: 50px; /* Adjust this value as needed */
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: auto; /* Add scroll if content is larger than screen */
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 5px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            margin: 20px auto;
+        }
+
+        .title {
+            font-size: 32px;
+            color: #333;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Slight shadow for readability */
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .list-group-item {
+            background-color: transparent;
+            border: none;
+            padding-left: 0;
+        }
+
+        .list-group-item a {
+            color: #007bff;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .list-group-item:hover a {
+            text-decoration: underline;
+        }
+
+        .list-group {
+            border-top: 3px solid #333; /* Bold line at the top of the list */
+            padding: 0;
+        }
+
+        {% endif %}
+
+        .table td, .table th {
             border: 1px solid #ddd;
-            /* Light grey border */
         }
     </style>
 
 </head>
 
 <body>
-    <div>
-        
-        {% if datatypes %}
-        <h2>Table Information for each datatype</h2>
-        {% for dtyp, dtyp_info in datatypes.items() %}
-        <ul>
-            <li>
-                <a href="{{request.script_root}}/schema?datatype={{dtyp}}">{{dtyp_info.label}}</a>
-            </li>
+    {% if datatypes %}
+    <div class = "container">
+        <h2 class="title">Table Information for each datatype</h2>
+        <ul class="list-group">
+            {% for dtyp, dtyp_info in datatypes.items() %}
+                <li  class="list-group-item">
+                    <a href="{{request.script_root}}/schema?datatype={{dtyp}}">{{dtyp_info.label}}</a>
+                </li>
+            {% endfor %}
         </ul>
-        {% endfor %}
-        {% else %}
     </div>
+    {% else %}
     <div class="container d-flex flex-column align-items-center justify-content-center">
         <h1>Schema Information for {{datatype}}</h1>
         <br>
@@ -43,8 +94,8 @@
             <div id="logoutSection"></div>
 
             <!-- Modal -->
-            <div class="modal fade" id="adminPasswordModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-                aria-hidden="true">
+            <div class="modal fade" id="adminPasswordModal" tabindex="-1" role="dialog"
+                aria-labelledby="exampleModalLabel" aria-hidden="true">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -67,7 +118,8 @@
             </div>
         </div>
         <br>
-        <a class="btn btn-primary" href="{{request.script_root}}/templater?datatype={{datatype}}" role="button"> Download a submission template </a>
+        <a class="btn btn-primary" href="{{request.script_root}}/templater?datatype={{datatype}}" role="button">
+            Download a submission template </a>
         <br>
         <button id="return-main-app"> Return to main page </button>
         <br>
@@ -201,7 +253,7 @@
                         if (isEditable) {
                             descriptionCell.setAttribute('contenteditable', 'true');
                             descriptionCell.style.backgroundColor = "#EFEFEF";
-                            
+
                             // Store the initial content to compare later
                             var initialContent = descriptionCell.innerText.trim();
 
@@ -217,8 +269,8 @@
 
                                 // get description
                                 var newValue = this.innerText.trim();
-              
-                                if (newValue !== initialContent){
+
+                                if (newValue !== initialContent) {
                                     initialContent = newValue
                                     // Prepare the data to send in the fetch call
                                     var updateData = {
@@ -247,7 +299,7 @@
                             });
                         } else {
                             descriptionCell.removeAttribute('contenteditable');
-                            descriptionCell.style.backgroundColor = ""; 
+                            descriptionCell.style.backgroundColor = "";
                         }
                     }
                 });
