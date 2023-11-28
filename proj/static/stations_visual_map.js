@@ -34,7 +34,7 @@ require([
     Query
     ) {
 
-    fetch(`/checker/getmapinfo`, {
+    fetch(`/${script_root}/getmapinfo`, {
         method: 'POST'
     }).then(function (response) 
         {return response.json()
@@ -44,6 +44,7 @@ require([
         const catchmentsData = data['catchments']['features']
         const arcGISAPIKey = data['arcgis_api_key']
         
+
         esriConfig.apiKey = arcGISAPIKey
         
         const map = new Map({
@@ -82,7 +83,7 @@ require([
             }
         };
 
-        if (sitesData !== 'None'){
+        if (typeof sitesData !== 'undefined' && sitesData !== 'None'){
             for (let i = 0; i < sitesData.length; i++){
                 let coord = {
                     type: 'point',
@@ -171,7 +172,7 @@ require([
         };
         
 
-        if (catchmentsData !== 'None'){
+        if (typeof catchmentsData !== 'undefined' && catchmentsData !== 'None'){
             for (let i = 0; i < catchmentsData.length; i++){
                 let coord = {
                     type: 'polygon',

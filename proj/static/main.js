@@ -191,6 +191,11 @@
             let plotHeight = plotWidth * 0.75;
 
             // technically the resetPlot function should work also when drawing the plot for the first time
+            // Duy (11/16/23): When drawing the plot for the first time, there is no active logger-visual-tab-button
+            // So, this document.querySelector('.logger-visual-tab-button.active') returns null on line 234
+            // which leads to an error when we try to access the datasets property on line 236
+            // Maybe we can set the first element of the list to be active
+            document.getElementsByClassName('logger-visual-tab-button')[0].classList.add('active')
             resetPlot()
 
 

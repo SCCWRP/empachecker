@@ -1,5 +1,4 @@
 {
-    console.log("Hello world")
     // This is for the select dropdowns that are not dependent on other select items
     Array.from(document.querySelectorAll('select.dynamic-select-item[data-index]')).forEach(async function(elem, i, arr) {
         
