@@ -453,11 +453,11 @@ def vegetation(all_dfs):
 
     print("# CHECK - 14")
     # Description: If burrows is "yes" then entered abundance must be greater than or equal to 0 and cannot be -88
-    # Created Coder:
+    # Created Coder: Caspian
     # Created Date:
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE (Date):
+    # Last Edited Date: 10/2/2023
+    # Last Edited Coder: Caspian
+    # NOTE (Date): Caspian created this check
     args.update({
         "dataframe": epidata,
         "tablename": "tbl_epifauna_data",
@@ -476,6 +476,51 @@ def vegetation(all_dfs):
     # ------------------------------------------------ END OF Epifauna Data  Checks ------------------------------------ #
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ BEGIN cordgrass checks ------------------------------------------ #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+
+
+    print("# CHECK - 17")
+    # Description: If scientificname in tbl_vegetativecover_data = Spartina foliosa, then at least 1 record expected in tbl_cordgrass
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date:
+    # Last Edited Coder:
+    # NOTE (Date):
+
+    print("# END OF CHECK - 17")
+
+
+    print("# CHECK - 18")
+    # Description: If total_stems < 10, then the number of heights should equal the number of stems; If total_stems > 10, then 10 heights expected.
+    # Created Coder:
+    # Created Date:
+    # Last Edited Date:
+    # Last Edited Coder:
+    # NOTE (Date):
+
+    print("# END OF CHECK - 18")
+
+
+
+
+
+
+
+
+    ######################################################################################################################
+    # ------------------------------------------------------------------------------------------------------------------ #
+    # ------------------------------------------------ END cordgrass checks -------------------------------------------- #
+    # ------------------------------------------------------------------------------------------------------------------ #
+    ######################################################################################################################
+        
 
 
     return {'errors': errs, 'warnings': warnings}
