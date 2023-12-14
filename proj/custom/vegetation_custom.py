@@ -3,6 +3,7 @@
 from inspect import currentframe
 from flask import current_app, g
 import pandas as pd
+import numpy as np 
 from .functions import checkData, checkLogic, mismatch,get_primary_key, check_consecutiveness
 print('before vegatation funcntion')
 
@@ -28,18 +29,23 @@ def vegetation(all_dfs):
     vegmeta = all_dfs['tbl_vegetation_sample_metadata']
     vegdata = all_dfs['tbl_vegetativecover_data']
     epidata = all_dfs['tbl_epifauna_data']
+    cordgrass = all_dfs['tbl_cordgrass']
 
     vegmeta['tmp_row'] = vegmeta.index
     vegdata['tmp_row'] = vegdata.index
     epidata['tmp_row'] = epidata.index
+    cordgrass['tmp_row'] = cordgrass.index
 
     vegmeta_pkey = get_primary_key('tbl_vegetation_sample_metadata',g.eng)
     vegdata_pkey = get_primary_key('tbl_vegetativecover_data',g.eng)
     epidata_pkey = get_primary_key('tbl_epifauna_data',g.eng)
+    cordgrass_pkey = get_primary_key('tbl_cordgrass', g.eng)
 
     vegmeta_vegdata_shared_pkey = [x for x in vegmeta_pkey if x in vegdata_pkey]
     vegdata_vegmeta_shared_pkey = [x for x in vegdata_pkey if x in vegmeta_pkey]
     epidata_vegmata_shareed_pkey = [x for x in epidata_pkey if x in vegmeta_pkey]
+    #cordgrass_vegmeta_shareed_pkey = [x for x in cordgrass_pkey if x in vegmeta_pkey]
+    cordgrass_vegdata_shareed_pkey = [x for x in cordgrass_pkey if x in vegdata_pkey]
 
 
     errs = []
@@ -489,38 +495,70 @@ def vegetation(all_dfs):
 
     print("# CHECK - 17")
     # Description: If scientificname in tbl_vegetativecover_data = Spartina foliosa, then at least 1 record expected in tbl_cordgrass
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date:
-    # Last Edited Coder:
-    # NOTE (Date):
+    # Created Coder: Aria Askaryar
+    # Created Date: 12/13/2023
+    # Last Edited Date: 12/13/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (12/13/2023): Aria - Ran through QA process and updated Doc
+    filtered_vegdata = vegdata[(vegdata['scientificname'] == 'Spartina foliosa')]
+    
+    args.update({
+        "dataframe": vegdata,
+        "tablename": "tbl_vegetativecover_data",
+        "badrows": mismatch(filtered_vegdata, cordgrass, cordgrass_vegdata_shareed_pkey), 
+        "badcolumn": ','.join(cordgrass_vegdata_shareed_pkey),
+        "error_type" : "Logic Error",
+        "error_message" : 'If scientificname in tbl_vegetativecover_data = Spartina foliosa, then at least 1 record is expected to be in tbl_cordgrass based on these columns {}'.format(
+            ','.join(cordgrass_vegdata_shareed_pkey))
+    })
+    errs = [*errs, checkData(**args)]
 
     print("# END OF CHECK - 17")
 
-
     print("# CHECK - 18")
     # Description: If total_stems < 10, then the number of heights should equal the number of stems; If total_stems > 10, then 10 heights expected.
-    # Created Coder:
-    # Created Date:
-    # Last Edited Date:
-    # Last Edited Coder:
-    # NOTE (Date):
+    # Created Coder: Aria Askaryar
+    # Created Date: 12/13/2023
+    # Last Edited Date: 12/13/2023
+    # Last Edited Coder: Aria Askaryar
+    # NOTE (12/13/2023): Aria - Ran through QA process and updated Doc
+    
+    def totalstems_match_hieghts(df):
+        bad_rows = []
+        for index, row in df.iterrows():
+            if row['total_stems'] >= 10:
+                for i in range(1, 11):
+                    column_name = f'plantheight_cm_{i}'
+                    if pd.isna(row[column_name]):
+                        bad_rows.append(index)
+                        break  
+            elif row['total_stems'] < 10 and np.isfinite(row['total_stems']):
+                total_stems_int = int(row['total_stems'])
+                for i in range(total_stems_int + 1, 11):
+                    column_name = f'plantheight_cm_{i}'
+                    if not pd.isna(row[column_name]):
+                        bad_rows.append(index)
+                        break  
+        return bad_rows
+
+
+    args.update({
+        "dataframe": cordgrass,
+        "tablename": "tbl_cordgrass",
+        # "badrows": cordgrass[(cordgrass['total_stems'] < 10) | (cordgrass['total_stems'] > 10)].tmp_row.tolist(),
+        "badrows": totalstems_match_hieghts(cordgrass),
+        "badcolumn": 'total_stems',
+        "error_type" : "Logic Error",
+        "error_message" : 'If total_stems < 10 then the corresponding hieght columns must match the total_stems value, or if total_stems >= 10 then all 10 hieght columns must be filled out.'
+    })
+    errs = [*errs, checkData(**args)]
 
     print("# END OF CHECK - 18")
-
-
-
-
-
-
-
-
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
     # ------------------------------------------------ END cordgrass checks -------------------------------------------- #
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
         
-
 
     return {'errors': errs, 'warnings': warnings}
