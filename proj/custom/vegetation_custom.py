@@ -519,33 +519,18 @@ def vegetation(all_dfs):
     # Description: If total_stems < 10, then the number of heights should equal the number of stems; If total_stems > 10, then 10 heights expected.
     # Created Coder: Aria Askaryar
     # Created Date: 12/13/2023
-    # Last Edited Date: 12/13/2023
+    # Last Edited Date: 12/18/2023
     # Last Edited Coder: Aria Askaryar
-    # NOTE (12/13/2023): Aria - Ran through QA process and updated Doc
-    print("Aria Right hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
-    print(cordgrass[['plantheight_cm_5','plantheight_cm_6','plantheight_cm_7','plantheight_cm_8']])
-    # def totalstems_match_hieghts(df):
-    #     bad_rows = []
-    #     for index, row in df.iterrows():
-    #         if row['total_stems'] >= 10:
-    #             for i in range(1, 11):
-    #                 column_name = f'plantheight_cm_{i}'
-    #                 if pd.isna(row[column_name]):
-    #                     bad_rows.append(index)
-    #                     break  
-    #         elif row['total_stems'] < 10 and np.isfinite(row['total_stems']):
-    #             total_stems_int = int(row['total_stems'])
-    #             for i in range(total_stems_int + 1, 11):
-    #                 column_name = f'plantheight_cm_{i}'
-    #                 if not pd.isna(row[column_name]):
-    #                     bad_rows.append(index)
-    #                     break  
-    #     return bad_rows
-    
+    # NOTE (12/13/2023): Aria - Ran through QA process and updated Doc    
+    # NOTE (12/18/2023): Aria - Changed totalstems_match_heights function to accept negative cases and empty rows when total_stems is defined 
+
+
     def totalstems_match_heights(df):
         bad_rows = []
         for index, row in df.iterrows():
-            if row['total_stems'] >= 10:
+            if row['total_stems'] < 0:
+                bad_rows.append(index)
+            elif row['total_stems'] >= 10:
                 for i in range(1, 11):
                     column_name = f'plantheight_cm_{i}'
                     if pd.isna(row[column_name]):
@@ -574,11 +559,10 @@ def vegetation(all_dfs):
     args.update({
         "dataframe": cordgrass,
         "tablename": "tbl_cordgrass",
-        # "badrows": cordgrass[(cordgrass['total_stems'] < 10) | (cordgrass['total_stems'] > 10)].tmp_row.tolist(),
         "badrows": totalstems_match_heights(cordgrass),
         "badcolumn": 'total_stems',
         "error_type" : "Logic Error",
-        "error_message" : 'If total_stems < 10 then the corresponding hieght columns must match the total_stems value, or if total_stems >= 10 then all 10 hieght columns must be filled out.'
+        "error_message" : 'If total_stems < 10 then the corresponding hieght columns must match the total_stems value, or if total_stems >= 10 then all 10 hieght columns must be filled out. total_stems must be a postive number.'
     })
     errs = [*errs, checkData(**args)]
 
