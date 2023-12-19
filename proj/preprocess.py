@@ -128,8 +128,13 @@ def fill_daubenmiremidpoint(all_dfs):
                 if value == 0:
                     return (0,0)
                 for key in dictionary.keys():
-                    if key[0] < value <= key[1]:
-                        return key
+                    print(key)
+                    print(value)
+                    try:
+                        if key[0] < value <= key[1]:
+                            return key
+                    except:
+                        return None
                 return None
             
             df['percentcovercode'] = df.apply(
