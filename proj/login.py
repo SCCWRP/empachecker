@@ -134,7 +134,7 @@ def login():
         UPDATE submission_tracking_table 
         SET {
             ','.join([
-                "{} = '{}'".format(k, v)
+                "{} = '{}'".format(k, v.replace("%","%%"))
                 for k, v in login_info.items()
             ])
         }

@@ -32,7 +32,7 @@ def global_custom(all_dfs, datatype = ''):
     lu_fishmacrospecies = pd.read_sql('Select scientificname, commonname, status from lu_fishmacrospecies', g.eng)
 
     # the spatial_empa_sites is for the site map check
-    spatial_empa_sites = gpd.read_postgis("SELECT * FROM spatial_empa_sites", g.eng, geom_col='geometry')
+    spatial_empa_sites = gpd.read_postgis("SELECT * FROM sde.spatial_empa_sites", g.eng, geom_col='geometry')
     spatial_empa_sites = spatial_empa_sites.to_crs(epsg=4326)
     for table_name in all_dfs:
         if all_dfs[table_name].empty:
