@@ -277,16 +277,17 @@ def global_custom(all_dfs, datatype = ''):
             # NOTE (11/6/23): Fixed an error where sites in submitted file do not exist in the spatial_empa_sites table and cause null in geometry column after merging.
             # NOTE (11/8/23): Duy adjusted the check, comments were left below
             latlong_cols = current_app.datasets.get(datatype).get('latlong_cols', None)
-
+            
             # latlong_cols is a list of dictionaries of the tables with lat long columns
             if latlong_cols is not None:
+                print(table_name)
                 tmp = [
                     (x.get('latcol'), x.get('longcol'))
                     for x in latlong_cols
                     if x.get('tablename') == table_name
                 ][0]
                 latcol, longcol = tmp[0], tmp[1]
-
+                
                 meta = gpd.GeoDataFrame(
                     df, 
                     geometry=gpd.points_from_xy(df[longcol], df[latcol])
@@ -297,7 +298,7 @@ def global_custom(all_dfs, datatype = ''):
                     on=['siteid'],
                     suffixes=('_point', '_polygon')
                 )
-
+                
                 # Display warnings when the points are associated with undelineated polygons
                 meta_unmatched = meta_merged[meta_merged['geometry_polygon'].isna()]
                 args = {
@@ -319,7 +320,7 @@ def global_custom(all_dfs, datatype = ''):
                         axis=1
                     )
                 ]
-
+                
                 # Only write geojson when there are points that are outside polygon
                 if not meta_matched_bad.empty:
                     # Write geoJSON files
@@ -350,7 +351,7 @@ def global_custom(all_dfs, datatype = ''):
                         "error_message": f"These points are not in their associated polygon, see Stations Visual Map tab. If you believe their locations are correct, then ignore warnings and submit the data."
                     }
                     warnings = [*warnings, checkData(**args)]
-
+                
 
                 print("# END GLOBAL CUSTOM CHECK - 9")
 
