@@ -173,10 +173,11 @@ def discretewq(all_dfs):
     #Description:Range for conductivity, with conductivity_units as uS/cm, must be between [0, 100] or -88
     # Created Coder: NA
     # Created Date: 09/05/2023
-    # Last Edited Date: 10/25/2023
-    # Last Edited Coder: Aria Askaryar
+    # Last Edited Date: 1/2/2024
+    # Last Edited Coder: Duy
     # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
     # NOTE (10/25/2023): Aria adjusted check description requested by Jan changed from [0,100] to [200,80,000]
+    # NOTE (1/2/2024): requested by Jan changed from [200, 80000] to [200, 90000]
 
     args.update({
         "dataframe": waterdata,
@@ -184,11 +185,11 @@ def discretewq(all_dfs):
         "badrows": waterdata[            
             (waterdata['conductivity'] != -88) &
             (waterdata['conductivity_units'] == 'uS/cm') & 
-            (~waterdata['conductivity'].between(200,80000))
+            (~waterdata['conductivity'].between(200, 90000))
         ].tmp_row.tolist(), 
         "badcolumn": "conductivity",
         "error_type": "Value out of range",
-        "error_message" : "If the conductivity unit is uS/cm, then conductivity values must be between 200 and 80,000."
+        "error_message" : "If the conductivity unit is uS/cm, then conductivity values must be between 200 and 90000."
     })
     errs = [*errs, checkData(**args)]
     print('END CHECK 7')
