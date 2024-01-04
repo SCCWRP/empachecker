@@ -22,7 +22,7 @@ def default_exception_handler(mail_from, errmsg, maintainers, project_name, logi
 
         # Do not email to the scientist if the login email is test@sccwrp.org
         if login_info.get('login_email') == 'test@sccwrp.org':
-            maintainers = ['pauls@sccwrp.org', 'robertb@sccwrp.org', 'duyn@sccwrp.org']
+            maintainers = ['pauls@sccwrp.org', 'robertb@sccwrp.org', 'duyn@sccwrp.org', 'zaibq@sccwrp.org']
 
     send_mail(
         mail_from,
