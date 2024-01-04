@@ -284,7 +284,7 @@ def discretewq(all_dfs):
     print('END CHECK 11')
 
     print('START CHECK 12')
-    # Description:  Range for do, with do_units as mg/l, must be within [0, 20] or -88
+    # Description:  Range for do, with do_units as mg/l, must be within [0, 60] or -88
     # Created Coder: NA
     # Created Date: NA
     # Last Edited Date: 09/05/2023
@@ -296,17 +296,17 @@ def discretewq(all_dfs):
         "badrows": waterdata[
             (waterdata['do_mgl'] != -88) & 
             (waterdata['do_units'].str.lower() == 'mg/l') &
-            (~waterdata['do_mgl'].between(0, 20))
+            (~waterdata['do_mgl'].between(0, 60))
         ].tmp_row.tolist(),
         "badcolumn": "do_mgl",
         "error_type": "Value Out of range",
-        "error_message" : "do_mgl values must be between 0 and 20."
+        "error_message" : "do_mgl values must be between 0 and 60."
     })
     errs = [*errs, checkData(**args)]
     print('END CHECK 12')
 
     print('START CHECK 13')
-    # Description:  Range for airtemp, with airtemp_units as C, must be between [0, 50] or -88
+    # Description:  Range for airtemp, with airtemp_units as C, must be between [0, 100] or -88
     # Created Coder: NA
     # Created Date: NA
     # Last Edited Date: 09/05/2023
@@ -318,11 +318,11 @@ def discretewq(all_dfs):
         "badrows": waterdata[
             (waterdata['airtemp'] != -88) &
             (waterdata['airtemp_units'].str.lower() == 'deg c') &
-            (~waterdata['airtemp'].between(0, 50))
+            (~waterdata['airtemp'].between(0, 100))
         ].tmp_row.tolist(),
         "badcolumn": "airtemp",
         "error_type": "Value Out of range",
-        "error_message" : "If airtemp_unit is C, airtemp must be between 0 and 50."
+        "error_message" : "If airtemp_unit is C, airtemp must be between 0 and 100."
     })
     errs = [*errs, checkData(**args)]
     print('END CHECK 13')
