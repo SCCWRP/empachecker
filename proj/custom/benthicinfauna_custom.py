@@ -163,7 +163,7 @@ def benthicinfauna_lab(all_dfs):
         "error_message" : "Each record in benthicinfauna_abundance must include a corresponding record in benthicinfauna_biomass. "+\
             "Records are matched based on these columns: {}".format(','.join(abundance_biomass_shared_pkey))
     })
-    warnings = [*warnings, checkData(**args)]
+    errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 4")
 
     print("# CHECK - 5")
@@ -183,7 +183,7 @@ def benthicinfauna_lab(all_dfs):
         "error_message" : "Each record in benthicinfauna_biomass must include a corresponding record in benthicinfauna_abundance. "+\
             "Records are matched based on these columns: {}".format(','.join(abundance_biomass_shared_pkey))
     })
-    warnings = [*warnings, checkData(**args)]
+    errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 5")
 
 
@@ -214,13 +214,17 @@ def benthicinfauna_lab(all_dfs):
     # Description: Biomass_g must be greater than or equal to 0
     # Created Coder: Caspian
     # Created Date: 9/27/23
-    # Last Edited Date:  9/27/23
-    # Last Edited Coder: Caspian
-
+    # Last Edited Date:  1/4/24
+    # Last Edited Coder: Duy
+    # NOTE (1/4/24): somehow this benthicbiomass[benthicbiomass['biomass_g'].apply(lambda x: (x < 0) & pd.notnull(x))] returns an empty
+    # dataframe with no columns. So I changed the code's logic
     args.update({
         "dataframe": benthicbiomass,
         "tablename": "tbl_benthicinfauna_biomass",
-        "badrows":  benthicbiomass[benthicbiomass['biomass_g'].apply(lambda x: (x < 0) & pd.notnull(x))].tmp_row.tolist(),
+        "badrows":  benthicbiomass[
+                (benthicbiomass['biomass_g'] < 0) &
+                (~benthicbiomass['biomass_g'].isnull())
+            ].tmp_row.tolist(),
         "badcolumn": 'biomass_g',
         "error_type" : "Logic Warning",
         "error_message" : "Biomass_g in benthicinfauna_biomass must be greater than or equal to 0."
