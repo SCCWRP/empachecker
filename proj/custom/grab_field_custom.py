@@ -191,7 +191,6 @@ def grab_field(all_dfs):
     ######################################################################################################################
 
     print("# CHECK - 3")
-    # Description: coresizediameter should be filled when matrix is sediment 
     # Description: If matrix is 'sediment' AND collectionmethod is 'sediment core', then coresizediameter MUST be a numeric value (CANNOT BE -88) 
     # Created Coder: Ayah
     # Created Date: NA
