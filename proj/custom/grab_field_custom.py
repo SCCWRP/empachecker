@@ -192,25 +192,28 @@ def grab_field(all_dfs):
 
     print("# CHECK - 3")
     # Description: coresizediameter should be filled when matrix is sediment 
+    # Description: If matrix is 'sediment' AND collectionmethod is 'sediment core', then coresizediameter MUST be a numeric value (CANNOT BE -88) 
     # Created Coder: Ayah
     # Created Date: NA
-    # Last Edited Date: 09/26/2023
-    # Last Edited Coder: Aria Askaryar
+    # Last Edited Date: 01/05/2024
+    # Last Edited Coder: Zaib Quraishi
     # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
     # NOTE (09/25/2023): Aria adjusted error message and changed code since coresizediamerter is numeric so -88 is the numeric equivalent to "Not Recorded"
     # NOTE (09/26/2023): Aria changed the logic of this check (changed from Not recorded to -88 since coresizediameter is a numeric column).
+    # NOTE (01/05/2024): Zaib updated description with specific criteria provided by Jan. 
 
     args.update({
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
         "badrows":grabeventdet[ 
             (grabeventdet['matrix'] == 'sediment') & 
-            (grabeventdet['coresizediameter'] != -88)
+            (grabeventdet['collectionmethod'] == 'sediment core') &
+            (grabeventdet['coresizediameter'] == -88)
         ].tmp_row.tolist(),
         "badcolumn": "coresizediameter",
         "error_type": "empty value",
         "is_core_error": False,
-        "error_message": "When matrix is sediment, then you should put -88 for coresizediameter column"
+        "error_message": "If matrix is sediment and collectionmethod is sediment core, then coresizediameter MUST be a numeric value (CANNOT be -88)."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 3")
