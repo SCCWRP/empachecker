@@ -284,23 +284,25 @@ def discretewq(all_dfs):
     print('END CHECK 11')
 
     print('START CHECK 12')
-    # Description:  Range for do, with do_units as mg/l, must be within [0, 60] or -88
+    # Description:  Range for do, with do_units as mg/l, must be within [0, 70] or -88
     # Created Coder: NA
     # Created Date: NA
     # Last Edited Date: 09/05/2023
-    # Last Edited Coder: Ayah Halabi
+    # Last Edited Coder: Zaib Quraishi
     # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
+    # NOTE (01/04/2024): Zaib increased range for do_mgl from [0, 60] to [0, 70] as requested by Jan.
+
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
         "badrows": waterdata[
             (waterdata['do_mgl'] != -88) & 
             (waterdata['do_units'].str.lower() == 'mg/l') &
-            (~waterdata['do_mgl'].between(0, 60))
+            (~waterdata['do_mgl'].between(0, 70))
         ].tmp_row.tolist(),
         "badcolumn": "do_mgl",
         "error_type": "Value Out of range",
-        "error_message" : "do_mgl values must be between 0 and 60."
+        "error_message" : "do_mgl values must be between 0 and 70."
     })
     errs = [*errs, checkData(**args)]
     print('END CHECK 12')
