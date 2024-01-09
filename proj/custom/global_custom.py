@@ -268,14 +268,16 @@ def global_custom(all_dfs, datatype = ''):
 
 
             print("# GLOBAL CUSTOM CHECK - 9")
-            # Description: A (lat,long) for a siteid needs to be either in its associate polygon or within a mile if it is outside 
+            # Description: A (lat,long) for a siteid needs to be either in its associate polygon. Give a warning if that's not the case. 
             # Created Coder: Duy
             # Created Date: 11/3/23
-            # Last Edited Date:
-            # Last Edited Coder:
+            # Last Edited Date: 1/9/24
+            # Last Edited Coder: Duy
             # NOTE (11/3/23): Created the check. Need to QA and this check does not consider 1 mile buffer.
             # NOTE (11/6/23): Fixed an error where sites in submitted file do not exist in the spatial_empa_sites table and cause null in geometry column after merging.
             # NOTE (11/8/23): Duy adjusted the check, comments were left below
+            # NOTE (11/8/23): The .to_file function (writing a geopandas dataframe to geojson file) seems to have a problem writing out the date columns
+            # so we just want to get the needed columns when writing out to geojson file
             latlong_cols = current_app.datasets.get(datatype).get('latlong_cols', None)
             
             # latlong_cols is a list of dictionaries of the tables with lat long columns
@@ -287,7 +289,7 @@ def global_custom(all_dfs, datatype = ''):
                     if x.get('tablename') == table_name
                 ][0]
                 latcol, longcol = tmp[0], tmp[1]
-                
+                print("before geodataframe")
                 meta = gpd.GeoDataFrame(
                     df, 
                     geometry=gpd.points_from_xy(df[longcol], df[latcol])
@@ -323,24 +325,29 @@ def global_custom(all_dfs, datatype = ''):
                 
                 # Only write geojson when there are points that are outside polygon
                 if not meta_matched_bad.empty:
-                    # Write geoJSON files
+                    # declare path
                     save_path = os.path.join(os.getcwd(), "files", str(session.get('submissionid')))
-                    meta[meta['tmp_row'].isin(meta_matched_bad['tmp_row'])] \
+
+                    # write points to geojson file
+                    tmp = meta[meta['tmp_row'].isin(meta_matched_bad['tmp_row'])] \
                         .rename(
                             columns={latcol: 'latitude', longcol: 'longitude'}   
-                        ) \
-                        .to_file(
-                            os.path.join(save_path, "bad-points-geojson.json"), 
-                            driver='GeoJSON'
                         )
-                    spatial_empa_sites[spatial_empa_sites['siteid'].isin(meta_matched_bad['siteid'])]\
+                    tmp = tmp[['latitude','longitude','siteid','tmp_row','geometry']].to_file(
+                        os.path.join(save_path, "bad-points-geojson.json"), 
+                        driver='GeoJSON'
+                    )
+                    
+                    # write polygons to geojson file
+                    tmp = spatial_empa_sites[spatial_empa_sites['siteid'].isin(meta_matched_bad['siteid'])]\
                         .rename(
                             columns={latcol: 'latitude', longcol: 'longitude'}
-                        ) \
-                        .to_file(
-                            os.path.join(save_path, "polygons-geojson.json"), 
-                            driver='GeoJSON'
-                        )
+                        ) 
+                    tmp = tmp[['siteid','geometry']].to_file(
+                        os.path.join(save_path, "polygons-geojson.json"), 
+                        driver='GeoJSON'
+                    )
+                    
                     args = {
                         "dataframe": df,
                         "tablename": table_name,
