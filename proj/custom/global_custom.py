@@ -90,10 +90,10 @@ def global_custom(all_dfs, datatype = ''):
             # Description: Scientificname/commoname pair for species must match lookup
             # Created Coder: Nick Lombardo
             # Created Date: 09/06/23
-            # Last Edited Date: 09/07/23
-            # Last Edited Coder: Nick Lombardo
+            # Last Edited Date: 1/12/24
+            # Last Edited Coder: Duy
             # NOTE (09/07/23): Edited to add status to the subset check above, since it's really checking all 3 columns
-            # NOTE (): 
+            # NOTE (1/12/24): Adjusted the error message 
             if table_name in ['tbl_algaecover_data','tbl_floating_data','tbl_vegetativecover_data','tbl_savpercentcover_data']:
                 lu_df = lu_plantspecies
                 lu_list = 'lu_plantspecies'
@@ -116,7 +116,8 @@ def global_custom(all_dfs, datatype = ''):
                     The scientificname-commonname-status entry did not match the lookup list 
                     <a href="/{lu_list_script_root}/scraper?action=help&layer={lu_list}" target="_blank">
                         {lu_list}
-                    </a>.
+                    </a>. The commonname and status values are match case sensitive. You can either find the exact values of commonname, status using 
+                    the lookup list, or leave them blank and the checker will auto-fill commonname and status based on scientificname.
                 '''
             }
             errs = [*errs, checkData(**args)]
