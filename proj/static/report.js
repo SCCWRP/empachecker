@@ -2,6 +2,7 @@
 const buildReport = (res) => {
 
     // submission info
+    document.getElementById("login-email").innerText = res.login_email;
     document.getElementById("submissionid").innerText = res.submissionid;
     document.getElementById("original-filename").innerText = res.filename;
     document.getElementById("submission-type").innerHTML = res.match_dataset ? res.match_dataset : "Undetermined (<strong>Unable to match submission with any data type</strong>)";

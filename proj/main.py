@@ -452,7 +452,10 @@ def main():
         "critical_error": False,
         "all_datasets": list(current_app.datasets.keys()),
         "table_to_tab_map" : session['table_to_tab_map'],
-        "has_visual_map": station_visual_map
+        "has_visual_map": station_visual_map,
+        
+        # to display the login email on the submission info tab
+        "login_email": session.get("login_info", dict()).get('login_email', "non_existing_email@sccwrp.org") 
     }
 
     if match_dataset == 'logger_raw':
