@@ -500,6 +500,7 @@ def vegetation(all_dfs):
     # Last Edited Date: 12/13/2023
     # Last Edited Coder: Aria Askaryar
     # NOTE (12/13/2023): Aria - Ran through QA process and updated Doc
+    # NOTE (01/25/2024): Zaib retested and validated this check for cordgrass since the schema was updated. Data Products QA has been updated.
     filtered_vegdata = vegdata[(vegdata['scientificname'] == 'Spartina foliosa')]
     
     args.update({
@@ -523,6 +524,8 @@ def vegetation(all_dfs):
     # Last Edited Coder: Aria Askaryar
     # NOTE (12/13/2023): Aria - Ran through QA process and updated Doc    
     # NOTE (12/18/2023): Aria - Changed totalstems_match_heights function to accept negative cases and empty rows when total_stems is defined 
+    # NOTE (01/25/2024): Zaib disabled check. The schema for tbl_cordgrass has been changed. Multiple columns of the form 'plantheight_cm_{1, 2, ..., 10}'
+    #                    has been changed to record the heights as replicates with the following columns: [plantheight_replicate, plantheight_cm]
 
 
     def totalstems_match_heights(df):
@@ -556,15 +559,15 @@ def vegetation(all_dfs):
         return bad_rows
 
 
-    args.update({
-        "dataframe": cordgrass,
-        "tablename": "tbl_cordgrass",
-        "badrows": totalstems_match_heights(cordgrass),
-        "badcolumn": 'total_stems',
-        "error_type" : "Logic Error",
-        "error_message" : 'If total_stems < 10 then the corresponding hieght columns must match the total_stems value, or if total_stems >= 10 then all 10 hieght columns must be filled out. total_stems must be a postive number.'
-    })
-    errs = [*errs, checkData(**args)]
+    # args.update({
+    #     "dataframe": cordgrass,
+    #     "tablename": "tbl_cordgrass",
+    #     "badrows": totalstems_match_heights(cordgrass),
+    #     "badcolumn": 'total_stems',
+    #     "error_type" : "Logic Error",
+    #     "error_message" : 'If total_stems < 10 then the corresponding hieght columns must match the total_stems value, or if total_stems >= 10 then all 10 hieght columns must be filled out. total_stems must be a postive number.'
+    # })
+    # errs = [*errs, checkData(**args)]
 
     print("# END OF CHECK - 18")
     ######################################################################################################################
