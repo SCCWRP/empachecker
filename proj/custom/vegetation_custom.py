@@ -562,16 +562,16 @@ def vegetation(all_dfs):
     
     print(" # GROUP BY FOR CHECKS 18, 19, 20")
 
-    g = ['projectid',
-         'siteid',
-         'estuaryname',
-         'stationno',
-         'samplecollectiondate',
-         'transectreplicate',
-         'plotreplicate',
-         'live_dead'
-         ]
-    grouped_df = cordgrass.groupby(g).agg({'plantheight_replicate':'count',
+    cordgrass_group = ['projectid',
+                       'siteid',
+                       'estuaryname',
+                       'stationno',
+                       'samplecollectiondate',
+                       'transectreplicate',
+                       'plotreplicate',
+                       'live_dead'
+                       ]
+    grouped_df = cordgrass.groupby(cordgrass_group).agg({'plantheight_replicate':'count',
                                            'total_stems':'max',
                                            'tmp_row':'max'}
                                         ).reset_index()
@@ -627,7 +627,7 @@ def vegetation(all_dfs):
         "dataframe": cordgrass,
         "tablename": "tbl_cordgrass",
         "badrows": grouped_df[(grouped_df['plantheight_replicate'] > grouped_df['total_stems'])].tmp_row.to_list(),
-        "badcolumn": 'total_stems',
+        "badcolumn": 'plantheight_replicate',
         "error_type" : "Logic Error",
         "error_message" : 'The total number of plantheight_replicate CANNOT exceed the number of total_stems.'
     })
@@ -637,48 +637,48 @@ def vegetation(all_dfs):
     print("# END OF CHECK - 20")
 
 
-    print("# CHECK - 21")
-    # Description: If total_stems is 0, then plantheight_replicate must be empty.
-    # Created Coder: Zaib Quraishi
-    # Created Date: 1/26/23
-    # Last Edited Date: 1/26/23
-    # Last Edited Coder: Zaib Quraishi
-    # NOTE (1/26/2023): Zaib created an additional check based on one of the cases written in the totalstems_match_height() function written by Aria.
+    # print("# CHECK - 21")
+    # # Description: If total_stems is 0, then plantheight_replicate must be -88.
+    # # Created Coder: Zaib Quraishi
+    # # Created Date: 1/26/23
+    # # Last Edited Date: 1/26/23
+    # # Last Edited Coder: Zaib Quraishi
+    # # NOTE (1/26/2023): Zaib created an additional check based on one of the cases written in the totalstems_match_height() function written by Aria.
     
-    args.update({
-        "dataframe": cordgrass,
-        "tablename": "tbl_cordgrass",
-        "badrows": grouped_df[((grouped_df['total_stems'] == 0) | (grouped_df['total_stems'] == -88)) & 
-                              ((grouped_df['plantheight_replicate'] != -88) | ~(grouped_df['plantheight_replicate'].isna()))].tmp_row.to_list(),
-        "badcolumn": 'total_stems',
-        "error_type" : "Logic Error",
-        "error_message" : 'If the total_stems is 0 or -88, then the plantheight_replicate MUST BE empty.'
-    })
-    errs = [*errs, checkData(**args)]
+    # args.update({
+    #     "dataframe": cordgrass,
+    #     "tablename": "tbl_cordgrass",
+    #     "badrows": grouped_df[((grouped_df['total_stems'] == 0) | (grouped_df['total_stems'] == -88)) & 
+    #                           (grouped_df['plantheight_replicate'] != -88)].tmp_row.to_list(),
+    #     "badcolumn": 'total_stems',
+    #     "error_type" : "Logic Error",
+    #     "error_message" : 'If the total_stems is 0 or -88, then the plantheight_replicate MUST BE -88.'
+    # })
+    # errs = [*errs, checkData(**args)]
 
 
-    print("# END OF CHECK - 21")
+    # print("# END OF CHECK - 21")
 
-    print("# CHECK - 22")
-    # Description: total_stems is nonnegative, unless no value then -88 OK
-    # Created Coder: Zaib Quraishi
-    # Created Date: 1/26/23
-    # Last Edited Date: 1/26/23
-    # Last Edited Coder: Zaib Quraishi
-    # NOTE (1/26/2023): Zaib created an additional check based on one of the cases written in the totalstems_match_height() function written by Aria.
+    # print("# CHECK - 22")
+    # # Description: total_stems is nonnegative, unless no value then -88 OK
+    # # Created Coder: Zaib Quraishi
+    # # Created Date: 1/26/23
+    # # Last Edited Date: 1/26/23
+    # # Last Edited Coder: Zaib Quraishi
+    # # NOTE (1/26/2023): Zaib created an additional check based on one of the cases written in the totalstems_match_height() function written by Aria.
     
-    args.update({
-        "dataframe": cordgrass,
-        "tablename": "tbl_cordgrass",
-        "badrows": cordgrass[(cordgrass['total_stems'] < 0) & (cordgrass['total_stems'] != -88)].tmp_row.to_list(),
-        "badcolumn": 'total_stems',
-        "error_type" : "Logic Error",
-        "error_message" : 'total_stems MUST be nonnegative, unless there supposed to be no value (-88 OK)'
-    })
-    errs = [*errs, checkData(**args)]
+    # args.update({
+    #     "dataframe": cordgrass,
+    #     "tablename": "tbl_cordgrass",
+    #     "badrows": cordgrass[(cordgrass['total_stems'] < 0) & (cordgrass['total_stems'] != -88)].tmp_row.to_list(),
+    #     "badcolumn": 'total_stems',
+    #     "error_type" : "Logic Error",
+    #     "error_message" : 'total_stems MUST be nonnegative, unless there supposed to be no value (-88 OK)'
+    # })
+    # errs = [*errs, checkData(**args)]
 
 
-    print("# END OF CHECK - 22")
+    # print("# END OF CHECK - 22")
 
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
