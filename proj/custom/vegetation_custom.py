@@ -517,15 +517,17 @@ def vegetation(all_dfs):
     print("# END OF CHECK - 17")
 
     print("# CHECK - 18")
-    # Description: If total_stems < 10, then the number of heights should equal the number of stems; If total_stems > 10, then 10 heights expected.
-    # Created Coder: Aria Askaryar
-    # Created Date: 12/13/2023
-    # Last Edited Date: 12/18/2023
-    # Last Edited Coder: Aria Askaryar
+    # Description: If total_stems is LESS THAN OR EQUAL TO 10, then the total number of plantheight_replicate must match the total_stems value.
+    # Created Coder: Zaib Quraishi (groupby approach) | Aria Askaryar (totalstems_match_heights)
+    # Created Date: 1/25/24 | 12/13/2023
+    # Last Edited Date: 1/26/2023
+    # Last Edited Coder: Zaib Quraishi
     # NOTE (12/13/2023): Aria - Ran through QA process and updated Doc    
     # NOTE (12/18/2023): Aria - Changed totalstems_match_heights function to accept negative cases and empty rows when total_stems is defined 
     # NOTE (01/25/2024): Zaib disabled check. The schema for tbl_cordgrass has been changed. Multiple columns of the form 'plantheight_cm_{1, 2, ..., 10}'
     #                    has been changed to record the heights as replicates with the following columns: [plantheight_replicate, plantheight_cm]
+    # NOTE (01/26/2024): Zaib - The original description of the check was the following "If total_stems < 10, then the number of heights should equal the number of stems; 
+    #                    If total_stems > 10, then 10 heights expected." Check 18 is split into two checks: Check 18 and Check 19 to check the two cases separately.
 
 
     def totalstems_match_heights(df):
@@ -557,19 +559,127 @@ def vegetation(all_dfs):
                 if any(not pd.isna(row[f'plantheight_cm_{i}']) for i in range(1, 11)):
                     bad_rows.append(index)
         return bad_rows
+    
+    print(" # GROUP BY FOR CHECKS 18, 19, 20")
 
+    g = ['projectid',
+         'siteid',
+         'estuaryname',
+         'stationno',
+         'samplecollectiondate',
+         'transectreplicate',
+         'plotreplicate',
+         'live_dead'
+         ]
+    grouped_df = cordgrass.groupby(g).agg({'plantheight_replicate':'count',
+                                           'total_stems':'max',
+                                           'tmp_row':'max'}
+                                        ).reset_index()
+    
+    print(" # END OF GROUP BY FOR CHECKS 18, 19, 20, 21")
+    
+    args.update({
+        "dataframe": cordgrass,
+        "tablename": "tbl_cordgrass",
+        "badrows": grouped_df[(grouped_df['total_stems'] < 11) & (grouped_df['total_stems'] != grouped_df['plantheight_replicate'])].tmp_row.to_list(),
+        "badcolumn": 'total_stems',
+        "error_type" : "Logic Error",
+        "error_message" : 'If total_stems is LESS THAN OR EQUAL TO 10, then the total number of plantheight_replicate must match the total_stems value.'
+    })
+    errs = [*errs, checkData(**args)]
 
-    # args.update({
-    #     "dataframe": cordgrass,
-    #     "tablename": "tbl_cordgrass",
-    #     "badrows": totalstems_match_heights(cordgrass),
-    #     "badcolumn": 'total_stems',
-    #     "error_type" : "Logic Error",
-    #     "error_message" : 'If total_stems < 10 then the corresponding hieght columns must match the total_stems value, or if total_stems >= 10 then all 10 hieght columns must be filled out. total_stems must be a postive number.'
-    # })
-    # errs = [*errs, checkData(**args)]
 
     print("# END OF CHECK - 18")
+
+    print("# CHECK - 19")
+    # Description: If total_stems is GREATER THAN 10, then the EXPECTED total number of plantheight_replicate must be AT LEAST 10.
+    # Created Coder: Zaib Quraishi
+    # Created Date: 1/26/23
+    # Last Edited Date: 1/26/23
+    # Last Edited Coder: Zaib Quraishi
+    # NOTE (01/26/2024): Zaib - The original description of the check was the following "If total_stems < 10, then the number of heights should equal the number of stems; 
+    #                    If total_stems > 10, then 10 heights expected." Check 18 is split into two checks: Check 18 and Check 19 to check the two cases separately.
+    #                    This note was copied from Check 18.
+    
+    args.update({
+        "dataframe": cordgrass,
+        "tablename": "tbl_cordgrass",
+        "badrows": grouped_df[(grouped_df['total_stems'] > 10) & (grouped_df['plantheight_replicate'] < 10)].tmp_row.to_list(),
+        "badcolumn": 'total_stems',
+        "error_type" : "Logic Error",
+        "error_message" : 'If total_stems is GREATER THAN 10, then the EXPECTED total number of plantheight_replicate must be AT LEAST 10.'
+    })
+    errs = [*errs, checkData(**args)]
+
+
+    print("# END OF CHECK - 19")
+
+
+    print("# CHECK - 20")
+    # Description: The total number of plantheight_replicate CANNOT exceed the number of total_stems
+    # Created Coder: Zaib Quraishi
+    # Created Date: 1/26/23
+    # Last Edited Date: 1/26/23
+    # Last Edited Coder: Zaib Quraishi
+    # NOTE (1/26/2023): Zaib created an additional check based on one of the cases written in the totalstems_match_height() function written by Aria.
+    
+    args.update({
+        "dataframe": cordgrass,
+        "tablename": "tbl_cordgrass",
+        "badrows": grouped_df[(grouped_df['plantheight_replicate'] > grouped_df['total_stems'])].tmp_row.to_list(),
+        "badcolumn": 'total_stems',
+        "error_type" : "Logic Error",
+        "error_message" : 'The total number of plantheight_replicate CANNOT exceed the number of total_stems.'
+    })
+    errs = [*errs, checkData(**args)]
+
+
+    print("# END OF CHECK - 20")
+
+
+    print("# CHECK - 21")
+    # Description: If total_stems is 0, then plantheight_replicate must be empty.
+    # Created Coder: Zaib Quraishi
+    # Created Date: 1/26/23
+    # Last Edited Date: 1/26/23
+    # Last Edited Coder: Zaib Quraishi
+    # NOTE (1/26/2023): Zaib created an additional check based on one of the cases written in the totalstems_match_height() function written by Aria.
+    
+    args.update({
+        "dataframe": cordgrass,
+        "tablename": "tbl_cordgrass",
+        "badrows": grouped_df[((grouped_df['total_stems'] == 0) | (grouped_df['total_stems'] == -88)) & 
+                              ((grouped_df['plantheight_replicate'] != -88) | ~(grouped_df['plantheight_replicate'].isna()))].tmp_row.to_list(),
+        "badcolumn": 'total_stems',
+        "error_type" : "Logic Error",
+        "error_message" : 'If the total_stems is 0 or -88, then the plantheight_replicate MUST BE empty.'
+    })
+    errs = [*errs, checkData(**args)]
+
+
+    print("# END OF CHECK - 21")
+
+    print("# CHECK - 22")
+    # Description: total_stems is nonnegative, unless no value then -88 OK
+    # Created Coder: Zaib Quraishi
+    # Created Date: 1/26/23
+    # Last Edited Date: 1/26/23
+    # Last Edited Coder: Zaib Quraishi
+    # NOTE (1/26/2023): Zaib created an additional check based on one of the cases written in the totalstems_match_height() function written by Aria.
+    
+    args.update({
+        "dataframe": cordgrass,
+        "tablename": "tbl_cordgrass",
+        "badrows": cordgrass[(cordgrass['total_stems'] < 0) & (cordgrass['total_stems'] != -88)].tmp_row.to_list(),
+        "badcolumn": 'total_stems',
+        "error_type" : "Logic Error",
+        "error_message" : 'total_stems MUST be nonnegative, unless there supposed to be no value (-88 OK)'
+    })
+    errs = [*errs, checkData(**args)]
+
+
+    print("# END OF CHECK - 22")
+
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
     # ------------------------------------------------ END cordgrass checks -------------------------------------------- #
