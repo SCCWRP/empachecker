@@ -649,25 +649,25 @@ def vegetation(all_dfs):
 
 
     print("# END OF CHECK - 20")
-    
 
-    # print("# CHECK - 22")
-    # # Description: total_stems is nonnegative, unless no value then -88 OK
-    # # Created Coder: Zaib Quraishi
-    # # Created Date: 1/26/23
-    # # Last Edited Date: 1/26/23
-    # # Last Edited Coder: Zaib Quraishi
-    # # NOTE (1/26/2023): Zaib created an additional check based on one of the cases written in the totalstems_match_height() function written by Aria.
+
+    print("# CHECK - 22")
+    # Description: total_stems is nonnegative, unless no value then -88 OK
+    # Created Coder: Zaib Quraishi
+    # Created Date: 1/26/23
+    # Last Edited Date: 1/26/23
+    # Last Edited Coder: Zaib Quraishi
+    # NOTE (1/26/2023): Zaib created an additional check based on one of the cases written in the totalstems_match_height() function written by Aria.
     
-    # args.update({
-    #     "dataframe": cordgrass,
-    #     "tablename": "tbl_cordgrass",
-    #     "badrows": cordgrass[(cordgrass['total_stems'] < 0) & (cordgrass['total_stems'] != -88)].tmp_row.to_list(),
-    #     "badcolumn": 'total_stems',
-    #     "error_type" : "Logic Error",
-    #     "error_message" : 'total_stems MUST be nonnegative, unless there supposed to be no value (-88 OK)'
-    # })
-    # errs = [*errs, checkData(**args)]
+    args.update({
+        "dataframe": cordgrass,
+        "tablename": "tbl_cordgrass",
+        "badrows": cordgrass[(cordgrass['total_stems'] < 0) & (cordgrass['total_stems'] != -88)].tmp_row.to_list(),
+        "badcolumn": 'total_stems',
+        "error_type" : "Logic Error",
+        "error_message" : 'total_stems MUST be nonnegative, unless there supposed to be no value (-88 OK)'
+    })
+    errs = [*errs, checkData(**args)]
 
 
     # print("# END OF CHECK - 22")
