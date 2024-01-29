@@ -500,7 +500,8 @@ def vegetation(all_dfs):
     # Last Edited Date: 12/13/2023
     # Last Edited Coder: Aria Askaryar
     # NOTE (12/13/2023): Aria - Ran through QA process and updated Doc
-    # NOTE (01/25/2024): Zaib retested and validated this check for cordgrass since the schema was updated. Data Products QA has been updated.
+    # NOTE (01/25/2024): Zaib retested and validated this check for cordgrass since the schema was updated. 
+    #                    QA doc has been updated. No changes made to check.
     filtered_vegdata = vegdata[(vegdata['scientificname'] == 'Spartina foliosa')]
     
     args.update({
@@ -519,8 +520,8 @@ def vegetation(all_dfs):
     print("# CHECK - 18")
     # Description: If total_stems is LESS THAN OR EQUAL TO 10, then the total number of plantheight_replicate must match the total_stems value.
     # Created Coder: Zaib Quraishi (groupby approach) | Aria Askaryar (totalstems_match_heights)
-    # Created Date: 1/25/24 | 12/13/2023
-    # Last Edited Date: 1/26/2023
+    # Created Date: 1/25/2024 | 12/13/2023
+    # Last Edited Date: 1/26/2024
     # Last Edited Coder: Zaib Quraishi
     # NOTE (12/13/2023): Aria - Ran through QA process and updated Doc    
     # NOTE (12/18/2023): Aria - Changed totalstems_match_heights function to accept negative cases and empty rows when total_stems is defined 
@@ -528,6 +529,13 @@ def vegetation(all_dfs):
     #                    has been changed to record the heights as replicates with the following columns: [plantheight_replicate, plantheight_cm]
     # NOTE (01/26/2024): Zaib - The original description of the check was the following "If total_stems < 10, then the number of heights should equal the number of stems; 
     #                    If total_stems > 10, then 10 heights expected." Check 18 is split into two checks: Check 18 and Check 19 to check the two cases separately.
+    #                    Check has been tested and validated. QA doc had been updated.
+    # NOTE (01/29/2024): Zaib modified groupby approach. Two grouped_dfs were created. Both grouped_df AND grouped_df_2 aggregate total_stems and tmp_row using max 
+    #                    function. grouped_df aggs plantheight_replicate with count function, but grouped_df_2 aggs plantheight_replicate with max function. 
+    #                    grouped_df is used to verify that the plantheight_replicate counts are checked against total_stems value entry (max).
+    #                    grouped_df_2 is used to verify that the plantheight_replicate value entry is checked against total stems value entry (max).
+    #                    Since both grouped dfs retain original tmp_row value, both grouped dfs conditions can be used to subset the badrows in grouped_df.
+    #                    Check 18 is unaffected by this update, but is defined in this block. See Check 20.
 
 
     def totalstems_match_heights(df):
@@ -612,6 +620,7 @@ def vegetation(all_dfs):
     # NOTE (01/26/2024): Zaib - The original description of the check was the following "If total_stems < 10, then the number of heights should equal the number of stems; 
     #                    If total_stems > 10, then 10 heights expected." Check 18 is split into two checks: Check 18 and Check 19 to check the two cases separately.
     #                    This note was copied from Check 18.
+    # NOTE (01/26/2024): Zaib tested and validated. QA doc had been updated.
     
     args.update({
         "dataframe": cordgrass,
@@ -630,10 +639,14 @@ def vegetation(all_dfs):
     print("# CHECK - 20")
     # Description: The total number of plantheight_replicate CANNOT exceed the number of total_stems
     # Created Coder: Zaib Quraishi
-    # Created Date: 1/26/23
-    # Last Edited Date: 1/26/23
+    # Created Date: 1/26/2024
+    # Last Edited Date: 1/29/2024
     # Last Edited Coder: Zaib Quraishi
-    # NOTE (1/26/2023): Zaib created an additional check based on one of the cases written in the totalstems_match_height() function written by Aria.
+    # NOTE (1/26/2024): Zaib created an additional check based on one of the cases written in the totalstems_match_height() function written by Aria.
+    # NOTE (1/29/2024): Zaib revised the check to consider the case where total_stems is -88 (plantheight_replicate is then expected to be -88). Two groupby dfs
+    #                   are used to flag the badrows. See Check 18 for comments on grouped_df and grouped_df_2. Both grouped dfs are defined immediately after 
+    #                   one another. 
+    # NOTE (1/29/2024): Zaib tested and validated. QA doc has been updated.
     
     args.update({
         "dataframe": cordgrass,
@@ -654,10 +667,11 @@ def vegetation(all_dfs):
     print("# CHECK - 22")
     # Description: total_stems is nonnegative, unless no value then -88 OK
     # Created Coder: Zaib Quraishi
-    # Created Date: 1/26/23
-    # Last Edited Date: 1/26/23
+    # Created Date: 1/26/2024
+    # Last Edited Date: 1/26/2024
     # Last Edited Coder: Zaib Quraishi
-    # NOTE (1/26/2023): Zaib created an additional check based on one of the cases written in the totalstems_match_height() function written by Aria.
+    # NOTE (1/26/2024): Zaib created an additional check based on one of the cases written in the totalstems_match_height() function written by Aria.
+    # NOTE (1/29/2024): Zaib tested and validated. QA doc had been updated.
     
     args.update({
         "dataframe": cordgrass,
