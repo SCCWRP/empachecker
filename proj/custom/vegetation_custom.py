@@ -649,29 +649,7 @@ def vegetation(all_dfs):
 
 
     print("# END OF CHECK - 20")
-
-
-    # print("# CHECK - 21")
-    # # Description: If total_stems is 0, then plantheight_replicate must be -88.
-    # # Created Coder: Zaib Quraishi
-    # # Created Date: 1/26/23
-    # # Last Edited Date: 1/26/23
-    # # Last Edited Coder: Zaib Quraishi
-    # # NOTE (1/26/2023): Zaib created an additional check based on one of the cases written in the totalstems_match_height() function written by Aria.
     
-    # args.update({
-    #     "dataframe": cordgrass,
-    #     "tablename": "tbl_cordgrass",
-    #     "badrows": grouped_df[((grouped_df['total_stems'] == 0) | (grouped_df['total_stems'] == -88)) & 
-    #                           (grouped_df['plantheight_replicate'] != -88)].tmp_row.to_list(),
-    #     "badcolumn": 'total_stems',
-    #     "error_type" : "Logic Error",
-    #     "error_message" : 'If the total_stems is 0 or -88, then the plantheight_replicate MUST BE -88.'
-    # })
-    # errs = [*errs, checkData(**args)]
-
-
-    # print("# END OF CHECK - 21")
 
     # print("# CHECK - 22")
     # # Description: total_stems is nonnegative, unless no value then -88 OK
