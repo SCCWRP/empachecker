@@ -571,7 +571,16 @@ def vegetation(all_dfs):
                        'plotreplicate',
                        'live_dead'
                        ]
+    
+    # Both grouped_df and grouped_df_2 retain original tmp_row of cordgrass dataframe to track where errors occur
+    # grouped_df is defined by plantheight_replicate with count
     grouped_df = cordgrass.groupby(cordgrass_group).agg({'plantheight_replicate':'count',
+                                           'total_stems':'max',
+                                           'tmp_row':'max'}
+                                        ).reset_index()
+    
+    # grouped_df_2 defined by plantheight_replicate with max
+    grouped_df_2 = cordgrass.groupby(cordgrass_group).agg({'plantheight_replicate':'max',
                                            'total_stems':'max',
                                            'tmp_row':'max'}
                                         ).reset_index()
@@ -581,7 +590,10 @@ def vegetation(all_dfs):
     args.update({
         "dataframe": cordgrass,
         "tablename": "tbl_cordgrass",
-        "badrows": grouped_df[(grouped_df['total_stems'] < 11) & (grouped_df['total_stems'] != grouped_df['plantheight_replicate'])].tmp_row.to_list(),
+        "badrows": grouped_df[(grouped_df['total_stems'] < 11) & 
+                              (grouped_df['total_stems'] != 0) & (grouped_df['total_stems'] != -88) &
+                              (grouped_df['total_stems'] != grouped_df['plantheight_replicate'])
+                              ].tmp_row.to_list(),
         "badcolumn": 'total_stems',
         "error_type" : "Logic Error",
         "error_message" : 'If total_stems is LESS THAN OR EQUAL TO 10, then the total number of plantheight_replicate must match the total_stems value.'
@@ -626,10 +638,12 @@ def vegetation(all_dfs):
     args.update({
         "dataframe": cordgrass,
         "tablename": "tbl_cordgrass",
-        "badrows": grouped_df[(grouped_df['plantheight_replicate'] > grouped_df['total_stems'])].tmp_row.to_list(),
+        "badrows": grouped_df[(grouped_df['plantheight_replicate'] > grouped_df['total_stems']) &
+                              (grouped_df_2['plantheight_replicate'] != grouped_df_2['total_stems'])
+                              ].tmp_row.to_list(),
         "badcolumn": 'plantheight_replicate',
         "error_type" : "Logic Error",
-        "error_message" : 'The total number of plantheight_replicate CANNOT exceed the number of total_stems.'
+        "error_message" : 'The total number of plantheight_replicate CANNOT exceed the number of total_stems. For the case where total_stems provided is -88, the expected plantheight_replicate should be -88.'
     })
     errs = [*errs, checkData(**args)]
 
