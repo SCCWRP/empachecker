@@ -239,10 +239,12 @@ def vegetation(all_dfs):
     # Description: Transectreplicate must be consecutive within primary keys
     # Created Coder: Aria Askaryar
     # Created Date: 09/28/2023
-    # Last Edited Date:  09/28/2023
-    # Last Edited Coder: Aria Askaryar
+    # Last Edited Date:  2/1/2024
+    # Last Edited Coder: Duy
     # NOTE (09/28/2023): Aria wrote the check, it has not been tested yet
-    groupby_cols = [x for x in vegmeta_pkey if x != 'transectreplicate']
+    # NOTE (2/1/2024): Should groupby these columns
+    #groupby_cols = [x for x in vegmeta_pkey if x != 'transectreplicate']
+    groupby_cols = ['projectid','siteid','estuaryname','stationno','samplecollectiondate']
     args.update({
         "dataframe": vegmeta,
         "tablename": "tbl_vegetation_sample_metadata",
