@@ -134,6 +134,26 @@ def vegetation(all_dfs):
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 3")
 
+    print("# CHECK - 23")
+    # Description: Each sample metadata must include corresponding epifauna data
+    # Created Coder: NA
+    # Created Date: NA
+    # Last Edited Date: 2/1/2024
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (2/1/2024): Duy created the check
+    args.update({
+        "dataframe": vegmeta,
+        "tablename": "tbl_vegetation_sample_metadata",
+        "badrows": mismatch(vegmeta, epidata, epidata_vegmata_shareed_pkey),
+        "badcolumn": ','.join(epidata_vegmata_shareed_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Each sample metadata must include corresponding epifauna data based on these columns: {}".format(
+            ','.join(epidata_vegmata_shareed_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 3")
+
 
 
 
