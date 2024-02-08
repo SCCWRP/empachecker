@@ -274,14 +274,15 @@ def grab_field(all_dfs):
     # Description: sieve_or_depth is required when matrix is water
     # Created Coder: Ayah 
     # Created Date: NA
-    # Last Edited Date: 09/28/2023
-    # Last Edited Coder: Aria Askaryar
+    # Last Edited Date: 2/8/2024
+    # Last Edited Coder: Robert B
     # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
     # NOTE (09/14/2023): Ayah made the lu list for all water matrix for the check
     # NOTE (09/25/2023): Aria updated code to catch error(sieve_or_depth is numeric so it has to be -88 not "Not recorded") and updated error_message
     # NOTE (09/28/2023): Aria changed the logic of this check (changed from Not recorded to -88 since coresizediameter is a numeric column) and changed the logic from != to == -88.
+    # NOTE (2/8/2024): Not having the check enforced for blankwater
 
-    lu_matrix_filtered = pd.read_sql("SELECT matrix FROM lu_matrix where matrix like '%%water';",g.eng)
+    lu_matrix_filtered = pd.read_sql("SELECT matrix FROM lu_matrix where matrix like '%%water' AND matrix != 'blankwater' ;",g.eng)
     lu_matrix_filtered = lu_matrix_filtered['matrix'].tolist()
 
     args.update({
@@ -294,8 +295,9 @@ def grab_field(all_dfs):
         "badcolumn": "sieve_or_depth",
         "error_type": "empty value",
         "is_core_error": False,
-        "error_message": "Sieve_or_Depth is a required field since matrix is water. Please enter the depth at which the sample was collected."
+        "error_message": "Sieve_or_Depth is a required field since matrix is water (except blankwater). Please enter the depth at which the sample was collected."
     })
+    
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 6")
 
