@@ -355,6 +355,8 @@ def macroalgae(all_dfs):
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (10/05/23): Duy created the check
+    # NOTE (2/13/24): Robert edited the two covertypes to be "open" and "total" rather than "open" and "cover"
+    #                 Jan told me in Feb 2024 that these were the two covertypes that needed to have the estimated cover add to 100 
 
     badrows = list(
         itertools.chain.from_iterable(
@@ -362,7 +364,7 @@ def macroalgae(all_dfs):
                 ['projectid','siteid','estuaryname','stationno','samplecollectiondate','transectreplicate','plotreplicate']
             ).apply(
                 lambda subdf: subdf.tmp_row.tolist() 
-                if sum(subdf[subdf['covertype'].isin(['open','cover'])]['estimatedcover']) != 100
+                if sum(subdf[subdf['covertype'].isin(['open','total'])]['estimatedcover']) != 100
                 else []
             )
         )
