@@ -298,7 +298,9 @@ def grab_field(all_dfs):
         "error_message": "Sieve_or_Depth is a required field since matrix is water (except blankwater). Please enter the depth at which the sample was collected."
     })
     
-    errs = [*errs, checkData(**args)]
+    # Feb 13, 2024
+    # Per Jan this check has been made a warning for the sake of loading historical data - temporarily
+    warnings = [*warnings, checkData(**args)]
     print("# END OF CHECK - 6")
 
     print("# CHECK - 7")
