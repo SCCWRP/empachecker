@@ -305,7 +305,11 @@ def macroalgae(all_dfs):
     # Last Edited Date:  09/28/2023
     # Last Edited Coder: Aria Askaryar
     # NOTE ( 09/28/2023): Aria wrote the check, it has not been tested yet
-    groupby_cols = ['projectid','siteid','estuaryname','stationno','samplecollectiondate','transectreplicate','covertype','scientificname','replicate']
+    # NOTE ( 02/13/2024): Robert updated grouping columns to:
+    #                    'projectid','siteid','estuaryname','stationno','samplecollectiondate','transectreplicate'
+    #                    per Jan's instruction
+    
+    groupby_cols = ['projectid','siteid','estuaryname','stationno','samplecollectiondate','transectreplicate']
     args.update({
         "dataframe": algaecover,
         "tablename": "tbl_algaecover_data",

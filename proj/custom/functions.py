@@ -294,16 +294,18 @@ def check_multiple_dates_within_site(submission):
     return (badrows, num_unique_sample_dates)
 
 
-def check_consecutiveness(df, groupcols, col_to_check):
+def check_consecutiveness(df, groupcols, col_to_check, startval = 1):
     '''
         This function checks for consecutive values in a field within a group, and return indices if the values are not consecutive
     '''
     assert 'tmp_row' in df.columns, 'tmp_row not found in dataframe'
     assert df[col_to_check].apply(lambda val: isinstance(val, int)).all(), f'all values in {col_to_check} needed to be integers'
+    
+    
 
     def is_consecutive(df):
         df = df[df[col_to_check] != -88].sort_values(by=col_to_check)
-        consecutive = (df[col_to_check].drop_duplicates().sort_values().diff().dropna() == 1).all()
+        consecutive = ((df[col_to_check].drop_duplicates().sort_values().diff().dropna() == 1).all()) & (df[col_to_check].min() == startval)
         if not consecutive:
             return df.tmp_row.tolist()
         else:
