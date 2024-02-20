@@ -6,7 +6,7 @@ import datetime as dt
 import pandas as pd
 import numpy as np
 from datetime import date
-from .functions import checkData, mismatch, multicol_lookup_check, get_primary_key
+from .functions import checkData, mismatch, match, multicol_lookup_check, get_primary_key
 def feldspar(all_dfs):
     
     current_function_name = str(currentframe().f_code.co_name)
@@ -59,7 +59,7 @@ def feldspar(all_dfs):
     ######################################################################################################################
 
     print("# CHECK - 1")
-    # Description: if plug_extracted = yes then corresponding data
+    # Each record in feldspar_metadata must have a corresponding record in feldspar_data when plug_extracted = yes
     # Created Coder: NA
     # Created Date: NA
     # Last Edited Date: 10/05/2023 
@@ -83,20 +83,30 @@ def feldspar(all_dfs):
     print("# END OF CHECK - 1")
 
     print("# CHECK - 2")
-    # Description: Each record in feldspar_data must have a corresponding record in feldspar_metadata
+    # Description: Each record in feldspar_data must have a corresponding record in feldspar_metadata when plug_extracted = yes
     # Created Coder: Aria 
     # Created Date: NA
-    # Last Edited Date: 10/05/2023 
-    # Last Edited Coder: Aria Askaryar
+    # Last Edited Date: 2/15/2024
+    # Last Edited Coder: Caspian
     # NOTE (9/28/2023): Check was changed so the code now matched the updated check
     # NOTE (10/05/2023): Aria revised the error message
+    # NOTE (2/15/2024): Added var to flag if there are mismatched rows (missing_feld_data) to be used in check 3
+
+    badrows = mismatch(felddata,feldmeta_filter,felddata_feldmeta_shared_pkey)
+    
+    missing_feld_data = False
+
+    if len(badrows) > 0:
+        missing_feld_data = True
+
+
     args.update({
         "dataframe": felddata,
         "tablename": "tbl_feldspar_data",
-        "badrows": mismatch(felddata,feldmeta,felddata_feldmeta_shared_pkey), 
+        "badrows": badrows, 
         "badcolumn": ','.join(felddata_feldmeta_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Each Feldspar data must have corresponding records in Feldspar Metadata. Records are matched based on these columns: {}".format(
+        "error_message": "Plug_extracted = yes. Each Feldspar data must have corresponding records in Feldspar Metadata. Records are matched based on these columns: {}".format(
             ','.join(felddata_feldmeta_shared_pkey)
         )
     })
@@ -147,30 +157,37 @@ def feldspar(all_dfs):
     # Description: average field needed to be the average of sideone,sidetwo,sidethree,sidefour excluding -88 values
     # Created Coder: Duy Nguyen
     # Created Date: 10/02/2023
-    # Last Edited Date: 
-    # Last Edited Coder: 
+    # Last Edited Date: 2/15/2024
+    # Last Edited Coder: Caspian
     # NOTE (10/02/2023): Check created by Duy. QA'ed
-    badrows = felddata[
-        felddata.apply(
-            lambda row: row['average'] != np.nanmean(
-                [
-                    row[side_no]
-                    for side_no in ['sideone','sidetwo','sidethree','sidefour']
-                    if row[side_no] != -88
-                ]
-            ),
-            axis=1
-        )
-    ].tmp_row.tolist()
-    args.update({
-        "dataframe": felddata,
-        "tablename": "tbl_feldspar_data",
-        "badrows": badrows, 
-        "badcolumn": 'average',
-        "error_type": "Value Error",
-        "error_message": "average field needed to be the average of sideone,sidetwo,sidethree,sidefour excluding -88 values"
-    })
-    errs = [*errs, checkData(**args)]
+    # NOTE (2/15/2024): Added conditional to only run the check if there are NO mismatched rows AND if there is a 'yes' in plug_extracted
+    # NOTE (2/15/2024): and it now only checks rows that have data
+
+    felddata_filter = match(felddata,feldmeta_filter,felddata_feldmeta_shared_pkey)
+
+    if missing_feld_data == False and len(felddata_filter) > 0:
+        print("Performing check 3")
+        badrows = felddata[
+            felddata.apply(
+                lambda row: row.notna().any() and row['average'] != np.nanmean(
+                    [
+                        row[side_no]
+                        for side_no in ['sideone','sidetwo','sidethree','sidefour']
+                        if row[side_no] != -88
+                    ]
+                ),
+                axis=1
+            )
+        ].tmp_row.tolist()
+        args.update({
+            "dataframe": felddata,
+            "tablename": "tbl_feldspar_data",
+            "badrows": badrows, 
+            "badcolumn": 'average',
+            "error_type": "Value Error",
+            "error_message": "average field needed to be the average of sideone,sidetwo,sidethree,sidefour excluding -88 values"
+        })
+        errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 3")
 
 
