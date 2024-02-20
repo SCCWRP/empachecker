@@ -44,7 +44,7 @@ def vegetation(all_dfs):
     vegmeta_vegdata_shared_pkey = [x for x in vegmeta_pkey if x in vegdata_pkey]
     vegdata_vegmeta_shared_pkey = [x for x in vegdata_pkey if x in vegmeta_pkey]
     epidata_vegmata_shareed_pkey = [x for x in epidata_pkey if x in vegmeta_pkey]
-    #cordgrass_vegmeta_shareed_pkey = [x for x in cordgrass_pkey if x in vegmeta_pkey]
+    cordgrass_vegmeta_shareed_pkey = [x for x in cordgrass_pkey if x in vegmeta_pkey]
     cordgrass_vegdata_shareed_pkey = [x for x in cordgrass_pkey if x in vegdata_pkey]
 
 
@@ -78,15 +78,18 @@ def vegetation(all_dfs):
     # Last Edited Coder: Aria Askaryar
     # NOTE (9/19/2023): Updated the shared_pkeys, was matching the wrong keys with the wrong tables 
     # NOTE (10/05/2023): Aria revised the error message
+
+    check_one_keys = vegmeta_vegdata_shared_pkey + ['habitat']
+
     args.update({
         "dataframe": vegmeta,
         "tablename": "tbl_vegetation_sample_metadata",
-        "badrows": mismatch(vegmeta, vegdata, vegmeta_vegdata_shared_pkey), 
-        "badcolumn": ','.join(vegmeta_vegdata_shared_pkey),
+        "badrows": mismatch(vegmeta, vegdata, keys), 
+        "badcolumn": ','.join(keys),
         "error_type": "Logic Error",
         "error_message": "Records in sample_metadata must have corresponding records in vegetationcover_data. "+\
             "Records are matched based on these columns: {}".format(
-            ','.join(vegmeta_vegdata_shared_pkey)
+            ','.join(keys)
         )
     })
     errs = [*errs, checkData(**args)]
@@ -100,21 +103,24 @@ def vegetation(all_dfs):
     # Last Edited Coder: Aria Askaryar
     # NOTE (9/19/2023): Updated the shared_pkeys, was matching the wrong keys with the wrong tables 
     # NOTE (10/05/2023): Aria revised the error message
+
+    check_two_keys = vegdata_vegmeta_shared_pkey + ['habitat']
+
     args.update({
         "dataframe": vegdata,
         "tablename": "tbl_vegetativecover_data",
-        "badrows": mismatch(vegdata, vegmeta, vegdata_vegmeta_shared_pkey), 
-        "badcolumn": ','.join(vegdata_vegmeta_shared_pkey),
+        "badrows": mismatch(vegdata, vegmeta, check_two_keys), 
+        "badcolumn": ','.join(check_two_keys),
         "error_type": "Logic Error",
         "error_message": "Records in vegetationcover_data should have the corresponding records in vegetation_sample_metadata based on these columns {}".format(
-            ','.join(vegdata_vegmeta_shared_pkey))
+            ','.join(check_two_keys))
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 2")
 
 
     print("# CHECK - 3")
-    # Description: Each epifauna data must include corresponding sample metadata (but not vice versa)
+    # Description: Each epifauna data must include corresponding sample metadata
     # Created Coder: NA
     # Created Date: NA
     # Last Edited Date: 10/05/2023
@@ -152,7 +158,47 @@ def vegetation(all_dfs):
         )
     })
     errs = [*errs, checkData(**args)]
-    print("# END OF CHECK - 3")
+    print("# END OF CHECK - 23")
+
+    print("# CHECK - 24")
+    # Description: Each sample metadata must include corresponding cordgrass data
+    # Created Coder: Caspian
+    # Created Date: 2/16/2024
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (): 
+    args.update({
+        "dataframe": vegmeta,
+        "tablename": "tbl_vegetation_sample_metadata",
+        "badrows": mismatch(vegmeta, cordgrass, cordgrass_vegmeta_shareed_pkey),
+        "badcolumn": ','.join(cordgrass_vegmeta_shareed_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Each sample metadata must include corresponding cordgrass data based on these columns: {}".format(
+            ','.join(cordgrass_vegmeta_shareed_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 24")
+
+    print("# CHECK - 25")
+    # Description: Each cordgrass data must include corresponding metadata
+    # Created Coder: Caspian
+    # Created Date: 2/16/2024
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE ():
+    args.update({
+        "dataframe": cordgrass,
+        "tablename": "tbl_cordgrass",
+        "badrows": mismatch(cordgrass, vegmeta, cordgrass_vegmeta_shareed_pkey),
+        "badcolumn": ','.join(cordgrass_vegmeta_shareed_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Each cordgrass data must include corresponding epifauna data based on these columns: {}".format(
+            ','.join(cordgrass_vegmeta_shareed_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 25")
 
 
 
