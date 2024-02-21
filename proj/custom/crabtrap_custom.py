@@ -282,21 +282,22 @@ def crabtrap(all_dfs):
 
 
     print("# CHECK - 8")
-    # Description: If trapsuccess is no then catch must be NULL or empty (🛑 ERROR 🛑)
+    # Description: If trapsuccess is no then catch must be no (🛑 ERROR 🛑)
     # Created Coder: Duy Nguyen
     # Created Date: 10/04/2022
-    # Last Edited Date: 8/29/2023
-    # Last Edited Coder: Zaib Quraishi
+    # Last Edited Date: 2/21/24
+    # Last Edited Coder: Duy
     # NOTE (2/16/23): (Duy) Fixed this one too. Using the keyword 'no' to get the contradiction of a boolean series is not recommended. 
     # Use '~' instead.
     # NOTE (8/29/23): Zaib adjusts the format so it follows the coding standard.
+    # NOTE (2/21/24): The original logic makes no sense.
     args.update({
         "dataframe": crabmeta,
         "tablename": 'tbl_crabtrap_metadata',
-        "badrows": crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'no') & (~pd.isnull(crabmeta['catch']))].tmp_row.tolist(),
+        "badrows": crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'no') & (crabmeta['catch'].apply(lambda x: str(x).strip().lower()) != 'no')].tmp_row.tolist(),
         "badcolumn": "catch",
         "error_type": "Undefined Error",
-        "error_message": "If trapsuccess is no then catch must be NULL or empty"
+        "error_message": "If trapsuccess is no then catch must be no"
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 8")
