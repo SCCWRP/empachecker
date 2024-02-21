@@ -106,7 +106,7 @@ def feldspar(all_dfs):
         "badrows": badrows, 
         "badcolumn": ','.join(felddata_feldmeta_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "Plug_extracted = yes. Each Feldspar data must have corresponding records in Feldspar Metadata. Records are matched based on these columns: {}".format(
+        "error_message": "If a feldspar plug was extracted (plug_extracted = yes), then a corresponding record should be entered in the Feldspar data.. Records are matched based on these columns: {}".format(
             ','.join(felddata_feldmeta_shared_pkey)
         )
     })
