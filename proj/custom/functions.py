@@ -305,7 +305,8 @@ def check_consecutiveness(df, groupcols, col_to_check, startval = 1):
 
     def is_consecutive(df):
         df = df[df[col_to_check] != -88].sort_values(by=col_to_check)
-        consecutive = ((df[col_to_check].drop_duplicates().sort_values().diff().dropna() == 1).all()) & (df[col_to_check].min() == startval)
+        #consecutive = ((df[col_to_check].drop_duplicates().sort_values().diff().dropna() == 1).all()) & (df[col_to_check].min() == startval)
+        consecutive = ((df[col_to_check].drop_duplicates().sort_values().diff().dropna() == 1).all()) # Duy (2/21/24): it doesn't have to start at 1, as long as the numbers are consecutive
         if not consecutive:
             return df.tmp_row.tolist()
         else:
