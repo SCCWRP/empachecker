@@ -280,6 +280,7 @@ def main():
     # debug = False will cause corechecks to run with multiprocessing, 
     # but the logs will not show as much useful information
     print("Right before core runs")
+    print(session['final_submit_requested'])
     core_output = core(all_dfs, g.eng, dbmetadata, debug = True)
     #core_output = core(all_dfs, g.eng, dbmetadata, debug = False)
     print("Right after core runs")
@@ -453,6 +454,7 @@ def main():
         "all_datasets": list(current_app.datasets.keys()),
         "table_to_tab_map" : session['table_to_tab_map'],
         "has_visual_map": station_visual_map,
+        "final_submit_requested": session['final_submit_requested'],
         
         # to display the login email on the submission info tab
         "login_email": session.get("login_info", dict()).get('login_email', "non_existing_email@sccwrp.org") 

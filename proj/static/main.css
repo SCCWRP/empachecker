@@ -175,6 +175,10 @@ span.table-not-matched {
     align-content: center;
     text-align: center;
 }
+.form-check-container {
+    align-content: center;
+    text-align: left;
+}
 
 .error-alert {
     background-color: #ffaaa3;

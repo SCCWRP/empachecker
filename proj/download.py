@@ -672,7 +672,7 @@ def get_test_data():
             for tbl in dataset.get('tables'):
                 print(tbl)
                 if tbl == 'tbl_protocol_metadata':
-                    df = pd.read_sql(f'SELECT * FROM {tbl}', eng)
+                    df = pd.read_sql(f'SELECT * FROM {tbl} LIMIT 1', eng)
                     df.to_excel(writer, sheet_name=tbl, index=False)
                 else:
                     if siteid_df.empty:
@@ -681,12 +681,10 @@ def get_test_data():
                     else:
                         siteid = siteid_df.iloc[0, 0]
                         df = pd.read_sql(f"SELECT * FROM {tbl} WHERE siteid = '{siteid}'", eng)
-                        for col in [col for col in df.columns if 'date' in col]:
-                            df[col] = df[col].apply(lambda x: pd.Timestamp(x.to_pydatetime() + relativedelta(years=50)))
                         df.to_excel(writer, sheet_name=tbl, index=False)
 
         data.seek(0)
-        filename = f'{dtype}_{"clean" if clean else "unclean"}.xlsx'
+        filename = f'{dtype}_test.xlsx'
         return send_file(data, download_name=filename, mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     except Exception as e:
         print(f"Error: {e}")

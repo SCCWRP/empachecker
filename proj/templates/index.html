@@ -71,7 +71,11 @@
                 </div>  
                 <br>
                 {% endfor %}
-              
+
+
+
+
+
                 <div class="login-input-container form form-group" id="login-form-submit-btn-container">
                   <button class="btn btn-secondary" type="submit">Sign in</button>
                 </div>
@@ -134,6 +138,29 @@
 
                   </div>  
                   {% endfor %}
+
+                  <br>
+                  <div class="form-check-container">
+                    <div class="form-check-label-container">
+                        I want to:
+                    </div>
+                    <div class="form-check-group">
+                        <div class="form-check-item">
+                            <input class="form-check-input" type="radio" name="check-or-submit" id="check-or-submit-option1" value="submit" checked>
+                            <label class="form-check-label" for="check-or-submit-option1">
+                                Submit data
+                            </label>
+                        </div>
+            
+                        <div class="form-check-item">
+                            <input class="form-check-input" type="radio" name="check-or-submit" id="check-or-submit-option2" value="no-submit">
+                            <label class="form-check-label" for="check-or-submit-option2">
+                                Check data without submitting
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 
                   <div class="login-input-container form form-group" id="login-form-submit-btn-container">
                     <button class="btn btn-secondary" type="submit">Sign in</button>

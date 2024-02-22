@@ -240,6 +240,10 @@ const buildReport = (res) => {
         document.getElementById('visual-map').setAttribute('src',`/${script_root}/map/${res.submissionid}`)
     }
 
+    if (res.final_submit_requested === false){
+        document.querySelector("#final-submit-button-container").classList.add("hidden");
+    }
+
     // display the logger visual if applicable
     let submissionType = document.getElementById('submission-type').innerText
     if ( ['logger_formatted','logger_raw'].includes(submissionType) ){
