@@ -73,6 +73,11 @@ def sedchem_lab(all_dfs):
     # NOTE (09/12/2023): Ayah created logic check, has not tested yet
     # NOTE (10/05/2023): Aria revised the error message
 
+    if 'samplecollectiondate' in sedlabbatch.columns:
+        sedlabbatch['samplecollectiondate'] = pd.to_datetime(sedlabbatch['samplecollectiondate'])
+    if 'samplecollectiondate' in grabeventdetails.columns:
+        grabeventdetails['samplecollectiondate'] = pd.to_datetime(grabeventdetails['samplecollectiondate'])
+
     args.update({
         "dataframe": sedlabbatch,
         "tablename": "tbl_sedchem_labbatch_data",

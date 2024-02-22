@@ -80,6 +80,12 @@ def sedimentgrainsize_lab(all_dfs):
     # Last Edited Coder: Aria Askaryar
     # NOTE (09/12/2023): Ayah created logic check, has not tested yet
     # NOTE (10/05/2023): Aria revised the error message
+
+    if 'samplecollectiondate' in sed_labbatch.columns:
+        sed_labbatch['samplecollectiondate'] = pd.to_datetime(sed_labbatch['samplecollectiondate'])
+    if 'samplecollectiondate' in grabeventdetails.columns:
+        grabeventdetails['samplecollectiondate'] = pd.to_datetime(grabeventdetails['samplecollectiondate'])
+
     args.update({
         "dataframe": sed_labbatch,
         "tablename": "tbl_sedgrainsize_labbatch_data",

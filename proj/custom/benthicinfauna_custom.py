@@ -41,19 +41,6 @@ def benthicinfauna_lab(all_dfs):
     errs = []
     warnings = []
 
-    # Alter this args dictionary as you add checks and use it for the checkData function
-    # for errors that apply to multiple columns, separate them with commas
-    '''
-    args = {
-        "dataframe": df,
-        "tablename": tbl,
-        "badrows": [],
-        "badcolumn": "",
-        "error_type": "",
-        "is_core_error": False,
-        "error_message": ""
-    }
-    '''
     args = {
         "dataframe": pd.DataFrame({}),
         "tablename": '',
@@ -80,12 +67,19 @@ def benthicinfauna_lab(all_dfs):
     labbatch_grabeventdet_shared_pkey = [x for x in benthiclabbatch_pkey if x in grabeventdet_pkey]
 
     print("# CHECK - 1")
-    # Description: Each labbatch data must include corresponding records in grab_event
+    # Description: Each labbatch data must include corresponding records in grabevent_details
     # Created Coder: Duy
-    # Created Date: 09/27/23
+    # Created Date: 2/22/24
     # Last Edited Date:  NA
     # Last Edited Coder: NA
     # NOTE (09/27/23): Duy created the check, QA'ed
+    # NOTE (2/22/24): Make sure that samplecollectiondate have the same format, so later when we do astype(str), it doesn't randomly add 00:00:00 to the date
+
+    if 'samplecollectiondate' in benthiclabbatch.columns:
+        benthiclabbatch['samplecollectiondate'] = pd.to_datetime(benthiclabbatch['samplecollectiondate'])
+    if 'samplecollectiondate' in grabevent_details.columns:
+        grabevent_details['samplecollectiondate'] = pd.to_datetime(grabevent_details['samplecollectiondate'])
+
     args.update({
         "dataframe": benthiclabbatch,
         "tablename": "tbl_benthicinfauna_labbatch",
