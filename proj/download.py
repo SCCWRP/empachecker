@@ -661,7 +661,7 @@ def get_test_data():
         return f"Datatype {dtype} not found in datasets"
 
     if any(['logger' in dtype, 'trash' in dtype]):
-        return "We won't do it for loggers or trash"
+        return "We won't do it for loggers or trash "
     
     try:
         data = BytesIO()
