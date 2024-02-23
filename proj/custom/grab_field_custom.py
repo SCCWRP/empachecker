@@ -102,13 +102,16 @@ def grab_field(all_dfs):
     # Description: Records in the grabevent_details should have the corresponding records in the grabevent based on the shared pkeys
     # Created Coder: Ayah
     # Created Date: NA
-    # Last Edited Date: 09/14/2023
-    # Last Edited Coder: Ayah
+    # Last Edited Date: 2/23/2024
+    # Last Edited Coder: Duy
     # NOTE (09/12/2023): Ayah wrote logic check
+    # NOTE (2/23/2024): This is what Ayah put mismatch(grabevent,grabeventdet,grabevent_grabeventdet_shared_pkey) which is wrong, grabeventdet should go first
+    
     args.update({
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
-        "badrows":mismatch(grabevent,grabeventdet,grabevent_grabeventdet_shared_pkey),
+        #"badrows":mismatch(grabevent,grabeventdet,grabevent_grabeventdet_shared_pkey),
+        "badrows": mismatch(grabeventdet, grabevent, grabevent_grabeventdet_shared_pkey),
         "badcolumn": ','.join(grabevent_grabeventdet_shared_pkey),
         "error_type": "empty value",
         "is_core_error": False,
