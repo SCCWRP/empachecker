@@ -65,6 +65,7 @@ def feldspar(all_dfs):
     # Last Edited Date: 10/05/2023 
     # Last Edited Coder: Aria Askaryar
     # NOTE (10/05/2023): Aria revised the error message
+
     feldmeta_filter = feldmeta[feldmeta['plug_extracted'] == 'Yes']
     
     args = {
@@ -74,7 +75,7 @@ def feldspar(all_dfs):
         "badcolumn": ','.join(felddata_feldmeta_shared_pkey),
         "error_type": "Value Error",
         "is_core_error": False,
-        "error_message": "Since plug_extracted = yes, metadata must have corresponding records in Feldspar Data. Records are matched based on these columns: {}".format(
+        "error_message": "If a feldspar plug was extracted and marked 'Yes', then there should be corresponding data in tbl_feldspar_data. Records are matched based on these columns: {}".format(
             ','.join(felddata_feldmeta_shared_pkey)
         )
     }
@@ -92,13 +93,7 @@ def feldspar(all_dfs):
     # NOTE (10/05/2023): Aria revised the error message
     # NOTE (2/15/2024): Added var to flag if there are mismatched rows (missing_feld_data) to be used in check 3
 
-    badrows = mismatch(felddata,feldmeta_filter,felddata_feldmeta_shared_pkey)
-    
-    missing_feld_data = False
-
-    if len(badrows) > 0:
-        missing_feld_data = True
-
+    badrows = mismatch(felddata,feldmeta,felddata_feldmeta_shared_pkey)
 
     args.update({
         "dataframe": felddata,
@@ -106,12 +101,37 @@ def feldspar(all_dfs):
         "badrows": badrows, 
         "badcolumn": ','.join(felddata_feldmeta_shared_pkey),
         "error_type": "Logic Error",
-        "error_message": "If a feldspar plug was extracted (plug_extracted = yes), then a corresponding record should be entered in the Feldspar data.. Records are matched based on these columns: {}".format(
+        "error_message": "Each record in tbl_feldspar_data must have a corresponsing record in tbl_feldspar_metadata. Records are matched based on these columns: {}".format(
             ','.join(felddata_feldmeta_shared_pkey)
         )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 2")
+
+    print("# CHECK - 4")
+    # Description: Each record in feldspar_data must not have a correspoding record in feldspar_metadata when plug_extracted = no
+    # Created Coder: Caspian 
+    # Created Date: 2/22/2024
+    # Last Edited Date: 2/22/2024
+    # Last Edited Coder: Caspian
+    # NOTE (2/22/2024): Check created
+    feldmeta_filter = feldmeta[feldmeta['plug_extracted'] == 'No']
+
+    badrows = match(feldmeta_filter, felddata, felddata_feldmeta_shared_pkey)
+
+    args.update({
+        "dataframe": feldmeta,
+        "tablename": 'tbl_feldspar_metadata',
+        "badrows": badrows, 
+        "badcolumn": ','.join(felddata_feldmeta_shared_pkey),
+        "error_type": "Value Error",
+        "error_message": "If a feldspar plug was not extracted and marked 'No', then there should be no corresponding data in the tbl_feldspar_data. Records are matched based on these columns: {}".format(
+            ','.join(felddata_feldmeta_shared_pkey)
+        )
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 4")
+
 
 
 
@@ -165,7 +185,7 @@ def feldspar(all_dfs):
 
     felddata_filter = match(felddata,feldmeta_filter,felddata_feldmeta_shared_pkey)
 
-    if missing_feld_data == False and len(felddata_filter) > 0:
+    if len(felddata_filter) > 0:
         print("Performing check 3")
         badrows = felddata[
             felddata.apply(
