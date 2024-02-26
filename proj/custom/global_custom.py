@@ -182,10 +182,9 @@ def global_custom(all_dfs, datatype = ''):
             # Description: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Time_Ele is required
             # Created Coder: Nick Lombardo
             # Created Date: 09/07/23
-            # Last Edited Date: 
-            # Last Edited Coder: 
-            # NOTE (): 
-            # NOTE (): 
+            # Last Edited Date: 2/26/24
+            # Last Edited Coder: Duy
+            # NOTE (2/26/24): Make warning instead of error
             args = {
                 "dataframe": df,
                 "tablename": table_name,
@@ -193,9 +192,9 @@ def global_custom(all_dfs, datatype = ''):
                 "badcolumn": "elevation_time",
                 "error_type": "Value Error",
                 "is_core_error": False,
-                "error_message": "If elevation_ellipsoid or elevation_orthometric is reported, then elevation_time is required"
+                "error_message": "If elevation_ellipsoid or elevation_orthometric is reported, then elevation_time should be reported"
             }
-            errs = [*errs, checkData(**args)]
+            warnings = [*warnings, checkData(**args)]
             print("# END GLOBAL CUSTOM CHECK - 5")
 
 
