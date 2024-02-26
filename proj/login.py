@@ -101,8 +101,6 @@ def update_file_type():
 def login():
     
     login_info = dict(request.form)
-    print("login_info")
-    print(login_info)
     # date_range = login_info['login_startdate'].split('_')
     # login_info['login_startdate'] = date_range[0]
     # login_info['login_enddate'] = date_range[1]

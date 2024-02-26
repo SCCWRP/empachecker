@@ -280,7 +280,6 @@ def main():
     # debug = False will cause corechecks to run with multiprocessing, 
     # but the logs will not show as much useful information
     print("Right before core runs")
-    print(session['final_submit_requested'])
     core_output = core(all_dfs, g.eng, dbmetadata, debug = True)
     #core_output = core(all_dfs, g.eng, dbmetadata, debug = False)
     print("Right after core runs")
