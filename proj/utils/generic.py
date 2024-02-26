@@ -78,8 +78,6 @@ def correct_row_offset(lst, offset):
 
 
 def save_errors(errs, filepath):
-    print("# IN SAVE ERRORS")
-    print(errs)
     errors_file = open(filepath, 'w')
     dump(
         collect_error_messages(errs),
