@@ -453,7 +453,7 @@ def main():
         "all_datasets": list(current_app.datasets.keys()),
         "table_to_tab_map" : session['table_to_tab_map'],
         "has_visual_map": station_visual_map,
-        "final_submit_requested": session['final_submit_requested'],
+        "final_submit_requested": session.get('final_submit_requested', True),
         
         # to display the login email on the submission info tab
         "login_email": session.get("login_info", dict()).get('login_email', "non_existing_email@sccwrp.org") 
