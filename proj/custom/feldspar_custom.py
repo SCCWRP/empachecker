@@ -112,13 +112,19 @@ def feldspar(all_dfs):
     # Description: Each record in feldspar_data must not have a correspoding record in feldspar_metadata when plug_extracted = no
     # Created Coder: Caspian 
     # Created Date: 2/22/2024
-    # Last Edited Date: 2/22/2024
-    # Last Edited Coder: Caspian
+    # Last Edited Date: 3/11/2024
+    # Last Edited Coder: Duy
     # NOTE (2/22/2024): Check created
-    feldmeta_filter = feldmeta[feldmeta['plug_extracted'] == 'No']
-
-    badrows = match(feldmeta_filter, felddata, felddata_feldmeta_shared_pkey)
-
+    # NOTE (3/11/2024): When there's nothing in felddata, the check marks all rows in meta as incorrect even though plug_extract = no, so Duy fixed it
+    feldmeta_filter = feldmeta[feldmeta['plug_extracted'].str.lower() == 'no']
+    merged = pd.merge(
+        feldmeta_filter,
+        felddata,
+        how='inner',
+        on=felddata_feldmeta_shared_pkey,
+        suffixes=('_meta','_data')
+    )
+    badrows = merged['tmp_row_meta'].tolist()
     args.update({
         "dataframe": feldmeta,
         "tablename": 'tbl_feldspar_metadata',
