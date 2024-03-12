@@ -379,7 +379,7 @@ def macroalgae(all_dfs):
         "badrows" : badrows,
         "badcolumn": "covertype, estimatedcover",
         "error_type": "Value Error",
-        "error_message": f"estimatedcover for 'open cover' in covertype + estimatedcover for 'total cover' must be 100"
+        "error_message": f"For every plotreplicate - total cover and open cover are required in covertype column, and estimatedcover for 'open' in covertype + estimatedcover for 'total' must be 100"
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 14")

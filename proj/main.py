@@ -131,6 +131,7 @@ def main():
                 sheet_name = sheet,
                 skiprows = current_app.excel_offset,
                 na_values = [''],
+                dtype={"amountoftrash": str},
                 converters = {"preparationtime":str}
             )
             
@@ -251,7 +252,8 @@ def main():
             excel_path, 
             sheet_name = sheet,
             skiprows = current_app.excel_offset,
-            na_values = ['']
+            na_values = [''],
+            dtype={"amountoftrash": str}
         )
         for sheet in pd.ExcelFile(excel_path).sheet_names
         if ((sheet not in current_app.tabs_to_ignore) and (not sheet.startswith('lu_')))
