@@ -203,7 +203,7 @@ def logger_raw(all_dfs):
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[(((logger['raw_conductivity'] < 0) & (logger['raw_conductivity'] != -88)) | (logger['raw_conductivity'] > 10)) & \
+        "badrows":logger[(((logger['raw_conductivity'] < 0) & (logger['raw_conductivity'] != -88)) | (logger['raw_conductivity'] > 100)) & \
                               (logger['raw_conductivity_unit'] == "mS/cm")].tmp_row.tolist(),
         "badcolumn": "raw_conductivity",
         "error_type" : "Value out of range",
