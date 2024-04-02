@@ -153,7 +153,10 @@ def main():
         )
     print("DONE - building 'all_dfs' dictionary")
     
-
+    # Check if protocol_metadata is empty
+    if 'tbl_protocol_metadata' in all_dfs.keys():
+        if len(all_dfs['tbl_protocol_metadata']) == 0:
+            return jsonify(user_error_msg='Please fill out the sheet protocol_metadata before you continue')
 
     # -------------------------------------------------------------------------- #
 
