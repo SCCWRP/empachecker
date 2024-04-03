@@ -312,17 +312,20 @@ def trash(all_dfs):
     # Created Date: 11/16/2023
     # Last Edited Date: 
     # Last Edited Coder: 
-    trashsamplearea_pkey_filter = [x for x in trashsiteinfo_pkey if x !='quadrat']
-    errs.append(
-        checkData(
-            tablename='tbl_trashsamplearea',
-            badrows= check_consecutiveness(trashsamplearea,trashsamplearea_pkey_filter,'quadrat'),
-            badcolumn='quadrat',
-            error_type='Undefined Error',
-            error_message=f"quadrat values must be consecutive in tbl_trashsamplearea. Records are grouped by {','.join(trashsamplearea_pkey)}"
-        )
-    )
     
+    if not trashsamplearea.empty:
+        groupby_cols = ['projectid','estuaryname','sampledate','siteid','stationno','transect']
+        trashsamplearea['tmp_row'] = trashsamplearea.index
+        errs.append(
+            checkData(
+                tablename='tbl_trashsamplearea',
+                badrows= check_consecutiveness(trashsamplearea, groupby_cols, 'quadrat'),
+                badcolumn='quadrat',
+                error_type='Undefined Error',
+                error_message=f"quadrat values must be consecutive for each transect. Records are grouped by {','.join(groupby_cols)}"
+            )
+        )
+        
 
     print("# END LOGIC CHECK - 18")
 
