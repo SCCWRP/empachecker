@@ -1,5 +1,5 @@
 import pandas as pd
-from flask import request, Blueprint, render_template, current_app, g
+from flask import request, Blueprint, render_template, current_app, g, jsonify
 from .utils.mail import send_mail
 
 
@@ -18,6 +18,11 @@ def lookuplists():
 
                 # unfortunately readonly user doesnt have access to information_schema
                 eng = g.eng # postgresql
+                
+                valid_tables = pd.read_sql('SELECT DISTINCT table_name from information_schema.tables', eng).table_name.values
+
+                if layer not in valid_tables:
+                    return jsonify({"error": "Bad Request", "message":"Invalid argument: {}".format(layer)}), 400
 
                 # below should be more sanitized
                 # https://stackoverflow.com/questions/39196462/how-to-use-variable-for-sqlite-table-name?rq=1
