@@ -300,6 +300,18 @@ def vegetation(all_dfs):
         "error_message": f"transectreplicate values must be consecutive. Records are grouped by {','.join(groupby_cols)}"
     })
     errs = [*errs, checkData(**args)]
+
+
+    groupby_cols = ['projectid','siteid','estuaryname','stationno','samplecollectiondate','transectreplicate']
+    args.update({
+        "dataframe": vegmeta,
+        "tablename": "tbl_vegetation_sample_metadata",
+        "badrows" : check_consecutiveness(vegmeta, groupby_cols, 'plotreplicate'),
+        "badcolumn": "plotreplicate",
+        "error_type": "Replicate Error",
+        "error_message": f"plotreplicate values must be consecutive within a transect"
+    })
+    errs = [*errs, checkData(**args)]
     
     print("# END OF CHECK - 7")
 
