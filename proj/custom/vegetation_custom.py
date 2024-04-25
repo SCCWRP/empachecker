@@ -297,7 +297,7 @@ def vegetation(all_dfs):
         "badrows" : check_consecutiveness(vegmeta, groupby_cols, 'transectreplicate'),
         "badcolumn": "transectreplicate",
         "error_type": "Replicate Error",
-        "error_message": f"transectreplicate values must be consecutive. Records are grouped by {','.join(groupby_cols)}"
+        "error_message": f"transectreplicate values must be consecutive (1,2,3, etc.) within a station for a specific date."
     })
     errs = [*errs, checkData(**args)]
 
@@ -309,7 +309,7 @@ def vegetation(all_dfs):
         "badrows" : check_consecutiveness(vegmeta, groupby_cols, 'plotreplicate'),
         "badcolumn": "plotreplicate",
         "error_type": "Replicate Error",
-        "error_message": f"plotreplicate values must be consecutive within a transect"
+        "error_message": f"plotreplicate values must be consecutive (1,2,3, etc.) within a transect"
     })
     errs = [*errs, checkData(**args)]
     
@@ -484,17 +484,17 @@ def vegetation(all_dfs):
     # NOTE (09/28/2023): Aria wrote the check, it has not been tested yet
     # NOTE (11/1/23): plotreplicate must be consecutive for a given transectreplicate
     
-    groupby_cols = ['projectid','siteid','estuaryname','stationno','samplecollectiondate','transectreplicate']
-    args.update({
-        "dataframe": vegdata,
-        "tablename": "tbl_vegetativecover_data",
-        "badrows" : check_consecutiveness(vegdata, groupby_cols, 'plotreplicate'),
-        "badcolumn": "plotreplicate",
-        "error_type": "Replicate Error",
-        "error_message": f"plotreplicate must be consecutive within primary keys (siteid, estuaryname, stationno, samplecollectiondate, transectreplicate, plotreplicate, covertype, scientificname, live_dead, unknownreplicate, projectid)"
-    })
-    errs = [*errs, checkData(**args)]
-    print("# END OF CHECK - 13")
+    # groupby_cols = ['projectid','siteid','estuaryname','stationno','samplecollectiondate','transectreplicate']
+    # args.update({
+    #     "dataframe": vegdata,
+    #     "tablename": "tbl_vegetativecover_data",
+    #     "badrows" : check_consecutiveness(vegdata, groupby_cols, 'plotreplicate'),
+    #     "badcolumn": "plotreplicate",
+    #     "error_type": "Replicate Error",
+    #     "error_message": f"plotreplicate must be consecutive within primary keys (siteid, estuaryname, stationno, samplecollectiondate, transectreplicate, plotreplicate, covertype, scientificname, live_dead, unknownreplicate, projectid)"
+    # })
+    # errs = [*errs, checkData(**args)]
+    # print("# END OF CHECK - 13")
 
 
 
