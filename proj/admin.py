@@ -381,7 +381,7 @@ def report():
                             AND chemistry = 'Yes'
                     ) > 0 THEN 'X'
                     ELSE NULL
-                END AS "Sop 3 - Nutrients - lab",
+                END AS "Sop 3 - SedimentChemistry - lab",
 
                 CASE
                     WHEN (
@@ -476,7 +476,7 @@ def report():
                             AND '{enddate}'
                     ) > 0 THEN 'X'
                     ELSE NULL
-                END AS "SOP 10 - crabs",
+                END AS "SOP 10 - Crabs",
                 CASE
                     WHEN (
                         SELECT
@@ -489,7 +489,7 @@ def report():
                             AND '{enddate}'
                     ) > 0 THEN 'X'
                     ELSE NULL
-                END AS "SOP 11 - veg",
+                END AS "SOP 11 - Veg",
                 CASE
                     WHEN (
                         SELECT
@@ -502,7 +502,7 @@ def report():
                             AND '{enddate}'
                     ) > 0 THEN 'X'
                     ELSE NULL
-                END AS "SOP 13 - feldspar",
+                END AS "SOP 13 - Feldspar",
                 CASE
                     WHEN (
                         SELECT
@@ -515,11 +515,13 @@ def report():
                             AND '{enddate}'
                     ) > 0 THEN 'X'
                     ELSE NULL
-                END AS "SOP 15 - trash"
+                END AS "SOP 15 - Trash"
             FROM
                 sample_assignment_info;
 
             """
+            print(qry)
+
             df = pd.read_sql(qry, g.eng)
 
             # Convert DataFrame to HTML
