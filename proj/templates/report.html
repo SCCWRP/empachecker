@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Report</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $("#startdate, #enddate").datepicker({
+                dateFormat: 'yy-mm-dd'  // Set the date format
+            });
+        });
+    </script>
+</head>
+<body>
+    <h1>Generate Report</h1>
+    <form action="/checker/report" method="POST">
+        <label for="startdate">Start Date:</label>
+        <input type="text" id="startdate" name="startdate">
+
+        <label for="enddate">End Date:</label>
+        <input type="text" id="enddate" name="enddate">
+
+        <button type="submit">Generate Report</button>
+    </form>
+</body>
+</html>
