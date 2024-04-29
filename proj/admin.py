@@ -533,6 +533,8 @@ def report():
             for cell in soup.find_all("td"):
                 if cell.get_text().strip() == "X":
                     cell["style"] = "background-color: green; color: white;"
+                elif cell.get_text().strip() == "None":
+                    cell["style"] = "background-color: red"
 
             # Convert the modified HTML back to a string.
             modified_html = str(soup)
