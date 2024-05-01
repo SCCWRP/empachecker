@@ -1,7 +1,8 @@
 import os, time, re
 import pandas as pd
 from bs4 import BeautifulSoup
-from flask import Blueprint, g, current_app, render_template, redirect, url_for, session, request, jsonify, render_template_string, make_response
+from flask import Blueprint, g, current_app, render_template, redirect, url_for, session, request, jsonify, render_template_string, send_file
+from io import StringIO
 import psycopg2
 from psycopg2 import sql
 
@@ -323,8 +324,7 @@ def report():
                             tbl_wq_logger_metadata
                         WHERE
                             tbl_wq_logger_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiontimestampstart BETWEEN '{startdate}'
-                            AND '{enddate}'
+                            AND samplecollectiontimestampstart BETWEEN '{startdate}' AND '{enddate}'
                     ) > 0 THEN 'X'
                     ELSE NULL
                 END AS "SOP 1 - logger",
@@ -336,8 +336,7 @@ def report():
                             tbl_waterquality_metadata
                         WHERE
                             tbl_waterquality_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}'
-                            AND '{enddate}'
+                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
                     ) > 0 THEN 'X'
                     ELSE NULL
                 END AS "SOP 2 - discrete",
@@ -349,8 +348,7 @@ def report():
                             tbl_edna_metadata
                         WHERE
                             tbl_edna_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}'
-                            AND '{enddate}'
+                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
                     ) > 0 THEN 'X'
                     ELSE NULL
                 END AS "SOP 4 - eDNA -field",
@@ -362,56 +360,58 @@ def report():
                             tbl_grabevent
                         WHERE
                             tbl_grabevent.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}'
-                            AND '{enddate}'
+                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
                     ) > 0 THEN 'X'
                     ELSE NULL
                 END AS "Grab Table",
-
                 CASE
                     WHEN (
                         SELECT
                             COUNT(*)
                         FROM
-                            tbl_grabevent
+                            tbl_sedchem_data
                         WHERE
-                            tbl_grabevent.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}'
-                            AND '{enddate}'
-                            AND chemistry = 'Yes'
+                            tbl_sedchem_data.siteid = sample_assignment_info.siteid
+                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
                     ) > 0 THEN 'X'
                     ELSE NULL
                 END AS "Sop 3 - SedimentChemistry - lab",
-
                 CASE
                     WHEN (
                         SELECT
                             COUNT(*)
                         FROM
-                            tbl_grabevent
+                            tbl_sedgrainsize_data
                         WHERE
-                            tbl_grabevent.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}'
-                            AND '{enddate}'
-                            AND grainsize = 'Yes'
+                            tbl_sedgrainsize_data.siteid = sample_assignment_info.siteid
+                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
                     ) > 0 THEN 'X'
                     ELSE NULL
                 END AS "Sop 5 - GS - lab",
-
                 CASE
                     WHEN (
                         SELECT
                             COUNT(*)
                         FROM
-                            tbl_grabevent
+                            tbl_benthicinfauna_labbatch
                         WHERE
-                            tbl_grabevent.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}'
-                            AND '{enddate}'
-                            AND infauna = 'Yes'
+                            tbl_benthicinfauna_labbatch.siteid = sample_assignment_info.siteid
+                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
                     ) > 0 THEN 'X'
                     ELSE NULL
-                END AS "SOP 6 - infauna -lab",
+                END AS "SOP 6 - infauna - lab",
+                CASE
+                    WHEN (
+                        SELECT
+                            COUNT(*)
+                        FROM
+                            tbl_benthiclarge_metadata
+                        WHERE
+                            tbl_benthiclarge_metadata.siteid = sample_assignment_info.siteid
+                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+                    ) > 0 THEN 'X'
+                    ELSE NULL
+                END AS "SOP 6 - infauna - large",
                 CASE
                     WHEN (
                         SELECT
@@ -420,8 +420,7 @@ def report():
                             tbl_macroalgae_sample_metadata
                         WHERE
                             tbl_macroalgae_sample_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}'
-                            AND '{enddate}'
+                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
                     ) > 0 THEN 'X'
                     ELSE NULL
                 END AS "SOP 7 - macroalgae",
@@ -433,11 +432,10 @@ def report():
                             tbl_bruv_metadata
                         WHERE
                             tbl_bruv_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}'
-                            AND '{enddate}'
+                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
                     ) > 0 THEN 'X'
                     ELSE NULL
-                END AS "SOP 8-BRUVs-field",
+                END AS "SOP 8 - BRUVs - field",
                 CASE
                     WHEN (
                         SELECT
@@ -446,11 +444,10 @@ def report():
                             tbl_bruv_data
                         WHERE
                             tbl_bruv_data.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}'
-                            AND '{enddate}'
+                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
                     ) > 0 THEN 'X'
                     ELSE NULL
-                END AS "SOP 8-BRUVs-lab",
+                END AS "SOP 8 - BRUVs - lab",
                 CASE
                     WHEN (
                         SELECT
@@ -459,11 +456,10 @@ def report():
                             tbl_fish_sample_metadata
                         WHERE
                             tbl_fish_sample_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}'
-                            AND '{enddate}'
+                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
                     ) > 0 THEN 'X'
                     ELSE NULL
-                END AS "SOP 9 - fish",
+                END AS "SOP 9 - Fishes",
                 CASE
                     WHEN (
                         SELECT
@@ -472,8 +468,7 @@ def report():
                             tbl_crabtrap_metadata
                         WHERE
                             tbl_crabtrap_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}'
-                            AND '{enddate}'
+                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
                     ) > 0 THEN 'X'
                     ELSE NULL
                 END AS "SOP 10 - Crabs",
@@ -485,11 +480,10 @@ def report():
                             tbl_vegetation_sample_metadata
                         WHERE
                             tbl_vegetation_sample_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}'
-                            AND '{enddate}'
+                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
                     ) > 0 THEN 'X'
                     ELSE NULL
-                END AS "SOP 11 - Veg",
+                END AS "SOP 11 - Vegetation",
                 CASE
                     WHEN (
                         SELECT
@@ -498,8 +492,7 @@ def report():
                             tbl_feldspar_metadata
                         WHERE
                             tbl_feldspar_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}'
-                            AND '{enddate}'
+                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
                     ) > 0 THEN 'X'
                     ELSE NULL
                 END AS "SOP 13 - Feldspar",
@@ -511,19 +504,18 @@ def report():
                             tbl_trashsiteinfo
                         WHERE
                             tbl_trashsiteinfo.siteid = sample_assignment_info.siteid
-                            AND sampledate BETWEEN '{startdate}'
-                            AND '{enddate}'
+                            AND sampledate BETWEEN '{startdate}' AND '{enddate}'
                     ) > 0 THEN 'X'
                     ELSE NULL
                 END AS "SOP 15 - Trash"
             FROM
                 sample_assignment_info;
-
             """
             print(qry)
 
             df = pd.read_sql(qry, g.eng)
-
+            df = df.sort_values(by=['projectid', 'siteid'])
+            df.to_csv(os.path.join(os.getcwd(), 'export','inventory-report.csv'),index=False)
             # Convert DataFrame to HTML
             df_html = df.to_html(index=False)
             # Parse the HTML to modify it.
@@ -532,9 +524,9 @@ def report():
             # Iterate over each table cell.
             for cell in soup.find_all("td"):
                 if cell.get_text().strip() == "X":
-                    cell["style"] = "background-color: green; color: white;"
+                    cell["style"] = "background-color: #CCFFCC; color: green;"
                 elif cell.get_text().strip() == "None":
-                    cell["style"] = "background-color: red"
+                    cell["style"] = "background-color: #FF9999"
 
             # Convert the modified HTML back to a string.
             modified_html = str(soup)
@@ -547,6 +539,7 @@ def report():
             </head>
             <body>
                 <button onclick="window.location.href='/checker/report';">Generate New Report</button>
+                <button onclick="window.location.href='/checker/report-download';">Download CSV</button>                          
                 <h1>Report</h1>
                 <p>Selected Date Range: {startdate} to {enddate}</p>
                 {modified_html}
@@ -556,3 +549,9 @@ def report():
 
     # For GET requests or if no dates are provided, render the initial form.
     return render_template("report.html")
+
+
+@admin.route('/report-download', methods=['GET', 'POST'])
+def report_download():
+    # Return as a downloadable file
+    return send_file(os.path.join(os.getcwd(), 'export','inventory-report.csv'), as_attachment=True, download_name="report.csv", mimetype="text/csv")
