@@ -5,6 +5,46 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            font-size: 36px;
+            text-align: center;
+        }
+        label {
+            font-size: 20px;
+            display: block;
+            margin-top: 20px;
+        }
+        input[type="text"], button {
+            font-size: 18px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        select {
+            width: 100%;
+            height: 100px; /* Adjust the height to make the dropdown look better */
+        }
+        button {
+            font-size: 20px;
+            padding: 10px 20px;
+            margin-top: 20px;
+        }
+        form {
+            margin: auto;
+            width: 40%;
+            z-index: 9;
+            position: absolute;
+            background-color: #f2f2f2;
+            left: 30%;
+            top: 7%;
+            box-shadow: 0.3rem 0.3rem 0.3rem rgba(0, 8, 7, 0.5);
+            padding: 0.1rem;
+            text-align: center;
+        }
+    </style>
     <script>
         $(document).ready(function() {
             $("#startdate, #enddate").datepicker({
@@ -22,7 +62,30 @@
         <label for="enddate">End Date:</label>
         <input type="text" id="enddate" name="enddate">
 
+        <label for="siteid">If you would like to search for all sites, ignore this. 
+            If you would like to search specific sites, select them from the list below (hold down Ctrl key to select multiple):</label>
+        <select id="siteid" name="siteid[]" multiple>
+            {% for site in siteids %}
+                <option value="{{ site }}">{{ site }}</option>
+            {% endfor %}
+        </select>    
+        <h2>Selected Sites: </h2>
+        <ul id="selectedSites"></ul>
         <button type="submit">Generate Report</button>
     </form>
+
+    <script>
+        document.getElementById('siteid').addEventListener('change', function() {
+            var selectedOptions = Array.from(this.selectedOptions);
+            var selectedSites = selectedOptions.map(option => option.value);
+            var selectedSitesList = document.getElementById('selectedSites');
+            selectedSitesList.innerHTML = '';
+            selectedSites.forEach(function(site) {
+                var li = document.createElement('li');
+                li.textContent = site;
+                selectedSitesList.appendChild(li);
+            });
+        });
+    </script>
 </body>
 </html>
