@@ -183,7 +183,11 @@ def trash(all_dfs):
     # NOTE (11/15/2023): Aria - Created logic check 2
     # NOTE (11/17/2023): Ayah - Finished logic Check 2
 
-    merged_df = pd.merge(trashsiteinfo,trashsamplearea, on= site_area_shared_pkey)
+    merged_df = pd.merge(
+        trashsiteinfo[trashsiteinfo['numberofquadrats'] > 0], 
+        trashsamplearea[trashsamplearea['quadrat'] > 0], 
+        on=site_area_shared_pkey
+    )
     #grouped_df contains:
     # 1.what the number of quadrats should be ('numberofquadrats':'max') <- I put max becasue they are all the same value 
     # 2.how many rows are in each group ('quadrat': 'count') , 
