@@ -151,14 +151,11 @@ def main():
                 if x in current_app.system_fields
             ]
         )
+        # make sure all tabs are filled with data
+        if all_dfs[tblname].empty:
+            return jsonify(user_error_msg=f'Please fill out the tab {tblname} before you continue')
     print("DONE - building 'all_dfs' dictionary")
-    
-    # Check if these sheets are not empty. I probably should put them in config.json
-    sheets_to_check = current_app.data_required_sheets
 
-    for sheet_name in sheets_to_check:
-        if sheet_name in all_dfs.keys() and len(all_dfs[sheet_name]) == 0:
-            return jsonify(user_error_msg=f'Please fill out the sheet {sheet_name} before you continue')
 
     # -------------------------------------------------------------------------- #
 

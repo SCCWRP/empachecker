@@ -157,6 +157,8 @@ def crabtrap(all_dfs):
             ','.join(crabmeta_crabmass_shared_pkey)
         )
     })
+    print(mismatch(crabmass, crabmeta, crabmeta_crabmass_shared_pkey))
+    1/0
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 4")
 
@@ -443,7 +445,11 @@ def crabtrap(all_dfs):
     args.update({
         "dataframe": crabinvert,
         "tablename": 'tbl_crabfishinvert_abundance',
-        "badrows": crabinvert[crabinvert['abundance'].apply(lambda x: ((x < 0) | (x > 100)) & ( (x != -88) & pd.notnull(x) ) )].tmp_row.tolist(),
+        "badrows": crabinvert[
+            ((crabinvert['abundance'] < 0) | (crabinvert['abundance'] > 100)) & 
+            (crabinvert['abundance'] != -88) & 
+            pd.notnull(crabinvert['abundance'])    
+        ].tmp_row.tolist(),
         "badcolumn": "abundance",
         "error_type": "Value out of range",
         "error_message": "Your abundance value must be between 0 to 100, unless it is a -88 indicating a missing value."
