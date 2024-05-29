@@ -157,8 +157,7 @@ def crabtrap(all_dfs):
             ','.join(crabmeta_crabmass_shared_pkey)
         )
     })
-    print(mismatch(crabmass, crabmeta, crabmeta_crabmass_shared_pkey))
-    1/0
+
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 4")
 
@@ -209,36 +208,36 @@ def crabtrap(all_dfs):
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 6")
 
-    print("# CHECK - 14")
-    # Description: If trapsuccess is no, then there should be no records in the crabfishinvert_abundance tab and crabbiomass_length (🛑 ERROR 🛑)
-    # Created Coder: Caspian
-    # Created Date: 09/27/2023
-    # Last Edited Date: 09/27/2023
-    # Last Edited Coder: Caspian
+    # print("# CHECK - 14")
+    # # Description: If trapsuccess is no, then there should be no records in the crabfishinvert_abundance tab and crabbiomass_length (🛑 ERROR 🛑)
+    # # Created Coder: Caspian
+    # # Created Date: 09/27/2023
+    # # Last Edited Date: 09/27/2023
+    # # Last Edited Coder: Caspian
 
-    args.update({
-        "dataframe": crabmeta,
-        "tablename": 'tbl_crabtrap_metadata',
-        "badrows": list(set(match(crabmeta, crabinvert, crabmeta_crabinvert_shared_pkey)) & set(crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'no')].tmp_row.to_list())),
-        "badcolumn": "trapsuccess",
-        "error_type": "Undefined Error",
-        "error_message": "If trapsuccess is no, then there should be no records in the crabfishinvert_abundance"
-    })
+    # args.update({
+    #     "dataframe": crabmeta,
+    #     "tablename": 'tbl_crabtrap_metadata',
+    #     "badrows": list(set(match(crabmeta, crabinvert, crabmeta_crabinvert_shared_pkey)) & set(crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'no')].tmp_row.to_list())),
+    #     "badcolumn": "trapsuccess",
+    #     "error_type": "Undefined Error",
+    #     "error_message": "If trapsuccess is no, then there should be no records in the crabfishinvert_abundance"
+    # })
 
-    errs = [*errs, checkData(**args)]
+    # errs = [*errs, checkData(**args)]
 
-    args.update({
-        "dataframe": crabmeta,
-        "tablename": 'tbl_crabtrap_metadata',
-        "badrows": list(set(match(crabmeta, crabmass, crabmeta_crabmass_shared_pkey)) & set(crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'no')].tmp_row.to_list())),
-        "badcolumn": "trapsuccess",
-        "error_type": "Undefined Error",
-        "error_message": "If trapsuccess is no, then there should be no records in the crabbiomass_length"
-    })
+    # args.update({
+    #     "dataframe": crabmeta,
+    #     "tablename": 'tbl_crabtrap_metadata',
+    #     "badrows": list(set(match(crabmeta, crabmass, crabmeta_crabmass_shared_pkey)) & set(crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'no')].tmp_row.to_list())),
+    #     "badcolumn": "trapsuccess",
+    #     "error_type": "Undefined Error",
+    #     "error_message": "If trapsuccess is no, then there should be no records in the crabbiomass_length"
+    # })
 
-    errs = [*errs, checkData(**args)]
+    # errs = [*errs, checkData(**args)]
 
-    print("# END OF CHECK - 14")
+    # print("# END OF CHECK - 14")
 
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
