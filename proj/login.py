@@ -101,11 +101,23 @@ def update_file_type():
 def login():
     
     login_info = dict(request.form)
-    print("login_info")
-    print(login_info)
     # date_range = login_info['login_startdate'].split('_')
     # login_info['login_startdate'] = date_range[0]
     # login_info['login_enddate'] = date_range[1]
+
+    # Defaults it to True since got many critical errors that said final_submit_requested is not in the keys of session
+    # Even though it should always be 
+    session['final_submit_requested'] = True
+
+    if "check-or-submit" in login_info.keys():
+        # This way, final submit requested will be a bool
+        # True if they selected "Submit data" and False otherwise
+        # This will be used in Core Checks and in the javascript, so that:
+        #  1) Check for duplicates in production doesnt run (or maybe gets put as a warning)
+        #  2) Final submit button does not show if they dont want to submit
+        session['final_submit_requested'] = login_info.pop('check-or-submit') == 'submit'
+
+        
 
 
     # Something that may or may not be specific for this project, but
@@ -134,7 +146,7 @@ def login():
         UPDATE submission_tracking_table 
         SET {
             ','.join([
-                "{} = '{}'".format(k, v)
+                "{} = '{}'".format(k, v.replace("%","%%"))
                 for k, v in login_info.items()
             ])
         }

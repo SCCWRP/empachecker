@@ -157,6 +157,7 @@ def crabtrap(all_dfs):
             ','.join(crabmeta_crabmass_shared_pkey)
         )
     })
+
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 4")
 
@@ -207,36 +208,36 @@ def crabtrap(all_dfs):
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 6")
 
-    print("# CHECK - 14")
-    # Description: If trapsuccess is no, then there should be no records in the crabfishinvert_abundance tab and crabbiomass_length (🛑 ERROR 🛑)
-    # Created Coder: Caspian
-    # Created Date: 09/27/2023
-    # Last Edited Date: 09/27/2023
-    # Last Edited Coder: Caspian
+    # print("# CHECK - 14")
+    # # Description: If trapsuccess is no, then there should be no records in the crabfishinvert_abundance tab and crabbiomass_length (🛑 ERROR 🛑)
+    # # Created Coder: Caspian
+    # # Created Date: 09/27/2023
+    # # Last Edited Date: 09/27/2023
+    # # Last Edited Coder: Caspian
 
-    args.update({
-        "dataframe": crabmeta,
-        "tablename": 'tbl_crabtrap_metadata',
-        "badrows": list(set(match(crabmeta, crabinvert, crabmeta_crabinvert_shared_pkey)) & set(crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'no')].tmp_row.to_list())),
-        "badcolumn": "trapsuccess",
-        "error_type": "Undefined Error",
-        "error_message": "If trapsuccess is no, then there should be no records in the crabfishinvert_abundance"
-    })
+    # args.update({
+    #     "dataframe": crabmeta,
+    #     "tablename": 'tbl_crabtrap_metadata',
+    #     "badrows": list(set(match(crabmeta, crabinvert, crabmeta_crabinvert_shared_pkey)) & set(crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'no')].tmp_row.to_list())),
+    #     "badcolumn": "trapsuccess",
+    #     "error_type": "Undefined Error",
+    #     "error_message": "If trapsuccess is no, then there should be no records in the crabfishinvert_abundance"
+    # })
 
-    errs = [*errs, checkData(**args)]
+    # errs = [*errs, checkData(**args)]
 
-    args.update({
-        "dataframe": crabmeta,
-        "tablename": 'tbl_crabtrap_metadata',
-        "badrows": list(set(match(crabmeta, crabmass, crabmeta_crabmass_shared_pkey)) & set(crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'no')].tmp_row.to_list())),
-        "badcolumn": "trapsuccess",
-        "error_type": "Undefined Error",
-        "error_message": "If trapsuccess is no, then there should be no records in the crabbiomass_length"
-    })
+    # args.update({
+    #     "dataframe": crabmeta,
+    #     "tablename": 'tbl_crabtrap_metadata',
+    #     "badrows": list(set(match(crabmeta, crabmass, crabmeta_crabmass_shared_pkey)) & set(crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'no')].tmp_row.to_list())),
+    #     "badcolumn": "trapsuccess",
+    #     "error_type": "Undefined Error",
+    #     "error_message": "If trapsuccess is no, then there should be no records in the crabbiomass_length"
+    # })
 
-    errs = [*errs, checkData(**args)]
+    # errs = [*errs, checkData(**args)]
 
-    print("# END OF CHECK - 14")
+    # print("# END OF CHECK - 14")
 
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
@@ -282,21 +283,22 @@ def crabtrap(all_dfs):
 
 
     print("# CHECK - 8")
-    # Description: If trapsuccess is no then catch must be NULL or empty (🛑 ERROR 🛑)
+    # Description: If trapsuccess is no then catch must be no (🛑 ERROR 🛑)
     # Created Coder: Duy Nguyen
     # Created Date: 10/04/2022
-    # Last Edited Date: 8/29/2023
-    # Last Edited Coder: Zaib Quraishi
+    # Last Edited Date: 2/21/24
+    # Last Edited Coder: Duy
     # NOTE (2/16/23): (Duy) Fixed this one too. Using the keyword 'no' to get the contradiction of a boolean series is not recommended. 
     # Use '~' instead.
     # NOTE (8/29/23): Zaib adjusts the format so it follows the coding standard.
+    # NOTE (2/21/24): The original logic makes no sense.
     args.update({
         "dataframe": crabmeta,
         "tablename": 'tbl_crabtrap_metadata',
-        "badrows": crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'no') & (~pd.isnull(crabmeta['catch']))].tmp_row.tolist(),
+        "badrows": crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'no') & (crabmeta['catch'].apply(lambda x: str(x).strip().lower()) != 'no')].tmp_row.tolist(),
         "badcolumn": "catch",
         "error_type": "Undefined Error",
-        "error_message": "If trapsuccess is no then catch must be NULL or empty"
+        "error_message": "If trapsuccess is no then catch must be no"
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 8")
@@ -442,7 +444,11 @@ def crabtrap(all_dfs):
     args.update({
         "dataframe": crabinvert,
         "tablename": 'tbl_crabfishinvert_abundance',
-        "badrows": crabinvert[crabinvert['abundance'].apply(lambda x: ((x < 0) | (x > 100)) & ( (x != -88) & pd.notnull(x) ) )].tmp_row.tolist(),
+        "badrows": crabinvert[
+            ((crabinvert['abundance'] < 0) | (crabinvert['abundance'] > 100)) & 
+            (crabinvert['abundance'] != -88) & 
+            pd.notnull(crabinvert['abundance'])    
+        ].tmp_row.tolist(),
         "badcolumn": "abundance",
         "error_type": "Value out of range",
         "error_message": "Your abundance value must be between 0 to 100, unless it is a -88 indicating a missing value."

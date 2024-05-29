@@ -305,7 +305,11 @@ def macroalgae(all_dfs):
     # Last Edited Date:  09/28/2023
     # Last Edited Coder: Aria Askaryar
     # NOTE ( 09/28/2023): Aria wrote the check, it has not been tested yet
-    groupby_cols = ['projectid','siteid','estuaryname','stationno','samplecollectiondate','transectreplicate','covertype','scientificname','replicate']
+    # NOTE ( 02/13/2024): Robert updated grouping columns to:
+    #                    'projectid','siteid','estuaryname','stationno','samplecollectiondate','transectreplicate'
+    #                    per Jan's instruction
+    
+    groupby_cols = ['projectid','siteid','estuaryname','stationno','samplecollectiondate','transectreplicate']
     args.update({
         "dataframe": algaecover,
         "tablename": "tbl_algaecover_data",
@@ -355,6 +359,8 @@ def macroalgae(all_dfs):
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (10/05/23): Duy created the check
+    # NOTE (2/13/24): Robert edited the two covertypes to be "open" and "total" rather than "open" and "cover"
+    #                 Jan told me in Feb 2024 that these were the two covertypes that needed to have the estimated cover add to 100 
 
     badrows = list(
         itertools.chain.from_iterable(
@@ -362,7 +368,7 @@ def macroalgae(all_dfs):
                 ['projectid','siteid','estuaryname','stationno','samplecollectiondate','transectreplicate','plotreplicate']
             ).apply(
                 lambda subdf: subdf.tmp_row.tolist() 
-                if sum(subdf[subdf['covertype'].isin(['open','cover'])]['estimatedcover']) != 100
+                if sum(subdf[subdf['covertype'].isin(['open','total'])]['estimatedcover']) != 100
                 else []
             )
         )
@@ -373,7 +379,7 @@ def macroalgae(all_dfs):
         "badrows" : badrows,
         "badcolumn": "covertype, estimatedcover",
         "error_type": "Value Error",
-        "error_message": f"estimatedcover for 'open cover' in covertype + estimatedcover for 'total cover' must be 100"
+        "error_message": f"For every plotreplicate - total cover and open cover are required in covertype column, and estimatedcover for 'open' in covertype + estimatedcover for 'total' must be 100"
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 14")

@@ -119,19 +119,19 @@ def load():
         print("If foreign key relationships are set, the tables need to be loadede in a particular order")
         
         # These columns are needed in all submission tables, but they are often overlooked
-        g.eng.execute(
-            f"""
-            ALTER TABLE "{tbl}" ADD COLUMN IF NOT EXISTS submissionid int4 NOT NULL;
-            ALTER TABLE "{tbl}" ADD COLUMN IF NOT EXISTS warnings VARCHAR(5000);
-            """
-        )
+        # g.eng.execute(
+        #     f"""
+        #     ALTER TABLE "{tbl}" ADD COLUMN IF NOT EXISTS submissionid int4 NOT NULL;
+        #     ALTER TABLE "{tbl}" ADD COLUMN IF NOT EXISTS warnings VARCHAR(5000);
+        #     """
+        # )
 
-        g.eng.execute(
-            f"""
-            ALTER TABLE {tbl} ALTER COLUMN globalid SET DEFAULT next_globalid();
-            ALTER TABLE {tbl} ALTER COLUMN objectid SET DEFAULT next_rowid('sde','{tbl}');
-            """
-        )
+        # g.eng.execute(
+        #     f"""
+        #     ALTER TABLE {tbl} ALTER COLUMN globalid SET DEFAULT next_globalid();
+        #     ALTER TABLE {tbl} ALTER COLUMN objectid SET DEFAULT next_rowid('sde','{tbl}');
+        #     """
+        # )
         
 
         if len(all_dfs[tbl]) < 50000:

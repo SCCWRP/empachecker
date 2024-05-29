@@ -183,7 +183,11 @@ def trash(all_dfs):
     # NOTE (11/15/2023): Aria - Created logic check 2
     # NOTE (11/17/2023): Ayah - Finished logic Check 2
 
-    merged_df = pd.merge(trashsiteinfo,trashsamplearea, on= site_area_shared_pkey)
+    merged_df = pd.merge(
+        trashsiteinfo[trashsiteinfo['numberofquadrats'] > 0], 
+        trashsamplearea[trashsamplearea['quadrat'] > 0], 
+        on=site_area_shared_pkey
+    )
     #grouped_df contains:
     # 1.what the number of quadrats should be ('numberofquadrats':'max') <- I put max becasue they are all the same value 
     # 2.how many rows are in each group ('quadrat': 'count') , 
@@ -312,17 +316,20 @@ def trash(all_dfs):
     # Created Date: 11/16/2023
     # Last Edited Date: 
     # Last Edited Coder: 
-    trashsamplearea_pkey_filter = [x for x in trashsiteinfo_pkey if x !='quadrat']
-    errs.append(
-        checkData(
-            tablename='tbl_trashsamplearea',
-            badrows= check_consecutiveness(trashsamplearea,trashsamplearea_pkey_filter,'quadrat'),
-            badcolumn='quadrat',
-            error_type='Undefined Error',
-            error_message=f"quadrat values must be consecutive in tbl_trashsamplearea. Records are grouped by {','.join(trashsamplearea_pkey)}"
-        )
-    )
     
+    if not trashsamplearea.empty:
+        groupby_cols = ['projectid','estuaryname','sampledate','siteid','stationno','transect']
+        trashsamplearea['tmp_row'] = trashsamplearea.index
+        errs.append(
+            checkData(
+                tablename='tbl_trashsamplearea',
+                badrows= check_consecutiveness(trashsamplearea, groupby_cols, 'quadrat'),
+                badcolumn='quadrat',
+                error_type='Undefined Error',
+                error_message=f"quadrat values must be consecutive for each transect. Records are grouped by {','.join(groupby_cols)}"
+            )
+        )
+        
 
     print("# END LOGIC CHECK - 18")
 
@@ -654,5 +661,209 @@ def trash(all_dfs):
     )
     print("# END CHECK - 20")
     
+    print("# CHECK - 20")
+    # Description: Plastic debris entered must match a value in lu_trashplastics
+    # Created Coder: Unknown
+    # Created Date: Unknown
+    # Last Edited Date: 04/02/24
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (08/23/23):Copied from trashtally checks
+    errs.append(
+        checkData(
+            tablename='tbl_trashtimesearchtally',
+            badrows=trashtimesearchtally[(trashtimesearchtally.debriscategory == 'Plastic') & (~trashtimesearchtally.debrisitem.isin(lu_trashplastic))].tmp_row.tolist(),
+            badcolumn='debrisitem',
+            error_type='Undefined Error',
+            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashplastic target="_blank">lu_trashplastic</a>'
+        )
+    )
+
+    print("# END CHECK - 20")
+    
+    
+    print("# CHECK -21")
+    # Description: Fabric or cloth entered must match a value in lu_trashfabricandcloth
+    # Created Coder: Unknown
+    # Created Date: Unknown
+    # Last Edited Date: 04/02/24
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (08/23/23):Copied from trashtally checks
+
+    errs.append(
+        checkData(
+            tablename='tbl_trashtimesearchtally',
+            badrows=trashtimesearchtally[(trashtimesearchtally.debriscategory.str.lower() == 'fabric_cloth') & (~trashtimesearchtally.debrisitem.isin(lu_trashfabricandcloth))].tmp_row.tolist(),
+            badcolumn='debrisitem',
+            error_type='Undefined Error',
+            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashfabricandcloth target="_blank">lu_trashfabricandcloth</a>'
+        )
+    )
+
+    print("# END CHECK - 21")
+
+
+    print("# CHECK - 22")
+    # Description: trash value entered must match a value in lu_trashlarge
+    # Created Coder: Unknown
+    # Created Date: Unknown
+    # Last Edited Date: 04/02/24
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (08/23/23):Copied from trashtally checks
+    
+    errs.append(
+        checkData(
+            tablename='tbl_trashtimesearchtally',
+            badrows=trashtimesearchtally[(trashtimesearchtally.debriscategory.str.lower() == 'large') & (~trashtimesearchtally.debrisitem.isin(lu_trashlarge))].tmp_row.tolist(),
+            badcolumn='debrisitem',
+            error_type='Undefined Error',
+            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashlarge target="_blank">lu_trashlarge</a>'
+            )
+    )
+    print("# END CHECK - 22")
+
+
+    print("# CHECK - 23")
+    # Description: trash value entered must match a value in lu_trashbiodegradable
+    # Created Coder: Unknown
+    # Created Date: Unknown
+    # Last Edited Date: 04/02/24
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (08/23/23):Copied from trashtally checks
+    
+    errs.append(
+        checkData(
+            tablename='tbl_trashtimesearchtally',
+            badrows=trashtimesearchtally[(trashtimesearchtally.debriscategory.str.lower() == 'biodegradable') & (~trashtimesearchtally.debrisitem.isin(lu_biodegradable))].tmp_row.tolist(),
+            badcolumn='debrisitem',
+            error_type='Undefined Error',
+            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashbiodegradable target="_blank">lu_trashbiodegradable</a>'
+        )
+    )
+    print("# END CHECK - 23")
+
+
+    print("# CHECK - 24")
+    # Description: trash value entered must match a value in lu_biohazard
+    # Created Coder: Unknown
+    # Created Date: Unknown
+    # Last Edited Date: 04/02/24
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (08/23/23):Copied from trashtally checks
+    
+    
+    errs.append(
+        checkData(
+            tablename='tbl_trashtimesearchtally',
+            badrows=trashtimesearchtally[(trashtimesearchtally.debriscategory.str.lower() == 'biohazard') & (~trashtimesearchtally.debrisitem.isin(lu_biohazard))].tmp_row.tolist(),
+            badcolumn='debrisitem',
+            error_type='Undefined Error',
+            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_biohazard target="_blank">lu_biohazard</a>'
+        )
+    )
+    print("# END CHECK - 24")
+
+
+    print("# CHECK - 25")
+    # Description: trash value entered must match a value in lu_trashconstruction
+    # Created Coder: Unknown
+    # Created Date: Unknown
+    # Last Edited Date: 04/02/24
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (08/23/23):Copied from trashtally checks
+    
+    lu_construction = pd.read_sql("SELECT construction FROM lu_trashconstruction",g.eng).construction.tolist()
+    errs.append(
+        checkData(
+            tablename='tbl_trashtimesearchtally',
+            badrows=trashtimesearchtally[(trashtimesearchtally.debriscategory.str.lower() == 'construction') & (~trashtimesearchtally.debrisitem.isin(lu_construction))].tmp_row.tolist(),
+            badcolumn='debrisitem',
+            error_type='Undefined Error',
+            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashconstruction target="_blank">lu_trashconstruction</a>'
+        )
+    )
+    print("# END CHECK - 25")
+
+
+    print("# CHECK - 26")
+    # Description: trash value entered must match a value in lu_trashglass
+    # Created Coder: Unknown
+    # Created Date: Unknown
+    # Last Edited Date: 04/02/24
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (08/23/23):Copied from trashtally checks
+    
+    errs.append(
+        checkData(
+            tablename='tbl_trashtimesearchtally',
+            badrows=trashtimesearchtally[(trashtimesearchtally.debriscategory.str.lower() == 'glass') & (~trashtimesearchtally.debrisitem.isin(lu_glass))].tmp_row.tolist(),
+            badcolumn='debrisitem',
+            error_type='Undefined Error',
+            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashglass target="_blank">lu_trashglass</a>'
+            )
+    )
+    print("# END CHECK - 26")
+
+
+    print("# CHECK - 27")
+    # Description: trash value entered must match a value in lu_trashmetal
+    # Created Coder: Unknown
+    # Created Date: Unknown
+    # Last Edited Date: 04/02/24
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (08/23/23):Copied from trashtally checks
+    
+    errs.append(
+        checkData(
+            tablename='tbl_trashtimesearchtally',
+            badrows=trashtimesearchtally[(trashtimesearchtally.debriscategory.str.lower() == 'metal') & (~trashtimesearchtally.debrisitem.isin(lu_metal))].tmp_row.tolist(),
+            badcolumn='debrisitem',
+            error_type='Undefined Error',
+            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashmetal target="_blank">lu_trashmetal</a>'
+        )
+    )
+    print("# END CHECK - 27")
+
+
+    print("# CHECK - 28")
+    # Description: trash value entered must match a value in lu_trashmiscellaneous
+    # Created Coder: Unknown
+    # Created Date: Unknown
+    # Last Edited Date: 04/02/24
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (08/23/23):Copied from trashtally checks
+    
+
+    errs.append(
+        checkData(
+            tablename='tbl_trashtimesearchtally',
+            badrows=trashtimesearchtally[(trashtimesearchtally.debriscategory.str.lower() == 'miscellaneous') & (~trashtimesearchtally.debrisitem.isin(lu_miscellaneous))].tmp_row.tolist(),
+            badcolumn='debrisitem',
+            error_type='Undefined Error',
+            error_message='The value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_trashmiscellaneous target="_blank">lu_trashmiscellaneous</a>'
+        )
+    )
+    print("# END CHECK - 28")
+
+
+    print("# CHECK - 29")
+    # Description: If debriscategory is None then debrisitem must be 'No Trash Present'
+    # Created Coder: Unknown
+    # Created Date: Unknown
+    # Last Edited Date: 04/02/24
+    # Last Edited Coder: Ayah Halabi
+    # NOTE (08/23/23):Copied from trashtally checks
+
+    errs.append( 
+        checkData(
+            tablename='tbl_trashtimesearchtally',
+            badrows=trashtimesearchtally[(trashtimesearchtally.debriscategory == 'None') & (trashtimesearchtally.debrisitem != 'No Trash Present')].tmp_row.tolist(),
+            badcolumn='debrisitem',
+            error_type='Undefined Error',
+            error_message="If debriscategory is None then debrisitem must be 'No Trash Present'"
+            )
+    )
+    print("# END CHECK - 29")
+
+
     return {'errors': errs, 'warnings': warnings}
     

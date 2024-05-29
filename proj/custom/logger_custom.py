@@ -1,10 +1,13 @@
 # Dont touch this file! This is intended to be a template for implementing new custom checks
 
 from inspect import currentframe
-from flask import current_app, g
+from flask import current_app, g, session
 import pandas as pd
 from .functions import checkData, checkLogic, mismatch
 from .yeahbuoy_custom import yeahbuoy
+
+from numpy import NaN
+from sqlalchemy.exc import ProgrammingError
 
 
 def logger_raw(all_dfs):
@@ -83,7 +86,7 @@ def logger_raw(all_dfs):
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[(logger['raw_h2otemp'] > 100) | ((logger['raw_h2otemp']!=-88) & (logger['raw_h2otemp'] < 0))].index.tolist(),
+        "badrows":logger[(logger['raw_h2otemp'] > 100) | ((logger['raw_h2otemp']!=-88) & (logger['raw_h2otemp'] < 0))].tmp_row.tolist(),
         "badcolumn": "raw_h2otemp",
         "error_type" : "Value out of range",
         "error_message" : "Your raw_h2otemp is out of range. Value should be within 0-100 degrees C."
@@ -113,7 +116,7 @@ def logger_raw(all_dfs):
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[(logger['raw_do_pct'] < 0) & (logger['raw_do_pct']!=-88) & (~pd.isnull(logger['raw_do_pct']) )].index.tolist(),
+        "badrows":logger[(logger['raw_do_pct'] < 0) & (logger['raw_do_pct']!=-88) & (~pd.isnull(logger['raw_do_pct']) )].tmp_row.tolist(),
         "badcolumn": "raw_do_pct",
         "error_type" : "Value out of range",
         "error_message" : "Your raw_do_pct is negative. Value must be nonnegative and at least 0."
@@ -131,7 +134,7 @@ def logger_raw(all_dfs):
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[(logger['raw_do_pct'] > 110) & (logger['sensortype']=='minidot')].index.tolist(),
+        "badrows":logger[(logger['raw_do_pct'] > 110) & (logger['sensortype']=='minidot')].tmp_row.tolist(),
         "badcolumn": "raw_do_pct",
         "error_type" : "Value out of range",
         "error_message" : "Your raw_do_pct is greater than 110. This is an unexpected value, but will be accepted."
@@ -149,7 +152,7 @@ def logger_raw(all_dfs):
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[((logger['raw_do'] > 60) | ((logger['raw_do']!=-88) & (logger['raw_do'] < 0))) & (logger['raw_do_unit']== "mg/L")].index.tolist(),
+        "badrows":logger[((logger['raw_do'] > 60) | ((logger['raw_do']!=-88) & (logger['raw_do'] < 0))) & (logger['raw_do_unit']== "mg/L")].tmp_row.tolist(),
         "badcolumn": "raw_do",
         "error_type" : "Value out  of range",
         "error_message" : "Your raw_do value is out of range. Value should be within 0-60 mg/L."
@@ -167,7 +170,7 @@ def logger_raw(all_dfs):
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[(logger['raw_qvalue'] > 1.1) | ((logger['raw_qvalue']!=-88) & (logger['raw_qvalue'] < 0))].index.tolist(),
+        "badrows":logger[(logger['raw_qvalue'] > 1.1) | ((logger['raw_qvalue']!=-88) & (logger['raw_qvalue'] < 0))].tmp_row.tolist(),
         "badcolumn": "raw_qvalue",
         "error_type" : "Value out of range",
         "error_message" : "Your raw_qvalue is out of range. Must be within 0-1.1."
@@ -200,8 +203,8 @@ def logger_raw(all_dfs):
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[(((logger['raw_conductivity'] < 0) & (logger['raw_conductivity'] != -88)) | (logger['raw_conductivity'] > 10)) & \
-                              (logger['raw_conductivity_unit'] == "mS/cm")].index.tolist(),
+        "badrows":logger[(((logger['raw_conductivity'] < 0) & (logger['raw_conductivity'] != -88)) | (logger['raw_conductivity'] > 100)) & \
+                              (logger['raw_conductivity_unit'] == "mS/cm")].tmp_row.tolist(),
         "badcolumn": "raw_conductivity",
         "error_type" : "Value out of range",
         "error_message" : "Your conductivity_mscm value is out of range. Value must be within 0-10. If no value to provide, enter -88."
@@ -219,7 +222,7 @@ def logger_raw(all_dfs):
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[(logger['raw_salinity'] < 0) & (logger['raw_salinity'] != -88)].index.tolist(),
+        "badrows":logger[(logger['raw_salinity'] < 0) & (logger['raw_salinity'] != -88)].tmp_row.tolist(),
         "badcolumn": "raw_salinity",
         "error_type" : "Negative value",
         "error_message" : "Your raw_salinity value is less than 0. Value should be nonnegative. If no value to provide, enter -88."
@@ -298,7 +301,7 @@ def logger_raw(all_dfs):
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[(logger['raw_ph'] < 1) | (logger['raw_ph'] > 14)].index.tolist(),
+        "badrows":logger[(logger['raw_ph'] < 1) | (logger['raw_ph'] > 14)].tmp_row.tolist(),
         "badcolumn": "raw_ph",
         "error_type" : "Value out of range",
         "error_message" : "pH value is out of range. Value should be between 1 and 14. If no value to provide, enter -88."
@@ -317,7 +320,7 @@ def logger_raw(all_dfs):
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[(logger['raw_turbidity_unit']=="NTU") & (((logger['raw_turbidity'] < 0) & (logger['raw_turbidity'] != -88)) | (logger['raw_turbidity'] > 3000))].index.tolist(),
+        "badrows":logger[(logger['raw_turbidity_unit']=="NTU") & (((logger['raw_turbidity'] < 0) & (logger['raw_turbidity'] != -88)) | (logger['raw_turbidity'] > 3000))].tmp_row.tolist(),
         "badcolumn": "raw_turbidity",
         "error_type" : "Value out of range",
         "error_message" : "Turbidity_NTU value is out of range. Value should be within 0-3000. If no value to provide, enter -88."
@@ -335,7 +338,7 @@ def logger_raw(all_dfs):
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[(logger['sensortype']!='minidot') & ((logger['raw_do_pct'] < -1) & (logger['raw_do_pct'] != -88)) | (logger['raw_do_pct'] > 300)].index.tolist(),
+        "badrows":logger[(logger['sensortype']!='minidot') & ((logger['raw_do_pct'] < -1) & (logger['raw_do_pct'] != -88)) | (logger['raw_do_pct'] > 300)].tmp_row.tolist(),
         "badcolumn": "raw_do_pct",
         "error_type" : "Value out of range",
         "error_message" : "raw_do_pct is out of range. Value must be within 0-300. If no value, enter -88 or leave blank."
@@ -353,7 +356,7 @@ def logger_raw(all_dfs):
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
-        "badrows":logger[(logger['raw_orp_unit']=='mV') & ((logger['raw_orp'] < -999) | (logger['raw_orp'] > 999))].index.tolist(),
+        "badrows":logger[(logger['raw_orp_unit']=='mV') & ((logger['raw_orp'] < -999) | (logger['raw_orp'] > 999))].tmp_row.tolist(),
         "badcolumn": "raw_orp",
         "error_type" : "Value out of range",
         "error_message" : "ORP_mV is out of range. Value must be within -999 to 999."
@@ -380,8 +383,85 @@ def logger_raw(all_dfs):
     print("check ran - wqlogger - pressure_cmh2o")
 
 
+    # Need to populate these columns, which were removed from system fields
+    # "qaqc_comment" was also removed from system fields but we dont need to populate it, i dont think
+    robocols = [
+        "raw_depth_qcflag_robot",
+        "raw_pressure_qcflag_robot",
+        "raw_h2otemp_qcflag_robot", # No range lookup list
+        "raw_ph_qcflag_robot",      # No range lookup list
+        "raw_conductivity_qcflag_robot",
+        "raw_turbidity_qcflag_robot",
+        "raw_do_qcflag_robot",
+        "raw_do_pct_qcflag_robot",  # No range lookup list
+        "raw_salinity_qcflag_robot",
+        "raw_chlorophyll_qcflag_robot",
+        "raw_orp_qcflag_robot",
+        "raw_qvalue_qcflag_robot"   # No range lookup list
+    ]
+    for c in robocols:
+        # wipe out any user input
+        logger[c] = None
+
+        # Get the lookup list corresponding with the parameter
+        param = str(c).replace('raw_','').replace('_qcflag_robot','')
+
+        try:
+            lu_list = pd.read_sql(f"SELECT * FROM lu_{param}_unit", g.eng).rename(columns={ 'unit': f'raw_{param}_unit' })
+        except ProgrammingError as e:
+            print("Error reading from the lookup table")
+            print(e)
+            continue
+
+        # Need to make sure all lookup lists have Not Recorded with both words capitalized so it doesnt crash upon final submit
+        logger[ f'raw_{param}_unit' ] = logger[ f'raw_{param}_unit' ].fillna('Not Recorded').astype(str)
+
+        print(f'logger[ raw_{param}_unit ]')
+        print(logger[ f'raw_{param}_unit' ])
+        print(f'lu_list[ raw_{param}_unit ]')
+        print(lu_list[ f'raw_{param}_unit' ])
+        
+        logger = logger.merge( lu_list, on = [ f'raw_{param}_unit' ], how = 'left' )
+
+        logger['min'] = logger['min'].fillna(NaN)
+        logger['max'] = logger['max'].fillna(NaN)
 
 
+        # QAQC Flags based on this website
+        # https://cdmo.baruch.sc.edu/data/qaqc.cfm
+        logger[c] = logger.apply(
+            lambda row: 
+            -2 if pd.isnull(row[f'raw_{param}'])
+
+            else 
+            -4 if row[f'raw_{param}'] < row['min']
+
+            else 
+            -5 if row[f'raw_{param}'] > row['max']
+
+            else 0
+
+            , axis = 1
+        )
+
+        # drop for next iteration
+        logger.drop(['objectid','min','max'], axis = 'columns', inplace = True, errors = 'ignore')
+
+
+
+    # write the dataframe back out so the qaqcflags show up in the downloaded file
+    # drop unnecessary columns that were used just for putting qaqcflags
+    logger.drop(['objectid','min','max'], axis = 'columns', inplace = True, errors = 'ignore')
+    
+    # Order columns in a user friendly manner
+    orderedcols = pd.read_sql("SELECT column_name FROM column_order WHERE table_name = 'tbl_wq_logger_raw' ORDER BY custom_column_position", g.eng).column_name.tolist()
+    orderedcols = [c for c in orderedcols if c in logger.columns]
+
+    # write the thing back to the original file path in the tbl_wq_logger_raw sheet
+    with pd.ExcelWriter(session.get('excel_path')) as writer:
+        logger[orderedcols].to_excel(writer, sheet_name = 'tbl_wq_logger_raw', index = False)
+
+ 
     # Need to add not null checks for the measurement columns
     print("...End Other data checks.")
     

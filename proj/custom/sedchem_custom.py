@@ -28,7 +28,7 @@ def sedchem_lab(all_dfs):
 
     sedlabbatch = all_dfs['tbl_sedchem_labbatch_data']
     seddata = all_dfs['tbl_sedchem_data']
-    grabeventdetails = pd.read_sql("SELECT * FROM tbl_grabevent_details WHERE sampletype = 'chemistry'", g.eng)
+    grabeventdetails = pd.read_sql("SELECT * FROM tbl_grabevent_details WHERE sampletype = 'nutrients'", g.eng)
 
     sedlabbatch['tmp_row'] = sedlabbatch.index
     seddata['tmp_row'] = seddata.index
@@ -72,6 +72,11 @@ def sedchem_lab(all_dfs):
     # Last Edited Coder: Aria Askaryar
     # NOTE (09/12/2023): Ayah created logic check, has not tested yet
     # NOTE (10/05/2023): Aria revised the error message
+
+    if 'samplecollectiondate' in sedlabbatch.columns:
+        sedlabbatch['samplecollectiondate'] = pd.to_datetime(sedlabbatch['samplecollectiondate'])
+    if 'samplecollectiondate' in grabeventdetails.columns:
+        grabeventdetails['samplecollectiondate'] = pd.to_datetime(grabeventdetails['samplecollectiondate'])
 
     args.update({
         "dataframe": sedlabbatch,

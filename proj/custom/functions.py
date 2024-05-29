@@ -300,10 +300,10 @@ def check_consecutiveness(df, groupcols, col_to_check):
     '''
     assert 'tmp_row' in df.columns, 'tmp_row not found in dataframe'
     assert df[col_to_check].apply(lambda val: isinstance(val, int)).all(), f'all values in {col_to_check} needed to be integers'
-
+    
     def is_consecutive(df):
         df = df[df[col_to_check] != -88].sort_values(by=col_to_check)
-        consecutive = (df[col_to_check].drop_duplicates().sort_values().diff().dropna() == 1).all()
+        consecutive = ((df[col_to_check].drop_duplicates().sort_values().diff().dropna() == 1).all())
         if not consecutive:
             return df.tmp_row.tolist()
         else:

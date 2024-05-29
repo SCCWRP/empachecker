@@ -32,7 +32,7 @@ def global_custom(all_dfs, datatype = ''):
     lu_fishmacrospecies = pd.read_sql('Select scientificname, commonname, status from lu_fishmacrospecies', g.eng)
 
     # the spatial_empa_sites is for the site map check
-    spatial_empa_sites = gpd.read_postgis("SELECT * FROM spatial_empa_sites", g.eng, geom_col='geometry')
+    spatial_empa_sites = gpd.read_postgis("SELECT * FROM sde.spatial_empa_sites", g.eng, geom_col='geometry')
     spatial_empa_sites = spatial_empa_sites.to_crs(epsg=4326)
     for table_name in all_dfs:
         if all_dfs[table_name].empty:
@@ -90,10 +90,10 @@ def global_custom(all_dfs, datatype = ''):
             # Description: Scientificname/commoname pair for species must match lookup
             # Created Coder: Nick Lombardo
             # Created Date: 09/06/23
-            # Last Edited Date: 09/07/23
-            # Last Edited Coder: Nick Lombardo
+            # Last Edited Date: 1/12/24
+            # Last Edited Coder: Duy
             # NOTE (09/07/23): Edited to add status to the subset check above, since it's really checking all 3 columns
-            # NOTE (): 
+            # NOTE (1/12/24): Adjusted the error message 
             if table_name in ['tbl_algaecover_data','tbl_floating_data','tbl_vegetativecover_data','tbl_savpercentcover_data']:
                 lu_df = lu_plantspecies
                 lu_list = 'lu_plantspecies'
@@ -116,7 +116,8 @@ def global_custom(all_dfs, datatype = ''):
                     The scientificname-commonname-status entry did not match the lookup list 
                     <a href="/{lu_list_script_root}/scraper?action=help&layer={lu_list}" target="_blank">
                         {lu_list}
-                    </a>.
+                    </a>. The commonname and status values are match case sensitive. You can either find the exact values of commonname, status using 
+                    the lookup list, or leave them blank and the checker will auto-fill commonname and status based on scientificname.
                 '''
             }
             errs = [*errs, checkData(**args)]
@@ -181,10 +182,9 @@ def global_custom(all_dfs, datatype = ''):
             # Description: If Elevation_Ellipsoid or Elevation_Orthometric is reported, then Time_Ele is required
             # Created Coder: Nick Lombardo
             # Created Date: 09/07/23
-            # Last Edited Date: 
-            # Last Edited Coder: 
-            # NOTE (): 
-            # NOTE (): 
+            # Last Edited Date: 2/26/24
+            # Last Edited Coder: Duy
+            # NOTE (2/26/24): Make warning instead of error
             args = {
                 "dataframe": df,
                 "tablename": table_name,
@@ -192,9 +192,9 @@ def global_custom(all_dfs, datatype = ''):
                 "badcolumn": "elevation_time",
                 "error_type": "Value Error",
                 "is_core_error": False,
-                "error_message": "If elevation_ellipsoid or elevation_orthometric is reported, then elevation_time is required"
+                "error_message": "If elevation_ellipsoid or elevation_orthometric is reported, then elevation_time should be reported"
             }
-            errs = [*errs, checkData(**args)]
+            warnings = [*warnings, checkData(**args)]
             print("# END GLOBAL CUSTOM CHECK - 5")
 
 
@@ -268,25 +268,28 @@ def global_custom(all_dfs, datatype = ''):
 
 
             print("# GLOBAL CUSTOM CHECK - 9")
-            # Description: A (lat,long) for a siteid needs to be either in its associate polygon or within a mile if it is outside 
+            # Description: A (lat,long) for a siteid needs to be either in its associate polygon. Give a warning if that's not the case. 
             # Created Coder: Duy
             # Created Date: 11/3/23
-            # Last Edited Date:
-            # Last Edited Coder:
+            # Last Edited Date: 1/9/24
+            # Last Edited Coder: Duy
             # NOTE (11/3/23): Created the check. Need to QA and this check does not consider 1 mile buffer.
             # NOTE (11/6/23): Fixed an error where sites in submitted file do not exist in the spatial_empa_sites table and cause null in geometry column after merging.
             # NOTE (11/8/23): Duy adjusted the check, comments were left below
+            # NOTE (11/8/23): The .to_file function (writing a geopandas dataframe to geojson file) seems to have a problem writing out the date columns
+            # so we just want to get the needed columns when writing out to geojson file
             latlong_cols = current_app.datasets.get(datatype).get('latlong_cols', None)
-
+            
             # latlong_cols is a list of dictionaries of the tables with lat long columns
             if latlong_cols is not None:
+                print(table_name)
                 tmp = [
                     (x.get('latcol'), x.get('longcol'))
                     for x in latlong_cols
                     if x.get('tablename') == table_name
                 ][0]
                 latcol, longcol = tmp[0], tmp[1]
-
+                print("before geodataframe")
                 meta = gpd.GeoDataFrame(
                     df, 
                     geometry=gpd.points_from_xy(df[longcol], df[latcol])
@@ -297,7 +300,7 @@ def global_custom(all_dfs, datatype = ''):
                     on=['siteid'],
                     suffixes=('_point', '_polygon')
                 )
-
+                
                 # Display warnings when the points are associated with undelineated polygons
                 meta_unmatched = meta_merged[meta_merged['geometry_polygon'].isna()]
                 args = {
@@ -319,27 +322,32 @@ def global_custom(all_dfs, datatype = ''):
                         axis=1
                     )
                 ]
-
+                
                 # Only write geojson when there are points that are outside polygon
                 if not meta_matched_bad.empty:
-                    # Write geoJSON files
+                    # declare path
                     save_path = os.path.join(os.getcwd(), "files", str(session.get('submissionid')))
-                    meta[meta['tmp_row'].isin(meta_matched_bad['tmp_row'])] \
+
+                    # write points to geojson file
+                    tmp = meta[meta['tmp_row'].isin(meta_matched_bad['tmp_row'])] \
                         .rename(
                             columns={latcol: 'latitude', longcol: 'longitude'}   
-                        ) \
-                        .to_file(
-                            os.path.join(save_path, "bad-points-geojson.json"), 
-                            driver='GeoJSON'
                         )
-                    spatial_empa_sites[spatial_empa_sites['siteid'].isin(meta_matched_bad['siteid'])]\
+                    tmp = tmp[['latitude','longitude','siteid','tmp_row','geometry']].to_file(
+                        os.path.join(save_path, "bad-points-geojson.json"), 
+                        driver='GeoJSON'
+                    )
+                    
+                    # write polygons to geojson file
+                    tmp = spatial_empa_sites[spatial_empa_sites['siteid'].isin(meta_matched_bad['siteid'])]\
                         .rename(
                             columns={latcol: 'latitude', longcol: 'longitude'}
-                        ) \
-                        .to_file(
-                            os.path.join(save_path, "polygons-geojson.json"), 
-                            driver='GeoJSON'
-                        )
+                        ) 
+                    tmp = tmp[['siteid','geometry']].to_file(
+                        os.path.join(save_path, "polygons-geojson.json"), 
+                        driver='GeoJSON'
+                    )
+                    
                     args = {
                         "dataframe": df,
                         "tablename": table_name,
@@ -350,7 +358,7 @@ def global_custom(all_dfs, datatype = ''):
                         "error_message": f"These points are not in their associated polygon, see Stations Visual Map tab. If you believe their locations are correct, then ignore warnings and submit the data."
                     }
                     warnings = [*warnings, checkData(**args)]
-
+                
 
                 print("# END GLOBAL CUSTOM CHECK - 9")
 

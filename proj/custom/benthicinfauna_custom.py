@@ -41,19 +41,6 @@ def benthicinfauna_lab(all_dfs):
     errs = []
     warnings = []
 
-    # Alter this args dictionary as you add checks and use it for the checkData function
-    # for errors that apply to multiple columns, separate them with commas
-    '''
-    args = {
-        "dataframe": df,
-        "tablename": tbl,
-        "badrows": [],
-        "badcolumn": "",
-        "error_type": "",
-        "is_core_error": False,
-        "error_message": ""
-    }
-    '''
     args = {
         "dataframe": pd.DataFrame({}),
         "tablename": '',
@@ -80,12 +67,19 @@ def benthicinfauna_lab(all_dfs):
     labbatch_grabeventdet_shared_pkey = [x for x in benthiclabbatch_pkey if x in grabeventdet_pkey]
 
     print("# CHECK - 1")
-    # Description: Each labbatch data must include corresponding records in grab_event
+    # Description: Each labbatch data must include corresponding records in grabevent_details
     # Created Coder: Duy
-    # Created Date: 09/27/23
+    # Created Date: 2/22/24
     # Last Edited Date:  NA
     # Last Edited Coder: NA
     # NOTE (09/27/23): Duy created the check, QA'ed
+    # NOTE (2/22/24): Make sure that samplecollectiondate have the same format, so later when we do astype(str), it doesn't randomly add 00:00:00 to the date
+
+    if 'samplecollectiondate' in benthiclabbatch.columns:
+        benthiclabbatch['samplecollectiondate'] = pd.to_datetime(benthiclabbatch['samplecollectiondate'])
+    if 'samplecollectiondate' in grabevent_details.columns:
+        grabevent_details['samplecollectiondate'] = pd.to_datetime(grabevent_details['samplecollectiondate'])
+
     args.update({
         "dataframe": benthiclabbatch,
         "tablename": "tbl_benthicinfauna_labbatch",
@@ -163,7 +157,7 @@ def benthicinfauna_lab(all_dfs):
         "error_message" : "Each record in benthicinfauna_abundance must include a corresponding record in benthicinfauna_biomass. "+\
             "Records are matched based on these columns: {}".format(','.join(abundance_biomass_shared_pkey))
     })
-    warnings = [*warnings, checkData(**args)]
+    errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 4")
 
     print("# CHECK - 5")
@@ -183,7 +177,7 @@ def benthicinfauna_lab(all_dfs):
         "error_message" : "Each record in benthicinfauna_biomass must include a corresponding record in benthicinfauna_abundance. "+\
             "Records are matched based on these columns: {}".format(','.join(abundance_biomass_shared_pkey))
     })
-    warnings = [*warnings, checkData(**args)]
+    errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 5")
 
 
@@ -214,13 +208,17 @@ def benthicinfauna_lab(all_dfs):
     # Description: Biomass_g must be greater than or equal to 0
     # Created Coder: Caspian
     # Created Date: 9/27/23
-    # Last Edited Date:  9/27/23
-    # Last Edited Coder: Caspian
-
+    # Last Edited Date:  1/4/24
+    # Last Edited Coder: Duy
+    # NOTE (1/4/24): somehow this benthicbiomass[benthicbiomass['biomass_g'].apply(lambda x: (x < 0) & pd.notnull(x))] returns an empty
+    # dataframe with no columns. So I changed the code's logic
     args.update({
         "dataframe": benthicbiomass,
         "tablename": "tbl_benthicinfauna_biomass",
-        "badrows":  benthicbiomass[benthicbiomass['biomass_g'].apply(lambda x: (x < 0) & pd.notnull(x))].tmp_row.tolist(),
+        "badrows":  benthicbiomass[
+                (benthicbiomass['biomass_g'] < 0) &
+                (~benthicbiomass['biomass_g'].isnull())
+            ].tmp_row.tolist(),
         "badcolumn": 'biomass_g',
         "error_type" : "Logic Warning",
         "error_message" : "Biomass_g in benthicinfauna_biomass must be greater than or equal to 0."

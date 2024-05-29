@@ -86,6 +86,7 @@ app.tabs_to_ignore = CONFIG.get('EXCEL_TABS_TO_IGNORE') # if separate tabs for l
 app.excel_offset = CONFIG.get('EXCEL_OFFSET')
 
 
+app.data_required_sheets = CONFIG.get('DATA_REQUIRED_SHEETS')
 
 # Mail From
 app.mail_from =  CONFIG.get('MAIL_FROM')

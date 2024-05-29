@@ -173,10 +173,11 @@ def discretewq(all_dfs):
     #Description:Range for conductivity, with conductivity_units as uS/cm, must be between [0, 100] or -88
     # Created Coder: NA
     # Created Date: 09/05/2023
-    # Last Edited Date: 10/25/2023
-    # Last Edited Coder: Aria Askaryar
+    # Last Edited Date: 1/2/2024
+    # Last Edited Coder: Duy
     # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
     # NOTE (10/25/2023): Aria adjusted check description requested by Jan changed from [0,100] to [200,80,000]
+    # NOTE (1/2/2024): requested by Jan changed from [200, 80000] to [200, 90000]
 
     args.update({
         "dataframe": waterdata,
@@ -184,11 +185,11 @@ def discretewq(all_dfs):
         "badrows": waterdata[            
             (waterdata['conductivity'] != -88) &
             (waterdata['conductivity_units'] == 'uS/cm') & 
-            (~waterdata['conductivity'].between(200,80000))
+            (~waterdata['conductivity'].between(200, 90000))
         ].tmp_row.tolist(), 
         "badcolumn": "conductivity",
         "error_type": "Value out of range",
-        "error_message" : "If the conductivity unit is uS/cm, then conductivity values must be between 200 and 80,000."
+        "error_message" : "If the conductivity unit is uS/cm, then conductivity values must be between 200 and 90000."
     })
     errs = [*errs, checkData(**args)]
     print('END CHECK 7')
@@ -283,29 +284,31 @@ def discretewq(all_dfs):
     print('END CHECK 11')
 
     print('START CHECK 12')
-    # Description:  Range for do, with do_units as mg/l, must be within [0, 20] or -88
+    # Description:  Range for do, with do_units as mg/l, must be within [0, 70] or -88
     # Created Coder: NA
     # Created Date: NA
     # Last Edited Date: 09/05/2023
-    # Last Edited Coder: Ayah Halabi
+    # Last Edited Coder: Zaib Quraishi
     # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
+    # NOTE (01/04/2024): Zaib increased range for do_mgl from [0, 60] to [0, 70] as requested by Jan.
+
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
         "badrows": waterdata[
             (waterdata['do_mgl'] != -88) & 
             (waterdata['do_units'].str.lower() == 'mg/l') &
-            (~waterdata['do_mgl'].between(0, 20))
+            (~waterdata['do_mgl'].between(0, 70))
         ].tmp_row.tolist(),
         "badcolumn": "do_mgl",
         "error_type": "Value Out of range",
-        "error_message" : "do_mgl values must be between 0 and 20."
+        "error_message" : "do_mgl values must be between 0 and 70."
     })
     errs = [*errs, checkData(**args)]
     print('END CHECK 12')
 
     print('START CHECK 13')
-    # Description:  Range for airtemp, with airtemp_units as C, must be between [0, 50] or -88
+    # Description:  Range for airtemp, with airtemp_units as C, must be between [0, 100] or -88
     # Created Coder: NA
     # Created Date: NA
     # Last Edited Date: 09/05/2023
@@ -317,11 +320,11 @@ def discretewq(all_dfs):
         "badrows": waterdata[
             (waterdata['airtemp'] != -88) &
             (waterdata['airtemp_units'].str.lower() == 'deg c') &
-            (~waterdata['airtemp'].between(0, 50))
+            (~waterdata['airtemp'].between(0, 100))
         ].tmp_row.tolist(),
         "badcolumn": "airtemp",
         "error_type": "Value Out of range",
-        "error_message" : "If airtemp_unit is C, airtemp must be between 0 and 50."
+        "error_message" : "If airtemp_unit is C, airtemp must be between 0 and 100."
     })
     errs = [*errs, checkData(**args)]
     print('END CHECK 13')

@@ -414,10 +414,11 @@ def fishseines(all_dfs):
     # Description: If method is "count" and catch is "yes" then abundance should be a positive integer in fish abundance (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 08/23/23
+    # Last Edited Date: 2/21/24
     # Last Edited Coder: Duy Nguyen
     # NOTE (08/17/23): Duy adjusts the format so it follows the coding standard
     # NOTE (08/23/23): Duy changed merged['catch'] == 'yes' to merged['catch'] == 'Yes' since the code fixed case. 
+    # NOTE (2/21/24): this check only applies to fish. Abundance for invertebrate can be 0 or -88 
     merged = pd.merge(
         fishabud,
         fishmeta, 
@@ -425,17 +426,25 @@ def fishseines(all_dfs):
         suffixes=('', '_meta'),
         on=fishmeta_fishabud_shared_pkey
     )
+    merged = pd.merge(
+        merged,
+        lu_fishmacrospecies, 
+        how='left',
+        on=['scientificname']
+    )
+
     args.update({
         "dataframe": fishabud,
         "tablename": "tbl_fish_abundance_data",
         "badrows": merged[
             (merged['method_meta'] == 'count') & 
-            (merged['catch'] == 'Yes')  &
+            (merged['catch'] == 'Yes')  & 
+            (merged['fish_or_invert'] == 'fish') & # this check only applies to fish. Abundance for invertebrate can be 0 or -88
             (merged['abundance'] <= 0)
         ].tmp_row.tolist(),
         "badcolumn": "abundance",
         "error_type": "Logic Error",
-        "error_message": "If method is 'count' and catch is 'Yes' then abundance should be a positive integer in fish abundance"
+        "error_message": "If method is 'count' and catch is 'Yes' then abundance should be a positive integer in fish abundance. Please note that this check only applies to fish, not invertebrate."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 12")

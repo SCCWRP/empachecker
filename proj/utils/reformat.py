@@ -3,7 +3,7 @@ import csv
 import pandas as pd
 import re
 from .loggervars import TIMEZONE_MAP, TEMPLATE_COLUMNS, SUPPORTED_SENSORTYPES
-from flask import session
+from flask import session, g
 
 def read_tidbit(tidbit_path):
     # this csv has a different encoding, which is weird
@@ -259,6 +259,31 @@ def parse_raw_logger_data(loggertype: str, filepath: str):
         lowercase_loggertype in SUPPORTED_SENSORTYPES, \
         f"""Logger Type {lowercase_loggertype} is not (yet) supported. Supported types are: {', '.join(SUPPORTED_SENSORTYPES)}"""
     
-    return eval(f"read_{lowercase_loggertype}")(filepath)
+    dat = eval(f"read_{lowercase_loggertype}")(filepath)
+
+    # add robot columns
+    robocols = [
+        'raw_ph_qcflag_robot',
+        'raw_pressure_qcflag_robot',
+        'raw_chlorophyll_qcflag_robot',
+        'raw_conductivity_qcflag_robot',
+        'raw_orp_qcflag_robot',
+        'raw_h2otemp_qcflag_robot',
+        'raw_turbidity_qcflag_robot',
+        'raw_depth_qcflag_robot',
+        'raw_do_qcflag_robot',
+        'raw_qvalue_qcflag_robot',
+        'raw_do_pct_qcflag_robot',
+        'raw_salinity_qcflag_robot',
+        'qaqc_comment'
+    ]
+    for col in robocols:
+        dat[col] = None
+    
+    # Order columns in a user friendly manner
+    orderedcols = pd.read_sql("SELECT column_name FROM column_order WHERE table_name = 'tbl_wq_logger_raw' ORDER BY custom_column_position", g.eng).column_name.tolist()
+    orderedcols = [c for c in orderedcols if c in dat.columns]
+
+    return dat[orderedcols]
 
 

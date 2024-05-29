@@ -102,13 +102,16 @@ def grab_field(all_dfs):
     # Description: Records in the grabevent_details should have the corresponding records in the grabevent based on the shared pkeys
     # Created Coder: Ayah
     # Created Date: NA
-    # Last Edited Date: 09/14/2023
-    # Last Edited Coder: Ayah
+    # Last Edited Date: 2/23/2024
+    # Last Edited Coder: Duy
     # NOTE (09/12/2023): Ayah wrote logic check
+    # NOTE (2/23/2024): This is what Ayah put mismatch(grabevent,grabeventdet,grabevent_grabeventdet_shared_pkey) which is wrong, grabeventdet should go first
+    
     args.update({
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
-        "badrows":mismatch(grabevent,grabeventdet,grabevent_grabeventdet_shared_pkey),
+        #"badrows":mismatch(grabevent,grabeventdet,grabevent_grabeventdet_shared_pkey),
+        "badrows": mismatch(grabeventdet, grabevent, grabevent_grabeventdet_shared_pkey),
         "badcolumn": ','.join(grabevent_grabeventdet_shared_pkey),
         "error_type": "empty value",
         "is_core_error": False,
@@ -191,51 +194,55 @@ def grab_field(all_dfs):
     ######################################################################################################################
 
     print("# CHECK - 3")
-    # Description: coresizediameter should be filled when matrix is sediment 
+    # Description: If matrix is 'sediment' AND collectionmethod is 'sediment core', then coresizediameter MUST be a numeric value (CANNOT BE -88) 
     # Created Coder: Ayah
     # Created Date: NA
-    # Last Edited Date: 09/26/2023
-    # Last Edited Coder: Aria Askaryar
+    # Last Edited Date: 01/05/2024
+    # Last Edited Coder: Zaib Quraishi
     # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
     # NOTE (09/25/2023): Aria adjusted error message and changed code since coresizediamerter is numeric so -88 is the numeric equivalent to "Not Recorded"
     # NOTE (09/26/2023): Aria changed the logic of this check (changed from Not recorded to -88 since coresizediameter is a numeric column).
+    # NOTE (01/05/2024): Zaib updated description with specific criteria provided by Jan. QA done.
 
     args.update({
         "dataframe":grabeventdet,
         "tablename":'tbl_grabevent_details',
         "badrows":grabeventdet[ 
             (grabeventdet['matrix'] == 'sediment') & 
-            (grabeventdet['coresizediameter'] != -88)
+            (grabeventdet['collectionmethod'] == 'sediment core') &
+            (grabeventdet['coresizediameter'] == -88)
         ].tmp_row.tolist(),
         "badcolumn": "coresizediameter",
         "error_type": "empty value",
         "is_core_error": False,
-        "error_message": "When matrix is sediment, then you should put -88 for coresizediameter column"
+        "error_message": "If matrix is sediment and collectionmethod is sediment core, then coresizediameter MUST be a numeric value (CANNOT be -88)."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 3")
 
     print("# CHECK - 4")
-    # Description: coresizedepth should be filled when matrix is sediment 
+    # Description: If matrix is "sediment" and collectionmethod is "sediment core", then coresizedepth MUST be a numeric value (CANNOT be -88)
     # Created Coder: Ayah 
     # Created Date: NA
-    # Last Edited Date: 09/26/2023
-    # Last Edited Coder: Aria Askaryar
+    # Last Edited Date: 01/05/2024
+    # Last Edited Coder: Zaib Quraishi
     # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
     # NOTE (09/25/2023): Aria adjusted error message and changed code since coresizedepth is numeric so -88 is the numeric equivalent to "Not Recorded"
     # NOTE (09/26/2023): Aria changed the logic of this check (changed from Not recorded to -88 since coresizediameter is a numeric column).
+    # NOTE (01/05/2024): Zaib updated description and check based on specified criteria provided by Jan. QA done.
 
     args.update({
             "dataframe":grabeventdet,
             "tablename":'tbl_grabevent_details',
             "badrows":grabeventdet[
                 (grabeventdet['matrix'] == 'sediment') &
-                (grabeventdet['coresizedepth'] != -88) 
+                (grabeventdet['collectionmethod'] == 'sediment core') &
+                (grabeventdet['coresizedepth'] == -88) 
             ].tmp_row.tolist(),
             "badcolumn": "coresizedepth",
             "error_type": "empty value",
             "is_core_error": False,
-            "error_message": "When matrix is sediment, then you should put -88 for coresizedepth column"
+            "error_message": "If matrix is sediment and collectionmethod is sediment core, then coresizedepth MUST be a numeric value (CANNOT be -88)."
     })
     errs = [*errs, checkData(**args)]
 
@@ -270,14 +277,15 @@ def grab_field(all_dfs):
     # Description: sieve_or_depth is required when matrix is water
     # Created Coder: Ayah 
     # Created Date: NA
-    # Last Edited Date: 09/28/2023
-    # Last Edited Coder: Aria Askaryar
+    # Last Edited Date: 2/8/2024
+    # Last Edited Coder: Robert B
     # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
     # NOTE (09/14/2023): Ayah made the lu list for all water matrix for the check
     # NOTE (09/25/2023): Aria updated code to catch error(sieve_or_depth is numeric so it has to be -88 not "Not recorded") and updated error_message
     # NOTE (09/28/2023): Aria changed the logic of this check (changed from Not recorded to -88 since coresizediameter is a numeric column) and changed the logic from != to == -88.
+    # NOTE (2/8/2024): Not having the check enforced for blankwater
 
-    lu_matrix_filtered = pd.read_sql("SELECT matrix FROM lu_matrix where matrix like '%%water';",g.eng)
+    lu_matrix_filtered = pd.read_sql("SELECT matrix FROM lu_matrix where matrix like '%%water' AND matrix != 'blankwater' ;",g.eng)
     lu_matrix_filtered = lu_matrix_filtered['matrix'].tolist()
 
     args.update({
@@ -290,9 +298,12 @@ def grab_field(all_dfs):
         "badcolumn": "sieve_or_depth",
         "error_type": "empty value",
         "is_core_error": False,
-        "error_message": "Sieve_or_Depth is a required field since matrix is water. Please enter the depth at which the sample was collected."
+        "error_message": "Sieve_or_Depth is a required field since matrix is water (except blankwater). Please enter the depth at which the sample was collected."
     })
-    errs = [*errs, checkData(**args)]
+    
+    # Feb 13, 2024
+    # Per Jan this check has been made a warning for the sake of loading historical data - temporarily
+    warnings = [*warnings, checkData(**args)]
     print("# END OF CHECK - 6")
 
     print("# CHECK - 7")
