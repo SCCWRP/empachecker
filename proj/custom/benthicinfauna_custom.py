@@ -216,12 +216,13 @@ def benthicinfauna_lab(all_dfs):
         "dataframe": benthicbiomass,
         "tablename": "tbl_benthicinfauna_biomass",
         "badrows":  benthicbiomass[
+                (benthicbiomass['biomass_g'] != -88) &
                 (benthicbiomass['biomass_g'] < 0) &
                 (~benthicbiomass['biomass_g'].isnull())
             ].tmp_row.tolist(),
         "badcolumn": 'biomass_g',
         "error_type" : "Logic Warning",
-        "error_message" : "Biomass_g in benthicinfauna_biomass must be greater than or equal to 0."
+        "error_message" : "Biomass_g in benthicinfauna_biomass must be greater than or equal to 0. You can put -88 for missing values."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 6")
