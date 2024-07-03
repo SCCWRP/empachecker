@@ -157,7 +157,9 @@ def exportdata():
         'sedgrainsizemetadata':'tbl_sedgrainsize_metadata',
         'vegetationsamplemetadata':'tbl_vegetation_sample_metadata',
         'vegetationcoverdata':'tbl_vegetativecover_data',
-        'epifauna':'tbl_epifauna_data'
+        'epifauna':'tbl_epifauna_data',
+        'grabevent': 'tbl_grabevent_details',
+        'cordgrass': 'tbl_cordgrass'
     }
     if request.args.get("callback"):
         test = request.args.get("callback", False)
