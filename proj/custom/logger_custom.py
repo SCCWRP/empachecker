@@ -1,5 +1,3 @@
-# Dont touch this file! This is intended to be a template for implementing new custom checks
-
 from inspect import currentframe
 from flask import current_app, g, session
 import pandas as pd
@@ -8,6 +6,45 @@ from .yeahbuoy_custom import yeahbuoy
 
 from numpy import NaN
 from sqlalchemy.exc import ProgrammingError
+
+def logger_meta(all_dfs):
+    
+    current_function_name = str(currentframe().f_code.co_name)
+    lu_list_script_root = current_app.script_root
+    
+    # function should be named after the dataset in app.datasets in __init__.py
+    assert current_function_name in current_app.datasets.keys(), \
+        f"function {current_function_name} not found in current_app.datasets.keys() - naming convention not followed"
+
+    expectedtables = set(current_app.datasets.get(current_function_name).get('tables'))
+    assert expectedtables.issubset(set(all_dfs.keys())), \
+        f"""In function {current_function_name} - {expectedtables - set(all_dfs.keys())} not found in keys of all_dfs ({','.join(all_dfs.keys())})"""
+
+    # since often times checks are done by merging tables (Paul calls those logic checks)
+    # we assign dataframes of all_dfs to variables and go from there
+    # This is the convention that was followed in the old checker
+    
+    # This data type should only have tbl_example
+    # example = all_dfs['tbl_example']
+    meta = all_dfs['tbl_wq_logger_metadata']
+
+   
+    errs = []
+    warnings = []
+
+    # Alter this args dictionary as you add checks and use it for the checkData function
+    # for errors that apply to multiple columns, separate them with commas
+    args = {
+        "dataframe": pd.DataFrame({}),
+        "tablename": '',
+        "badrows": [],
+        "badcolumn": "",
+        "error_type": "",
+        "is_core_error": False,
+        "error_message": ""
+    }
+
+    return {'errors': errs, 'warnings': warnings}
 
 
 def logger_raw(all_dfs):
@@ -83,18 +120,16 @@ def logger_raw(all_dfs):
     print("check ran - loggerraw - 1")
 
 
-
-
-
-
-
-
-
     # ######################################################################################################################
     # # ------------------------------------------------------------------------------------------------------------------ #
     # # -----------------------------------------------------END tbl_wq_logger_raw check---------------------------------- #
     # # ------------------------------------------------------------------------------------------------------------------ #
     # ######################################################################################################################
+
+
+
+
+
 
 
 
@@ -127,9 +162,11 @@ def logger_raw(all_dfs):
 
         # Get the lookup list corresponding with the parameter
         param = str(c).replace('raw_','').replace('_qcflag_robot','')
-
         try:
-            lu_list = pd.read_sql(f"SELECT * FROM lu_{param}_unit", g.eng).rename(columns={ 'unit': f'raw_{param}_unit' })
+            if param == 'h2otemp':
+                lu_list = pd.read_sql(f"SELECT * FROM lu_temperature_unit", g.eng).rename(columns={ 'unit': f'raw_{param}_unit' })
+            else:
+                lu_list = pd.read_sql(f"SELECT * FROM lu_{param}_unit", g.eng).rename(columns={ 'unit': f'raw_{param}_unit' })
         except ProgrammingError as e:
             print("Error reading from the lookup table")
             print(e)
@@ -189,42 +226,7 @@ def logger_raw(all_dfs):
     
     return {'errors': errs, 'warnings': warnings}
 
-def logger_meta(all_dfs):
-    
-    current_function_name = str(currentframe().f_code.co_name)
-    lu_list_script_root = current_app.script_root
-    
-    # function should be named after the dataset in app.datasets in __init__.py
-    assert current_function_name in current_app.datasets.keys(), \
-        f"function {current_function_name} not found in current_app.datasets.keys() - naming convention not followed"
 
-    expectedtables = set(current_app.datasets.get(current_function_name).get('tables'))
-    assert expectedtables.issubset(set(all_dfs.keys())), \
-        f"""In function {current_function_name} - {expectedtables - set(all_dfs.keys())} not found in keys of all_dfs ({','.join(all_dfs.keys())})"""
-
-    # since often times checks are done by merging tables (Paul calls those logic checks)
-    # we assign dataframes of all_dfs to variables and go from there
-    # This is the convention that was followed in the old checker
-    
-    # This data type should only have tbl_example
-    # example = all_dfs['tbl_example']
-    meta = all_dfs['tbl_wq_logger_metadata']
-
-   
-    errs = []
-    warnings = []
-
-    # Alter this args dictionary as you add checks and use it for the checkData function
-    # for errors that apply to multiple columns, separate them with commas
-    args = {
-        "dataframe": pd.DataFrame({}),
-        "tablename": '',
-        "badrows": [],
-        "badcolumn": "",
-        "error_type": "",
-        "is_core_error": False,
-        "error_message": ""
-    }
 
     # ######################################################################################################################
     # # ------------------------------------------------------------------------------------------------------------------ #
@@ -233,7 +235,7 @@ def logger_meta(all_dfs):
     # ######################################################################################################################
 
 
-    return {'errors': errs, 'warnings': warnings}
+
     
 
     # # Temporary just to test logger data plotting

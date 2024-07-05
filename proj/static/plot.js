@@ -119,9 +119,9 @@ class Plot {
 
     drawAxes(
         {
-            xAxisFontSize = 14,
+            xAxisFontSize = 25,
             xAxisRotation = -65,
-            yAxisFontSize = 14,
+            yAxisFontSize = 25,
             yAxisRotation = 0,
             xAxisLabel = '',
             yAxisLabel = ''
