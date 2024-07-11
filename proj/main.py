@@ -152,7 +152,7 @@ def main():
             ]
         )
         # make sure all tabs are filled with data with the only exception for cordgrass table
-        if (tblname != 'tbl_cordgrass') and (all_dfs[tblname].empty):
+        if (tblname not in ['tbl_cordgrass', 'tbl_feldspar_data']) and (all_dfs[tblname].empty):
             return jsonify(user_error_msg=f'Please fill out the tab {tblname} before you continue')
     print("DONE - building 'all_dfs' dictionary")
 
