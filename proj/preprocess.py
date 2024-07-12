@@ -221,6 +221,79 @@ def fill_area(all_dfs):
         print("end fill_area")
     return all_dfs
 
+def fill_wentworth_class(all_dfs):    
+    def get_primary_key(tablename, eng):
+        pkey_query = f"""
+            WITH tmp AS (
+                SELECT
+                    C.COLUMN_NAME,
+                    C.data_type
+                FROM
+                    information_schema.table_constraints tc
+                    JOIN information_schema.constraint_column_usage AS ccu USING (CONSTRAINT_SCHEMA, CONSTRAINT_NAME)
+                    JOIN information_schema.COLUMNS AS C ON C.table_schema = tc.CONSTRAINT_SCHEMA
+                    AND tc.TABLE_NAME = C.TABLE_NAME
+                    AND ccu.COLUMN_NAME = C.COLUMN_NAME
+                WHERE
+                    constraint_type = 'PRIMARY KEY'
+                    AND tc.TABLE_NAME = '{tablename}'
+            )
+            SELECT
+                tmp.COLUMN_NAME,
+                tmp.data_type,
+                    column_order.custom_column_position
+            FROM
+                tmp
+                LEFT JOIN (
+                    SELECT
+                        COLUMN_NAME,
+                        custom_column_position
+                    FROM
+                        column_order
+                    WHERE
+                        TABLE_NAME = '{tablename}'
+                ) column_order ON column_order."column_name" = tmp.COLUMN_NAME
+                    ORDER BY
+                    custom_column_position
+        """
+        pkey_df = pd.read_sql(pkey_query, eng)
+        pkey = pkey_df.column_name.tolist() if not pkey_df.empty else []        
+        return pkey
+
+    if ('tbl_sedgrainsize_labbatch_data' in all_dfs.keys()) and ('tbl_sedgrainsize_data' in all_dfs.keys()):
+        lu_sedgrainsize_phi = pd.read_sql('SELECT * from lu_sedgrainsize_phi', g.eng)
+        lu_sedgrainsize_phi = lu_sedgrainsize_phi[lu_sedgrainsize_phi['phi'] != -88.0]
+
+        labbatch = all_dfs['tbl_sedgrainsize_labbatch_data']
+        data = all_dfs['tbl_sedgrainsize_data']
+        original_data_cols = data.columns.tolist()
+
+        labbatch_pkey = get_primary_key('tbl_sedgrainsize_labbatch_data', g.eng)
+        data_pkey = get_primary_key('tbl_sedgrainsize_data', g.eng)
+        
+        shared_pkey = [x for x in labbatch_pkey if x in data_pkey]
+        
+        data['phi'] = data['phi'].apply(lambda x: float(x))
+
+        data = data.merge(
+            labbatch[labbatch_pkey + ['analyticalmethod']],
+            how='left',
+            on=shared_pkey
+        ).merge(
+            lu_sedgrainsize_phi[['phi', 'wentworth_class']],
+            how='left',
+            on='phi',
+            suffixes=('', '_phi')
+        )
+        
+        # Fill wentworth_class based on analyticalmethod
+        mask = (data['analyticalmethod'] == 'SM 2560 D') & (data['wentworth_class'].isna())
+        data.loc[mask, 'wentworth_class'] = data.loc[mask, 'phi'].map(lu_sedgrainsize_phi.set_index('phi')['wentworth_class'])
+        data = data[original_data_cols]
+        all_dfs['tbl_sedgrainsize_data'] = data
+
+    return all_dfs
+
 
 
 
@@ -348,6 +421,15 @@ def clean_data(all_dfs):
     all_dfs = fill_area(all_dfs)
     print("# end data filling - 3")
 
+    print("# begin data filling - 4")
+    # Description: If analyticalmethod = 'SM 2560 D' in sedgrainsize_labbatch, then checker should fill wentworth_class in tbl_sedgrainsize_data.
+    # Created Coder: Duy Nguyen
+    # Created Date: 7/11/24
+    # Last Edited Date:
+    # Last Edited Coder:
+    all_dfs = fill_wentworth_class(all_dfs)
+    print("# end data filling - 4")
+
 
     
   
@@ -363,62 +445,3 @@ def clean_data(all_dfs):
 
     print("END preprocessing")
     return all_dfs
-
-
-
-
-'''
-Caspian's code:
-def fill_commonname(all_dfs):
-    for _, tbl_arr in all_tbls.items():
-        lu_list = tbl_arr['lu_list']
-        for tbl in tbl_arr['tbls']:
-            if tbl in all_dfs.keys():
-                df = all_dfs[tbl]
-                for label, row in df.iterrows():
-                    sci_name = row['scientificname']
-                    com_name = row['commonname']
-                    if pd.isna(com_name) and pd.notna(sci_name):
-                        common_name_df = pd.read_sql(f"SELECT commonname FROM {lu_list} WHERE scientificname = '{sci_name}'", g.eng)
-                        if common_name_df.empty:
-                            print(f"cannot fill commonname for {sci_name} - not found in lu list")
-                            continue
-                        new_common_name = str(common_name_df.iat[0,0])
-                        df.loc[label, 'commonname'] = new_common_name
-                        all_dfs[tbl] = df
-                        print(f'filled common name for {sci_name} with {new_common_name}')
-    return all_dfs
-
-def fill_status(all_dfs):
-    for _, tbl_arr in all_tbls.items():
-        lu_list = tbl_arr['lu_list']
-        for tbl in tbl_arr['tbls']:
-            if tbl in all_dfs.keys():
-                df = all_dfs[tbl]
-                for label, row in df.iterrows():
-                    sci_name = row['scientificname']
-                    status = row['status']
-                    if pd.isna(status) and pd.notna(sci_name):
-                        status_df = pd.read_sql(f"SELECT status FROM {lu_list} WHERE scientificname = '{sci_name}'", g.eng)
-                        if status_df.empty:
-                            print(f"cannot fill status for {sci_name} - not found in lu list")
-                            continue
-                        new_status = str(status_df.iat[0,0])
-                        df.loc[label, 'status'] = new_status
-                        all_dfs[tbl] = df
-                        print(f'filled status for {sci_name} with {new_status}')
-    return all_dfs
-def fill_area(all_dfs):
-    if 'tbl_fish_sample_metadata' in all_dfs.keys():
-        df = all_dfs['tbl_fish_sample_metadata']
-        for label, row in df.iterrows():
-            area = row['area_m2']
-            length = row['seinelength_m']
-            distance = row['seinedistance_m']
-            if pd.isna(area):
-                if pd.notna(length) and pd.notna(distance):
-                    new_area = length * distance
-                    df.loc[label, 'area_m2'] = new_area
-                    all_dfs['tbl_fish_sample_metadata'] = df
-    return all_dfs
-'''
