@@ -38,8 +38,7 @@ def sedimentgrainsize_lab(all_dfs):
     sed_labbatch_pkey = get_primary_key('tbl_sedgrainsize_labbatch_data', g.eng)
     grabeventdetails_pkey = get_primary_key('tbl_grabevent_details', g.eng)
 
-    sed_labbatch_grabevntdetails_shared_pkey = [x for x in sed_labbatch_pkey if x in grabeventdetails_pkey]
-    sed_labbatch_grabevntdetails_shared_key = [x for x in sed_data_pkey if x in grabeventdetails_pkey]
+    sed_labbatch_grabevntdetails_shared_key = [x for x in sed_labbatch_pkey if x in grabeventdetails_pkey]
     sed_data_sed_labbatch_shared_pkey = [x for x in sed_data_pkey if x in sed_labbatch_pkey]
 
 
@@ -220,6 +219,71 @@ def sedimentgrainsize_lab(all_dfs):
     errs = [*errs, checkData(**args)]
 
     print("# END OF CHECK - 5")
+
+
+    print("# CHECK - 7")
+    # Description: phi needs to be in the lookup list lu_sedgrainsize_phi
+    # Created Coder: Duy Nguyen
+    # Created Date: 7/11/24
+    # Last Edited Date: 
+    # NOTE (7/11/24): created check
+    lu_sedgrainsize_phi = pd.read_sql("SELECT phi, wentworth_class FROM lu_sedgrainsize_phi",g.eng)
+    args.update({
+        "dataframe": sed_data,
+        "tablename": "tbl_sedgrainsize_data",
+        "badrows" : sed_data[~sed_data['phi'].isin(set(lu_sedgrainsize_phi['phi']))].tmp_row.tolist(),
+        "badcolumn": "phi",
+        "error_type": "Value Error",
+        "error_message": 'The phi value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_sedgrainsize_phi target="_blank">lu_sedgrainsize_phi</a>'
+    })
+    errs = [*errs, checkData(**args)]
+    
+    print("# END OF CHECK - 7")
+
+    print("# CHECK - 8")
+    # Description: wentworth_class needs to be in the lookup list lu_sedgrainsize_phi. If the analyticalmethod is SM 2560 D, then it is best that you enter the value of phi and let the checker fills wentworth_class
+    # Created Coder: Duy Nguyen
+    # Created Date: 7/11/24
+    # Last Edited Date: 
+    # NOTE (7/11/24): created check
+    args.update({
+        "dataframe": sed_data,
+        "tablename": "tbl_sedgrainsize_data",
+        "badrows" : sed_data[~sed_data['wentworth_class'].isin(set(lu_sedgrainsize_phi['wentworth_class']))].tmp_row.tolist(),
+        "badcolumn": "wentworth_class",
+        "error_type": "Value Error",
+        "error_message": 'The wentworth_class value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_sedgrainsize_phi target="_blank">lu_sedgrainsize_phi</a>\n.'
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 8")
+
+    print("# CHECK - 9")
+    # Description: The value of wentworth_class does not match the lookup list for the given phi
+    # Created Coder: Duy Nguyen
+    # Created Date: 7/11/24
+    # Last Edited Date: 
+    # NOTE (7/11/24): created check
+    # Merging sed_data with lu_sedgrainsize_phi on 'phi'
+    merged_data = sed_data.merge(lu_sedgrainsize_phi, how='left', on='phi', suffixes=('', '_lookup'))
+
+    # Identifying rows with unmatched wentworth_class
+    unmatched_rows = merged_data[
+        (merged_data['phi'] != -88) &
+        (merged_data['wentworth_class'] != merged_data['wentworth_class_lookup'])
+    ]
+
+    # Updating args with the results of the check
+    args.update({
+        "dataframe": sed_data,
+        "tablename": "tbl_sedgrainsize_data",
+        "badrows": unmatched_rows.tmp_row.tolist(),
+        "badcolumn": "wentworth_class",
+        "error_type": "Value Error",
+        "error_message": 'The value of wentworth_class does not match the lookup list for the given phi. Refer to <a href=scraper?action=help&layer=lu_sedgrainsize_phi target="_blank">lu_sedgrainsize_phi</a>. If the analyticalmethod is SM 2560 D, then it is best that you put the value of phi and let the checker fills wentworth_class'
+    })
+
+    # Adding the check result to the list of errors
+    errs = [*errs, checkData(**args)]
 
 
     ######################################################################################################################
