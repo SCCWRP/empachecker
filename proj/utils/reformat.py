@@ -27,6 +27,9 @@ def read_tidbit(tidbit_path):
     tidbit_data['raw_h2otemp'] = tidbit_data.iloc[:, 1]
     # search in temperature column for degree symbol, use single character after that
     tidbit_data['raw_h2otemp_unit'] = re.search(r"(?<=\N{DEGREE SIGN}).", tidbit_data.iloc[:, 1].name, flags=re.UNICODE)[0]
+
+    tidbit_data['raw_h2otemp_unit'] = tidbit_data['raw_h2otemp_unit'].str.replace("C","deg C")
+
     tidbit_data['sensorid'] = tidbit_serial_num
 
     tidbit_data = tidbit_data[TEMPLATE_COLUMNS]
@@ -185,19 +188,27 @@ def read_troll(troll_path):
     return troll_data
 
 def read_hydrolab(hydrolab_path):
+    print("in read_hydrolab")
     header_index = 0
 
     with open(hydrolab_path, encoding='utf-16') as hydrolab_file:
         hydrolab_reader = csv.reader(hydrolab_file, delimiter="\t") # tab delimited
         for i, row in enumerate(hydrolab_reader):
-            if "Time Zone (UTC)" in row and len(row) == 2:
+            print()
+            if "Time Zone (UTC)" in row:
                 hours_mins = row[1]
             elif "Date & Time" in row:
-                header_index = i - 1
+                header_index = i
                 break
     # weird csv encoding
     hydrolab_data = pd.read_csv(hydrolab_path, header = header_index, sep='\t', encoding='utf-16')
+    print(hydrolab_data)
+
     hydrolab_data = pd.concat([hydrolab_data, pd.DataFrame(columns = TEMPLATE_COLUMNS)])
+
+    print("check column in dataframe")
+    print('Sonde HL7 Serial Number' in hydrolab_data.columns.tolist())
+    print(hydrolab_data.columns)
 
     hydrolab_data['sensorid'] = hydrolab_data['Sonde HL7 Serial Number'].str.split(":", expand=True)[1]
     hydrolab_data['samplecollectiontimestamp'] = pd.to_datetime(hydrolab_data['Date & Time'])
@@ -239,7 +250,7 @@ def read_hydrolab(hydrolab_path):
             # is the unit word
             .rsplit(" (")[0].rsplit(" ")[-1]\
             # replace uncommon characters with common ones
-            .replace("µ", "u").replace(u"\N{DEGREE SIGN}", "deg")
+            .replace("µ", "u").replace(u"\N{DEGREE SIGN}", "deg ")
     )
 
     hydrolab_data = hydrolab_data[TEMPLATE_COLUMNS]
@@ -255,6 +266,8 @@ def parse_raw_logger_data(loggertype: str, filepath: str):
     # if we add another supported type, we can add here
     SUPPORTED_SENSORTYPES = ['tidbit','troll','ctd','minidot','hydrolab']
     lowercase_loggertype = str(loggertype).lower()
+    lowercase_loggertype = "hydrolab" if lowercase_loggertype == "hl series sensors" else lowercase_loggertype
+
     assert \
         lowercase_loggertype in SUPPORTED_SENSORTYPES, \
         f"""Logger Type {lowercase_loggertype} is not (yet) supported. Supported types are: {', '.join(SUPPORTED_SENSORTYPES)}"""

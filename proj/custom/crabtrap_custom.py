@@ -460,9 +460,11 @@ def crabtrap(all_dfs):
     # Description: Replicate must be consecutive within a primary key  (🛑 ERROR 🛑)
     # Created Coder: Caspian T.
     # Created Date: 09/22/2023
-    # Last Edited Date: 09/22/2023
-    # Last Edited Coder: Caspian T.
-    groupby_cols = [x for x in crabinvert_pkey if x != 'replicate']
+    # Last Edited Date: 7/11/24
+    # Last Edited Coder: Duy Nguyen.
+    # NOTE (7/11/24): Check was written incorrectly. Duy fixed it.
+
+    groupby_cols = [x for x in crabinvert_pkey if x not in ['scientificname', 'replicate']]
     args.update({
         "dataframe": crabinvert,
         "tablename": "tbl_crabfishinvert_abundance",
@@ -500,9 +502,12 @@ def crabtrap(all_dfs):
     # Description: speciesreplicate must be consecutive within primary keys (🛑 ERROR 🛑)
     # Created Coder: Caspian T.
     # Created Date: 09/22/2023
-    # Last Edited Date: 09/22/2023
-    # Last Edited Coder: Caspian T.
-    groupby_cols = [x for x in crabmass_pkey if x != 'speciesreplicate']
+    # Last Edited Date: 7/11/24
+    # Last Edited Coder: Duy Nguyen.
+    # NOTE (7/11/24): Check was written incorrectly. Duy fixed it.
+
+    groupby_cols = [x for x in crabmass_pkey if x not in ['speciesreplicate']]
+    print(groupby_cols)
     args.update({
         "dataframe": crabmass,
         "tablename": "tbl_crabbiomass_length",
@@ -516,12 +521,14 @@ def crabtrap(all_dfs):
     print("# END OF CHECK - 13")
 
     print("# CHECK - 17")
-    # Description: speciesreplicate must be consecutive within primary keys (🛑 ERROR 🛑)
+    # Description: replicate must be consecutive within primary keys (🛑 ERROR 🛑)
     # Created Coder: Caspian T.
     # Created Date: 09/22/2023
-    # Last Edited Date: 09/22/2023
-    # Last Edited Coder: Caspian T.
-    groupby_cols = [x for x in crabmass_pkey if x != 'replicate']
+    # Last Edited Date: 7/11/24
+    # Last Edited Coder: Duy Nguyen.
+    # NOTE (7/11/24): Check was written incorrectly. scientificname and speciesplirecate should not be in the grouping. Duy fixed it.
+
+    groupby_cols = [x for x in crabmass_pkey if x not in ['scientificname', 'replicate' , 'speciesreplicate']]
     args.update({
         "dataframe": crabmass,
         "tablename": "tbl_crabbiomass_length",

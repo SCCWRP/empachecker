@@ -24,8 +24,6 @@
                     })
                     .join('&')
                     
-                    console.log("previousElements")
-                    console.log(previousElements)
                     
                     let resp = await fetch(`
                         /${script_root}/login_values?valuefield=${nextElem.dataset.optionValuesField}&displayfield=${nextElem.dataset.optionDisplayField}&table=${nextElem.dataset.optionTable}&${previousElements}
@@ -36,7 +34,7 @@
                     nextElem.innerHTML = `<option value="" selected disabled hidden></option>`;
                     data.data.forEach(d => {
                         nextElem.innerHTML += `
-                            <option value="${d.actualvalue}">${d.displayvalue}</option>
+                            <option value="${d.actualvalue}">${String(d.displayvalue).replace("GMT", "").trim()}</option>
                         `
                     })
                 }
@@ -56,7 +54,7 @@
         elem.innerHTML = `<option value="" selected disabled hidden></option>`;
         data.data.forEach(d => {
             elem.innerHTML += `
-                <option value="${d.actualvalue}">${d.displayvalue}</option>
+                <option value="${d.actualvalue}">${String(d.displayvalue).replace("GMT", "").trim()}</option>
             `
         })
     })

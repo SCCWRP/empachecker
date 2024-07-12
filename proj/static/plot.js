@@ -119,9 +119,9 @@ class Plot {
 
     drawAxes(
         {
-            xAxisFontSize = 14,
+            xAxisFontSize = 25,
             xAxisRotation = -65,
-            yAxisFontSize = 14,
+            yAxisFontSize = 25,
             yAxisRotation = 0,
             xAxisLabel = '',
             yAxisLabel = ''
@@ -506,8 +506,8 @@ class CanvasPathPlot extends Plot {
     }
 
     drawAxes({
-        xAxisFontSize = 14,
-        yAxisFontSize = 14,
+        xAxisFontSize = 20,
+        yAxisFontSize = 20,
         xAxisLabel = '',
         yAxisLabel = '',
         numXTicks = 10,
@@ -639,7 +639,7 @@ function createPlot(
 
     // text label for the x axis
     xAxisLabel = xAxisLabel ?? xVal;
-    context.font = "20px Arial";
+    context.font = "30px Arial";
     context.textAlign = 'center';
     context.fillText(xAxisLabel, width / 2, height + (margins.bottom * 0.7) + 10); // increased distance to avoid overlap with x-axis labels
 
