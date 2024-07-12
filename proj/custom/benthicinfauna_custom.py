@@ -203,9 +203,9 @@ def benthicinfauna_lab(all_dfs):
     # ----------------------------------------------- Biomasss Checks -------------------------------------------------- #
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
-
+ 
     print("# CHECK - 6")
-    # Description: Biomass_g must be greater than or equal to 0
+    # Description: Biomass_g must be greater than or equal to 0. You can put -88 for missing values.
     # Created Coder: Caspian
     # Created Date: 9/27/23
     # Last Edited Date:  1/4/24

@@ -242,8 +242,8 @@ def vegetation(all_dfs):
 
     print("# END OF CHECK - 5")
 
-    print("# CHECK - 6")
-    # Description: If value is not plant then lat and long are req, but if it is plant then lat and long can be -88
+    print("# CHECK - 6a")
+    # Description: If method is obs_plant, both vegetated_cover and non_vegetated must be -88 or empty
     # Created Coder: Aria Askaryar
     # Created Date: 10/04/2023
     # Last Edited Date: 10/04/2023
@@ -259,7 +259,6 @@ def vegetation(all_dfs):
         "error_message": "Method is obs_plant. Vegetated_cover and non_vegetated_cover must be -88 or empty."
     })
     errs = [*errs, checkData(**args)]
-
     print("# END OF CHECK - 6a")
 
     print("# CHECK - 6b")
@@ -431,7 +430,7 @@ def vegetation(all_dfs):
     print("# END OF CHECK - 9")
 
     print("# CHECK - 11")
-    # Description: Range for tallestplantheight_cm must be between [0, 300]
+    # Description: Range for tallestplantheight_cm must be between [0, 450]
     # Created Coder:
     # Created Date:
     # Last Edited Date: 2/1/24
@@ -445,11 +444,11 @@ def vegetation(all_dfs):
         "tablename": "tbl_vegetativecover_data",
         "badrows":vegdata[
             (vegdata['tallestplantheight_cm'] != -88) &
-            (vegdata['tallestplantheight_cm'] < 0) | (vegdata['tallestplantheight_cm'] > 450)
+            ((vegdata['tallestplantheight_cm'] < 0) | (vegdata['tallestplantheight_cm'] > 450))
         ].tmp_row.tolist(),
         "badcolumn": "tallestplantheight_cm",
         "error_type" : "Value is out of range.",
-        "error_message" : "Height should be between 0 to 300 cm"
+        "error_message" : "Height should be between 0 to 450 cm"
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 11")
@@ -484,17 +483,17 @@ def vegetation(all_dfs):
     # NOTE (09/28/2023): Aria wrote the check, it has not been tested yet
     # NOTE (11/1/23): plotreplicate must be consecutive for a given transectreplicate
     
-    # groupby_cols = ['projectid','siteid','estuaryname','stationno','samplecollectiondate','transectreplicate']
-    # args.update({
-    #     "dataframe": vegdata,
-    #     "tablename": "tbl_vegetativecover_data",
-    #     "badrows" : check_consecutiveness(vegdata, groupby_cols, 'plotreplicate'),
-    #     "badcolumn": "plotreplicate",
-    #     "error_type": "Replicate Error",
-    #     "error_message": f"plotreplicate must be consecutive within primary keys (siteid, estuaryname, stationno, samplecollectiondate, transectreplicate, plotreplicate, covertype, scientificname, live_dead, unknownreplicate, projectid)"
-    # })
-    # errs = [*errs, checkData(**args)]
-    # print("# END OF CHECK - 13")
+    groupby_cols = ['projectid','siteid','estuaryname','stationno','samplecollectiondate','transectreplicate']
+    args.update({
+        "dataframe": vegdata,
+        "tablename": "tbl_vegetativecover_data",
+        "badrows" : check_consecutiveness(vegdata, groupby_cols, 'plotreplicate'),
+        "badcolumn": "plotreplicate",
+        "error_type": "Replicate Error",
+        "error_message": f"plotreplicate must be consecutive within primary keys (siteid, estuaryname, stationno, samplecollectiondate, transectreplicate, plotreplicate, covertype, scientificname, live_dead, unknownreplicate, projectid)"
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 13")
 
 
 
@@ -720,8 +719,6 @@ def vegetation(all_dfs):
         "error_message" : 'The total number of plantheight_replicate CANNOT exceed the number of total_stems. For the case where total_stems provided is -88, the expected plantheight_replicate should be -88.'
     })
     errs = [*errs, checkData(**args)]
-
-
     print("# END OF CHECK - 20")
 
 
@@ -744,8 +741,7 @@ def vegetation(all_dfs):
     })
     errs = [*errs, checkData(**args)]
 
-
-    # print("# END OF CHECK - 22")
+    print("# END OF CHECK - 22")
 
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #

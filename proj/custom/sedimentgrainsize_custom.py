@@ -237,7 +237,6 @@ def sedimentgrainsize_lab(all_dfs):
         "error_message": 'The phi value you entered does not match the lookup list <a href=scraper?action=help&layer=lu_sedgrainsize_phi target="_blank">lu_sedgrainsize_phi</a>'
     })
     errs = [*errs, checkData(**args)]
-    
     print("# END OF CHECK - 7")
 
     print("# CHECK - 8")

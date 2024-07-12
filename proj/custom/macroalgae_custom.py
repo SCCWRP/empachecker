@@ -171,7 +171,7 @@ def macroalgae(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
 
-    #print("# CHECK - 5")
+    print("# CHECK - 5")
     # Description: Transectreplicate must be greater than 0
     # Created Coder: Ayah
     # Created Date:09/15/2023
@@ -187,7 +187,7 @@ def macroalgae(all_dfs):
         "error_message" : "TransectReplicate must be greater than 0."
     })
     errs = [*errs, checkData(**args)]
-    #print("# END OF CHECK - 5")
+    print("# END OF CHECK - 5")
 
     print("# CHECK - 6")
     # Description: Transectlength_m must be greater than 0
@@ -405,10 +405,10 @@ def macroalgae(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
 
-    #print("# CHECK - 12")
+    print("# CHECK - 12")
     # Description: If estimatedcover is 0 then scientificname must be "Not recorded"
-    # Created Coder:
-    # Created Date:
+    # Created Coder: Caspian
+    # Created Date: 4/10/2023
     # Last Edited Date: 
     # Last Edited Coder: 
     # NOTE (Date):
@@ -421,8 +421,34 @@ def macroalgae(all_dfs):
         "error_message": "EstimatedCover is 0. The ScientificName MUST be 'Not recorded'."
     })
     errs = [*errs, checkData(**args)]
-    #print("# END OF CHECK - 12")
+    print("# END OF CHECK - 12")
 
+    print("# CHECK - 15")
+    # Description: transectlocation needs to match with associated values in the metadata table for a station
+    # Created Coder: Ayah
+    # Created Date: 05/22/2024
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (Date):
+
+    algaemeta["present"] = 'yes'
+    group_col = ['projectid','siteid','estuaryname','samplecollectiondate','stationno','transectlocation']
+
+    merge_df = pd.merge(algaemeta,algaefloating, on = group_col, how = "outer") 
+
+    badrows = merge_df[(merge_df.present.isnull())].tmp_row_y.tolist()
+    badrows
+
+    args.update({
+        "dataframe": algaefloating,
+        "tablename": "tbl_floating_data",
+        "badrows": badrows, 
+        "badcolumn": "transectlocation",
+        "error_type": "Value Error",
+        "error_message": "Transectlocation needs to match with associated values in the metadata table for a station."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END CHECK - 15")
 
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
