@@ -65,6 +65,14 @@ def template_file():
 
         datapath = os.path.join(os.getcwd(), "export", "data", f'{tablename}.csv')
 
+        search = read_sql(f"SELECT * FROM search;", eng)
+
+        data = data.merge(
+            search,
+            how='left',
+            on=['siteid','estuaryname']
+        )
+
         data.to_csv(datapath, index = False)
 
         return send_file( datapath, as_attachment = True, download_name = f'{tablename}.csv' )
