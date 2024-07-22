@@ -80,6 +80,11 @@ def toxicity(all_dfs):
     toxicitysummary_grabeventdetails_shared_pkey = [x for x in toxicitysummary_pkey if x in grabeventdetails_pkey]
     toxicitysummary_toxicitybatch_shared_pkey = [x for x in toxicitysummary_pkey if x in toxicitybatch_pkey]
 
+    if 'samplecollectiondate' in toxicitysummary.columns:
+        toxicitysummary['samplecollectiondate'] = pd.to_datetime(toxicitysummary['samplecollectiondate'])
+    if 'samplecollectiondate' in grabevent_details.columns:
+        grabevent_details['samplecollectiondate'] = pd.to_datetime(grabevent_details['samplecollectiondate'])
+
     print("# CHECK - 1")
     # Description: Each toxicitysummary record must have correspond record in the grabeventdetails in database
     # Created Coder: Caspian
@@ -101,7 +106,7 @@ def toxicity(all_dfs):
         )
     })
     errs = [*errs, checkData(**args)]
-
+    
     print("# END of CHECK - 1")
 
     print("# CHECK - 2")
@@ -213,8 +218,8 @@ def toxicity(all_dfs):
     errs = [*errs, checkData(**args)]
 
     args.update({
-        "dataframe": toxicitybatch,
-        "tablename": "tbl_toxicitybatch",
+        "dataframe": toxicityresults,
+        "tablename": "tbl_toxicityresults",
         "badrows": multiple_dates_within_site_results[0], 
         "badcolumn": 'siteid,samplecollectiondate',
         "error_type": "Logic Error",
