@@ -197,38 +197,40 @@ def toxicity(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
 
-    print("# CHECK - 4")
-    # Description: Within toxicity data, return a warning if a submission contains multiple dates within a single site
-    # Created Coder: Caspian Thackeray
-    # Created Date: 09/13/23
-    # Last Edited Date: 09/13/23
-    # Last Edited Coder: Caspian Thackeray
+    # print("# CHECK - 4")
+    # # Description: Within toxicity data, return a warning if a submission contains multiple dates within a single site
+    # # Created Coder: Caspian Thackeray
+    # # Created Date: 09/13/23
+    # # Last Edited Date: 7/22/24
+    # # Last Edited Coder: Duy Nguyen
+    # # NOTE (7/22/24): Check does not make sense, should check for analysisdate column instead of samplecollectiondate, but 
+    # # we do not have analysisdate column, so I am going to disable the check
 
-    multiple_dates_within_site_summary = check_multiple_dates_within_site(toxicitysummary)
-    multiple_dates_within_site_results = check_multiple_dates_within_site(toxicityresults)
+    # multiple_dates_within_site_summary = check_multiple_dates_within_site(toxicitysummary)
+    # multiple_dates_within_site_results = check_multiple_dates_within_site(toxicityresults)
 
-    args.update({
-        "dataframe": toxicitysummary,
-        "tablename": "tbl_toxicitysummary",
-        "badrows": multiple_dates_within_site_summary[0], 
-        "badcolumn": 'siteid,samplecollectiondate',
-        "error_type": "Logic Error",
-        "error_message": "Multiple dates are submitted within a single site"
-    })
-    errs = [*errs, checkData(**args)]
+    # args.update({
+    #     "dataframe": toxicitysummary,
+    #     "tablename": "tbl_toxicitysummary",
+    #     "badrows": multiple_dates_within_site_summary[0], 
+    #     "badcolumn": 'siteid,samplecollectiondate',
+    #     "error_type": "Logic Error",
+    #     "error_message": "Multiple dates are submitted within a single site"
+    # })
+    # errs = [*errs, checkData(**args)]
 
-    args.update({
-        "dataframe": toxicityresults,
-        "tablename": "tbl_toxicityresults",
-        "badrows": multiple_dates_within_site_results[0], 
-        "badcolumn": 'siteid,samplecollectiondate',
-        "error_type": "Logic Error",
-        "error_message": "Multiple dates are submitted within a single site"
-    })
-    errs = [*errs, checkData(**args)]
+    # args.update({
+    #     "dataframe": toxicityresults,
+    #     "tablename": "tbl_toxicityresults",
+    #     "badrows": multiple_dates_within_site_results[0], 
+    #     "badcolumn": 'siteid,samplecollectiondate',
+    #     "error_type": "Logic Error",
+    #     "error_message": "Multiple dates are submitted within a single site"
+    # })
+    # errs = [*errs, checkData(**args)]
 
 
-    print("# END of CHECK - 4")
+    # print("# END of CHECK - 4")
 
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #

@@ -377,8 +377,8 @@ def get_logger_data():
             payload[k] = re.sub(r'[#;]', '', v)
     
     # Hardcoded for EMPA project
-    base_table = 'tbl_wqlogger'
-    datetime_colname = 'samplecollectiontimestamp_utc'
+    base_table = 'tbl_wq_logger_raw'
+    datetime_colname = 'samplecollectiontimestamp'
     is_partitioned = True
 
     # Required Parameters
@@ -461,21 +461,20 @@ def get_logger_data():
 
     combined_table_str += ") AS t"
 
-    sql = f"SELECT * FROM {combined_table_str} WHERE "
-    
+    sql = f"SELECT * FROM {base_table} WHERE {datetime_colname} >= '{start_date}' AND {datetime_colname} <= '{end_date}'"
+
     conditions = []
 
-    if projectid is not None:
-        conditions.append(f"t.projectid IN ({projectid})")
-    if estuaryname is not None:
-        conditions.append(f"t.estuaryname IN ({estuaryname})")
-    if sensortype is not None:
-        conditions.append(f"t.sensortype IN ({sensortype})")
+    if projectid:
+        conditions.append(f"projectid IN ({projectid})")
+    if estuaryname:
+        conditions.append(f"estuaryname IN ({estuaryname})")
+    if sensortype:
+        conditions.append(f"sensortype IN ({sensortype})")
 
     if conditions:
-        sql += " AND ".join(conditions)
-    else:
-        sql = sql.rstrip(" WHERE ")
+        sql += " AND " + " AND ".join(conditions)
+
     
     print("sql")
     print(sql)

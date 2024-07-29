@@ -21,11 +21,11 @@
                                 "properties": {
                                     "start_time": {
                                         "type": "string",
-                                        "example": "2022-01-01",
+                                        "example": "2023-01-01",
                                         "description": "Required. Need to be in format YYYY-MM-DD"
                                     },
                                     "end_time": {
-                                        "example": "2022-01-02",
+                                        "example": "2024-01-02",
                                         "type": "string",
                                         "description": "Required. Need to be in format YYYY-MM-DD"
                                     },
@@ -36,12 +36,12 @@
                                     },
                                     "estuaryname": {
                                         "type": "string",
-                                        "example": "'Ventura River','Laguna Creek'",
+                                        "example": "'Big River','Bolinas Lagoon'",
                                         "description": "Optional. Separated by commas, each item needs to be wrapped in single quotes"
                                     },
                                     "sensortype": {
                                         "type": "string",
-                                        "example": "'CTD', 'troll'",
+                                        "example": "'CTD', 'troll', 'tidbit'",
                                         "description": "Optional. Separated by commas, each item needs to be wrapped in single quotes"
                                     }
                                 },
