@@ -393,7 +393,19 @@ def get_logger_data():
     siteid = payload.get('siteid')
     estuaryname = payload.get('estuaryname')
     sensortype = payload.get('sensortype')
-    ##
+
+    def format_items(param):
+        if param:
+            return ", ".join([f"'{item.strip()}'" for item in param.split(',')])
+        return ''
+
+    # Format each parameter
+    projectid = format_items(projectid)
+    siteid = format_items(siteid)
+    estuaryname = format_items(estuaryname)
+    sensortype = format_items(sensortype)
+
+    print(projectid, siteid, estuaryname, sensortype)
 
     colnames = [
         x 
