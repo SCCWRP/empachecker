@@ -2,7 +2,7 @@ import os, json, time
 from flask import send_file, Blueprint, jsonify, request, g, current_app, render_template, url_for
 #from flask_cors import CORS, cross_origin - disabled paul 9jan23
 from pandas import read_sql, DataFrame
-from sqlalchemy import text
+from sqlalchemy import text,create_engine
 from zipfile import ZipFile
 from io import BytesIO
 import subprocess as sp
@@ -368,7 +368,7 @@ def get_logger_data():
     import pandas as pd
     import re
     
-    eng = g.eng
+    eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
     payload = request.json
 
     # Prevent SQL Injection
