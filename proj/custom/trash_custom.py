@@ -138,11 +138,11 @@ def trash(all_dfs):
     #--------------------------------------------- Logic Checks ---------------------------------------------------------#
     #--------------------------------------------------------------------------------------------------------------------#
     ###################################################################################################################### 
-    print("# LOGIC CHECK - 1")
-        # Description: Recs in trashtimesearchtally must have matching records in trashvisualassessment and vise versa on shared primary keys
-        # Created Coder: Ayah Halabi
-        # Created Date: 11/21/2023
-        # Last Edited Date: 
+    print("# LOGIC CHECK - 2")
+    # Description: Recs in trashtimesearchtally must have matching records in trashvisualassessment and vise versa on shared primary keys
+    # Created Coder: Ayah Halabi
+    # Created Date: 11/21/2023
+    # Last Edited Date: 
 
     errs.append( 
         checkData(
@@ -154,14 +154,14 @@ def trash(all_dfs):
             )
     )
 
-    print("# END LOGIC CHECK - 1")
+    print("# END LOGIC CHECK - 2")
 
-    print("# LOGIC CHECK - 16")
-        # Description: Recs in trashtimesearchtally must have matching records in trashvisualassessment and vise versa on shared primary keys
-        # Created Coder: Ayah Halabi
-        # Created Date: 11/21/2023
-        # Last Edited Date:
-    
+    print("# LOGIC CHECK - 1")
+    # Description: Recs in trashtimesearchtally must have matching records in trashvisualassessment and vise versa on shared primary keys
+    # Created Coder: Ayah Halabi
+    # Created Date: 11/21/2023
+    # Last Edited Date:
+
     errs.append( 
         checkData(
             tablename='tbl_trashvisualassessment',
@@ -172,9 +172,9 @@ def trash(all_dfs):
             )
     )
 
-    print("# END LOGIC CHECK - 16")
+    print("# END LOGIC CHECK - 1")
 
-    print("# LOGIC CHECK - 2")
+    print("# LOGIC CHECK - 3")
     # Description: The number of quadrats listed in trashsiteinfo should have corresponding row in trashsamplearea
     # Created Coder: Aria Askaryar  
     # Created Date: 11/15/2023
@@ -225,34 +225,10 @@ def trash(all_dfs):
             )
     )
 
-    
-    print("# END LOGIC CHECK - 2")
+    print("# END LOGIC CHECK - 3")
 
-    print("# LOGIC CHECK - 3")
+    print("# LOGIC CHECK - 4")
 
-    #Aria's code
-    # Description: If trash is 'Yes' in trashsamplearea, then information should exist in trashquadrattally – at least one row
-    # Created Coder: Aria Askaryar
-    # Created Date: 11/14/23
-    # Last Edited Date: 11/16/23
-    # Last Edited Coder: Ayah Halabi
-    # NOTE (11/16/2023) Pkeys were hardcoded so I changed them to the dynamic form - Ayah 
-   
-    # ids_trashsamplearea_yes = set(trashsamplearea[trashsamplearea['trash'] == 'Yes'][trashsamplearea_pkey].apply(tuple, axis=1))
-    # ids_trashquadrattally = set(trashtally[trashtally_pkey].apply(tuple, axis=1))
-    # missing_entries = ids_trashsamplearea_yes - ids_trashquadrattally
-
-    # errs.append(
-    #     checkData(
-    #         tablename='tbl_trashsamplearea',
-    #         badrows= trashsamplearea[trashsamplearea[trashsamplearea_pkey].apply(tuple, axis=1).isin(missing_entries)].tmp_row.tolist(),
-    #         badcolumn='trash',
-    #         error_type='Undefined Error',
-    #         error_message='If trash is "Yes" in trashsamplearea, then information should exist in trashquadrattally.'          
-    #     )
-    # )
-
-    #I will ask duy about this on 11/28/2023
     ## Description: trashsamplearea should have matching records in trashquadrattally
     ## Created Coder: Ayah Halabi
     ## Created Date: 11/21/2023
@@ -268,11 +244,11 @@ def trash(all_dfs):
             )
     )
 
-    print("# END LOGIC CHECK - 3")    
+    print("# END LOGIC CHECK - 4")    
 
 
 
-    print("# LOGIC CHECK - 17")
+    print("# LOGIC CHECK - 5")
     # Description: if trash is 'No' in trashsamplearea, then the corresponding record should have None in trashdebriscategory and debrisitem should say 'No Trash present'
     # Created Coder:  Ayah Halabi
     # Created Date: 11/20/23
@@ -308,9 +284,9 @@ def trash(all_dfs):
         )
     )
 
-    print("# END LOGIC CHECK - 17")
+    print("# END LOGIC CHECK - 5")
 
-    print("# LOGIC CHECK - 18")
+    print("# LOGIC CHECK - 6")
     # Description: quadrat must be consecutive within primary keys ('projectid','siteid','sampledate','quadrat','stationno','estuaryname','transect')
     # Created Coder: Ayah Halabi  
     # Created Date: 11/16/2023
@@ -331,7 +307,7 @@ def trash(all_dfs):
         )
         
 
-    print("# END LOGIC CHECK - 18")
+    print("# END LOGIC CHECK - 6")
 
     ######################################################################################################################
     #--------------------------------------------------------------------------------------------------------------------#
@@ -377,7 +353,7 @@ def trash(all_dfs):
     #--------------------------------------------------------------------------------------------------------------------#
     ###################################################################################################################### 
 
-    print("# CHECK - 4")
+    print("# CHECK - 15")
     # Description: If debriscategory contains Other then comment is required
     # Created Coder: Unknown
     # Created Date: Unknown
@@ -396,10 +372,10 @@ def trash(all_dfs):
         )
     )
     print(trashtally[(trashtally.debriscategory == 'Other') & (trashtally.comments.isna())].tmp_row.tolist())
-    print("# END CHECK - 4")
+    print("# END CHECK - 15")
 
    
-    print("# CHECK - 5")
+    print("# CHECK - 16")
     # Description: Plastic debris entered must match a value in lu_trashplastics
     # Created Coder: Unknown
     # Created Date: Unknown
@@ -420,10 +396,10 @@ def trash(all_dfs):
         )
     )
 
-    print("# END CHECK - 5")
+    print("# END CHECK - 16")
     
     
-    print("# CHECK - 6")
+    print("# CHECK - 17")
     # Description: Fabric or cloth entered must match a value in lu_trashfabricandcloth
     # Created Coder: Unknown
     # Created Date: Unknown
@@ -444,7 +420,7 @@ def trash(all_dfs):
         )
     )
 
-    print("# END CHECK - 6")
+    print("# END CHECK - 17")
 
 
     print("# CHECK - 7")
@@ -630,9 +606,9 @@ def trash(all_dfs):
     # Description: Either resulttotal or resulttotaltext needs to be filled in
     # Created Coder: Ayah
     # Created Date: 11/22/2023
-    # Last Edited Date: 
+    # Last Edited Date:
     # Last Edited Coder:
-    print("# END CHECK - 19")
+    print("# CHECK - 18")
     errs.append( 
         checkData(
             tablename='tbl_trashtimesearchtally',
@@ -642,24 +618,25 @@ def trash(all_dfs):
             error_message=" Both resulttotal and resulttotaltext cannot be empty, please indicate a value in one or the other"
             )
     )
-    print("# END CHECK - 19")
+    print("# END CHECK - 18")
     
-    # Description: Either resulttotal or resulttotaltext needs to be filled in
+    
+    print("# CHECK - 19")
+    # Description: width has to be non-negative
     # Created Coder: Ayah
     # Created Date: 11/22/2023
     # Last Edited Date: 
     # Last Edited Coder: 
-    print("# END CHECK - 20")
     errs.append( 
         checkData(
             tablename='tbl_trashtimesearchtally',
-            badrows=trashtimesearchtally[(trashtimesearchtally['width'] <0) &  (trashtimesearchtally['width']!= -88)].tmp_row.tolist(),
+            badrows=trashtimesearchtally[(trashtimesearchtally['width'] < 0) &  (trashtimesearchtally['width']!= -88)].tmp_row.tolist(),
             badcolumn='width',
             error_type='Sign Error',
             error_message=" Width must be non-negative"
             )
     )
-    print("# END CHECK - 20")
+    print("# END CHECK - 19")
     
     print("# CHECK - 20")
     # Description: Plastic debris entered must match a value in lu_trashplastics

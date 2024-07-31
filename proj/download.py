@@ -2,7 +2,7 @@ import os, json, time
 from flask import send_file, Blueprint, jsonify, request, g, current_app, render_template, url_for
 #from flask_cors import CORS, cross_origin - disabled paul 9jan23
 from pandas import read_sql, DataFrame
-from sqlalchemy import text
+from sqlalchemy import text,create_engine
 from zipfile import ZipFile
 from io import BytesIO
 import subprocess as sp
@@ -64,6 +64,14 @@ def template_file():
         data.drop( set(data.columns).intersection(set(current_app.system_fields)), axis = 1, inplace = True )
 
         datapath = os.path.join(os.getcwd(), "export", "data", f'{tablename}.csv')
+
+        search = read_sql(f"SELECT * FROM search;", eng)
+
+        data = data.merge(
+            search,
+            how='left',
+            on=['siteid','estuaryname']
+        )
 
         data.to_csv(datapath, index = False)
 
@@ -360,7 +368,7 @@ def get_logger_data():
     import pandas as pd
     import re
     
-    eng = g.eng
+    eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
     payload = request.json
 
     # Prevent SQL Injection
@@ -369,8 +377,8 @@ def get_logger_data():
             payload[k] = re.sub(r'[#;]', '', v)
     
     # Hardcoded for EMPA project
-    base_table = 'tbl_wqlogger'
-    datetime_colname = 'samplecollectiontimestamp_utc'
+    base_table = 'tbl_wq_logger_raw'
+    datetime_colname = 'samplecollectiontimestamp'
     is_partitioned = True
 
     # Required Parameters
@@ -385,7 +393,19 @@ def get_logger_data():
     siteid = payload.get('siteid')
     estuaryname = payload.get('estuaryname')
     sensortype = payload.get('sensortype')
-    ##
+
+    def format_items(param):
+        if param:
+            return ", ".join([f"'{item.strip()}'" for item in param.split(',')])
+        return ''
+
+    # Format each parameter
+    projectid = format_items(projectid)
+    siteid = format_items(siteid)
+    estuaryname = format_items(estuaryname)
+    sensortype = format_items(sensortype)
+
+    print(projectid, siteid, estuaryname, sensortype)
 
     colnames = [
         x 
@@ -453,21 +473,113 @@ def get_logger_data():
 
     combined_table_str += ") AS t"
 
-    sql = f"SELECT * FROM {combined_table_str} WHERE "
-    
+    sql = f"""
+        SELECT 
+            raw_dat.objectid,
+            raw_dat.projectid,
+            raw_dat.siteid,
+            raw_dat.estuaryname,
+            raw_dat.sensortype,
+            raw_dat.stationno,
+            raw_dat.sensorid,
+            raw_dat.samplecollectiontimestamp,
+            raw_dat.samplecollectiontimezone,
+            raw_dat.wqnotes,
+            raw_dat.sensorlocation,
+            raw_dat.organization,
+            raw_dat.raw_depth,
+            raw_dat.raw_depth_unit,
+            raw_dat.raw_depth_qcflag_human,
+            raw_dat.raw_pressure,
+            raw_dat.raw_pressure_unit,
+            raw_dat.raw_pressure_qcflag_human,
+            raw_dat.raw_h2otemp,
+            raw_dat.raw_h2otemp_unit,
+            raw_dat.raw_h2otemp_qcflag_human,
+            raw_dat.raw_ph,
+            raw_dat.raw_ph_qcflag_human,
+            raw_dat.raw_conductivity,
+            raw_dat.raw_conductivity_unit,
+            raw_dat.raw_conductivity_qcflag_human,
+            raw_dat.raw_turbidity,
+            raw_dat.raw_turbidity_unit,
+            raw_dat.raw_turbidity_qcflag_human,
+            raw_dat.raw_do,
+            raw_dat.raw_do_unit,
+            raw_dat.raw_do_qcflag_human,
+            raw_dat.raw_do_pct,
+            raw_dat.raw_do_pct_qcflag_human,
+            raw_dat.raw_salinity,
+            raw_dat.raw_salinity_unit,
+            raw_dat.raw_salinity_qcflag_human,
+            raw_dat.raw_chlorophyll,
+            raw_dat.raw_chlorophyll_unit,
+            raw_dat.raw_chlorophyll_qcflag_human,
+            raw_dat.raw_orp,
+            raw_dat.raw_orp_unit,
+            raw_dat.raw_orp_qcflag_human,
+            raw_dat.raw_qvalue,
+            raw_dat.raw_qvalue_qcflag_human,
+            raw_dat.samplecollectiontimestamp_utc,
+            raw_dat.raw_depth_qcflag_robot,
+            raw_dat.raw_pressure_qcflag_robot,
+            raw_dat.raw_h2otemp_qcflag_robot,
+            raw_dat.raw_ph_qcflag_robot,
+            raw_dat.raw_conductivity_qcflag_robot,
+            raw_dat.raw_turbidity_qcflag_robot,
+            raw_dat.raw_do_qcflag_robot,
+            raw_dat.raw_salinity_qcflag_robot,
+            raw_dat.raw_chlorophyll_qcflag_robot,
+            raw_dat.raw_orp_qcflag_robot,
+            raw_dat.raw_qvalue_qcflag_robot,
+            raw_dat.raw_do_pct_qcflag_robot,
+            raw_dat.qaqc_comment,
+            meta.samplecollectiontimestampstart,
+            meta.samplecollectiontimestampend,
+            meta.season,
+            meta.latitude,
+            meta.longitude,
+            meta.profile,
+            meta.samplemetadatanotes,
+            meta.distance_off_bottom,
+            meta.elevation_time,
+            meta.elevation_units,
+            meta.elevation_corr,
+            meta.datum_latlong,
+            meta.length_line,
+            meta.elevation_timezone,
+            meta.elevation_ellipsoid,
+            meta.elevation_orthometric,
+            meta.elevation_datum,
+            meta.elevation_reading_location,
+            meta.depth_correction_flag,
+            meta.depth_correction_comments,
+            meta.analysis_flag
+        FROM {base_table} raw_dat
+        LEFT JOIN tbl_wq_logger_metadata meta
+        ON raw_dat.projectid = meta.projectid
+        AND raw_dat.siteid = meta.siteid
+        AND raw_dat.estuaryname = meta.estuaryname
+        AND raw_dat.stationno = meta.stationno
+        AND raw_dat.sensortype = meta.sensortype
+        AND raw_dat.sensorid = meta.sensorid
+        WHERE raw_dat.{datetime_colname} >= '{start_date}' 
+        AND raw_dat.{datetime_colname} <= '{end_date}'
+        
+    """
+
     conditions = []
 
-    if projectid is not None:
-        conditions.append(f"t.projectid IN ({projectid})")
-    if estuaryname is not None:
-        conditions.append(f"t.estuaryname IN ({estuaryname})")
-    if sensortype is not None:
-        conditions.append(f"t.sensortype IN ({sensortype})")
+    if projectid:
+        conditions.append(f"raw_dat.projectid IN ({projectid})")
+    if estuaryname:
+        conditions.append(f"raw_dat.estuaryname IN ({estuaryname})")
+    if sensortype:
+        conditions.append(f"raw_dat.sensortype IN ({sensortype})")
 
     if conditions:
-        sql += " AND ".join(conditions)
-    else:
-        sql = sql.rstrip(" WHERE ")
+        sql += " AND " + " AND ".join(conditions)
+
     
     print("sql")
     print(sql)

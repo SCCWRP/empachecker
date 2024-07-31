@@ -151,9 +151,6 @@ def main():
                 if x in current_app.system_fields
             ]
         )
-        # make sure all tabs are filled with data with the only exception for cordgrass table
-        if (tblname not in ['tbl_cordgrass', 'tbl_feldspar_data']) and (all_dfs[tblname].empty):
-            return jsonify(user_error_msg=f'Please fill out the tab {tblname} before you continue')
     print("DONE - building 'all_dfs' dictionary")
 
 
@@ -167,6 +164,34 @@ def main():
     # if the tab didnt match any table it will not alter that item in the all_dfs dictionary
     print("Running match tables routine")
     match_dataset, match_report, all_dfs = match(all_dfs)
+<<<<<<< HEAD
+=======
+    
+
+    ############################################ PRE-CORE CHECKS ########################################################
+    for tblname in all_dfs.keys():
+        # each table needs to have <50k rows:
+        if len(all_dfs[tblname]) > 50000:
+            return jsonify(user_error_msg=f'Tab {tblname} has more than 50,000 rows which exceeds the limitation of the checker')
+
+        # code below is for accepting sheets with no data. Only allowable sheets are tbl_cordgrass and tbl_feldspar_data
+        if (tblname not in ['tbl_cordgrass', 'tbl_feldspar_data']) and (all_dfs[tblname].empty):
+            return jsonify(user_error_msg=f'Please fill out the tab {tblname} before you continue')
+    
+    
+    ############################################ END PRE-CORE CHECKS ####################################################
+    
+
+    #print(match(all_dfs)) #uncommented to view
+
+    #remember to comment out the block below after edits
+    # print("match_dataset")
+    # print(match_dataset)
+    # print("match_report")
+    # print(match_report)
+    # print("all_dfs")
+    # print(all_dfs)
+>>>>>>> dev
 
     #NOTE if all tabs in all_dfs matched a database table, but there is still no match_dataset
     # then the problem probably lies in __init__.py
@@ -454,7 +479,7 @@ def main():
 
     if match_dataset == 'logger_raw':
         jsondata = all_dfs['tbl_wq_logger_raw']
-        jsondata['samplecollectiontimestamp'] = jsondata['samplecollectiontimestamp'].apply(lambda t: t.strftime("%Y-%m-%d %H:%M:%S") if pd.notnull(t) else '')
+        jsondata['samplecollectiontimestamp'] = jsondata['samplecollectiontimestamp'].apply(lambda t: pd.Timestamp(t).strftime("%Y-%m-%d %H:%M:%S") if pd.notnull(t) else '')
         plotcols = [
             'samplecollectiontimestamp',
             'samplecollectiontimezone',

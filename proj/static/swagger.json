@@ -21,28 +21,28 @@
                                 "properties": {
                                     "start_time": {
                                         "type": "string",
-                                        "example": "2022-01-01",
-                                        "description": "Required. Need to be in format YYYY-MM-DD"
+                                        "example": "2023-01-01",
+                                        "description": "(Required). Need to be in format YYYY-MM-DD"
                                     },
                                     "end_time": {
-                                        "example": "2022-01-02",
+                                        "example": "2024-01-02",
                                         "type": "string",
-                                        "description": "Required. Need to be in format YYYY-MM-DD"
+                                        "description": "(Required). Need to be in format YYYY-MM-DD"
                                     },
                                     "projectid": {
                                         "type": "string",
-                                        "example": "'EMPA', 'Baja-rails'",
-                                        "description": "Optional. Separated by commas, each item needs to be wrapped in single quotes"
+                                        "example": "EMPA, Baja-rails",
+                                        "description": "(Optional). Can be multiple values, must be separated by commas"
                                     },
                                     "estuaryname": {
                                         "type": "string",
-                                        "example": "'Ventura River','Laguna Creek'",
-                                        "description": "Optional. Separated by commas, each item needs to be wrapped in single quotes"
+                                        "example": "Big River, Bolinas Lagoon",
+                                        "description": "(Optional). Can be multiple values, must be separated by commas"
                                     },
                                     "sensortype": {
                                         "type": "string",
-                                        "example": "'CTD', 'troll'",
-                                        "description": "Optional. Separated by commas, each item needs to be wrapped in single quotes"
+                                        "example": "CTD, troll, tidbit",
+                                        "description": "(Optional). Can be multiple values, must be separated by commas"
                                     }
                                 },
                                 "required": [
