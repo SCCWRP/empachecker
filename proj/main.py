@@ -476,7 +476,7 @@ def main():
 
     if match_dataset == 'logger_raw':
         jsondata = all_dfs['tbl_wq_logger_raw']
-        jsondata['samplecollectiontimestamp'] = jsondata['samplecollectiontimestamp'].apply(lambda t: t.strftime("%Y-%m-%d %H:%M:%S") if pd.notnull(t) else '')
+        jsondata['samplecollectiontimestamp'] = jsondata['samplecollectiontimestamp'].apply(lambda t: pd.Timestamp(t).strftime("%Y-%m-%d %H:%M:%S") if pd.notnull(t) else '')
         plotcols = [
             'samplecollectiontimestamp',
             'samplecollectiontimezone',

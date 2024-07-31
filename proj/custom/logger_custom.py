@@ -1,8 +1,9 @@
 from inspect import currentframe
 from flask import current_app, g, session
 import pandas as pd
-from .functions import checkData, checkLogic, mismatch
+from .functions import checkData, checkLogic, mismatch,get_primary_key
 from .yeahbuoy_custom import yeahbuoy
+
 
 from numpy import NaN
 from sqlalchemy.exc import ProgrammingError
@@ -91,6 +92,31 @@ def logger_raw(all_dfs):
     # ######################################################################################################################
     logger = logger.sort_values(by=['samplecollectiontimestamp'])
     
+    print("# CHECK - 0")
+    logger_meta_dat = pd.read_sql("SELECT * FROM tbl_wq_logger_metadata", g.eng)
+    loggerraw_pkey = get_primary_key('tbl_wq_logger_raw', g.eng)
+    loggermeta_pkey = get_primary_key('tbl_wq_logger_metadata', g.eng)
+
+    raw_meta_shared_key = [x for x in loggerraw_pkey if x in loggermeta_pkey]
+
+    # Description: Each raw data must correspond to metadata in database
+    # Created Coder: Duy Nguyen
+    # Created Date: 7/31/2024
+    # Last Edited Date:
+    # Last Edited Coder:
+    args.update({
+        "dataframe": logger,
+        "tablename": "tbl_wq_logger_raw",
+        "badrows": mismatch(logger, logger_meta_dat, raw_meta_shared_key), 
+        "badcolumn": ','.join(raw_meta_shared_key),
+        "error_type": "Logic Error",
+        "error_message": 
+            "Each record in tbl_wq_logger_raw must have a corresponding metadata. You must submit the metadata before the raw data."
+    })
+    errs = [*errs, checkData(**args)]
+    print("check ran - loggerraw - 0")
+
+
     print("# CHECK - 1")
     # Description: The range of datetime in the submitted file needs to be within the selected [begin_date, end_date] on the login form
     # Created Coder: Duy Nguyen
@@ -103,7 +129,7 @@ def logger_raw(all_dfs):
     # Comparing timestamps
     login_start = login_start.tz_localize(None)
     login_end = login_end.tz_localize(None)
-    logger['samplecollectiontimestamp'] = logger['samplecollectiontimestamp'].apply(lambda x: x.tz_localize(None))
+    logger['samplecollectiontimestamp'] = logger['samplecollectiontimestamp'].apply(lambda x: pd.Timestamp(x).tz_localize(None))
     
     args.update({
         "dataframe": logger,
