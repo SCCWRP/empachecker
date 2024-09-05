@@ -6,7 +6,6 @@ from itertools import chain
 from .core.functions import get_primary_key
 
 # dynamic lookup lists to template
-
 templater = Blueprint('templater', __name__)
 @templater.route('/templater', methods = ['GET', 'POST'])
 def template():
