@@ -67,10 +67,13 @@ def multitask(functions: list, *args):
 @lru_cache(maxsize=128, typed=True)
 def convert_dtype(t, x):
     try:
-
-        if ((pd.isnull(x)) and (t == int)):
-            return True
+        print(x)
+        print(t)
         
+        if ((pd.isnull(x)) and (t == int)): 
+            return True
+        if (pd.isnull(x)) and (t == pd.Timestamp):
+            return True       
         t(x)
 
         # if the type is an int, and it got this far, at least the literal matches that of a number
