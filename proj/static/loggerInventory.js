@@ -1,116 +1,158 @@
+
 let loggerChart; // Global variable to store Chart.js instance
 
-// Example logger data with regions and sites embedded
+// Example logger data with parameters as top-level keys
 const loggerData = {
-    north: {
-        'NC-LA': {
-            2021: { DO: 'y', Temperature: 'n', pH: 'y', Depth: 'n' },
-            2022: { DO: 'n', Temperature: 'y', pH: 'n', Depth: 'y' },
-            2023: { DO: 'n', Temperature: 'y', pH: 'n', Depth: 'y' },
-            2024: { DO: 'n', Temperature: 'y', pH: 'n', Depth: 'y' }
-
+    DO: {
+        north: {
+            'NC-ABC': {
+                2021: { 1: 'y', 2: 'n', 3: 'y', 4: 'y', 5: 'n', 6: 'y', 7: 'n', 8: 'y', 9: 'n', 10: 'y', 11: 'n', 12: 'y' },
+                2022: { 1: 'n', 2: 'y', 3: 'n', 4: 'y', 5: 'y', 6: 'n', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'y', 12: 'n' }
+            },
+            'NC-XYZ': {
+                2021: { 1: 'y', 2: 'y', 3: 'y', 4: 'n', 5: 'y', 6: 'n', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'y', 12: 'y' },
+                2022: { 1: 'n', 2: 'n', 3: 'y', 4: 'n', 5: 'y', 6: 'n', 7: 'n', 8: 'y', 9: 'n', 10: 'y', 11: 'y', 12: 'n' }
+            }
         },
-        'NC-MC': {
-            2021: { DO: 'y', Temperature: 'y', pH: 'n', Depth: 'n' },
-            2022: { DO: 'y', Temperature: 'n', pH: 'y', Depth: 'y' },
-            2023: { DO: 'n', Temperature: 'y', pH: 'n', Depth: 'y' },
-            2024: { DO: 'n', Temperature: 'y', pH: 'n', Depth: 'y' }
+        central: {
+            'CC-LA': {
+                2021: { 1: 'y', 2: 'n', 3: 'y', 4: 'n', 5: 'y', 6: 'n', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'y', 12: 'n' },
+                2022: { 1: 'y', 2: 'y', 3: 'y', 4: 'y', 5: 'n', 6: 'y', 7: 'n', 8: 'n', 9: 'y', 10: 'n', 11: 'n', 12: 'y' }
+            },
+            'CC-XYZ': {
+                2021: { 1: 'n', 2: 'y', 3: 'y', 4: 'n', 5: 'y', 6: 'n', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'n', 12: 'y' },
+                2022: { 1: 'y', 2: 'y', 3: 'n', 4: 'y', 5: 'n', 6: 'y', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'y', 12: 'y' }
+            }
+        },
+        south: {
+            'SC-LLA': {
+                2021: { 1: 'n', 2: 'y', 3: 'n', 4: 'n', 5: 'y', 6: 'n', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'y', 12: 'y' },
+                2022: { 1: 'y', 2: 'n', 3: 'y', 4: 'n', 5: 'n', 6: 'y', 7: 'n', 8: 'y', 9: 'n', 10: 'y', 11: 'n', 12: 'y' }
+            },
+            'SC-XYZ': {
+                2021: { 1: 'y', 2: 'n', 3: 'y', 4: 'n', 5: 'y', 6: 'y', 7: 'n', 8: 'y', 9: 'n', 10: 'y', 11: 'n', 12: 'y' },
+                2022: { 1: 'n', 2: 'y', 3: 'n', 4: 'y', 5: 'n', 6: 'n', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'y', 12: 'n' }
+            }
         }
     },
-    central: {
-        'CC-LA': {
-            2021: { DO: 'n', Temperature: 'y', pH: 'n', Depth: 'y' },
-            2022: { DO: 'y', Temperature: 'y', pH: 'y', Depth: 'n' },
-            2023: { DO: 'n', Temperature: 'y', pH: 'n', Depth: 'y' },
-            2024: { DO: 'n', Temperature: 'y', pH: 'n', Depth: 'y' }
+    Temperature: {
+        north: {
+            'NC-ABC': {
+                2021: { 1: 'n', 2: 'n', 3: 'y', 4: 'y', 5: 'n', 6: 'n', 7: 'y', 8: 'n', 9: 'n', 10: 'y', 11: 'n', 12: 'y' },
+                2022: { 1: 'y', 2: 'y', 3: 'y', 4: 'n', 5: 'y', 6: 'n', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'y', 12: 'n' }
+            },
+            'NC-XYZ': {
+                2021: { 1: 'n', 2: 'n', 3: 'n', 4: 'y', 5: 'n', 6: 'y', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'n', 12: 'y' },
+                2022: { 1: 'y', 2: 'y', 3: 'y', 4: 'y', 5: 'n', 6: 'y', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'n', 12: 'y' }
+            }
         },
-        'CC-SD': {
-            2021: { DO: 'n', Temperature: 'y', pH: 'n', Depth: 'y' },
-            2022: { DO: 'y', Temperature: 'y', pH: 'y', Depth: 'n' },
-            2023: { DO: 'n', Temperature: 'y', pH: 'n', Depth: 'y' },
-            2024: { DO: 'n', Temperature: 'y', pH: 'n', Depth: 'y' }
-        }
-    },
-    south: {
-        'SC-LLA': {
-            2021: { DO: 'n', Temperature: 'n', pH: 'y', Depth: 'y' },
-            2022: { DO: 'y', Temperature: 'n', pH: 'n', Depth: 'n' },
-            2023: { DO: 'n', Temperature: 'y', pH: 'n', Depth: 'y' },
-            2024: { DO: 'n', Temperature: 'y', pH: 'n', Depth: 'y' }
+        central: {
+            'CC-LA': {
+                2021: { 1: 'y', 2: 'n', 3: 'y', 4: 'n', 5: 'n', 6: 'y', 7: 'y', 8: 'n', 9: 'y', 10: 'y', 11: 'n', 12: 'n' },
+                2022: { 1: 'y', 2: 'y', 3: 'n', 4: 'n', 5: 'y', 6: 'y', 7: 'n', 8: 'y', 9: 'n', 10: 'y', 11: 'n', 12: 'y' }
+            },
+            'CC-XYZ': {
+                2021: { 1: 'n', 2: 'n', 3: 'y', 4: 'n', 5: 'n', 6: 'y', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'n', 12: 'y' },
+                2022: { 1: 'y', 2: 'n', 3: 'y', 4: 'n', 5: 'n', 6: 'n', 7: 'y', 8: 'n', 9: 'y', 10: 'y', 11: 'n', 12: 'n' }
+            }
         },
-        'SC-MAA': {
-            2021: { DO: 'n', Temperature: 'n', pH: 'y', Depth: 'y' },
-            2022: { DO: 'y', Temperature: 'n', pH: 'n', Depth: 'n' },
-            2023: { DO: 'n', Temperature: 'y', pH: 'n', Depth: 'y' },
-            2024: { DO: 'n', Temperature: 'y', pH: 'n', Depth: 'y' }
+        south: {
+            'SC-LLA': {
+                2021: { 1: 'n', 2: 'y', 3: 'y', 4: 'y', 5: 'n', 6: 'y', 7: 'n', 8: 'n', 9: 'y', 10: 'n', 11: 'y', 12: 'y' },
+                2022: { 1: 'y', 2: 'y', 3: 'n', 4: 'y', 5: 'n', 6: 'y', 7: 'n', 8: 'y', 9: 'n', 10: 'y', 11: 'n', 12: 'y' }
+            },
+            'SC-XYZ': {
+                2021: { 1: 'n', 2: 'y', 3: 'y', 4: 'n', 5: 'n', 6: 'y', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'y', 12: 'y' },
+                2022: { 1: 'y', 2: 'y', 3: 'n', 4: 'y', 5: 'n', 6: 'y', 7: 'n', 8: 'y', 9: 'n', 10: 'y', 11: 'n', 12: 'n' }
+            }
         }
     }
 };
+
+
+
 {
-    // Function to extract logger parameters from loggerData
-    function getLoggerParameters(loggerData) {
-        // Grab the first region, siteID, and year and extract the parameter keys
-        const firstRegion = Object.keys(loggerData)[0];
-        const firstSite = Object.keys(loggerData[firstRegion])[0];
-        const firstYear = Object.keys(loggerData[firstRegion][firstSite])[0];
-        return Object.keys(loggerData[firstRegion][firstSite][firstYear]);
+    // Function to extract years from loggerData
+    function getYears(loggerData) {
+        const firstParam = Object.keys(loggerData)[0]; // Get the first parameter, e.g., 'DO'
+        const firstRegion = Object.keys(loggerData[firstParam])[0]; // Get the first region
+        const firstSite = Object.keys(loggerData[firstParam][firstRegion])[0]; // Get the first site
+        return Object.keys(loggerData[firstParam][firstRegion][firstSite]).map(Number); // Extract years
     }
 
-    // Extract years from loggerData
-    const years = Array.from(
-        new Set(
-            Object.values(loggerData)
-                .flatMap(region => Object.values(region))
-                .flatMap(site => Object.keys(site))
-        )
-    ).map(year => parseInt(year));
+    // Function to extract months from loggerData (assumes months are consistent across years)
+    function getMonths(loggerData, years) {
+        const firstParam = Object.keys(loggerData)[0];
+        const firstRegion = Object.keys(loggerData[firstParam])[0];
+        const firstSite = Object.keys(loggerData[firstParam][firstRegion])[0];
+        return Object.keys(loggerData[firstParam][firstRegion][firstSite][years[0]]).map(Number);
+    }
 
-    // Extract logger parameters from loggerData
-    const loggerParameters = getLoggerParameters(loggerData);
+    // Extract years and months dynamically from loggerData
+    const years = getYears(loggerData);
+    const months = getMonths(loggerData, years);
 
-    // Get logger table head and body elements
-    const loggerTableHead = document.getElementById('loggerTable').getElementsByTagName('thead')[0];
-    const loggerTableBody = document.getElementById('loggerTable').getElementsByTagName('tbody')[0];
+    // Get the logger parameters from the top level of loggerData
+    const loggerParameters = Object.keys(loggerData);
 
-    // Function to dynamically create logger table headers
+    // Get table head and body elements
+    const tableHead = document.getElementById('loggerTable').getElementsByTagName('thead')[0];
+    const tableBody = document.getElementById('loggerTable').getElementsByTagName('tbody')[0];
+
+    // Function to dynamically create table headers
     function createLoggerTableHeaders() {
         const headerRow1 = document.createElement('tr');
         const regionTh = document.createElement('th');
-        regionTh.setAttribute('rowspan', '2');
+        regionTh.setAttribute('rowspan', '3');
         regionTh.innerText = 'Region';
         headerRow1.appendChild(regionTh);
 
         const siteIDTh = document.createElement('th');
-        siteIDTh.setAttribute('rowspan', '2');
+        siteIDTh.setAttribute('rowspan', '3');
         siteIDTh.innerText = 'SiteID';
         headerRow1.appendChild(siteIDTh);
 
-        years.forEach(year => {
-            const yearHeader = document.createElement('th');
-            yearHeader.setAttribute('colspan', loggerParameters.length);
-            yearHeader.innerText = year;
-            headerRow1.appendChild(yearHeader);
+        loggerParameters.forEach(param => {
+            const paramHeader = document.createElement('th');
+            paramHeader.setAttribute('colspan', years.length * months.length);
+            paramHeader.innerText = param;
+            headerRow1.appendChild(paramHeader);
         });
 
-        loggerTableHead.appendChild(headerRow1);
+        tableHead.appendChild(headerRow1);
 
         const headerRow2 = document.createElement('tr');
-        years.forEach(() => {
-            loggerParameters.forEach(param => {
-                const paramHeader = document.createElement('th');
-                paramHeader.innerText = param;
-                headerRow2.appendChild(paramHeader);
+        loggerParameters.forEach(() => {
+            years.forEach(year => {
+                const yearHeader = document.createElement('th');
+                yearHeader.setAttribute('colspan', months.length);
+                yearHeader.innerText = year;
+                headerRow2.appendChild(yearHeader);
             });
         });
 
-        loggerTableHead.appendChild(headerRow2);
+        tableHead.appendChild(headerRow2);
+
+        const headerRow3 = document.createElement('tr');
+        loggerParameters.forEach(() => {
+            years.forEach(() => {
+                months.forEach(month => {
+                    const monthHeader = document.createElement('th');
+                    monthHeader.innerText = month;
+                    headerRow3.appendChild(monthHeader);
+                });
+            });
+        });
+
+        tableHead.appendChild(headerRow3);
     }
 
-    // Function to dynamically create logger table body rows with conditional coloring from loggerData
+    // Function to dynamically create table body rows
     function createLoggerTableBody(loggerData) {
-        // Iterate through regions
-        Object.keys(loggerData).forEach(region => {
-            const sites = Object.keys(loggerData[region]);
+        const regions = Object.keys(loggerData[loggerParameters[0]]); // Get regions from the first parameter
+
+        regions.forEach(region => {
+            const sites = Object.keys(loggerData[loggerParameters[0]][region]);
 
             sites.forEach(siteID => {
                 const row = document.createElement('tr');
@@ -123,88 +165,36 @@ const loggerData = {
                     row.appendChild(regionTd);
                 }
 
-                // Add the siteID column
                 const siteIDTd = document.createElement('td');
                 siteIDTd.innerText = siteID;
                 row.appendChild(siteIDTd);
 
-                // Loop through years and loggerParameters
-                years.forEach(year => {
-                    const loggerDataForYear = loggerData[region][siteID][year];
-
-                    if (loggerDataForYear) {
-                        loggerParameters.forEach(param => {
+                loggerParameters.forEach(param => {
+                    years.forEach(year => {
+                        months.forEach(month => {
                             const cell = document.createElement('td');
+                            const loggerDataForMonth = loggerData[param][region][siteID][year]?.[month];
 
-                            // Insert the 'y' or 'n' value, if available
-                            const value = loggerDataForYear[param];
-                            if (value !== undefined) {
-                                cell.innerText = value;
+                            if (loggerDataForMonth) {
+                                cell.innerText = loggerDataForMonth;
 
-                                // Color the cell green if value is 'y'
-                                if (value === 'y') {
+                                if (loggerDataForMonth === 'y') {
                                     cell.style.backgroundColor = 'green';
-                                    cell.style.color = 'white'; // Optional: Make text white for visibility
+                                    cell.style.color = 'white'; // Make text white for visibility
                                 }
                             } else {
-                                cell.innerText = ''; // Empty if no data
+                                cell.innerText = ''; // No data
                             }
 
                             row.appendChild(cell);
                         });
-                    } else {
-                        // If no data for the year, add empty cells for each parameter
-                        loggerParameters.forEach(() => {
-                            const cell = document.createElement('td');
-                            cell.innerText = ''; // No data
-                            row.appendChild(cell);
-                        });
-                    }
+                    });
                 });
 
-                // Append the row to the table body
-                loggerTableBody.appendChild(row);
+                tableBody.appendChild(row);
             });
         });
     }
-
-    // Function to add click event listeners to table cells for logger inventory
-    function addCellClickListenersForLoggerInventory(table) {
-        const rows = table.getElementsByTagName('tr');
-        for (let i = 2; i < rows.length; i++) { // Start after header rows
-            const row = rows[i];
-            const cells = row.getElementsByTagName('td');
-            let labelCount = 2;
-
-            if (!row.cells[0].hasAttribute('rowspan')) {
-                labelCount = 1;
-            }
-
-            for (let j = labelCount; j < cells.length; j++) {
-                const cell = cells[j];
-                
-                // Only make the cell clickable if it contains 'y'
-                if (cell.innerText === 'y') {
-                    cell.style.cursor = 'pointer';
-
-                    cell.addEventListener('click', function () {
-                        const rowElement = this.parentElement;
-                        let siteID = labelCount === 2 ? rowElement.cells[1].innerText : rowElement.cells[0].innerText;
-                        let region = labelCount === 2 ? rowElement.cells[0].innerText : table.rows[rowElement.rowIndex - 1].cells[0].innerText;
-
-                        const yearIndex = Math.floor((j - labelCount) / loggerParameters.length);
-                        const paramIndex = (j - labelCount) % loggerParameters.length;
-
-                        const year = years[yearIndex];
-                        const parameter = loggerParameters[paramIndex];
-
-                        showModalForLoggerInventory(region, siteID, year, parameter);
-                    });
-                }
-            }
-        }
-    }
-
 
     // Function to create a Chart.js line chart for the logger data
     function createChartJsGraph(data, parameter, siteID, year) {
@@ -256,7 +246,6 @@ const loggerData = {
         });
     }
 
-
     // Function to simulate fetching logger data for the graph
     function fetchLoggerData(region, siteID, year, parameter) {
         // Simulated data (You would fetch actual data here)
@@ -267,7 +256,6 @@ const loggerData = {
         return data;
     }
 
-    // Function to show modal with a Chart.js graph for the logger parameter and year
     // Function to show modal with a Chart.js graph for the logger parameter and year
     function showModalForLoggerInventory(region, siteID, year, parameter) {
         // Fetch the data based on the clicked region, site, year, and parameter
@@ -281,6 +269,42 @@ const loggerData = {
         modal.show();
     }
 
+    // Function to add click event listeners to table cells for logger inventory
+    function addCellClickListenersForLoggerInventory(table) {
+        const rows = table.getElementsByTagName('tr');
+        for (let i = 2; i < rows.length; i++) { // Start after header rows
+            const row = rows[i];
+            const cells = row.getElementsByTagName('td');
+            let labelCount = 2;
+
+            if (!row.cells[0].hasAttribute('rowspan')) {
+                labelCount = 1;
+            }
+
+            for (let j = labelCount; j < cells.length; j++) {
+                const cell = cells[j];
+
+                // Only make the cell clickable if it contains 'y'
+                if (cell.innerText === 'y') {
+                    cell.style.cursor = 'pointer';
+
+                    cell.addEventListener('click', function () {
+                        const rowElement = this.parentElement;
+                        let siteID = labelCount === 2 ? rowElement.cells[1].innerText : rowElement.cells[0].innerText;
+                        let region = labelCount === 2 ? rowElement.cells[0].innerText : table.rows[rowElement.rowIndex - 1].cells[0].innerText;
+
+                        const yearIndex = Math.floor((j - labelCount) / months.length);
+                        const paramIndex = (j - labelCount) % loggerParameters.length;
+
+                        const year = years[yearIndex];
+                        const parameter = loggerParameters[paramIndex];
+
+                        showModalForLoggerInventory(region, siteID, year, parameter);
+                    });
+                }
+            }
+        }
+    }
 
     // Call functions to generate the logger table
     createLoggerTableHeaders();

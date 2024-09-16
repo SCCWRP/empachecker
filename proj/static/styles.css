@@ -1,0 +1,39 @@
+/* Center the modal vertically and horizontally */
+.modal-dialog {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh; /* Make the modal container take up full height */
+    margin: 0; /* Remove default margin to avoid shifting */
+}
+
+.modal-content {
+    margin: auto; /* Center modal content */
+}
+
+.modal-backdrop.show {
+    opacity: 0.5; /* Optional: Make backdrop slightly transparent */
+}
+
+/* Optional: Adjust the modal size */
+.modal-dialog-centered {
+    max-width: 600px; /* Set a max width for the modal */
+}
+
+/* Optional: Style for the modal content */
+#modalContent {
+    padding: 20px; /* Add some padding for better presentation */
+    text-align: center; /* Center the text inside the modal */
+}
+
+/* Optional: Highlight clickable cells on hover */
+td.clickable:hover {
+    background-color: pink;
+}
+
+/* Additional styles for spacing */
+.container-fluid {
+    margin-top: 20px;
+}
+
+
