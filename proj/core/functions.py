@@ -67,8 +67,6 @@ def multitask(functions: list, *args):
 @lru_cache(maxsize=128, typed=True)
 def convert_dtype(t, x):
     try:
-        print(x)
-        print(t)
         
         if ((pd.isnull(x)) and (t == int)): 
             return True
