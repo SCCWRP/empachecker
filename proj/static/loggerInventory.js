@@ -162,46 +162,51 @@
     // Function to add click event listeners to table cells for logger inventory
     function addCellClickListenersForLoggerInventory(table, loggerData) {
         const rows = table.getElementsByTagName('tr');
-        const loggerParameters = getLoggerParameters(loggerData); // Assuming loggerData is available
+        const loggerParameters = getLoggerParameters(loggerData); 
         const months = getMonths(loggerData, getYears(loggerData));
         const years = getYears(loggerData);
-
-        for (let i = 2; i < rows.length; i++) { // Start after header rows
+    
+        // Iterate over the rows starting from index 2 (after the header rows)
+        for (let i = 2; i < rows.length; i++) { 
             const row = rows[i];
             const cells = row.getElementsByTagName('td');
-            let labelCount = 2;
-
+            let labelCount = 2; // Adjust for the first two columns (region and siteID)
+    
             if (!row.cells[0].hasAttribute('rowspan')) {
                 labelCount = 1;
             }
-
+    
+            // Iterate through the cells in the row
             for (let j = labelCount; j < cells.length; j++) {
                 const cell = cells[j];
-
+    
                 // Only make the cell clickable if it contains 'y'
                 if (cell.innerText === 'y') {
                     cell.style.cursor = 'pointer';
-
+    
+                    // Add click event listener
                     cell.addEventListener('click', function () {
                         const rowElement = this.parentElement;
                         let siteID = labelCount === 2 ? rowElement.cells[1].innerText : rowElement.cells[0].innerText;
                         let region = labelCount === 2 ? rowElement.cells[0].innerText : table.rows[rowElement.rowIndex - 1].cells[0].innerText;
-
-                        const yearIndex = Math.floor((j - labelCount) / (months.length * loggerParameters.length));
+    
+                        const totalColumnsPerParam = months.length * years.length;
+    
+                        const paramIndex = Math.floor((j - labelCount) / totalColumnsPerParam);
+                        const yearIndex = Math.floor(((j - labelCount) % totalColumnsPerParam) / months.length);
                         const monthIndex = (j - labelCount) % months.length;
-                        const paramIndex = (j - labelCount) % loggerParameters.length;
-
+    
                         const year = years[yearIndex];
                         const month = months[monthIndex];
                         const parameter = loggerParameters[paramIndex];
-
+    
                         showModalForLoggerInventory(region, siteID, year, month, parameter);
                     });
                 }
             }
         }
     }
-
+    
     // Function to create a Chart.js line chart for the logger data
     function createChartJsGraph(data, parameter, siteID, year) {
         const ctx = document.getElementById('loggerChart').getContext('2d');
@@ -254,6 +259,7 @@
 
     // Function to simulate fetching logger data for the graph
     function fetchLoggerDataForGraph(region, siteID, year, parameter) {
+        console.log(`Fetching data for ${region}, ${siteID}, ${year}, ${parameter}`);
         // Simulated data (You would fetch actual data here)
         const data = [];
         for (let i = 0; i < 12; i++) {
