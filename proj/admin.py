@@ -857,3 +857,47 @@ def get_inventory():
 
     # Convert loggerData to JSON and return it as a response
     return jsonify(loggerData)
+
+
+
+@admin.route('/get-logger-graph-data', methods=['GET'])
+def get_logger_graph_data():
+    eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
+    
+    # Extract query parameters
+    siteid = request.args.get('siteid')
+    year = request.args.get('year')
+    month = request.args.get('month')
+    parameter = request.args.get('parameter')
+
+
+
+    # Ensure all required parameters are present
+    if not siteid or not year or not parameter:
+        return jsonify({'error': 'Missing required parameters'}), 400
+
+    # Construct the SQL query to fetch data for the specified region, site, year, and parameter
+    query = f"""
+    SELECT samplecollectiontimestamp, {parameter}
+    FROM tbl_wq_logger_raw
+    WHERE siteid = '{siteid}' 
+    AND EXTRACT(YEAR FROM samplecollectiontimestamp) = {year} 
+    AND EXTRACT(MONTH FROM samplecollectiontimestamp) = {month}
+    ORDER BY samplecollectiontimestamp ASC
+    """
+    print(query)
+    # Execute the query and load the result into a pandas DataFrame
+    df = pd.read_sql(query, eng)
+
+    # Ensure that there is data for the requested parameter
+    if df.empty:
+        return jsonify({'error': 'No data found for the specified criteria'}), 404
+
+    # Prepare the data in the format required for the graph (x: samplecollectiontimestamp, y: parameter value)
+    graph_data = [{'x': row['samplecollectiontimestamp'], 'y': row[parameter]} for _, row in df.iterrows()]
+
+    print(graph_data)
+
+
+    # Return the graph data as JSON
+    return jsonify(graph_data)

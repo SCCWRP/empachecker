@@ -6,7 +6,9 @@
         
         if (loggerTab) {
             loggerTab.addEventListener('click', function() {
-                alert('Data is being fetched. Please wait a moment. It might take a few seconds.');
+                alert('Logger Tab is under construction! Data and functionalies might not be correct/working.');
+                return
+
             });
         }
     });
@@ -162,9 +164,9 @@
     // Function to add click event listeners to table cells for logger inventory
     function addCellClickListenersForLoggerInventory(table, loggerData) {
         const rows = table.getElementsByTagName('tr');
-        const loggerParameters = getLoggerParameters(loggerData); 
-        const months = getMonths(loggerData, getYears(loggerData));
-        const years = getYears(loggerData);
+        const loggerParameters = getLoggerParameters(loggerData); // Get logger parameters from top headers
+        const months = getMonths(loggerData, getYears(loggerData)); // Get months
+        const years = getYears(loggerData); // Get years
     
         // Iterate over the rows starting from index 2 (after the header rows)
         for (let i = 2; i < rows.length; i++) { 
@@ -192,21 +194,26 @@
     
                         const totalColumnsPerParam = months.length * years.length;
     
-                        const paramIndex = Math.floor((j - labelCount) / totalColumnsPerParam);
-                        const yearIndex = Math.floor(((j - labelCount) % totalColumnsPerParam) / months.length);
-                        const monthIndex = (j - labelCount) % months.length;
+                        // Calculate correct indices for year, month, and parameter
+                        const paramIndex = Math.floor((j - labelCount) / (months.length * years.length)); // Find the correct parameter
+                        const yearIndex = Math.floor(((j - labelCount) % totalColumnsPerParam) / months.length); // Find the correct year
+                        const monthIndex = (j - labelCount) % months.length; // Find the correct month
     
                         const year = years[yearIndex];
                         const month = months[monthIndex];
-                        const parameter = loggerParameters[paramIndex];
+                        const parameter = loggerParameters[paramIndex]; // Get the correct parameter
     
-                        showModalForLoggerInventory(region, siteID, year, month, parameter);
+                        console.log(`Fetching data for ${region}, ${siteID}, ${year}, ${month}, ${parameter}`);
+                        showModalForLoggerInventory(region, siteID, year, month, parameter); // Pass correct parameter and month
                     });
                 }
             }
         }
     }
     
+    
+
+
     // Function to create a Chart.js line chart for the logger data
     function createChartJsGraph(data, parameter, siteID, year) {
         const ctx = document.getElementById('loggerChart').getContext('2d');
@@ -220,10 +227,10 @@
         loggerChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: data.map(d => `Month ${d.x}`), // x-axis labels (e.g., Month 1, Month 2)
+                labels: data.map(d => new Date(d.x).toLocaleString()), // x-axis labels (samplecollectiontimestamp)
                 datasets: [{
                     label: `${parameter} Data`, // Dataset label
-                    data: data.map(d => d.y),   // y-axis data
+                    data: data.map(d => d.y),   // y-axis data (parameter value)
                     backgroundColor: 'rgba(75, 192, 192, 0.2)',
                     borderColor: 'rgba(75, 192, 192, 1)',
                     borderWidth: 1,
@@ -235,14 +242,18 @@
                 plugins: {
                     title: {
                         display: true,
-                        text: `${siteID}`  // Set title as {SiteID}-{Year}
+                        text: `${siteID} - ${year}`  // Set title as {SiteID}-{Year}
                     }
                 },
                 scales: {
                     x: {
+                        type: 'time', // Indicate that the x-axis is a time series
+                        time: {
+                            unit: 'month', // You can adjust the time unit (e.g., 'day', 'week', 'month') depending on your data
+                        },
                         title: {
                             display: true,
-                            text: 'Month'
+                            text: 'Sample Collection Timestamp'
                         }
                     },
                     y: {
@@ -257,21 +268,39 @@
         });
     }
 
-    // Function to simulate fetching logger data for the graph
-    function fetchLoggerDataForGraph(region, siteID, year, parameter) {
+
+    // Function to fetch real logger data for the graph
+    async function fetchLoggerDataForGraph(region, siteID, year, month, parameter) {
         console.log(`Fetching data for ${region}, ${siteID}, ${year}, ${parameter}`);
-        // Simulated data (You would fetch actual data here)
-        const data = [];
-        for (let i = 0; i < 12; i++) {
-            data.push({ x: i + 1, y: Math.random() * 100 }); // x: Month, y: Random value
+
+        try {
+            // Fetch data from the new API route
+            const response = await fetch(`/checker/get-logger-graph-data?siteid=${siteID}&year=${year}&month=${month}&parameter=${parameter}`);
+            
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            
+            const data = await response.json(); // Parse the returned JSON data
+
+            if (data.error) {
+                console.error(data.error);
+                return [];
+            }
+            
+            return data; // Return the fetched data to be used in the chart
+
+        } catch (error) {
+            console.error('There was a problem with the fetch operation:', error);
+            return [];
         }
-        return data;
     }
 
+
     // Function to show modal with a Chart.js graph for the logger parameter and year
-    function showModalForLoggerInventory(region, siteID, year, parameter) {
-        // Fetch the data based on the clicked region, site, year, and parameter
-        const data = fetchLoggerDataForGraph(region, siteID, year, parameter);
+    async function showModalForLoggerInventory(region, siteID, year, month, parameter) {
+        // Fetch the real data based on the clicked region, site, year, and parameter
+        const data = await fetchLoggerDataForGraph(region, siteID, year, month, parameter);
 
         // Create the Chart.js graph with the fetched data, passing siteID and year for the title
         createChartJsGraph(data, parameter, siteID, year);
@@ -280,6 +309,7 @@
         var modal = new bootstrap.Modal(document.getElementById('infoModal'));
         modal.show();
     }
+
 
 
     function fillEmptyCells() {
