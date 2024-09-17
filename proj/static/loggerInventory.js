@@ -1,106 +1,64 @@
+{
 
-let loggerChart; // Global variable to store Chart.js instance
-
-// Example logger data with parameters as top-level keys
-const loggerData = {
-    DO: {
-        north: {
-            'NC-ABC': {
-                2021: { 1: 'y', 2: 'n', 3: 'y', 4: 'y', 5: 'n', 6: 'y', 7: 'n', 8: 'y', 9: 'n', 10: 'y', 11: 'n', 12: 'y' },
-                2022: { 1: 'n', 2: 'y', 3: 'n', 4: 'y', 5: 'y', 6: 'n', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'y', 12: 'n' }
-            },
-            'NC-XYZ': {
-                2021: { 1: 'y', 2: 'y', 3: 'y', 4: 'n', 5: 'y', 6: 'n', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'y', 12: 'y' },
-                2022: { 1: 'n', 2: 'n', 3: 'y', 4: 'n', 5: 'y', 6: 'n', 7: 'n', 8: 'y', 9: 'n', 10: 'y', 11: 'y', 12: 'n' }
-            }
-        },
-        central: {
-            'CC-LA': {
-                2021: { 1: 'y', 2: 'n', 3: 'y', 4: 'n', 5: 'y', 6: 'n', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'y', 12: 'n' },
-                2022: { 1: 'y', 2: 'y', 3: 'y', 4: 'y', 5: 'n', 6: 'y', 7: 'n', 8: 'n', 9: 'y', 10: 'n', 11: 'n', 12: 'y' }
-            },
-            'CC-XYZ': {
-                2021: { 1: 'n', 2: 'y', 3: 'y', 4: 'n', 5: 'y', 6: 'n', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'n', 12: 'y' },
-                2022: { 1: 'y', 2: 'y', 3: 'n', 4: 'y', 5: 'n', 6: 'y', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'y', 12: 'y' }
-            }
-        },
-        south: {
-            'SC-LLA': {
-                2021: { 1: 'n', 2: 'y', 3: 'n', 4: 'n', 5: 'y', 6: 'n', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'y', 12: 'y' },
-                2022: { 1: 'y', 2: 'n', 3: 'y', 4: 'n', 5: 'n', 6: 'y', 7: 'n', 8: 'y', 9: 'n', 10: 'y', 11: 'n', 12: 'y' }
-            },
-            'SC-XYZ': {
-                2021: { 1: 'y', 2: 'n', 3: 'y', 4: 'n', 5: 'y', 6: 'y', 7: 'n', 8: 'y', 9: 'n', 10: 'y', 11: 'n', 12: 'y' },
-                2022: { 1: 'n', 2: 'y', 3: 'n', 4: 'y', 5: 'n', 6: 'n', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'y', 12: 'n' }
-            }
+    document.addEventListener('DOMContentLoaded', (event) => {
+        // Add event listener to the logger tab
+        const loggerTab = document.getElementById('logger-tab');
+        
+        if (loggerTab) {
+            loggerTab.addEventListener('click', function() {
+                alert('Data is being fetched. Please wait a moment. It might take a few seconds.');
+            });
         }
-    },
-    Temperature: {
-        north: {
-            'NC-ABC': {
-                2021: { 1: 'n', 2: 'n', 3: 'y', 4: 'y', 5: 'n', 6: 'n', 7: 'y', 8: 'n', 9: 'n', 10: 'y', 11: 'n', 12: 'y' },
-                2022: { 1: 'y', 2: 'y', 3: 'y', 4: 'n', 5: 'y', 6: 'n', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'y', 12: 'n' }
-            },
-            'NC-XYZ': {
-                2021: { 1: 'n', 2: 'n', 3: 'n', 4: 'y', 5: 'n', 6: 'y', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'n', 12: 'y' },
-                2022: { 1: 'y', 2: 'y', 3: 'y', 4: 'y', 5: 'n', 6: 'y', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'n', 12: 'y' }
+    });
+    
+
+    let loggerChart; // Global variable to store Chart.js instance
+
+    // Function to fetch logger data from the Flask backend
+    async function fetchLoggerData() {
+        try {
+            const response = await fetch('/checker/get-inventory-data');
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
             }
-        },
-        central: {
-            'CC-LA': {
-                2021: { 1: 'y', 2: 'n', 3: 'y', 4: 'n', 5: 'n', 6: 'y', 7: 'y', 8: 'n', 9: 'y', 10: 'y', 11: 'n', 12: 'n' },
-                2022: { 1: 'y', 2: 'y', 3: 'n', 4: 'n', 5: 'y', 6: 'y', 7: 'n', 8: 'y', 9: 'n', 10: 'y', 11: 'n', 12: 'y' }
-            },
-            'CC-XYZ': {
-                2021: { 1: 'n', 2: 'n', 3: 'y', 4: 'n', 5: 'n', 6: 'y', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'n', 12: 'y' },
-                2022: { 1: 'y', 2: 'n', 3: 'y', 4: 'n', 5: 'n', 6: 'n', 7: 'y', 8: 'n', 9: 'y', 10: 'y', 11: 'n', 12: 'n' }
-            }
-        },
-        south: {
-            'SC-LLA': {
-                2021: { 1: 'n', 2: 'y', 3: 'y', 4: 'y', 5: 'n', 6: 'y', 7: 'n', 8: 'n', 9: 'y', 10: 'n', 11: 'y', 12: 'y' },
-                2022: { 1: 'y', 2: 'y', 3: 'n', 4: 'y', 5: 'n', 6: 'y', 7: 'n', 8: 'y', 9: 'n', 10: 'y', 11: 'n', 12: 'y' }
-            },
-            'SC-XYZ': {
-                2021: { 1: 'n', 2: 'y', 3: 'y', 4: 'n', 5: 'n', 6: 'y', 7: 'y', 8: 'n', 9: 'y', 10: 'n', 11: 'y', 12: 'y' },
-                2022: { 1: 'y', 2: 'y', 3: 'n', 4: 'y', 5: 'n', 6: 'y', 7: 'n', 8: 'y', 9: 'n', 10: 'y', 11: 'n', 12: 'n' }
-            }
+            const data = await response.json(); // Assuming Flask returns JSON
+            return data;
+        } catch (error) {
+            console.error('There was a problem with the fetch operation:', error);
+            return null;
         }
     }
-};
 
-
-
-{
     // Function to extract years from loggerData
     function getYears(loggerData) {
-        const firstParam = Object.keys(loggerData)[0]; // Get the first parameter, e.g., 'DO'
-        const firstRegion = Object.keys(loggerData[firstParam])[0]; // Get the first region
-        const firstSite = Object.keys(loggerData[firstParam][firstRegion])[0]; // Get the first site
-        return Object.keys(loggerData[firstParam][firstRegion][firstSite]).map(Number); // Extract years
+        const firstRegion = Object.keys(loggerData)[0];
+        const firstSite = Object.keys(loggerData[firstRegion])[0];
+        return Object.keys(loggerData[firstRegion][firstSite]).map(Number); // Extract years
     }
 
-    // Function to extract months from loggerData (assumes months are consistent across years)
+    // Function to extract months from loggerData
     function getMonths(loggerData, years) {
-        const firstParam = Object.keys(loggerData)[0];
-        const firstRegion = Object.keys(loggerData[firstParam])[0];
-        const firstSite = Object.keys(loggerData[firstParam][firstRegion])[0];
-        return Object.keys(loggerData[firstParam][firstRegion][firstSite][years[0]]).map(Number);
+        const firstRegion = Object.keys(loggerData)[0];
+        const firstSite = Object.keys(loggerData[firstRegion])[0];
+        return Object.keys(loggerData[firstRegion][firstSite][years[0]]).map(Number); // Extract months
     }
 
-    // Extract years and months dynamically from loggerData
-    const years = getYears(loggerData);
-    const months = getMonths(loggerData, years);
-
-    // Get the logger parameters from the top level of loggerData
-    const loggerParameters = Object.keys(loggerData);
-
-    // Get table head and body elements
-    const tableHead = document.getElementById('loggerTable').getElementsByTagName('thead')[0];
-    const tableBody = document.getElementById('loggerTable').getElementsByTagName('tbody')[0];
+    // Function to extract logger parameters from loggerData
+    function getLoggerParameters(loggerData) {
+        const firstRegion = Object.keys(loggerData)[0];
+        const firstSite = Object.keys(loggerData[firstRegion])[0];
+        const firstYear = Object.keys(loggerData[firstRegion][firstSite])[0];
+        const firstMonth = Object.keys(loggerData[firstRegion][firstSite][firstYear])[0];
+        return Object.keys(loggerData[firstRegion][firstSite][firstYear][firstMonth]);
+    }
 
     // Function to dynamically create table headers
-    function createLoggerTableHeaders() {
+    function createLoggerTableHeaders(loggerData) {
+        const tableHead = document.getElementById('loggerTable').getElementsByTagName('thead')[0];
+        const years = getYears(loggerData); // Get the years dynamically
+        const months = getMonths(loggerData, years); // Get the months dynamically
+        const loggerParameters = getLoggerParameters(loggerData); // Get the logger parameters dynamically
+        
         const headerRow1 = document.createElement('tr');
         const regionTh = document.createElement('th');
         regionTh.setAttribute('rowspan', '3');
@@ -149,10 +107,11 @@ const loggerData = {
 
     // Function to dynamically create table body rows
     function createLoggerTableBody(loggerData) {
-        const regions = Object.keys(loggerData[loggerParameters[0]]); // Get regions from the first parameter
+        const tableBody = document.getElementById('loggerTable').getElementsByTagName('tbody')[0];
+        const regions = Object.keys(loggerData); // Get regions
 
         regions.forEach(region => {
-            const sites = Object.keys(loggerData[loggerParameters[0]][region]);
+            const sites = Object.keys(loggerData[region]);
 
             sites.forEach(siteID => {
                 const row = document.createElement('tr');
@@ -169,11 +128,15 @@ const loggerData = {
                 siteIDTd.innerText = siteID;
                 row.appendChild(siteIDTd);
 
-                loggerParameters.forEach(param => {
-                    years.forEach(year => {
-                        months.forEach(month => {
+                const years = getYears(loggerData); // Dynamically get the years
+                const months = getMonths(loggerData, years); // Dynamically get the months
+                const loggerParameters = getLoggerParameters(loggerData); // Dynamically get the logger parameters
+
+                years.forEach(year => {
+                    months.forEach(month => {
+                        loggerParameters.forEach(param => {
                             const cell = document.createElement('td');
-                            const loggerDataForMonth = loggerData[param][region][siteID][year]?.[month];
+                            const loggerDataForMonth = loggerData[region][siteID][year]?.[month]?.[param];
 
                             if (loggerDataForMonth) {
                                 cell.innerText = loggerDataForMonth;
@@ -194,6 +157,49 @@ const loggerData = {
                 tableBody.appendChild(row);
             });
         });
+    }
+
+    // Function to add click event listeners to table cells for logger inventory
+    function addCellClickListenersForLoggerInventory(table, loggerData) {
+        const rows = table.getElementsByTagName('tr');
+        const loggerParameters = getLoggerParameters(loggerData); // Assuming loggerData is available
+        const months = getMonths(loggerData, getYears(loggerData));
+        const years = getYears(loggerData);
+
+        for (let i = 2; i < rows.length; i++) { // Start after header rows
+            const row = rows[i];
+            const cells = row.getElementsByTagName('td');
+            let labelCount = 2;
+
+            if (!row.cells[0].hasAttribute('rowspan')) {
+                labelCount = 1;
+            }
+
+            for (let j = labelCount; j < cells.length; j++) {
+                const cell = cells[j];
+
+                // Only make the cell clickable if it contains 'y'
+                if (cell.innerText === 'y') {
+                    cell.style.cursor = 'pointer';
+
+                    cell.addEventListener('click', function () {
+                        const rowElement = this.parentElement;
+                        let siteID = labelCount === 2 ? rowElement.cells[1].innerText : rowElement.cells[0].innerText;
+                        let region = labelCount === 2 ? rowElement.cells[0].innerText : table.rows[rowElement.rowIndex - 1].cells[0].innerText;
+
+                        const yearIndex = Math.floor((j - labelCount) / (months.length * loggerParameters.length));
+                        const monthIndex = (j - labelCount) % months.length;
+                        const paramIndex = (j - labelCount) % loggerParameters.length;
+
+                        const year = years[yearIndex];
+                        const month = months[monthIndex];
+                        const parameter = loggerParameters[paramIndex];
+
+                        showModalForLoggerInventory(region, siteID, year, month, parameter);
+                    });
+                }
+            }
+        }
     }
 
     // Function to create a Chart.js line chart for the logger data
@@ -224,7 +230,7 @@ const loggerData = {
                 plugins: {
                     title: {
                         display: true,
-                        text: `${siteID} - ${year}`  // Set title as {SiteID}-{Year}
+                        text: `${siteID}`  // Set title as {SiteID}-{Year}
                     }
                 },
                 scales: {
@@ -247,7 +253,7 @@ const loggerData = {
     }
 
     // Function to simulate fetching logger data for the graph
-    function fetchLoggerData(region, siteID, year, parameter) {
+    function fetchLoggerDataForGraph(region, siteID, year, parameter) {
         // Simulated data (You would fetch actual data here)
         const data = [];
         for (let i = 0; i < 12; i++) {
@@ -259,7 +265,7 @@ const loggerData = {
     // Function to show modal with a Chart.js graph for the logger parameter and year
     function showModalForLoggerInventory(region, siteID, year, parameter) {
         // Fetch the data based on the clicked region, site, year, and parameter
-        const data = fetchLoggerData(region, siteID, year, parameter);
+        const data = fetchLoggerDataForGraph(region, siteID, year, parameter);
 
         // Create the Chart.js graph with the fetched data, passing siteID and year for the title
         createChartJsGraph(data, parameter, siteID, year);
@@ -269,48 +275,41 @@ const loggerData = {
         modal.show();
     }
 
-    // Function to add click event listeners to table cells for logger inventory
-    function addCellClickListenersForLoggerInventory(table) {
-        const rows = table.getElementsByTagName('tr');
-        for (let i = 2; i < rows.length; i++) { // Start after header rows
-            const row = rows[i];
-            const cells = row.getElementsByTagName('td');
-            let labelCount = 2;
 
-            if (!row.cells[0].hasAttribute('rowspan')) {
-                labelCount = 1;
-            }
-
-            for (let j = labelCount; j < cells.length; j++) {
-                const cell = cells[j];
-
-                // Only make the cell clickable if it contains 'y'
-                if (cell.innerText === 'y') {
-                    cell.style.cursor = 'pointer';
-
-                    cell.addEventListener('click', function () {
-                        const rowElement = this.parentElement;
-                        let siteID = labelCount === 2 ? rowElement.cells[1].innerText : rowElement.cells[0].innerText;
-                        let region = labelCount === 2 ? rowElement.cells[0].innerText : table.rows[rowElement.rowIndex - 1].cells[0].innerText;
-
-                        const yearIndex = Math.floor((j - labelCount) / months.length);
-                        const paramIndex = (j - labelCount) % loggerParameters.length;
-
-                        const year = years[yearIndex];
-                        const parameter = loggerParameters[paramIndex];
-
-                        showModalForLoggerInventory(region, siteID, year, parameter);
-                    });
+    function fillEmptyCells() {
+        const tableBody = document.getElementById('loggerTable').getElementsByTagName('tbody')[0];
+        const rows = tableBody.getElementsByTagName('tr');
+        
+        for (let i = 0; i < rows.length; i++) {
+            const cells = rows[i].getElementsByTagName('td');
+            
+            for (let j = 0; j < cells.length; j++) {
+                if (cells[j].innerText.trim() === '') { // If cell is empty
+                    cells[j].innerText = 'n'; // Set it to 'n'
                 }
             }
         }
     }
 
-    // Call functions to generate the logger table
-    createLoggerTableHeaders();
-    createLoggerTableBody(loggerData);
+    // Main function to fetch data and render the table
+    async function renderLoggerTable() {
 
-    // Add click event listener to the logger inventory table
-    const loggerTable = document.getElementById('loggerTable');
-    addCellClickListenersForLoggerInventory(loggerTable);
+        const loggerData = await fetchLoggerData();
+        console.log(loggerData);
+
+        if (loggerData) {
+            createLoggerTableHeaders(loggerData);
+            createLoggerTableBody(loggerData);
+            const loggerTable = document.getElementById('loggerTable');
+            addCellClickListenersForLoggerInventory(loggerTable, loggerData); // Assuming this is defined elsewhere
+            fillEmptyCells()
+        }
+    }
+
+    // Call the main function to render the logger table
+    renderLoggerTable();
+
+    
+
+
 }

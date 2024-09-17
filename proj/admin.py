@@ -5,6 +5,8 @@ from flask import Blueprint, g, current_app, render_template, redirect, url_for,
 from io import StringIO
 import psycopg2
 from psycopg2 import sql
+from sqlalchemy import create_engine
+
 
 from .utils.db import metadata_summary
 from .utils.route_auth import requires_auth
@@ -770,3 +772,88 @@ def report():
 def report_download():
     # Return as a downloadable file
     return send_file(os.path.join(os.getcwd(), 'export','inventory-report.csv'), as_attachment=True, download_name="report.csv", mimetype="text/csv")
+
+
+@admin.route('/get-inventory-data', methods=['GET', 'POST'])
+def get_inventory():
+
+    eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
+    # Query your materialized view
+    query = 'SELECT * FROM mvw_qa_raw_logger_combined_final'
+    
+    # Execute the SQL query and load data into a pandas DataFrame
+    df = pd.read_sql(query, eng)
+    print(df)
+
+    # int the year
+    df['year'] = df['year'].astype(int)
+
+
+    # Find the minimum and maximum years across all data
+    min_year = df['year'].min()
+    max_year = df['year'].max()
+
+    # Initialize an empty dictionary to store logger data
+    loggerData = {}
+
+    # Iterate over each row in the DataFrame to build the nested structure
+    for _, row in df.iterrows():
+        region = row['region']
+        site = row['siteid']
+        year = row['year']
+        month = row['month']
+
+        # Build the nested dictionary structure
+        if region not in loggerData:
+            loggerData[region] = {}
+
+        if site not in loggerData[region]:
+            loggerData[region][site] = {}
+
+        if year not in loggerData[region][site]:
+            loggerData[region][site][year] = {}
+
+        # Populate the logger data for the specific year and month
+        loggerData[region][site][year][month] = {
+            'raw_chlorophyll': row['raw_chlorophyll'],
+            'raw_conductivity': row['raw_conductivity'],
+            'raw_depth': row['raw_depth'],
+            'raw_do': row['raw_do'],
+            'raw_do_pct': row['raw_do_pct'],
+            'raw_h2otemp': row['raw_h2otemp'],
+            'raw_orp': row['raw_orp'],
+            'raw_ph': row['raw_ph'],
+            'raw_pressure': row['raw_pressure'],
+            'raw_qvalue': row['raw_qvalue'],
+            'raw_salinity': row['raw_salinity'],
+            'raw_turbidity': row['raw_turbidity']
+        }
+
+    # Add placeholders for missing years and months
+    for region in loggerData:
+        for site in loggerData[region]:
+            # Ensure every site has all years from min_year to max_year
+            for year in range(min_year, max_year + 1):
+                if year not in loggerData[region][site]:
+                    loggerData[region][site][year] = {}
+                
+                # Ensure all months (1 to 12) are present in every year
+                for month in range(1, 13):
+                    if month not in loggerData[region][site][year]:
+                        loggerData[region][site][year][month] = {
+                            'raw_chlorophyll': 'n',
+                            'raw_conductivity': 'n',
+                            'raw_depth': 'n',
+                            'raw_do': 'n',
+                            'raw_do_pct': 'n',
+                            'raw_h2otemp': 'n',
+                            'raw_orp': 'n',
+                            'raw_ph': 'n',
+                            'raw_pressure': 'n',
+                            'raw_qvalue': 'n',
+                            'raw_salinity': 'n',
+                            'raw_turbidity': 'n'
+                        }
+
+    # Convert loggerData to JSON and return it as a response
+    return jsonify(loggerData)
