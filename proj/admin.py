@@ -5,6 +5,8 @@ from flask import Blueprint, g, current_app, render_template, redirect, url_for,
 from io import StringIO
 import psycopg2
 from psycopg2 import sql
+from sqlalchemy import create_engine
+
 
 from .utils.db import metadata_summary
 from .utils.route_auth import requires_auth
@@ -301,470 +303,601 @@ def update_column_description():
 
 
 
-@admin.route('/report', methods=['GET', 'POST'])
+@admin.route('/inventory', methods=['GET', 'POST'])
 @requires_auth
 def report():
-    if request.method == 'POST':
-        print("report requested")
-        startdate = request.form.get('startdate')
-        enddate = request.form.get('enddate')
-        requested_sites = request.form.getlist('siteid[]')
-        print(requested_sites)
+    return render_template("inventory-main.html")
+
+    # if request.method == 'POST':
+    #     print("report requested")
+    #     startdate = request.form.get('startdate')
+    #     enddate = request.form.get('enddate')
+    #     requested_sites = request.form.getlist('siteid[]')
+    #     print(requested_sites)
         
-        if not startdate:
-            return "You did not select start date"
-        if not enddate:
-            return "You did not select end date"
-        if requested_sites != '':
-            site_list = [f"'{site.strip()}'" for site in requested_sites]
-            formatted_site_list = ", ".join(site_list)
+    #     if not startdate:
+    #         return "You did not select start date"
+    #     if not enddate:
+    #         return "You did not select end date"
+    #     if requested_sites != '':
+    #         site_list = [f"'{site.strip()}'" for site in requested_sites]
+    #         formatted_site_list = ", ".join(site_list)
 
-        if startdate and enddate and len(requested_sites) == 0:
-            # Fetch data based on provided dates.
-            qry = f"""
-                SELECT
-                projectid,
-                siteid,
-                estuaryname,
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_wq_logger_metadata
-                        WHERE
-                            tbl_wq_logger_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiontimestampstart BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 1 - logger",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_waterquality_metadata
-                        WHERE
-                            tbl_waterquality_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 2 - discrete",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_edna_metadata
-                        WHERE
-                            tbl_edna_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 4 - eDNA -field",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_grabevent
-                        WHERE
-                            tbl_grabevent.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "Grab Table",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_sedchem_data
-                        WHERE
-                            tbl_sedchem_data.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "Sop 3 - SedimentChemistry - lab",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_sedgrainsize_data
-                        WHERE
-                            tbl_sedgrainsize_data.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "Sop 5 - GS - lab",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_benthicinfauna_labbatch
-                        WHERE
-                            tbl_benthicinfauna_labbatch.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 6 - infauna - lab",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_benthiclarge_metadata
-                        WHERE
-                            tbl_benthiclarge_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 6 - infauna - large",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_macroalgae_sample_metadata
-                        WHERE
-                            tbl_macroalgae_sample_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 7 - macroalgae",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_bruv_metadata
-                        WHERE
-                            tbl_bruv_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 8 - BRUVs - field",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_bruv_data
-                        WHERE
-                            tbl_bruv_data.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 8 - BRUVs - lab",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_fish_sample_metadata
-                        WHERE
-                            tbl_fish_sample_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 9 - Fishes",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_crabtrap_metadata
-                        WHERE
-                            tbl_crabtrap_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 10 - Crabs",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_vegetation_sample_metadata
-                        WHERE
-                            tbl_vegetation_sample_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 11 - Vegetation",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_feldspar_metadata
-                        WHERE
-                            tbl_feldspar_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 13 - Feldspar",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_trashsiteinfo
-                        WHERE
-                            tbl_trashsiteinfo.siteid = sample_assignment_info.siteid
-                            AND sampledate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 15 - Trash"
-            FROM
-                sample_assignment_info;
-            """
-        elif startdate and enddate and len(requested_sites) > 0:
-            qry = f"""
-                SELECT
-                projectid,
-                siteid,
-                estuaryname,
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_wq_logger_metadata
-                        WHERE
-                            tbl_wq_logger_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiontimestampstart BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 1 - logger",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_waterquality_metadata
-                        WHERE
-                            tbl_waterquality_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 2 - discrete",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_edna_metadata
-                        WHERE
-                            tbl_edna_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 4 - eDNA -field",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_grabevent
-                        WHERE
-                            tbl_grabevent.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "Grab Table",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_sedchem_data
-                        WHERE
-                            tbl_sedchem_data.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "Sop 3 - SedimentChemistry - lab",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_sedgrainsize_data
-                        WHERE
-                            tbl_sedgrainsize_data.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "Sop 5 - GS - lab",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_benthicinfauna_labbatch
-                        WHERE
-                            tbl_benthicinfauna_labbatch.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 6 - infauna - lab",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_benthiclarge_metadata
-                        WHERE
-                            tbl_benthiclarge_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 6 - infauna - large",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_macroalgae_sample_metadata
-                        WHERE
-                            tbl_macroalgae_sample_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 7 - macroalgae",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_bruv_metadata
-                        WHERE
-                            tbl_bruv_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 8 - BRUVs - field",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_bruv_data
-                        WHERE
-                            tbl_bruv_data.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 8 - BRUVs - lab",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_fish_sample_metadata
-                        WHERE
-                            tbl_fish_sample_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 9 - Fishes",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_crabtrap_metadata
-                        WHERE
-                            tbl_crabtrap_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 10 - Crabs",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_vegetation_sample_metadata
-                        WHERE
-                            tbl_vegetation_sample_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 11 - Vegetation",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_feldspar_metadata
-                        WHERE
-                            tbl_feldspar_metadata.siteid = sample_assignment_info.siteid
-                            AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 13 - Feldspar",
-                CASE
-                    WHEN (
-                        SELECT
-                            COUNT(*)
-                        FROM
-                            tbl_trashsiteinfo
-                        WHERE
-                            tbl_trashsiteinfo.siteid = sample_assignment_info.siteid
-                            AND sampledate BETWEEN '{startdate}' AND '{enddate}'
-                    ) > 0 THEN 'X'
-                    ELSE NULL
-                END AS "SOP 15 - Trash"
-            FROM
-                sample_assignment_info
-            WHERE sample_assignment_info.siteid IN ({formatted_site_list});
-            """
-        print(qry)
+    #     if startdate and enddate and len(requested_sites) == 0:
+    #         # Fetch data based on provided dates.
+    #         qry = f"""
+    #             SELECT
+    #             projectid,
+    #             siteid,
+    #             estuaryname,
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_wq_logger_metadata
+    #                     WHERE
+    #                         tbl_wq_logger_metadata.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiontimestampstart BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 1 - logger",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_waterquality_metadata
+    #                     WHERE
+    #                         tbl_waterquality_metadata.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 2 - discrete",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_edna_metadata
+    #                     WHERE
+    #                         tbl_edna_metadata.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 4 - eDNA -field",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_grabevent
+    #                     WHERE
+    #                         tbl_grabevent.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "Grab Table",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_sedchem_data
+    #                     WHERE
+    #                         tbl_sedchem_data.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "Sop 3 - SedimentChemistry - lab",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_sedgrainsize_data
+    #                     WHERE
+    #                         tbl_sedgrainsize_data.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "Sop 5 - GS - lab",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_benthicinfauna_labbatch
+    #                     WHERE
+    #                         tbl_benthicinfauna_labbatch.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 6 - infauna - lab",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_benthiclarge_metadata
+    #                     WHERE
+    #                         tbl_benthiclarge_metadata.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 6 - infauna - large",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_macroalgae_sample_metadata
+    #                     WHERE
+    #                         tbl_macroalgae_sample_metadata.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 7 - macroalgae",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_bruv_metadata
+    #                     WHERE
+    #                         tbl_bruv_metadata.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 8 - BRUVs - field",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_bruv_data
+    #                     WHERE
+    #                         tbl_bruv_data.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 8 - BRUVs - lab",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_fish_sample_metadata
+    #                     WHERE
+    #                         tbl_fish_sample_metadata.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 9 - Fishes",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_crabtrap_metadata
+    #                     WHERE
+    #                         tbl_crabtrap_metadata.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 10 - Crabs",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_vegetation_sample_metadata
+    #                     WHERE
+    #                         tbl_vegetation_sample_metadata.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 11 - Vegetation",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_feldspar_metadata
+    #                     WHERE
+    #                         tbl_feldspar_metadata.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 13 - Feldspar",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_trashsiteinfo
+    #                     WHERE
+    #                         tbl_trashsiteinfo.siteid = sample_assignment_info.siteid
+    #                         AND sampledate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 15 - Trash"
+    #         FROM
+    #             sample_assignment_info;
+    #         """
+    #     elif startdate and enddate and len(requested_sites) > 0:
+    #         qry = f"""
+    #             SELECT
+    #             projectid,
+    #             siteid,
+    #             estuaryname,
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_wq_logger_metadata
+    #                     WHERE
+    #                         tbl_wq_logger_metadata.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiontimestampstart BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 1 - logger",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_waterquality_metadata
+    #                     WHERE
+    #                         tbl_waterquality_metadata.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 2 - discrete",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_edna_metadata
+    #                     WHERE
+    #                         tbl_edna_metadata.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 4 - eDNA -field",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_grabevent
+    #                     WHERE
+    #                         tbl_grabevent.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "Grab Table",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_sedchem_data
+    #                     WHERE
+    #                         tbl_sedchem_data.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "Sop 3 - SedimentChemistry - lab",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_sedgrainsize_data
+    #                     WHERE
+    #                         tbl_sedgrainsize_data.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "Sop 5 - GS - lab",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_benthicinfauna_labbatch
+    #                     WHERE
+    #                         tbl_benthicinfauna_labbatch.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 6 - infauna - lab",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_benthiclarge_metadata
+    #                     WHERE
+    #                         tbl_benthiclarge_metadata.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 6 - infauna - large",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_macroalgae_sample_metadata
+    #                     WHERE
+    #                         tbl_macroalgae_sample_metadata.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 7 - macroalgae",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_bruv_metadata
+    #                     WHERE
+    #                         tbl_bruv_metadata.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 8 - BRUVs - field",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_bruv_data
+    #                     WHERE
+    #                         tbl_bruv_data.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 8 - BRUVs - lab",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_fish_sample_metadata
+    #                     WHERE
+    #                         tbl_fish_sample_metadata.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 9 - Fishes",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_crabtrap_metadata
+    #                     WHERE
+    #                         tbl_crabtrap_metadata.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 10 - Crabs",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_vegetation_sample_metadata
+    #                     WHERE
+    #                         tbl_vegetation_sample_metadata.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 11 - Vegetation",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_feldspar_metadata
+    #                     WHERE
+    #                         tbl_feldspar_metadata.siteid = sample_assignment_info.siteid
+    #                         AND samplecollectiondate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 13 - Feldspar",
+    #             CASE
+    #                 WHEN (
+    #                     SELECT
+    #                         COUNT(*)
+    #                     FROM
+    #                         tbl_trashsiteinfo
+    #                     WHERE
+    #                         tbl_trashsiteinfo.siteid = sample_assignment_info.siteid
+    #                         AND sampledate BETWEEN '{startdate}' AND '{enddate}'
+    #                 ) > 0 THEN 'X'
+    #                 ELSE NULL
+    #             END AS "SOP 15 - Trash"
+    #         FROM
+    #             sample_assignment_info
+    #         WHERE sample_assignment_info.siteid IN ({formatted_site_list});
+    #         """
+    #     print(qry)
 
-        df = pd.read_sql(qry, g.eng)
-        df = df.sort_values(by=['projectid', 'siteid'])
-        df.to_csv(os.path.join(os.getcwd(), 'export','inventory-report.csv'),index=False)
-        # Convert DataFrame to HTML
-        df_html = df.to_html(index=False)
-        # Parse the HTML to modify it.
-        soup = BeautifulSoup(df_html, "html.parser")
+    #     df = pd.read_sql(qry, g.eng)
+    #     df = df.sort_values(by=['projectid', 'siteid'])
+    #     df.to_csv(os.path.join(os.getcwd(), 'export','inventory-report.csv'),index=False)
+    #     # Convert DataFrame to HTML
+    #     df_html = df.to_html(index=False)
+    #     # Parse the HTML to modify it.
+    #     soup = BeautifulSoup(df_html, "html.parser")
 
-        # Iterate over each table cell.
-        for cell in soup.find_all("td"):
-            if cell.get_text().strip() == "X":
-                cell["style"] = "background-color: #CCFFCC; color: green;"
-            elif cell.get_text().strip() == "None":
-                cell["style"] = "background-color: #FF9999"
+    #     # Iterate over each table cell.
+    #     for cell in soup.find_all("td"):
+    #         if cell.get_text().strip() == "X":
+    #             cell["style"] = "background-color: #CCFFCC; color: green;"
+    #         elif cell.get_text().strip() == "None":
+    #             cell["style"] = "background-color: #FF9999"
 
-        # Convert the modified HTML back to a string.
-        modified_html = str(soup)
+    #     # Convert the modified HTML back to a string.
+    #     modified_html = str(soup)
 
-        # Return the report page with the modified table and a button.
-        return render_template_string(f"""
-        <html>
-        <head>
-            <title>Report</title>
-        </head>
-        <body>
-            <button onclick="window.location.href='/checker/report';">Generate New Report</button>
-            <button onclick="window.location.href='/checker/report-download';">Download CSV</button>                          
-            <h1>Report</h1>
-            <p>Selected Date Range: {startdate} to {enddate}</p>
-            {modified_html}
-        </body>
-        </html>
-        """)
+    #     # Return the report page with the modified table and a button.
+    #     return render_template_string(f"""
+    #     <html>
+    #     <head>
+    #         <title>Report</title>
+    #     </head>
+    #     <body>
+    #         <button onclick="window.location.href='/checker/report';">Generate New Report</button>
+    #         <button onclick="window.location.href='/checker/report-download';">Download CSV</button>                          
+    #         <h1>Report</h1>
+    #         <p>Selected Date Range: {startdate} to {enddate}</p>
+    #         {modified_html}
+    #     </body>
+    #     </html>
+    #     """)
 
-    # For GET requests or if no dates are provided, render the initial form.
-    siteids = pd.read_sql("SELECT DISTINCT siteid from lu_siteid ORDER BY siteid", g.eng).siteid.tolist()
-    return render_template("report.html", siteids = siteids)
+    # # For GET requests or if no dates are provided, render the initial form.
+    # siteids = pd.read_sql("SELECT DISTINCT siteid from lu_siteid ORDER BY siteid", g.eng).siteid.tolist()
+    # return render_template("report.html", siteids = siteids)
 
 
 @admin.route('/report-download', methods=['GET', 'POST'])
 def report_download():
     # Return as a downloadable file
     return send_file(os.path.join(os.getcwd(), 'export','inventory-report.csv'), as_attachment=True, download_name="report.csv", mimetype="text/csv")
+
+
+@admin.route('/get-inventory-data', methods=['GET', 'POST'])
+def get_inventory():
+
+    eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
+    # Query your materialized view
+    query = 'SELECT * FROM mvw_qa_raw_logger_combined_final'
+    
+    # Execute the SQL query and load data into a pandas DataFrame
+    df = pd.read_sql(query, eng)
+    print(df)
+
+    # int the year
+    df['year'] = df['year'].astype(int)
+
+
+    # Find the minimum and maximum years across all data
+    min_year = df['year'].min()
+    max_year = df['year'].max()
+
+    # Initialize an empty dictionary to store logger data
+    loggerData = {}
+
+    # Iterate over each row in the DataFrame to build the nested structure
+    for _, row in df.iterrows():
+        region = row['region']
+        site = row['siteid']
+        year = row['year']
+        month = row['month']
+
+        # Build the nested dictionary structure
+        if region not in loggerData:
+            loggerData[region] = {}
+
+        if site not in loggerData[region]:
+            loggerData[region][site] = {}
+
+        if year not in loggerData[region][site]:
+            loggerData[region][site][year] = {}
+
+        # Populate the logger data for the specific year and month
+        loggerData[region][site][year][month] = {
+            'raw_chlorophyll': row['raw_chlorophyll'],
+            'raw_conductivity': row['raw_conductivity'],
+            'raw_depth': row['raw_depth'],
+            'raw_do': row['raw_do'],
+            'raw_do_pct': row['raw_do_pct'],
+            'raw_h2otemp': row['raw_h2otemp'],
+            'raw_orp': row['raw_orp'],
+            'raw_ph': row['raw_ph'],
+            'raw_pressure': row['raw_pressure'],
+            'raw_qvalue': row['raw_qvalue'],
+            'raw_salinity': row['raw_salinity'],
+            'raw_turbidity': row['raw_turbidity']
+        }
+
+    # Add placeholders for missing years and months
+    for region in loggerData:
+        for site in loggerData[region]:
+            # Ensure every site has all years from min_year to max_year
+            for year in range(min_year, max_year + 1):
+                if year not in loggerData[region][site]:
+                    loggerData[region][site][year] = {}
+                
+                # Ensure all months (1 to 12) are present in every year
+                for month in range(1, 13):
+                    if month not in loggerData[region][site][year]:
+                        loggerData[region][site][year][month] = {
+                            'raw_chlorophyll': 'n',
+                            'raw_conductivity': 'n',
+                            'raw_depth': 'n',
+                            'raw_do': 'n',
+                            'raw_do_pct': 'n',
+                            'raw_h2otemp': 'n',
+                            'raw_orp': 'n',
+                            'raw_ph': 'n',
+                            'raw_pressure': 'n',
+                            'raw_qvalue': 'n',
+                            'raw_salinity': 'n',
+                            'raw_turbidity': 'n'
+                        }
+
+    # Convert loggerData to JSON and return it as a response
+    return jsonify(loggerData)
+
+
+
+@admin.route('/get-logger-graph-data', methods=['GET'])
+def get_logger_graph_data():
+    eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
+    
+    # Extract query parameters
+    siteid = request.args.get('siteid')
+    year = request.args.get('year')
+    month = request.args.get('month')
+    parameter = request.args.get('parameter')
+
+
+
+    # Ensure all required parameters are present
+    if not siteid or not year or not parameter:
+        return jsonify({'error': 'Missing required parameters'}), 400
+
+    # Construct the SQL query to fetch data for the specified region, site, year, and parameter
+    query = f"""
+    SELECT samplecollectiontimestamp, {parameter}
+    FROM tbl_wq_logger_raw
+    WHERE siteid = '{siteid}' 
+    AND EXTRACT(YEAR FROM samplecollectiontimestamp) = {year} 
+    AND EXTRACT(MONTH FROM samplecollectiontimestamp) = {month}
+    ORDER BY samplecollectiontimestamp ASC
+    """
+    print(query)
+    # Execute the query and load the result into a pandas DataFrame
+    df = pd.read_sql(query, eng)
+
+    # Ensure that there is data for the requested parameter
+    if df.empty:
+        return jsonify({'error': 'No data found for the specified criteria'}), 404
+
+    # Prepare the data in the format required for the graph (x: samplecollectiontimestamp, y: parameter value)
+    graph_data = [{'x': row['samplecollectiontimestamp'], 'y': row[parameter]} for _, row in df.iterrows()]
+
+    print(graph_data)
+
+
+    # Return the graph data as JSON
+    return jsonify(graph_data)
