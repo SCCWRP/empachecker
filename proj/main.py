@@ -164,8 +164,6 @@ def main():
     # if the tab didnt match any table it will not alter that item in the all_dfs dictionary
     print("Running match tables routine")
     match_dataset, match_report, all_dfs = match(all_dfs)
-<<<<<<< HEAD
-=======
     
 
     ############################################ PRE-CORE CHECKS ########################################################
@@ -191,7 +189,6 @@ def main():
     # print(match_report)
     # print("all_dfs")
     # print(all_dfs)
->>>>>>> dev
 
     #NOTE if all tabs in all_dfs matched a database table, but there is still no match_dataset
     # then the problem probably lies in __init__.py
