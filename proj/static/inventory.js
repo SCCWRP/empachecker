@@ -43,7 +43,7 @@ function createTabsAndContent(tabType, items) {
         tabButton.setAttribute('role', 'tab');
         tabButton.setAttribute('aria-controls', item);
         tabButton.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
-        tabButton.innerText = tabType === 'general' ? `${item}` : item;
+        tabButton.innerText = tabType === 'general' ? item : item;
 
         tabHeader.appendChild(tabButton);
         subTabsContainer.appendChild(tabHeader);
@@ -55,7 +55,7 @@ function createTabsAndContent(tabType, items) {
         tabContent.setAttribute('role', 'tabpanel');
         tabContent.setAttribute('aria-labelledby', `${item}-tab`);
 
-        // Create a filter input field
+        // Create a filter input field for Site ID filtering
         const filterContainer = document.createElement('div');
         filterContainer.className = 'mb-3';
         const filterInput = document.createElement('input');
@@ -64,7 +64,34 @@ function createTabsAndContent(tabType, items) {
         filterInput.className = 'form-control site-filter';
         filterInput.dataset.tableId = `table_${item}`; // Associate the filter with the specific table
         filterContainer.appendChild(filterInput);
-        
+
+        // Create a checkbox container for year selection
+        const yearCheckboxContainer = document.createElement('div');
+        yearCheckboxContainer.className = 'mb-3';
+
+        const minYear = tabType === 'general' ? inventoryData.general.minYear : inventoryData.logger.minYear;
+        const maxYear = tabType === 'general' ? inventoryData.general.maxYear : inventoryData.logger.maxYear;
+
+        const label = document.createElement('label');
+        label.innerText = 'Toggle Years: ';
+        yearCheckboxContainer.appendChild(label);
+
+        for (let year = minYear; year <= maxYear; year++) {
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = true; // Initially checked (visible)
+            checkbox.className = 'year-checkbox';
+            checkbox.dataset.tableId = `table_${item}`;
+            checkbox.dataset.year = year;
+            checkbox.style.marginLeft = '5px';
+
+            const checkboxLabel = document.createElement('span');
+            checkboxLabel.innerText = ` ${year} `;
+
+            yearCheckboxContainer.appendChild(checkbox);
+            yearCheckboxContainer.appendChild(checkboxLabel);
+        }
+
         // Create the table inside the tab content
         const tableContainer = document.createElement('div');
         tableContainer.className = 'table-responsive';
@@ -82,10 +109,12 @@ function createTabsAndContent(tabType, items) {
 
         tableContainer.appendChild(table);
         tabContent.appendChild(filterContainer); // Add the filter input above the table
+        tabContent.appendChild(yearCheckboxContainer); // Add the checkbox container above the table
         tabContent.appendChild(tableContainer);
         tabContentContainer.appendChild(tabContent);
     });
 }
+
 
 
 // Function to create table headers for a given table
@@ -190,6 +219,65 @@ function filterTableBySiteID(event) {
         }
     }
 }
+
+
+// Function to hide/unhide columns based on year selection
+function toggleYearColumns(event) {
+    const year = parseInt(event.target.dataset.year); // Get the year from the checkbox
+    const tableID = event.target.dataset.tableId; // Get the associated table ID
+    const table = document.getElementById(tableID);
+
+    // Determine whether we're in the general or logger tab
+    const tabType = tableID.includes("sop") ? 'general' : 'logger';
+
+    // Retrieve the correct minYear and maxYear based on the tab type
+    const minYear = inventoryData[tabType].minYear; 
+    const maxYear = inventoryData[tabType].maxYear;
+
+    // Calculate the number of columns per year (12 months)
+    const columnsPerYear = 12;
+
+    // Calculate the column index range for the selected year
+    const yearIndex = year - minYear; // Calculate the relative index of the year
+    const startIndex = 1 + (yearIndex * columnsPerYear); // Start column index (1-based due to 'Site ID')
+    const endIndex = startIndex + columnsPerYear - 1; // End column index
+
+    // Iterate through each row
+    const rows = table.getElementsByTagName('tr');
+    
+    for (const row of rows) {
+        const cells = Array.from(row.children); // Get all cells in the row as an array
+
+        // Calculate the actual start and end indices for the row
+        let currentColIndex = 0; // Track the current column index within the row
+        
+        for (let i = 0; i < cells.length; i++) {
+            const cell = cells[i];
+            const colSpan = cell.colSpan || 1; // Get the column span of the cell (default to 1)
+
+            // Check if the current cell range falls within the year range we're toggling
+            if (currentColIndex >= startIndex && currentColIndex <= endIndex) {
+                cell.style.display = event.target.checked ? '' : 'none'; // Show or hide the cell
+            }
+
+            // Update the current column index by adding the column span
+            currentColIndex += colSpan;
+
+            // Stop the loop if we've exceeded the endIndex
+            if (currentColIndex > endIndex) break;
+        }
+    }
+}
+
+
+// Attach the toggleYearColumns function to all year checkboxes
+document.addEventListener('change', (event) => {
+    if (event.target.classList.contains('year-checkbox')) {
+        toggleYearColumns(event);
+    }
+});
+
+
 
 // Attach the filterTableBySiteID function to all filter inputs
 document.addEventListener('input', (event) => {
