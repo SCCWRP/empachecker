@@ -269,6 +269,21 @@ function toggleYearColumns(event) {
     }
 }
 
+function showLoader() {
+    const loader = document.getElementById('loader');
+    if (loader) {
+        loader.style.display = 'block';
+    }
+}
+
+// Function to hide the loader
+function hideLoader() {
+    const loader = document.getElementById('loader');
+    if (loader) {
+        loader.style.display = 'none';
+    }
+}
+
 
 // Attach the toggleYearColumns function to all year checkboxes
 document.addEventListener('change', (event) => {
@@ -289,6 +304,8 @@ document.addEventListener('input', (event) => {
 
 // Fetch and populate the inventoryData when the page loads
 document.addEventListener('DOMContentLoaded', async () => {
+    showLoader(); // Show loader while fetching data
+
     const data = await fetchInventoryData();
     
     if (data) {
@@ -307,4 +324,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('sop2-tab').click();
         document.getElementById('raw_chlorophyll-tab').click();
     }
+    
+    hideLoader(); 
+
 });
