@@ -41,26 +41,25 @@
 
         <!-- Tabs Content -->
         <div class="tab-content" id="myTabContent">
-            <!-- General Tab -->
+
+            <!-- General Tab Container -->
             <section class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
-                <div class="table-responsive mt-4">
-                    <table id="example" class="table table-bordered w-100 text-center">
-                        <thead class="table-primary"></thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
+                <!-- Sub-tabs for General SOPs will be inserted here -->
+                <ul class="nav nav-tabs mt-4" id="generalSubTabs" role="tablist"></ul>
+
+                <!-- Tab content for each SOP will be inserted here -->
+                <div class="tab-content mt-4" id="generalTabContent"></div>
             </section>
 
-            <!-- Logger Tab -->
+            <!-- Logger Tab Container -->
             <section class="tab-pane fade" id="logger" role="tabpanel" aria-labelledby="logger-tab">
-                <div class="table-responsive mt-4">
-                    <!-- <input type="text" id="siteIdFilter" placeholder="Search SiteID..." style="margin-bottom: 10px; padding: 5px;"> -->
-                    <table id="loggerTable" class="table table-bordered w-100 text-center">
-                        <thead class="table-primary"></thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
+                <!-- Sub-tabs for Logger Parameters will be inserted here -->
+                <ul class="nav nav-tabs mt-4" id="loggerSubTabs" role="tablist"></ul>
+
+                <!-- Tab content for each logger parameter will be inserted here -->
+                <div class="tab-content mt-4" id="loggerTabContent"></div>
             </section>
+
         </div>
     </main>
 

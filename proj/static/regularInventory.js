@@ -1,102 +1,165 @@
-// Data for SOPs, years, and months
-const sopCount = 13; // Number of SOPs
-const years = [2021, 2022, 2023, 2024]; // Years to display
-const months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; // Months for each year
+{
+    const minYear = 2021;
+    const maxYear = 2025;
 
-// Get table head and body elements
-const tableHead = document.getElementById('example').getElementsByTagName('thead')[0];
-const tableBody = document.getElementById('example').getElementsByTagName('tbody')[0];
+    // List of SOPs for the General Tab
+    const generalSOPs = [2, 4, 6, 7, 8, 9, 10, 11, 13];
 
-const regionSiteMap = {
-    North: ['NC-LA', 'NC-MC'],
-    Central: ['CC-MLB', 'CC-ALA'],
-    South: ['SC-LLA', 'SC-TOP']
-};
+    // Reference to sub-tabs and tab content containers
+    const generalSubTabs = document.getElementById('generalSubTabs');
+    const generalTabContent = document.getElementById('generalTabContent');
 
-// Function to dynamically create table headers for the general tab
-function createTableHeaders() {
-    const headerRow1 = document.createElement('tr');
-    const regionTh = document.createElement('th');
-    regionTh.setAttribute('rowspan', '3');
-    regionTh.innerText = 'Region';
-    headerRow1.appendChild(regionTh);
+    // Function to create sub-tabs and content for each SOP
+    function createGeneralTabsAndContent() {
+        generalSOPs.forEach((sop, index) => {
+            // Create the tab header (sub-tab)
+            const tabHeader = document.createElement('li');
+            tabHeader.className = 'nav-item';
+            tabHeader.setAttribute('role', 'presentation');
 
-    const siteIDTh = document.createElement('th');
-    siteIDTh.setAttribute('rowspan', '3');
-    siteIDTh.innerText = 'SiteID';
-    headerRow1.appendChild(siteIDTh);
+            const tabButton = document.createElement('button');
+            tabButton.className = `nav-link ${index === 0 ? 'active' : ''}`;
+            tabButton.id = `sop${sop}-tab`;
+            tabButton.setAttribute('data-bs-toggle', 'tab');
+            tabButton.setAttribute('data-bs-target', `#sop${sop}`);
+            tabButton.setAttribute('type', 'button');
+            tabButton.setAttribute('role', 'tab');
+            tabButton.setAttribute('aria-controls', `sop${sop}`);
+            tabButton.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
+            tabButton.innerText = `SOP ${sop}`;
 
-    for (let sop = 1; sop <= sopCount; sop++) {
-        const sopHeader = document.createElement('th');
-        sopHeader.setAttribute('colspan', years.length * months.length);
-        sopHeader.innerText = `SOP ${sop}`;
-        headerRow1.appendChild(sopHeader);
-    }
+            tabHeader.appendChild(tabButton);
+            generalSubTabs.appendChild(tabHeader);
 
-    tableHead.appendChild(headerRow1);
+            // Create the tab content container
+            const tabContent = document.createElement('div');
+            tabContent.className = `tab-pane fade ${index === 0 ? 'show active' : ''}`;
+            tabContent.id = `sop${sop}`;
+            tabContent.setAttribute('role', 'tabpanel');
+            tabContent.setAttribute('aria-labelledby', `sop${sop}-tab`);
 
-    const headerRow2 = document.createElement('tr');
-    for (let sop = 1; sop <= sopCount; sop++) {
-        years.forEach(year => {
-            const yearHeader = document.createElement('th');
-            yearHeader.setAttribute('colspan', months.length);
-            yearHeader.innerText = year;
-            headerRow2.appendChild(yearHeader);
+            // Create the table inside the tab content
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'table-responsive';
+
+            const table = document.createElement('table');
+            table.className = 'table table-bordered w-100 text-center';
+            table.id = `table_sop${sop}`;
+
+            const thead = document.createElement('thead');
+            thead.className = 'table-primary';
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            table.appendChild(tbody);
+
+            tableContainer.appendChild(table);
+            tabContent.appendChild(tableContainer);
+            generalTabContent.appendChild(tabContent);
         });
     }
 
-    tableHead.appendChild(headerRow2);
+    // Call the function to create tabs and content
+    createGeneralTabsAndContent();
 
-    const headerRow3 = document.createElement('tr');
-    for (let sop = 1; sop <= sopCount; sop++) {
-        years.forEach(year => {
-            months.forEach(month => {
+    // Sample data structure for testing
+    const inventoryDataGeneral = {
+        'general': {
+            'sop2': {
+                'CC-CAR': {
+                    '2021': {'1': 'y', '2': 'n', '3': 'y', '4': 'y', '5': 'n', '6': 'y'} // Sample data
+                },
+                'NC-SAC': {
+                    '2022': {'1': 'y', '2': 'y', '3': 'n', '4': 'n', '5': 'y', '6': 'n'} // Sample data
+                }
+            },
+            'sop4': {
+                'CC-SD': {
+                    '2021': {'1': 'y', '2': 'n', '3': 'n'} // Sample data
+                }
+            }
+            // Add more SOPs under 'general'
+        }
+    };
+
+    // Function to create table headers for each SOP
+    function createGeneralTableHeaders(tableHead) {
+        tableHead.innerHTML = ''; // Clear existing headers
+        const headerRow1 = document.createElement('tr');
+
+        const siteIDTh = document.createElement('th');
+        siteIDTh.innerText = 'Site ID';
+        headerRow1.appendChild(siteIDTh);
+
+        for (let year = minYear; year <= maxYear; year++) {
+            const yearHeader = document.createElement('th');
+            yearHeader.setAttribute('colspan', 12); // Each year has 12 months
+            yearHeader.innerText = year;
+            headerRow1.appendChild(yearHeader);
+        }
+
+        tableHead.appendChild(headerRow1);
+
+        const headerRow2 = document.createElement('tr');
+        const emptyTh = document.createElement('th'); // Placeholder for "Site ID"
+        headerRow2.appendChild(emptyTh);
+
+        for (let year = minYear; year <= maxYear; year++) {
+            for (let month = 1; month <= 12; month++) {
                 const monthHeader = document.createElement('th');
                 monthHeader.innerText = month;
-                headerRow3.appendChild(monthHeader);
-            });
-        });
+                headerRow2.appendChild(monthHeader);
+            }
+        }
+
+        tableHead.appendChild(headerRow2);
     }
 
-    tableHead.appendChild(headerRow3);
-}
+    // Function to populate the SOP table body with data
+    function populateGeneralTableBody(sopID, tableBody) {
+        tableBody.innerHTML = ''; // Clear existing body rows
 
-// Function to dynamically create table body rows for the general tab
-// Function to dynamically create table body rows for the general tab
-function createTableBody(regionSiteMap) {
-    Object.keys(regionSiteMap).forEach(region => {
-        const sites = regionSiteMap[region];
+        const dataForSOP = inventoryDataGeneral['general'][`sop${sopID}`] || {}; // Fetch data for the current SOP
+        const sites = Object.keys(dataForSOP);
 
         sites.forEach(siteID => {
             const row = document.createElement('tr');
 
-            if (sites.indexOf(siteID) === 0) {
-                const regionTd = document.createElement('td');
-                regionTd.setAttribute('rowspan', sites.length);
-                regionTd.innerText = region;
-                row.appendChild(regionTd);
-            }
+            const siteIDCell = document.createElement('td');
+            siteIDCell.innerText = siteID;
+            row.appendChild(siteIDCell);
 
-            const siteIDTd = document.createElement('td');
-            siteIDTd.innerText = siteID;
-            row.appendChild(siteIDTd);
-
-            for (let sop = 1; sop <= sopCount; sop++) {
-                years.forEach(year => {
-                    months.forEach(month => {
-                        const cell = document.createElement('td');
-                        cell.innerText = ''; // Data can be inserted here
-                        row.appendChild(cell);
-                    });
-                });
+            for (let year = minYear; year <= maxYear; year++) {
+                for (let month = 1; month <= 12; month++) {
+                    const cell = document.createElement('td');
+                    const yearData = dataForSOP[siteID]?.[year.toString()] || {};
+                    cell.innerText = yearData[month.toString()] || 'n'; // Default to 'n' if not found
+                    row.appendChild(cell);
+                }
             }
 
             tableBody.appendChild(row);
         });
+    }
+
+    // Ensure event listeners are set correctly after dynamic creation
+    document.querySelectorAll('#generalSubTabs').forEach(tabContainer => {
+        tabContainer.addEventListener('click', (event) => {
+            if (event.target && event.target.tagName === 'BUTTON') {
+                const sopID = event.target.innerText.replace('SOP ', ''); // Extract SOP number
+                const tableID = `table_sop${sopID}`;
+                const tableHead = document.getElementById(tableID).getElementsByTagName('thead')[0];
+                const tableBody = document.getElementById(tableID).getElementsByTagName('tbody')[0];
+
+                // Create table headers and populate body for the selected SOP
+                createGeneralTableHeaders(tableHead);
+                populateGeneralTableBody(sopID, tableBody);
+            }
+        });
     });
+
+    // Automatically trigger the first tab's click event to populate it on page load
+    document.getElementById('sop2-tab').click();
+
+
 }
-
-
-// Call functions to generate the general table
-createTableHeaders();
-createTableBody(regionSiteMap);
