@@ -82,7 +82,7 @@ def checkDuplicatesInProduction(dataframe, tablename, eng, *args, output = None,
     dataframe.to_sql(tmp_table_name, con=eng, if_exists='replace', index=False)
 
     # SQL query to get common rows based on primary key
-    join_condition = " AND ".join([f"tmp.{col} = tbl.{col}" for col in pkey])
+    join_condition = " AND ".join([f"tmp.{col}::VARCHAR = tbl.{col}::VARCHAR" for col in pkey])
 
     # SQL query to get common rows based on the primary keys
     query = f"""
