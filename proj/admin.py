@@ -774,89 +774,77 @@ def report_download():
     return send_file(os.path.join(os.getcwd(), 'export','inventory-report.csv'), as_attachment=True, download_name="report.csv", mimetype="text/csv")
 
 
-@admin.route('/get-inventory-data', methods=['GET', 'POST'])
-def get_inventory():
+@admin.route('/get-inventory-data', methods=['GET'])
+def get_inventory_data():
 
     eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
-    # Query your materialized view
-    query = 'SELECT * FROM mvw_qa_raw_logger_combined_final'
-    
-    # Execute the SQL query and load data into a pandas DataFrame
-    df = pd.read_sql(query, eng)
-    print(df)
 
-    # int the year
-    df['year'] = df['year'].astype(int)
+    # Query data for the Logger using Pandas
+    logger_query = "SELECT * FROM mvw_qa_raw_logger_combined_final"
+    logger_df = pd.read_sql(logger_query, con=eng)
+    logger_df['year'] = logger_df['year'].astype(int).astype(str)
 
+    # Query data for the General using Pandas
+    general_query = "SELECT sop, region, siteid, year, month, data_exists FROM mvw_qa_allsop_combined"
+    general_df = pd.read_sql(general_query, con=eng)
+    general_df['year'] = general_df['year'].astype(int).astype(str)
 
-    # Find the minimum and maximum years across all data
-    min_year = df['year'].min()
-    max_year = df['year'].max()
-
-    # Initialize an empty dictionary to store logger data
-    loggerData = {}
-
-    # Iterate over each row in the DataFrame to build the nested structure
-    for _, row in df.iterrows():
-        region = row['region']
-        site = row['siteid']
-        year = row['year']
-        month = row['month']
-
-        # Build the nested dictionary structure
-        if region not in loggerData:
-            loggerData[region] = {}
-
-        if site not in loggerData[region]:
-            loggerData[region][site] = {}
-
-        if year not in loggerData[region][site]:
-            loggerData[region][site][year] = {}
-
-        # Populate the logger data for the specific year and month
-        loggerData[region][site][year][month] = {
-            'raw_chlorophyll': row['raw_chlorophyll'],
-            'raw_conductivity': row['raw_conductivity'],
-            'raw_depth': row['raw_depth'],
-            'raw_do': row['raw_do'],
-            'raw_do_pct': row['raw_do_pct'],
-            'raw_h2otemp': row['raw_h2otemp'],
-            'raw_orp': row['raw_orp'],
-            'raw_ph': row['raw_ph'],
-            'raw_pressure': row['raw_pressure'],
-            'raw_qvalue': row['raw_qvalue'],
-            'raw_salinity': row['raw_salinity'],
-            'raw_turbidity': row['raw_turbidity']
+    # Prepare the data structure
+    inventory_data = {
+        'general': {
+            'minYear': general_df['year'].min(),
+            'maxYear': general_df['year'].max(),
+            'data': {}
+        },
+        'logger': {
+            'minYear': logger_df['year'].min(),
+            'maxYear': logger_df['year'].max(),
+            'data': {}
         }
+    }
 
-    # Add placeholders for missing years and months
-    for region in loggerData:
-        for site in loggerData[region]:
-            # Ensure every site has all years from min_year to max_year
-            for year in range(min_year, max_year + 1):
-                if year not in loggerData[region][site]:
-                    loggerData[region][site][year] = {}
-                
-                # Ensure all months (1 to 12) are present in every year
-                for month in range(1, 13):
-                    if month not in loggerData[region][site][year]:
-                        loggerData[region][site][year][month] = {
-                            'raw_chlorophyll': 'n',
-                            'raw_conductivity': 'n',
-                            'raw_depth': 'n',
-                            'raw_do': 'n',
-                            'raw_do_pct': 'n',
-                            'raw_h2otemp': 'n',
-                            'raw_orp': 'n',
-                            'raw_ph': 'n',
-                            'raw_pressure': 'n',
-                            'raw_qvalue': 'n',
-                            'raw_salinity': 'n',
-                            'raw_turbidity': 'n'
-                        }
+    # Populate general data from DataFrame
+    for _, row in general_df.iterrows():
+        sop = f'sop{row["sop"]}'
+        siteid = row['siteid']
+        year = str(row['year'])
+        month = str(row['month'])
+        data_exists = row['data_exists']
 
-    # Convert loggerData to JSON and return it as a response
-    return jsonify(loggerData)
+        if sop not in inventory_data['general']['data']:
+            inventory_data['general']['data'][sop] = {}
+
+        if siteid not in inventory_data['general']['data'][sop]:
+            inventory_data['general']['data'][sop][siteid] = {}
+
+        if year not in inventory_data['general']['data'][sop][siteid]:
+            inventory_data['general']['data'][sop][siteid][year] = {}
+
+        inventory_data['general']['data'][sop][siteid][year][month] = data_exists
+
+    # Populate logger data from DataFrame
+    parameter_columns = logger_df.columns.difference(['region', 'siteid', 'year', 'month'])  # Identify parameter columns
+
+    for _, row in logger_df.iterrows():
+        siteid = row['siteid']
+        year = str(row['year'])
+        month = str(row['month'])
+
+        for parameter in parameter_columns:
+            data_exists = row[parameter]
+
+            if parameter not in inventory_data['logger']['data']:
+                inventory_data['logger']['data'][parameter] = {}
+
+            if siteid not in inventory_data['logger']['data'][parameter]:
+                inventory_data['logger']['data'][parameter][siteid] = {}
+
+            if year not in inventory_data['logger']['data'][parameter][siteid]:
+                inventory_data['logger']['data'][parameter][siteid][year] = {}
+
+            inventory_data['logger']['data'][parameter][siteid][year][month] = data_exists
+    print(inventory_data)
+    return jsonify(inventory_data)
 
 
 

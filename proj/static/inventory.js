@@ -1,58 +1,28 @@
 // Define the SOPs and Logger parameters
-const generalSOPs = ["sop2", "sop4", "sop6", "sop7", "sop8", "sop9", "sop10", "sop11","sop13"];
+const generalSOPs = ["sop2", "sop4", "sop6", "sop7", "sop8", "sop9", "sop10", "sop11", "sop13"];
 const loggerParameters = [
     'raw_chlorophyll', 'raw_conductivity', 'raw_depth', 'raw_do', 'raw_do_pct',
     'raw_h2otemp', 'raw_orp', 'raw_ph', 'raw_pressure', 'raw_qvalue',
     'raw_salinity', 'raw_turbidity'
 ];
 
-// Unified inventory data combining both General and Logger with minYear and maxYear
-const inventoryData = {
-    'general': {
-        minYear: 2021,
-        maxYear: 2025,
-        data: {
-            'sop2': {
-                'CC-CAR': {
-                    '2021': {'1': 'y', '2': 'n', '3': 'y', '4': 'y', '5': 'n', '6': 'y'}
-                },
-                'NC-SAC': {
-                    '2022': {'1': 'y', '2': 'y', '3': 'n', '4': 'n', '5': 'y', '6': 'n'}
-                }
-            },
-            'sop4': {
-                'CC-SD': {
-                    '2021': {'1': 'y', '2': 'n', '3': 'n'}
-                },
-                'NC-SD': {
-                    '2021': {'1': 'y', '2': 'n', '3': 'n'}
-                }
-            }
-        }
-    },
-    'logger': {
-        minYear: 2015,
-        maxYear: 2024,
-        data: {
-            'raw_chlorophyll': {
-                'CC-CAR': {
-                    '2021': {'1': 'y', '2': 'n', '3': 'y'}
-                }
-            },
-            'raw_depth': {
-                'NC-TEST': {
-                    '2021': {'1': 'y', '2': 'n', '3': 'y'}
-                },
-                'CC-TEST': {
-                    '2021': {'1': 'y', '2': 'n', '3': 'y'}
-                }
-            }
-            // Add other logger parameter data as needed
-        }
-    }
-};
+let inventoryData = {};
 
-// Function to create sub-tabs and content for both General and Logger
+// Function to fetch inventory data from the backend
+async function fetchInventoryData() {
+    try {
+        const response = await fetch('/empachecker/get-inventory-data');
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error fetching inventory data:', error);
+        return null;
+    }
+}
+
 // Function to create sub-tabs and content for both General and Logger
 function createTabsAndContent(tabType, items) {
     const subTabsContainer = document.getElementById(`${tabType}SubTabs`);
@@ -117,10 +87,6 @@ function createTabsAndContent(tabType, items) {
     });
 }
 
-
-// Call the function to create tabs and content for both General and Logger
-createTabsAndContent('general', generalSOPs);
-createTabsAndContent('logger', loggerParameters);
 
 // Function to create table headers for a given table
 function createTableHeaders(tableHead, minYear, maxYear) {
@@ -233,10 +199,24 @@ document.addEventListener('input', (event) => {
 });
 
 
-// Set up tab listeners for both General and Logger
-setupTabListeners('general', generalSOPs);
-setupTabListeners('logger', loggerParameters);
+// Fetch and populate the inventoryData when the page loads
+document.addEventListener('DOMContentLoaded', async () => {
+    const data = await fetchInventoryData();
+    
+    if (data) {
+        // Populate the inventoryData object
+        Object.assign(inventoryData, data);
 
-// Automatically trigger the first tab's click event to populate on page load
-document.getElementById('sop2-tab').click();
-document.getElementById('raw_chlorophyll-tab').click();
+        // Create tabs and content
+        createTabsAndContent('general', generalSOPs);
+        createTabsAndContent('logger', loggerParameters);
+
+        // Set up tab listeners
+        setupTabListeners('general', generalSOPs);
+        setupTabListeners('logger', loggerParameters);
+
+        // Automatically trigger the first tab's click event to populate it on page load
+        document.getElementById('sop2-tab').click();
+        document.getElementById('raw_chlorophyll-tab').click();
+    }
+});
