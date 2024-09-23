@@ -115,6 +115,7 @@
         tableHead.appendChild(headerRow2);
     }
 
+
     // Function to populate the logger table body with data
     function populateLoggerTableBody(parameter, tableBody) {
         tableBody.innerHTML = ''; // Clear existing body rows
@@ -133,7 +134,15 @@
                 for (let month = 1; month <= 12; month++) {
                     const cell = document.createElement('td');
                     const yearData = dataForParameter[siteID]?.[year.toString()] || {};
-                    cell.innerText = yearData[month.toString()] || 'n'; // Default to 'n' if not found
+                    const cellValue = yearData[month.toString()] || 'n'; // Default to 'n' if not found
+
+                    cell.innerText = cellValue;
+
+                    // Add the green-cell class if the cell value is 'y'
+                    if (cellValue === 'y') {
+                        cell.classList.add('green-cell');
+                    }
+
                     row.appendChild(cell);
                 }
             }
@@ -141,6 +150,7 @@
             tableBody.appendChild(row);
         });
     }
+
 
     // Adjust event listener to target your hard-coded logger sub-tabs
     document.querySelectorAll('#loggerSubTabs .nav-link').forEach(tab => {

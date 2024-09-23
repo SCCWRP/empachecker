@@ -133,7 +133,15 @@
                 for (let month = 1; month <= 12; month++) {
                     const cell = document.createElement('td');
                     const yearData = dataForSOP[siteID]?.[year.toString()] || {};
-                    cell.innerText = yearData[month.toString()] || 'n'; // Default to 'n' if not found
+                    const cellValue = yearData[month.toString()] || 'n';
+
+                    cell.innerText = cellValue;
+
+                    // Add the green-cell class if the cell value is 'y'
+                    if (cellValue === 'y') {
+                        cell.classList.add('green-cell');
+                    }
+
                     row.appendChild(cell);
                 }
             }
@@ -141,6 +149,7 @@
             tableBody.appendChild(row);
         });
     }
+
 
     // Ensure event listeners are set correctly after dynamic creation
     document.querySelectorAll('#generalSubTabs').forEach(tabContainer => {
