@@ -213,7 +213,7 @@ def template():
     column_comment_df['column_comment'] = column_comment_df['column_comment'].fillna("N/A")
     column_comment = {x:y for x,y in zip(column_comment_df['column_name'], column_comment_df['column_comment'])}
 
-    excel_file_path = f"{os.getcwd()}/export/routine/{file_prefix}-TEMPLATE.xlsx"
+    excel_file_path = f"{os.getcwd()}/export/{file_prefix}-TEMPLATE.xlsx"
 
     with pd.ExcelWriter(excel_file_path) as writer:
         workbook = writer.book
@@ -273,7 +273,7 @@ def template():
     ######################################################################################################################################
 
     # Make a response object to set a custom cookie
-    resp = make_response(send_file(f"{os.getcwd()}/export/routine/{file_prefix}-TEMPLATE.xlsx", as_attachment=True, download_name=f'{file_prefix}-TEMPLATE.xlsx'))
+    resp = make_response(send_file(f"{os.getcwd()}/export/{file_prefix}-TEMPLATE.xlsx", as_attachment=True, download_name=f'{file_prefix}-TEMPLATE.xlsx'))
     
     # Set a cookie to let browser know that the file has been sent
     resp.set_cookie('template_file_sent', 'true', max_age=1)
