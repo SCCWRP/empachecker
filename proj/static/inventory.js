@@ -307,7 +307,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     showLoader(); // Show loader while fetching data
 
     const data = await fetchInventoryData();
-    
+    console.log(data);
     if (data) {
         // Populate the inventoryData object
         Object.assign(inventoryData, data);
