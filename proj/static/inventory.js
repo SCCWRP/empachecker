@@ -1,5 +1,15 @@
 // Define the SOPs and Logger parameters
-const generalSOPs = ["sop2", "sop4", "sop6", "sop7", "sop8", "sop9", "sop10", "sop11", "sop13"];
+const sopNameMapping = {
+    "SOP 2: Discrete environmental monitoring - point water quality measurements": "sop2",
+    "SOP 4: eDNA - field": "sop4",
+    "SOP 6: Benthic infauna, large": "sop6",
+    "SOP 7: Macroalgae": "sop7",
+    "SOP 8: Fish - BRUVs - field": "sop8",
+    "SOP 9: Fish seines": "sop9",
+    "SOP 10: Crab traps": "sop10",
+    "SOP 11: Marsh plain vegetation and epifauna surveys": "sop11",
+    "SOP 13: Sediment accretion rates": "sop13"
+};
 const loggerParameters = [
     'raw_chlorophyll', 'raw_conductivity', 'raw_depth', 'raw_do', 'raw_do_pct',
     'raw_h2otemp', 'raw_orp', 'raw_ph', 'raw_pressure', 'raw_qvalue',
@@ -29,6 +39,18 @@ function createTabsAndContent(tabType, items) {
     const tabContentContainer = document.getElementById(`${tabType}TabContent`);
 
     items.forEach((item, index) => {
+        // Determine tab name and ID based on whether it's general or logger
+        let tabName, tabID;
+        if (tabType === 'general') {
+            // If general, item represents the descriptive SOP name
+            tabName = item;
+            tabID = sopNameMapping[item]; // Fetch the corresponding SOP code from the mapping
+        } else {
+            // If logger, item represents the parameter directly
+            tabName = item;
+            tabID = item;
+        }
+
         // Create the tab header
         const tabHeader = document.createElement('li');
         tabHeader.className = 'nav-item';
@@ -36,14 +58,14 @@ function createTabsAndContent(tabType, items) {
 
         const tabButton = document.createElement('button');
         tabButton.className = `nav-link ${index === 0 ? 'active' : ''}`;
-        tabButton.id = `${item}-tab`;
+        tabButton.id = `${tabID}-tab`;
         tabButton.setAttribute('data-bs-toggle', 'tab');
-        tabButton.setAttribute('data-bs-target', `#${item}`);
+        tabButton.setAttribute('data-bs-target', `#${tabID}`);
         tabButton.setAttribute('type', 'button');
         tabButton.setAttribute('role', 'tab');
-        tabButton.setAttribute('aria-controls', item);
+        tabButton.setAttribute('aria-controls', tabID);
         tabButton.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
-        tabButton.innerText = tabType === 'general' ? item : item;
+        tabButton.innerText = tabName;
 
         tabHeader.appendChild(tabButton);
         subTabsContainer.appendChild(tabHeader);
@@ -51,9 +73,9 @@ function createTabsAndContent(tabType, items) {
         // Create the tab content container
         const tabContent = document.createElement('div');
         tabContent.className = `tab-pane fade ${index === 0 ? 'show active' : ''}`;
-        tabContent.id = item;
+        tabContent.id = tabID;
         tabContent.setAttribute('role', 'tabpanel');
-        tabContent.setAttribute('aria-labelledby', `${item}-tab`);
+        tabContent.setAttribute('aria-labelledby', `${tabID}-tab`);
 
         // Create a filter input field for Site ID filtering
         const filterContainer = document.createElement('div');
@@ -62,8 +84,28 @@ function createTabsAndContent(tabType, items) {
         filterInput.type = 'text';
         filterInput.placeholder = 'Filter by Site ID. You can enter multiple IDs separated by commas.';
         filterInput.className = 'form-control site-filter';
-        filterInput.dataset.tableId = `table_${item}`; // Associate the filter with the specific table
+        filterInput.dataset.tableId = `table_${tabID}`; // Associate the filter with the specific table
         filterContainer.appendChild(filterInput);
+
+        // Create the legend container
+        const legendContainer = document.createElement('div');
+        legendContainer.className = 'mb-3 d-flex align-items-center'; // Use flexbox for horizontal alignment
+        legendContainer.style.gap = '10px'; // Add some spacing between legend items
+
+        // Add the legend items
+        const legendTexts = [
+            { text: "Legend:", class: 'text-muted' },
+            { text: "'y': data is available", class: 'text-success' },
+            { text: "'n': data is missing", class: 'text-danger' },
+            { text: "'not-assigned': this site was not assigned to collect data", class: 'text-muted' }
+        ];
+
+        legendTexts.forEach(legend => {
+            const legendItem = document.createElement('span'); // Use span instead of p for inline display
+            legendItem.innerText = legend.text;
+            legendItem.className = legend.class;
+            legendContainer.appendChild(legendItem);
+        });
 
         // Create a checkbox container for year selection
         const yearCheckboxContainer = document.createElement('div');
@@ -81,7 +123,7 @@ function createTabsAndContent(tabType, items) {
             checkbox.type = 'checkbox';
             checkbox.checked = true; // Initially checked (visible)
             checkbox.className = 'year-checkbox';
-            checkbox.dataset.tableId = `table_${item}`;
+            checkbox.dataset.tableId = `table_${tabID}`;
             checkbox.dataset.year = year;
             checkbox.style.marginLeft = '5px';
 
@@ -98,7 +140,7 @@ function createTabsAndContent(tabType, items) {
 
         const table = document.createElement('table');
         table.className = 'table table-bordered w-100 text-center';
-        table.id = `table_${item}`;
+        table.id = `table_${tabID}`;
 
         const thead = document.createElement('thead');
         thead.className = 'table-primary';
@@ -108,12 +150,19 @@ function createTabsAndContent(tabType, items) {
         table.appendChild(tbody);
 
         tableContainer.appendChild(table);
+
+        // Append all elements to the tab content
         tabContent.appendChild(filterContainer); // Add the filter input above the table
+        tabContent.appendChild(legendContainer); // Add the legend container below the filter input
         tabContent.appendChild(yearCheckboxContainer); // Add the checkbox container above the table
         tabContent.appendChild(tableContainer);
         tabContentContainer.appendChild(tabContent);
     });
 }
+
+
+
+
 
 
 
@@ -186,20 +235,30 @@ function populateTableBody(type, parameter, tableBody) {
 }
 
 // Event listener to handle clicks on sub-tabs
+// Event listener to handle clicks on sub-tabs
 function setupTabListeners(tabType, items) {
-    document.querySelectorAll(`#${tabType}SubTabs .nav-link`).forEach(tab => {
-        tab.addEventListener('click', (event) => {
-            const parameter = event.target.innerText.replace('SOP ', '');
-            const tableID = `table_${parameter}`;
+    const subTabsContainer = document.getElementById(`${tabType}SubTabs`);
+
+    // Iterate over the items list
+    items.forEach((item) => {
+        let tabID = tabType === 'general' ? sopNameMapping[item] : item;
+
+        // Find the tab button by ID and set up the click listener
+        const tabButton = document.getElementById(`${tabID}-tab`);
+        
+        tabButton.addEventListener('click', () => {
+            const tableID = `table_${tabID}`;
             const tableHead = document.getElementById(tableID).getElementsByTagName('thead')[0];
             const tableBody = document.getElementById(tableID).getElementsByTagName('tbody')[0];
 
             // Create table headers and populate body for the selected parameter/SOP
-            createTableHeaders(tableHead, inventoryData[tabType].minYear, inventoryData[tabType].maxYear);
-            populateTableBody(tabType, parameter, tableBody);
+            createTableHeaders(tableHead, inventoryData[tabType].minYear, inventoryData[tabType].maxYear, tabType);
+            populateTableBody(tabType, tabID, tableBody);
         });
     });
 }
+
+
 
 // Function to filter table rows based on multiple siteIDs separated by commas
 function filterTableBySiteID(event) {
@@ -313,11 +372,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         Object.assign(inventoryData, data);
 
         // Create tabs and content
-        createTabsAndContent('general', generalSOPs);
+        createTabsAndContent('general', Object.keys(sopNameMapping));
         createTabsAndContent('logger', loggerParameters);
 
         // Set up tab listeners
-        setupTabListeners('general', generalSOPs);
+        setupTabListeners('general', Object.keys(sopNameMapping));
         setupTabListeners('logger', loggerParameters);
 
         // Automatically trigger the first tab's click event to populate it on page load
