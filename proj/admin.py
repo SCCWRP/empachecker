@@ -316,7 +316,6 @@ def report_download():
 
 @admin.route('/get-inventory-data', methods=['GET'])
 def get_inventory_data():
-
     eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
 
     # Query data for the Logger using Pandas
@@ -325,7 +324,23 @@ def get_inventory_data():
     logger_df['year'] = logger_df['year'].astype(int).astype(str)
 
     # Query data for the General using Pandas
-    general_query = "SELECT sop, region, siteid, year, month, data_exists FROM mvw_qa_allsop_combined"
+    general_query = \
+        """
+            SELECT DISTINCT
+                sop,
+                region,
+                siteid,
+                year,
+                season,
+                data_exists
+            FROM
+                mvw_qa_allsop_combined_final 
+            ORDER BY
+                sop,
+                region,
+                siteid,
+                year
+        """
     general_df = pd.read_sql(general_query, con=eng)
     general_df['year'] = general_df['year'].astype(int).astype(str)
 
@@ -348,7 +363,7 @@ def get_inventory_data():
         sop = f'sop{row["sop"]}'
         siteid = row['siteid']
         year = str(row['year'])
-        month = str(row['month'])
+        season = row['season']  # Now using 'season' instead of 'month'
         data_exists = row['data_exists']
 
         if sop not in inventory_data['general']['data']:
@@ -360,7 +375,7 @@ def get_inventory_data():
         if year not in inventory_data['general']['data'][sop][siteid]:
             inventory_data['general']['data'][sop][siteid][year] = {}
 
-        inventory_data['general']['data'][sop][siteid][year][month] = data_exists
+        inventory_data['general']['data'][sop][siteid][year][season] = data_exists
 
     # Populate logger data from DataFrame
     parameter_columns = logger_df.columns.difference(['region', 'siteid', 'year', 'month'])  # Identify parameter columns

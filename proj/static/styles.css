@@ -2,3 +2,8 @@ table td.green-cell {
     background-color: green !important;
     color: white !important; /* Ensure the text is visible */
 }
+
+table td.red-cell {
+    background-color: rgb(255, 60, 0) !important;
+    color: white !important; /* Ensure the text is visible */
+}

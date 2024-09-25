@@ -161,13 +161,8 @@ function createTabsAndContent(tabType, items) {
 }
 
 
-
-
-
-
-
 // Function to create table headers for a given table
-function createTableHeaders(tableHead, minYear, maxYear) {
+function createTableHeaders(tableHead, minYear, maxYear, tabType) {
     tableHead.innerHTML = ''; // Clear existing headers
     const headerRow1 = document.createElement('tr');
 
@@ -177,7 +172,7 @@ function createTableHeaders(tableHead, minYear, maxYear) {
 
     for (let year = minYear; year <= maxYear; year++) {
         const yearHeader = document.createElement('th');
-        yearHeader.setAttribute('colspan', 12); // Each year has 12 months
+        yearHeader.setAttribute('colspan', tabType === 'general' ? 2 : 12); // Use 2 columns for general, 12 for logger
         yearHeader.innerText = year;
         headerRow1.appendChild(yearHeader);
     }
@@ -189,10 +184,22 @@ function createTableHeaders(tableHead, minYear, maxYear) {
     headerRow2.appendChild(emptyTh);
 
     for (let year = minYear; year <= maxYear; year++) {
-        for (let month = 1; month <= 12; month++) {
-            const monthHeader = document.createElement('th');
-            monthHeader.innerText = month;
-            headerRow2.appendChild(monthHeader);
+        if (tabType === 'general') {
+            // Add "Spring" and "Fall" columns
+            const springHeader = document.createElement('th');
+            springHeader.innerText = 'Spring';
+            headerRow2.appendChild(springHeader);
+
+            const fallHeader = document.createElement('th');
+            fallHeader.innerText = 'Fall';
+            headerRow2.appendChild(fallHeader);
+        } else {
+            // For logger, add the 12 months
+            for (let month = 1; month <= 12; month++) {
+                const monthHeader = document.createElement('th');
+                monthHeader.innerText = month;
+                headerRow2.appendChild(monthHeader);
+            }
         }
     }
 
@@ -214,19 +221,45 @@ function populateTableBody(type, parameter, tableBody) {
         row.appendChild(siteIDCell);
 
         for (let year = inventoryData[type].minYear; year <= inventoryData[type].maxYear; year++) {
-            for (let month = 1; month <= 12; month++) {
-                const cell = document.createElement('td');
-                const yearData = dataForParameter[siteID]?.[year.toString()] || {};
-                const cellValue = yearData[month.toString()] || 'n'; // Default to 'n' if not found
+            const yearData = dataForParameter[siteID]?.[year.toString()] || {};
 
-                cell.innerText = cellValue;
-
-                // Add the green-cell class if the cell value is 'y'
-                if (cellValue === 'y') {
-                    cell.classList.add('green-cell');
+            if (type === 'general') {
+                // Handle Spring and Fall for general tab
+                const springCell = document.createElement('td');
+                const springValue = yearData['Spring'] || 'n'; // Default to 'n' if not found
+                springCell.innerText = springValue;
+                if (springValue === 'y') {
+                    springCell.classList.add('green-cell');
+                } else if (springValue === 'n') {
+                    springCell.classList.add('red-cell');
                 }
+                row.appendChild(springCell);
 
-                row.appendChild(cell);
+                const fallCell = document.createElement('td');
+                const fallValue = yearData['Fall'] || 'n'; // Default to 'n' if not found
+                fallCell.innerText = fallValue;
+                if (fallValue === 'y') {
+                    fallCell.classList.add('green-cell');
+                } else if (fallValue === 'n') {
+                    fallCell.classList.add('red-cell');
+                }
+                
+                row.appendChild(fallCell);
+            } else {
+                // For logger, iterate through 12 months
+                for (let month = 1; month <= 12; month++) {
+                    const cell = document.createElement('td');
+                    const cellValue = yearData[month.toString()] || 'n'; // Default to 'n' if not found
+
+                    cell.innerText = cellValue;
+
+                    // Add the green-cell class if the cell value is 'y'
+                    if (cellValue === 'y') {
+                        cell.classList.add('green-cell');
+                    } 
+
+                    row.appendChild(cell);
+                }
             }
         }
 
