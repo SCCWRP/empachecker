@@ -1,15 +1,21 @@
 // Define the SOPs and Logger parameters
 const sopNameMapping = {
     "SOP 2: Discrete environmental monitoring - point water quality measurements": "sop2",
+    "SOP 3: Sediment chemistry": "sop3a",
+    "SOP 3: Sediment toxicity": "sop3b",
     "SOP 4: eDNA - field": "sop4",
-    "SOP 6: Benthic infauna, large": "sop6",
+    "SOP 5: Sediment grain size analysis": "sop5",
+    "SOP 6: Benthic infauna, small": "sop6a",
+    "SOP 6: Benthic infauna, large": "sop6b",
     "SOP 7: Macroalgae": "sop7",
     "SOP 8: Fish - BRUVs - field": "sop8",
     "SOP 9: Fish seines": "sop9",
     "SOP 10: Crab traps": "sop10",
     "SOP 11: Marsh plain vegetation and epifauna surveys": "sop11",
-    "SOP 13: Sediment accretion rates": "sop13"
+    "SOP 13: Sediment accretion rates": "sop13",
+    "SOP 15: Trash monitoring": "sop15"
 };
+
 const loggerParameters = [
     'raw_chlorophyll', 'raw_conductivity', 'raw_depth', 'raw_do', 'raw_do_pct',
     'raw_h2otemp', 'raw_orp', 'raw_ph', 'raw_pressure', 'raw_qvalue',
@@ -132,6 +138,28 @@ function createTabsAndContent(tabType, items) {
 
             yearCheckboxContainer.appendChild(checkbox);
             yearCheckboxContainer.appendChild(checkboxLabel);
+        }
+
+        // Add "Download Inventory Data" and "Refresh Inventory" buttons
+        if (tabType === 'general') {
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'mb-3 d-flex align-items-center';
+            buttonContainer.style.gap = '10px';
+
+            const downloadButton = document.createElement('button');
+            downloadButton.innerText = 'Download Inventory Data';
+            downloadButton.className = 'btn btn-primary';
+            downloadButton.onclick = () => downloadInventoryData(); 
+
+            const refreshButton = document.createElement('button');
+            refreshButton.innerText = 'Refresh Inventory';
+            refreshButton.className = 'btn btn-secondary';
+            refreshButton.onclick = () => refreshInventory();
+
+            buttonContainer.appendChild(downloadButton);
+            //buttonContainer.appendChild(refreshButton);
+
+            yearCheckboxContainer.appendChild(buttonContainer);
         }
 
         // Create the table inside the tab content
@@ -376,6 +404,41 @@ function hideLoader() {
     }
 }
 
+// Function to download the original general_df
+function downloadInventoryData() {
+    window.open('/empachecker/download-inventory-data', '_blank');
+}
+
+// Function to refresh inventory data
+async function refreshInventory() {
+    alert('Sending request to refresh inventory data. This may take up to 5 minutes. Please wait until the loader disappears.');
+
+    showLoader(); // Show loader while refreshing data
+
+    try {
+        const response = await fetch('/empachecker/refresh-inventory', { method: 'POST' });
+        if (!response.ok) {
+            throw new Error('Failed to refresh inventory');
+        }
+
+        // After refreshing, reload the inventory data
+        const data = await fetchInventoryData();
+        if (data) {
+            // Update the inventory data
+            Object.assign(inventoryData, data);
+            // You may want to reinitialize your tabs or refresh the display
+            alert('Inventory refreshed successfully. Refresh the page to see the most up-to-date data.');
+        }
+    } catch (error) {
+        console.error('Error refreshing inventory:', error);
+        alert('Failed to refresh inventory');
+    } finally {
+        hideLoader(); // Hide loader after operation completes
+    }
+}
+
+
+
 
 // Attach the toggleYearColumns function to all year checkboxes
 document.addEventListener('change', (event) => {
@@ -399,7 +462,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     showLoader(); // Show loader while fetching data
 
     const data = await fetchInventoryData();
-    console.log(data);
+
     if (data) {
         // Populate the inventoryData object
         Object.assign(inventoryData, data);

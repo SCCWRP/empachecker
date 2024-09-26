@@ -6,7 +6,7 @@ from io import StringIO
 import psycopg2
 from psycopg2 import sql
 from sqlalchemy import create_engine
-
+import io
 
 from .utils.db import metadata_summary
 from .utils.route_auth import requires_auth
@@ -334,7 +334,7 @@ def get_inventory_data():
                 season,
                 data_exists
             FROM
-                mvw_qa_allsop_combined_final 
+                vw_qa_allsop_combined_final 
             ORDER BY
                 sop,
                 region,
@@ -401,6 +401,47 @@ def get_inventory_data():
             
     return jsonify(inventory_data)
 
+@admin.route('/download-inventory-data', methods=['GET'])
+def download_inventory_data():
+    eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
+
+    # Query data for the General using Pandas
+    general_query = """
+        SELECT DISTINCT
+            sop,
+            region,
+            siteid,
+            year,
+            season,
+            data_exists
+        FROM
+            vw_qa_allsop_combined_final 
+        ORDER BY
+            sop,
+            region,
+            siteid,
+            year
+    """
+    general_df = pd.read_sql(general_query, con=eng)
+
+    # Convert DataFrame to CSV
+    csv_data = general_df.to_csv(index=False)
+    buffer = io.StringIO(csv_data)
+
+    # Send the CSV file to the user
+    return send_file(io.BytesIO(buffer.getvalue().encode()), 
+                     mimetype='text/csv', 
+                     as_attachment=True, 
+                     download_name='general_inventory_data.csv')
+
+@admin.route('/refresh-inventory', methods=['POST'])
+def refresh_inventory():
+    eng = g.eng
+    try:
+        eng.execute("SELECT refresh_all_materialized_views();")
+        return jsonify({'message': 'Inventory refreshed successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @admin.route('/get-logger-graph-data', methods=['GET'])
