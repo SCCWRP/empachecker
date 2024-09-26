@@ -413,6 +413,7 @@ def download_inventory_data():
             siteid,
             year,
             season,
+            months_with_data,
             data_exists
         FROM
             vw_qa_allsop_combined_final 
