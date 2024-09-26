@@ -21,7 +21,10 @@
 <body>
     <header class="container-fluid mt-4 lightning-header">
         <h2 class="mb-4">EMPA Data Inventory</h2>
+        <p class="text-muted">The General SOPs (2-15) inventory check is updated in real-time.</p>
+        <p class="text-muted">The Logger inventory check is updated nightly.</p>
     </header>
+    
 
     <div id="loader" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999;">
         <div class="spinner-border text-primary" role="status">
@@ -35,12 +38,12 @@
         <ul class="nav nav-tabs" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab" aria-controls="general" aria-selected="true">
-                    General
+                    General SOPs (2-15)
                 </button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="logger-tab" data-bs-toggle="tab" data-bs-target="#logger" type="button" role="tab" aria-controls="logger" aria-selected="false">
-                    Logger
+                    Logger (SOP 1)
                 </button>
             </li>
         </ul>
