@@ -160,6 +160,18 @@ function createTabsAndContent(tabType, items) {
             //buttonContainer.appendChild(refreshButton);
 
             yearCheckboxContainer.appendChild(buttonContainer);
+        } else {
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'mb-3 d-flex align-items-center';
+            buttonContainer.style.gap = '10px';
+
+            const downloadButton = document.createElement('button');
+            downloadButton.innerText = 'Download Inventory Logger Data';
+            downloadButton.className = 'btn btn-primary';
+            downloadButton.onclick = () => downloadInventoryLoggerData();
+
+            buttonContainer.appendChild(downloadButton);
+            yearCheckboxContainer.appendChild(buttonContainer);
         }
 
         // Create the table inside the tab content
@@ -296,7 +308,6 @@ function populateTableBody(type, parameter, tableBody) {
 }
 
 // Event listener to handle clicks on sub-tabs
-// Event listener to handle clicks on sub-tabs
 function setupTabListeners(tabType, items) {
     const subTabsContainer = document.getElementById(`${tabType}SubTabs`);
 
@@ -410,6 +421,10 @@ function downloadInventoryData() {
     window.open('/empachecker/download-inventory-data', '_blank');
 }
 
+function downloadInventoryLoggerData() {
+    window.open('/empachecker/download-inventory-logger-data', '_blank');
+}
+
 // Function to refresh inventory data
 async function refreshInventory() {
     alert('Sending request to refresh inventory data. This may take up to 5 minutes. Please wait until the loader disappears.');
@@ -484,3 +499,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     hideLoader(); 
 
 });
+

@@ -435,6 +435,24 @@ def download_inventory_data():
                      as_attachment=True, 
                      download_name='general_inventory_data.csv')
 
+@admin.route('/download-inventory-logger-data', methods=['GET'])
+def download_inventory_logger_data():
+    eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
+
+    # Query data for the General using Pandas
+    general_query = "SELECT * FROM mvw_qa_raw_logger_combined_final"
+    general_df = pd.read_sql(general_query, con=eng)
+
+    # Convert DataFrame to CSV
+    csv_data = general_df.to_csv(index=False)
+    buffer = io.StringIO(csv_data)
+
+    # Send the CSV file to the user
+    return send_file(io.BytesIO(buffer.getvalue().encode()), 
+                     mimetype='text/csv', 
+                     as_attachment=True, 
+                     download_name='logger_inventory_data.csv')
+
 @admin.route('/refresh-inventory', methods=['POST'])
 def refresh_inventory():
     eng = g.eng

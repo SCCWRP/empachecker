@@ -7,3 +7,69 @@ table td.red-cell {
     background-color: rgb(255, 60, 0) !important;
     color: white !important; /* Ensure the text is visible */
 }
+
+/* Tab hover animation */
+.nav-link {
+    position: relative;
+    display: inline-block;
+    padding: 10px 15px;
+    color: #555; /* Default text color */
+    text-decoration: none;
+    transition: all 0.3s ease; /* Transition effect */
+}
+
+.nav-link:hover {
+    background-color: #f0f0f0; /* Change background on hover */
+    color: #007bff; /* Change text color on hover */
+    transform: translateY(-3px) scale(1.05); /* Slightly move up and scale */
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.15); /* Add a subtle shadow */
+    border-radius: 4px; /* Round the edges */
+}
+
+/* Add a hover underline animation */
+.nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: -3px; /* Position the underline just below the text */
+    left: 50%; /* Start from the center */
+    width: 0; /* Start with no width */
+    height: 2px; 
+    background: #007bff;
+    transition: width 0.3s ease, left 0.3s ease; /* Smooth transition */
+    transform: translateX(-50%); /* Center the underline */
+}
+
+.nav-link:hover::after {
+    width: 100%; /* Full width on hover */
+    left: 50%; /* Keep it centered */
+    transform: translateX(-50%); /* Ensure the underline stays centered */
+}
+
+
+/* Basic styling for the header container */
+.lightning-header {
+    text-align: center; /* Center the text */
+    padding: 20px 0; /* Add padding to the top and bottom */
+    background-color: #f8f9fa; /* Light gray background */
+    border-radius: 8px; /* Slightly rounded corners */
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    margin-bottom: 20px; /* Space below the header */
+}
+
+/* Styling for the header text */
+.lightning-header h2 {
+    color: #007bff; /* Blue color */
+    font-size: 2.5rem; /* Adjust the font size */
+    font-weight: bold; /* Bold text */
+    margin: 0; /* Remove default margins */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font */
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1); /* Subtle text shadow */
+    transition: color 0.3s ease, transform 0.3s ease; /* Smooth transition on hover */
+}
+
+/* Add a hover effect */
+.lightning-header h2:hover {
+    color: #0056b3; /* Darker blue on hover */
+    transform: scale(1.05); /* Slightly enlarge the text */
+}
+
