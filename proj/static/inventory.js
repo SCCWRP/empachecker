@@ -354,8 +354,8 @@ function toggleYearColumns(event) {
     const minYear = inventoryData[tabType].minYear; 
     const maxYear = inventoryData[tabType].maxYear;
 
-    // Calculate the number of columns per year (12 months)
-    const columnsPerYear = 12;
+    // Adjust the number of columns per year based on the tab type
+    const columnsPerYear = tabType === 'general' ? 2 : 12; // 2 columns for general (Spring, Fall), 12 for logger
 
     // Calculate the column index range for the selected year
     const yearIndex = year - minYear; // Calculate the relative index of the year
@@ -388,6 +388,7 @@ function toggleYearColumns(event) {
         }
     }
 }
+
 
 function showLoader() {
     const loader = document.getElementById('loader');
