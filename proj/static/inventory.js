@@ -100,10 +100,10 @@ function createTabsAndContent(tabType, items) {
 
         // Add the legend items
         const legendTexts = [
-            { text: "Legend:", class: 'text-muted' },
-            { text: "'y': data is available", class: 'text-success' },
-            { text: "'n': data is missing", class: 'text-danger' },
-            { text: "'not-assigned': this site was not assigned to collect data", class: 'text-muted' }
+            { text: "Info:", class: 'text-muted' },
+            { text: "Data Available: Can be downloaded using the Advanced Query Tool on empa.sccwrp.org", class: 'text-success' },
+            { text: "Not Submitted: Data are expected for this site, but not submitted yet", class: 'text-danger' },
+            { text: "Not Assigned: Data are not expected for this site", class: 'text-muted' }
         ];
 
         legendTexts.forEach(legend => {
@@ -266,21 +266,21 @@ function populateTableBody(type, parameter, tableBody) {
             if (type === 'general') {
                 // Handle Spring and Fall for general tab
                 const springCell = document.createElement('td');
-                const springValue = yearData['Spring'] || 'n'; // Default to 'n' if not found
+                const springValue = yearData['Spring'] || 'Not Submitted'; // Default to 'Not Submitted' if not found
                 springCell.innerText = springValue;
-                if (springValue === 'y') {
+                if (springValue === 'Data Available') {
                     springCell.classList.add('green-cell');
-                } else if (springValue === 'n') {
+                } else if (springValue === 'Not Submitted') {
                     springCell.classList.add('red-cell');
                 }
                 row.appendChild(springCell);
 
                 const fallCell = document.createElement('td');
-                const fallValue = yearData['Fall'] || 'n'; // Default to 'n' if not found
+                const fallValue = yearData['Fall'] || 'Not Submitted'; // Default to 'Not Submitted' if not found
                 fallCell.innerText = fallValue;
-                if (fallValue === 'y') {
+                if (fallValue === 'Data Available') {
                     fallCell.classList.add('green-cell');
-                } else if (fallValue === 'n') {
+                } else if (fallValue === 'Not Submitted') {
                     fallCell.classList.add('red-cell');
                 }
                 
