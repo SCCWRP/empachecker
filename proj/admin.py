@@ -5,7 +5,7 @@ from flask import Blueprint, g, current_app, render_template, redirect, url_for,
 from io import StringIO
 import psycopg2
 from psycopg2 import sql
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 import io
 
 from .utils.db import metadata_summary
@@ -504,3 +504,119 @@ def get_logger_graph_data():
 
     # Return the graph data as JSON
     return jsonify(graph_data)
+
+
+
+
+@admin.route('/get-sample-data', methods=['GET'])
+def get_sample_data():
+
+    # SOP to table mapping
+    sop_choices = {
+        "sop2": "tbl_waterquality_metadata",
+        "sop3a": "tbl_sedchem_labbatch_data",
+        "sop3b": "tbl_toxicitysummary",
+        "sop4": "tbl_edna_metadata",
+        "sop5": "tbl_sedgrainsize_labbatch_data",
+        "sop6a": "tbl_benthicinfauna_labbatch",
+        "sop6b": "tbl_benthiclarge_metadata",
+        "sop7": "tbl_macroalgae_sample_metadata",
+        "sop8": "tbl_bruv_metadata",
+        "sop8b": "tbl_bruv_data",
+        "sop9": "tbl_fish_sample_metadata",
+        "sop10": "tbl_crabtrap_metadata",
+        "sop11": "tbl_vegetation_sample_metadata",
+        "sop13": "tbl_feldspar_metadata",
+        "sop15": "tbl_trashsiteinfo"
+    }
+
+    def get_date_range(year, season):
+        """Returns the start and end date based on the season and year."""
+        if season == 'Spring':
+            start_date = f"{year}-03-01"
+            end_date = f"{year}-06-30"
+        elif season == 'Fall':
+            start_date = f"{year}-07-01"
+            end_date = f"{int(year) + 1}-02-28"  # Next year's February
+        else:
+            return None, None
+        return start_date, end_date
+
+
+    # Fetch request parameters
+    sop_name = request.args.get('sop')
+    site_id = request.args.get('siteid')
+    year = request.args.get('year')
+    season = request.args.get('season')
+
+    # Get table name based on SOP
+    table_name = sop_choices.get(sop_name)
+    if not table_name:
+        return jsonify({'error': 'Invalid SOP'}), 400
+
+    # Get the date range for the query based on the season
+    start_date, end_date = get_date_range(year, season)
+
+    if not start_date or not end_date:
+        return jsonify({'error': 'Invalid season or year'}), 400
+
+    # Establish database connection
+    eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
+
+    # Query the database for the sample collection date and created date
+    if sop_name == 'sop15':
+        query = f"""
+        SELECT sampledate, created_date
+        FROM {table_name}
+        WHERE siteid = :site_id
+        AND sampledate >= :start_date
+        AND sampledate <= :end_date
+        ORDER BY sampledate;
+        """
+    else:
+        query = f"""
+        SELECT samplecollectiondate, created_date
+        FROM {table_name}
+        WHERE siteid = :site_id
+        AND samplecollectiondate >= :start_date
+        AND samplecollectiondate <= :end_date
+        ORDER BY samplecollectiondate;
+        """
+
+    try:
+        # Execute the query and fetch all results
+        with eng.connect() as connection:
+            result = connection.execute(text(query), {
+                'site_id': site_id,
+                'start_date': start_date,
+                'end_date': end_date
+            }).fetchall()
+
+        # If data is found, process and join the dates
+        if result:
+            # Extract and sort the samplecollectiondate and created_date
+            if sop_name != 'sop15':
+                samplecollectiondates = sorted(set(
+                    row['samplecollectiondate'].strftime('%Y-%m-%d') for row in result if row['samplecollectiondate']
+                ))
+            else:
+                samplecollectiondates = sorted(set(
+                    row['sampledate'].strftime('%Y-%m-%d') for row in result if row['sampledate']
+                ))
+            created_dates = sorted(set(
+                row['created_date'].strftime('%Y-%m-%d') for row in result if row['created_date']
+            ))
+            
+            # Join the sorted dates into a comma-separated string
+            return jsonify({
+                'samplecollectiondate': ', '.join(samplecollectiondates) if samplecollectiondates else 'N/A',
+                'created_date': ', '.join(created_dates) if created_dates else 'N/A'
+            })
+        else:
+            return jsonify({'samplecollectiondate': 'N/A', 'created_date': 'N/A'})
+
+
+    except Exception as e:
+        print(e)
+        return jsonify({'error': str(e)}), 500
+    

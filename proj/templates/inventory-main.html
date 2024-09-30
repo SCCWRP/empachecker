@@ -23,6 +23,7 @@
         <h2 class="mb-4">EMPA Data Inventory</h2>
         <p class="text-muted">The General SOPs (2-15) inventory check is updated in real-time.</p>
         <p class="text-muted">The Logger inventory check is updated nightly.</p>
+        <p class="text-muted">Hover on 'Data Available' cells to check details.</p>
     </header>
     
 
@@ -72,16 +73,22 @@
         </div>
     </main>
 
+
     <!-- Modal for additional information -->
     <div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="infoModalLabel">Logger Data</h5>
+                    <h5 class="modal-title" id="infoModalLabel">Cell Information</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <canvas id="loggerChart"></canvas> <!-- Canvas for Chart.js -->
+                    <p><strong>SOP:</strong> <span id="modalSop"></span></p>
+                    <p><strong>Site ID:</strong> <span id="modalSiteId"></span></p>
+                    <p><strong>Season:</strong> <span id="modalSeason"></span></p>
+                    <p><strong>Year:</strong> <span id="modalYear"></span></p>
+                    <p><strong>Sample Collection Date:</strong> <span id="modalSampleCollectionDate">Loading...</span></p>
+                    <p><strong>Submitted Date:</strong> <span id="modalCreatedDate">Loading...</span></p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -89,6 +96,7 @@
             </div>
         </div>
     </div>
+
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" defer></script>

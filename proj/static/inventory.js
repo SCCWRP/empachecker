@@ -266,38 +266,36 @@ function populateTableBody(type, parameter, tableBody) {
 
             if (type === 'general') {
                 // Handle Spring and Fall for general tab
-                const springCell = document.createElement('td');
-                const springValue = yearData['Spring'] || 'Not Submitted'; // Default to 'Not Submitted' if not found
-                springCell.innerText = springValue;
-                if (springValue === 'Data Available') {
-                    springCell.classList.add('green-cell');
-                } else if (springValue === 'Not Submitted') {
-                    springCell.classList.add('red-cell');
-                }
-                row.appendChild(springCell);
+                const seasons = ['Spring', 'Fall'];
+                seasons.forEach(season => {
+                    const cell = document.createElement('td');
+                    const cellValue = yearData[season] || 'Not Submitted'; // Default to 'Not Submitted' if not found
+                    cell.innerText = cellValue;
 
-                const fallCell = document.createElement('td');
-                const fallValue = yearData['Fall'] || 'Not Submitted'; // Default to 'Not Submitted' if not found
-                fallCell.innerText = fallValue;
-                if (fallValue === 'Data Available') {
-                    fallCell.classList.add('green-cell');
-                } else if (fallValue === 'Not Submitted') {
-                    fallCell.classList.add('red-cell');
-                }
-                
-                row.appendChild(fallCell);
+                    // Add CSS classes based on value
+                    if (cellValue === 'Data Available') {
+                        cell.classList.add('green-cell');
+                        // Attach click listener to open modal
+                        cell.addEventListener('click', () => showCellInfoModal(type, parameter, siteID, year, season, cellValue));
+                    } else if (cellValue === 'Not Submitted') {
+                        cell.classList.add('red-cell');
+                    }
+                    row.appendChild(cell);
+                });
             } else {
                 // For logger, iterate through 12 months
                 for (let month = 1; month <= 12; month++) {
                     const cell = document.createElement('td');
                     const cellValue = yearData[month.toString()] || 'n'; // Default to 'n' if not found
-
                     cell.innerText = cellValue;
 
                     // Add the green-cell class if the cell value is 'y'
                     if (cellValue === 'y') {
                         cell.classList.add('green-cell');
                     } 
+
+                    // // Attach click listener to open modal
+                    // cell.addEventListener('click', () => showCellInfoModal(type, parameter, siteID, year, `Month ${month}`, cellValue));
 
                     row.appendChild(cell);
                 }
@@ -307,6 +305,37 @@ function populateTableBody(type, parameter, tableBody) {
         tableBody.appendChild(row);
     });
 }
+
+// When a cell is clicked, get the value (e.g., 'sop2', 'sop6b') and send it to the Flask route
+function showCellInfoModal(type, parameter, siteID, year, season, cellValue) {
+
+    const sopValue = sopNameMapping[parameter];  // Send the value instead of the descriptive name
+
+    // Update the modal with basic information
+    document.getElementById('modalSop').innerText = parameter;
+    document.getElementById('modalSiteId').innerText = siteID;
+    document.getElementById('modalSeason').innerText = season;
+    document.getElementById('modalYear').innerText = year;
+    
+    // Call to Flask route to fetch additional data
+    fetch(`/empachecker/get-sample-data?sop=${encodeURIComponent(parameter)}&siteid=${encodeURIComponent(siteID)}&year=${encodeURIComponent(year)}&season=${encodeURIComponent(season)}`)
+        .then(response => response.json())
+        .then(data => {
+            // Populate the modal with additional data from Flask
+            document.getElementById('modalSampleCollectionDate').innerText = data.samplecollectiondate || 'N/A';
+            document.getElementById('modalCreatedDate').innerText = data.created_date || 'N/A';
+        })
+        .catch(error => {
+            console.error('Error fetching sample data:', error);
+            document.getElementById('modalSampleCollectionDate').innerText = 'Error fetching data';
+            document.getElementById('modalCreatedDate').innerText = 'Error fetching data';
+        });
+
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('infoModal'));
+    modal.show();
+}
+
 
 // Event listener to handle clicks on sub-tabs
 function setupTabListeners(tabType, items) {

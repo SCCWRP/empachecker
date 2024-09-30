@@ -73,3 +73,28 @@ table td.red-cell {
     transform: scale(1.05); /* Slightly enlarge the text */
 }
 
+
+
+/* Ensure modal is vertically and horizontally centered */
+.modal-dialog {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh; /* Full height to center the modal */
+    margin: 0;
+}
+
+.modal-content {
+    margin: auto;
+}
+
+/* Hover effect for table cells */
+table td.green-cell {
+    transition: background-color 0.3s ease, color 0.3s ease;
+    cursor: pointer; /* Change cursor to pointer when hovering over green cells */
+}
+
+table td.green-cell:hover {
+    background-color: #f0f8ff; /* Light blue background on hover */
+    color: #000; /* Optional: Change text color on hover */
+}
