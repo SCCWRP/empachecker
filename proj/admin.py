@@ -435,6 +435,63 @@ def download_inventory_data():
                      as_attachment=True, 
                      download_name='general_inventory_data.csv')
 
+@admin.route('/download-inventory-data-grouped-site', methods=['GET'])
+def download_inventory_data_grouped_site():
+    eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
+
+    # Query data for the General using Pandas
+    general_query = """
+        SELECT DISTINCT
+            siteid,
+            season,
+            YEAR,
+            sop,
+            data_exists 
+        FROM
+            vw_qa_allsop_combined_final 
+        ORDER BY
+            siteid,
+            season,
+            YEAR,
+            sop;
+    """
+    general_df = pd.read_sql(general_query, con=eng)
+
+    # Create an Excel writer object and write the DataFrame to Excel
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        general_df.to_excel(writer, index=False, sheet_name='General Inventory Data')
+
+        # Get the xlsxwriter workbook and worksheet objects
+        workbook  = writer.book
+        worksheet = writer.sheets['General Inventory Data']
+
+        # Define formats for highlighting
+        red_format = workbook.add_format({'bg_color': '#FFC7CE', 'font_color': '#9C0006'})
+        green_format = workbook.add_format({'bg_color': '#C6EFCE', 'font_color': '#006100'})
+
+        # Apply conditional formatting
+        worksheet.conditional_format('E2:E{}'.format(len(general_df) + 1), 
+                                     {'type': 'text',
+                                      'criteria': 'containing',
+                                      'value': 'Not Submitted',
+                                      'format': red_format})
+
+        worksheet.conditional_format('E2:E{}'.format(len(general_df) + 1), 
+                                     {'type': 'text',
+                                      'criteria': 'containing',
+                                      'value': 'Data Available',
+                                      'format': green_format})
+
+    # Rewind the buffer
+    output.seek(0)
+
+    # Send the Excel file to the user
+    return send_file(output, 
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 
+                     as_attachment=True, 
+                     download_name='general_inventory_data.xlsx')
+
 @admin.route('/download-inventory-logger-data', methods=['GET'])
 def download_inventory_logger_data():
     eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))

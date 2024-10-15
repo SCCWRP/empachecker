@@ -152,12 +152,18 @@ function createTabsAndContent(tabType, items) {
             downloadButton.className = 'btn btn-primary';
             downloadButton.onclick = () => downloadInventoryData(); 
 
+            const downloadGroupedButton = document.createElement('button');
+            downloadGroupedButton.innerText = 'Download Inventory Data Grouped By Site';
+            downloadGroupedButton.className = 'btn btn-primary';
+            downloadGroupedButton.onclick = () => downloadInventoryDataGroupedBySite();
+
             const refreshButton = document.createElement('button');
             refreshButton.innerText = 'Refresh Inventory';
             refreshButton.className = 'btn btn-secondary';
             refreshButton.onclick = () => refreshInventory();
 
             buttonContainer.appendChild(downloadButton);
+            buttonContainer.appendChild(downloadGroupedButton);
             //buttonContainer.appendChild(refreshButton);
 
             yearCheckboxContainer.appendChild(buttonContainer);
@@ -449,6 +455,10 @@ function hideLoader() {
 // Function to download the original general_df
 function downloadInventoryData() {
     window.open('/empachecker/download-inventory-data', '_blank');
+}
+
+function downloadInventoryDataGroupedBySite() {
+    window.open('/empachecker/download-inventory-data-grouped-site', '_blank');
 }
 
 function downloadInventoryLoggerData() {
