@@ -457,6 +457,33 @@ def download_inventory_data_grouped_site():
     """
     general_df = pd.read_sql(general_query, con=eng)
 
+    sop_name_mapping = {
+        "2": "SOP 2: Discrete environmental monitoring - point water quality measurements",
+        "3a": "SOP 3: Sediment chemistry",
+        "3b": "SOP 3: Sediment toxicity",
+        "4": "SOP 4: eDNA - field",
+        "5": "SOP 5: Sediment grain size analysis",
+        "6a": "SOP 6: Benthic infauna, small",
+        "6b": "SOP 6: Benthic infauna, large",
+        "7": "SOP 7: Macroalgae",
+        "8": "SOP 8: Fish - BRUVs - Field",
+        "8b": "SOP 8: Fish - BRUVs - Lab",
+        "9": "SOP 9: Fish seines",
+        "10": "SOP 10: Crab traps",
+        "11": "SOP 11: Marsh plain vegetation and epifauna surveys",
+        "13": "SOP 13: Sediment accretion rates",
+        "15": "SOP 15: Trash monitoring"
+    }
+
+    general_df['sop_name'] = general_df['sop'].map(sop_name_mapping)
+
+    # Extract the SOP number for proper sorting
+    general_df['sop_number'] = general_df['sop_name'].str.extract(r'SOP (\d+)', expand=False).astype(float)
+
+    # Sort by 'siteid', 'season', 'year', and then by 'sop_number'
+    general_df = general_df.sort_values(by=['siteid', 'season', 'year', 'sop_number']).drop(columns=['sop_number'])
+    general_df = general_df[['siteid', 'season', 'year', 'sop_name', 'data_exists']]
+
     # Create an Excel writer object and write the DataFrame to Excel
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
