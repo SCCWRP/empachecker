@@ -363,7 +363,7 @@ def get_inventory_data():
         sop = f'sop{row["sop"]}'
         siteid = row['siteid']
         year = str(row['year'])
-        season = row['season']  # Now using 'season' instead of 'month'
+        season = row['season']
         data_exists = row['data_exists']
 
         if sop not in inventory_data['general']['data']:
@@ -458,6 +458,7 @@ def download_inventory_data_grouped_site():
     general_df = pd.read_sql(general_query, con=eng)
 
     sop_name_mapping = {
+        "field": "Field Grab",
         "2": "SOP 2: Discrete environmental monitoring - point water quality measurements",
         "3a": "SOP 3: Sediment chemistry",
         "3b": "SOP 3: Sediment toxicity",

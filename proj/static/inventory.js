@@ -1,5 +1,6 @@
 // Define the SOPs and Logger parameters
 const sopNameMapping = {
+    "Field Grab": "sopfield",
     "SOP 2: Discrete environmental monitoring - point water quality measurements": "sop2",
     "SOP 3: Sediment chemistry": "sop3a",
     "SOP 3: Sediment toxicity": "sop3b",
@@ -96,23 +97,52 @@ function createTabsAndContent(tabType, items) {
 
         // Create the legend container
         const legendContainer = document.createElement('div');
-        legendContainer.className = 'mb-3 d-flex align-items-center'; // Use flexbox for horizontal alignment
-        legendContainer.style.gap = '10px'; // Add some spacing between legend items
+        legendContainer.className = 'mb-3'; // Main container
 
-        // Add the legend items
-        const legendTexts = [
+        // Container for inline legend items (Info, Data Available, Not Submitted, Not Assigned)
+        const inlineLegendContainer = document.createElement('div');
+        inlineLegendContainer.className = 'd-flex align-items-center'; // Flex container for horizontal alignment
+        inlineLegendContainer.style.gap = '10px'; // Add some spacing between legend items
+
+        // Add the first four legend items (in the same line)
+        const inlineLegendTexts = [
             { text: "Info:", class: 'text-muted' },
             { text: "Data Available: Can be downloaded using the Advanced Query Tool on empa.sccwrp.org", class: 'text-success' },
             { text: "Not Submitted: Data are expected for this site, but not submitted yet", class: 'text-danger' },
             { text: "Not Assigned: Data are not expected for this site", class: 'text-muted' }
         ];
 
-        legendTexts.forEach(legend => {
-            const legendItem = document.createElement('span'); // Use span instead of p for inline display
+        inlineLegendTexts.forEach(legend => {
+            const legendItem = document.createElement('span'); // Use span for inline items
             legendItem.innerText = legend.text;
             legendItem.className = legend.class;
-            legendContainer.appendChild(legendItem);
+            inlineLegendContainer.appendChild(legendItem);
         });
+
+        // Add inline legend container to the main legend container
+        legendContainer.appendChild(inlineLegendContainer);
+
+        // Container for months (both on the same line)
+        const monthsLegendContainer = document.createElement('div');
+        monthsLegendContainer.className = 'd-flex align-items-center'; // Flex container for horizontal alignment
+        monthsLegendContainer.style.gap = '10px'; // Add some spacing between legend items
+
+        // Add the months (on the same line)
+        const monthsLegendTexts = [
+            { text: "Months for Fall: 7,8,9,10,11,12,1 (following year), 2(following year)", class: '' },
+            { text: "Months for Spring: 3,4,5,6", class: '' }
+        ];
+
+        monthsLegendTexts.forEach(legend => {
+            const legendItem = document.createElement('span'); // Use span for inline items
+            legendItem.innerText = legend.text;
+            legendItem.className = legend.class;
+            monthsLegendContainer.appendChild(legendItem);
+        });
+
+        // Add the months container to the main legend container
+        legendContainer.appendChild(monthsLegendContainer);
+
 
         // Create a checkbox container for year selection
         const yearCheckboxContainer = document.createElement('div');
@@ -275,15 +305,15 @@ function populateTableBody(type, parameter, tableBody) {
                 const seasons = ['Spring', 'Fall'];
                 seasons.forEach(season => {
                     const cell = document.createElement('td');
-                    const cellValue = yearData[season] || 'Not Submitted'; // Default to 'Not Submitted' if not found
+                    const cellValue = yearData[season] || 'Not Assigned'; // Default to 'Not Submitted' if not found
                     cell.innerText = cellValue;
 
                     // Add CSS classes based on value
-                    if (cellValue === 'Data Available') {
+                    if (cellValue.includes('Data Available')) {
                         cell.classList.add('green-cell');
                         // Attach click listener to open modal
                         cell.addEventListener('click', () => showCellInfoModal(type, parameter, siteID, year, season, cellValue));
-                    } else if (cellValue === 'Not Submitted') {
+                    } else if (cellValue.includes('Not Submitted')) {
                         cell.classList.add('red-cell');
                     }
                     row.appendChild(cell);
@@ -532,7 +562,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         setupTabListeners('logger', loggerParameters);
 
         // Automatically trigger the first tab's click event to populate it on page load
-        document.getElementById('sop2-tab').click();
+        document.getElementById('sopfield-tab').click();
         document.getElementById('raw_chlorophyll-tab').click();
     }
     
