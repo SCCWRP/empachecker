@@ -598,6 +598,7 @@ def get_sample_data():
 
     # SOP to table mapping
     sop_choices = {
+        "sopfield": "tbl_grabevent",
         "sop2": "tbl_waterquality_metadata",
         "sop3a": "tbl_sedchem_labbatch_data",
         "sop3b": "tbl_toxicitysummary",
