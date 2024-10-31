@@ -6,7 +6,7 @@
         "version": "1.0.0"
     },
     "paths": {
-        "/checker/getloggerdata": {
+        "/empachecker/getloggerdata": {
             "post": {
                 "summary": "Please click on Schema next to Example Value to see which format the API expects",
                 "tags": [

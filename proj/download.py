@@ -10,6 +10,8 @@ import pandas as pd
 from pathlib import Path
 import json
 from dateutil.relativedelta import relativedelta
+import re
+
 
 from openpyxl import load_workbook
 from openpyxl.worksheet.table import Table, TableStyleInfo
@@ -363,12 +365,10 @@ def repopulate_dropdown():
     return jsonify(projectid=projectid, estuaryname=estuaryname, sensortype=sensortype)
 
 
-@download.route('/getloggerdata', strict_slashes=False, methods = ['POST'])
+@download.route('/getloggerdata', strict_slashes=False, methods = ['GET','POST'])
 def get_logger_data():
-    import pandas as pd
-    import re
     
-    eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
+    eng = g.eng
     payload = request.json
 
     # Prevent SQL Injection
@@ -407,72 +407,6 @@ def get_logger_data():
 
     print(projectid, siteid, estuaryname, sensortype)
 
-    colnames = [
-        x 
-        for x in  
-        pd.read_sql(
-            f"""
-                SELECT 
-                    column_name 
-                FROM 
-                    INFORMATION_SCHEMA.columns 
-                WHERE 
-                    table_name = '{base_table}'
-            """, g.eng
-        ).column_name.tolist()
-        if x not in current_app.system_fields
-    ]
- 
-
-    # Initialize an empty list to store the tuples
-    date_list = []
-
-    # Set the initial date to the start date
-    current_date = start_date
-
-    # Iterate through each month between start and end date
-    while current_date <= end_date:
-        # Extract year and month from the current date
-        year = current_date.year
-        month = current_date.month
-        
-        # Append the year and month tuple to the list
-        date_list.append((year, month))
-        
-        # Move to the next month
-        if current_date.month == 12:
-            current_date = current_date.replace(year=current_date.year + 1, month=1)
-        else:
-            current_date = current_date.replace(month=current_date.month + 1)
-    
-    combined_table_str = "("
-    combined_table_str += " UNION ALL ".join(
-        [
-            """
-                SELECT 
-                    {}
-                FROM 
-                    {}_{} 
-                WHERE 
-                    {} >= '{}' 
-                    AND {} <= '{}'
-            """.format(
-                ",".join(colnames),
-                base_table,
-                "m".join([str(yr_qt_tup[0]),str(yr_qt_tup[1])]),
-                datetime_colname,
-                start_date,
-                datetime_colname,
-                end_date
-            )
-            
-            for yr_qt_tup in 
-                date_list
-        ]
-    )
-
-    combined_table_str += ") AS t"
-
     sql = f"""
         SELECT 
             raw_dat.objectid,
@@ -489,50 +423,73 @@ def get_logger_data():
             raw_dat.organization,
             raw_dat.raw_depth,
             raw_dat.raw_depth_unit,
-            raw_dat.raw_depth_qcflag_human,
+            CASE WHEN raw_dat.raw_depth_qcflag_human IS NULL
+                THEN raw_dat.raw_depth_qcflag_robot 
+                ELSE raw_dat.raw_depth_qcflag_human 
+            END AS raw_depth_qcflag_final,
             raw_dat.raw_pressure,
             raw_dat.raw_pressure_unit,
-            raw_dat.raw_pressure_qcflag_human,
+            CASE WHEN raw_dat.raw_pressure_qcflag_human IS NULL
+                THEN raw_dat.raw_pressure_qcflag_robot 
+                ELSE raw_dat.raw_pressure_qcflag_human 
+            END AS raw_pressure_qcflag_final,
             raw_dat.raw_h2otemp,
             raw_dat.raw_h2otemp_unit,
-            raw_dat.raw_h2otemp_qcflag_human,
+            CASE WHEN raw_dat.raw_h2otemp_qcflag_human IS NULL
+                THEN raw_dat.raw_h2otemp_qcflag_robot 
+                ELSE raw_dat.raw_h2otemp_qcflag_human 
+            END AS raw_h2otemp_qcflag_final,
             raw_dat.raw_ph,
-            raw_dat.raw_ph_qcflag_human,
+            CASE WHEN raw_dat.raw_ph_qcflag_human IS NULL
+                THEN raw_dat.raw_ph_qcflag_robot 
+                ELSE raw_dat.raw_ph_qcflag_human 
+            END AS raw_ph_qcflag_final,
             raw_dat.raw_conductivity,
             raw_dat.raw_conductivity_unit,
-            raw_dat.raw_conductivity_qcflag_human,
+            CASE WHEN raw_dat.raw_conductivity_qcflag_human IS NULL
+                THEN raw_dat.raw_conductivity_qcflag_robot 
+                ELSE raw_dat.raw_conductivity_qcflag_human 
+            END AS raw_conductivity_qcflag_final,
             raw_dat.raw_turbidity,
             raw_dat.raw_turbidity_unit,
-            raw_dat.raw_turbidity_qcflag_human,
+            CASE WHEN raw_dat.raw_turbidity_qcflag_human IS NULL
+                THEN raw_dat.raw_turbidity_qcflag_robot 
+                ELSE raw_dat.raw_turbidity_qcflag_human 
+            END AS raw_turbidity_qcflag_final,
             raw_dat.raw_do,
             raw_dat.raw_do_unit,
-            raw_dat.raw_do_qcflag_human,
+            CASE WHEN raw_dat.raw_do_qcflag_human IS NULL
+                THEN raw_dat.raw_do_qcflag_robot 
+                ELSE raw_dat.raw_do_qcflag_human 
+            END AS raw_do_qcflag_final,
             raw_dat.raw_do_pct,
-            raw_dat.raw_do_pct_qcflag_human,
+            CASE WHEN raw_dat.raw_do_pct_qcflag_human IS NULL
+                THEN raw_dat.raw_do_pct_qcflag_robot 
+                ELSE raw_dat.raw_do_pct_qcflag_human 
+            END AS raw_do_pct_qcflag_final,
             raw_dat.raw_salinity,
             raw_dat.raw_salinity_unit,
-            raw_dat.raw_salinity_qcflag_human,
+            CASE WHEN raw_dat.raw_salinity_qcflag_human IS NULL
+                THEN raw_dat.raw_salinity_qcflag_robot 
+                ELSE raw_dat.raw_salinity_qcflag_human 
+            END AS raw_salinity_qcflag_final,
             raw_dat.raw_chlorophyll,
             raw_dat.raw_chlorophyll_unit,
-            raw_dat.raw_chlorophyll_qcflag_human,
+            CASE WHEN raw_dat.raw_chlorophyll_qcflag_human IS NULL 
+                THEN raw_dat.raw_chlorophyll_qcflag_robot 
+                ELSE raw_dat.raw_chlorophyll_qcflag_human 
+            END AS raw_chlorophyll_qcflag_final,
             raw_dat.raw_orp,
             raw_dat.raw_orp_unit,
-            raw_dat.raw_orp_qcflag_human,
+            CASE WHEN raw_dat.raw_orp_qcflag_human IS NULL
+                THEN raw_dat.raw_orp_qcflag_robot 
+                ELSE raw_dat.raw_orp_qcflag_human 
+            END AS raw_orp_qcflag_final,
             raw_dat.raw_qvalue,
-            raw_dat.raw_qvalue_qcflag_human,
-            raw_dat.samplecollectiontimestamp_utc,
-            raw_dat.raw_depth_qcflag_robot,
-            raw_dat.raw_pressure_qcflag_robot,
-            raw_dat.raw_h2otemp_qcflag_robot,
-            raw_dat.raw_ph_qcflag_robot,
-            raw_dat.raw_conductivity_qcflag_robot,
-            raw_dat.raw_turbidity_qcflag_robot,
-            raw_dat.raw_do_qcflag_robot,
-            raw_dat.raw_salinity_qcflag_robot,
-            raw_dat.raw_chlorophyll_qcflag_robot,
-            raw_dat.raw_orp_qcflag_robot,
-            raw_dat.raw_qvalue_qcflag_robot,
-            raw_dat.raw_do_pct_qcflag_robot,
+            CASE WHEN raw_dat.raw_qvalue_qcflag_human IS NULL 
+                THEN raw_dat.raw_qvalue_qcflag_robot 
+                ELSE raw_dat.raw_qvalue_qcflag_human 
+            END AS raw_qvalue_qcflag_final,
             raw_dat.qaqc_comment,
             meta.samplecollectiontimestampstart,
             meta.samplecollectiontimestampend,
@@ -551,10 +508,7 @@ def get_logger_data():
             meta.elevation_ellipsoid,
             meta.elevation_orthometric,
             meta.elevation_datum,
-            meta.elevation_reading_location,
-            meta.depth_correction_flag,
-            meta.depth_correction_comments,
-            meta.analysis_flag
+            meta.elevation_reading_location
         FROM {base_table} raw_dat
         LEFT JOIN tbl_wq_logger_metadata meta
         ON raw_dat.projectid = meta.projectid
@@ -565,7 +519,9 @@ def get_logger_data():
         AND raw_dat.sensorid = meta.sensorid
         WHERE raw_dat.{datetime_colname} >= '{start_date}' 
         AND raw_dat.{datetime_colname} <= '{end_date}'
-        
+        AND meta.samplecollectiontimestampstart >= '{start_date}'
+        AND meta.samplecollectiontimestampend <= '{end_date}'
+
     """
 
     conditions = []
@@ -581,7 +537,7 @@ def get_logger_data():
         sql += " AND " + " AND ".join(conditions)
 
     
-    print("sql")
+    print("this is the sql")
     print(sql)
     
     sessionid = int(time.time())
@@ -591,7 +547,7 @@ def get_logger_data():
     
     cmdlist = [
         'psql', 
-        os.environ.get('DB_CONNECTION_STRING'),
+        os.environ.get('DB_CONNECTION_STRING_READONLY'),
         '-c', 
         f"\COPY ({sql}) TO \'{csv_path}\' CSV HEADER"
     ]
