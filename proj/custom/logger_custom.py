@@ -92,30 +92,58 @@ def logger_raw(all_dfs):
     # ######################################################################################################################
     logger = logger.sort_values(by=['samplecollectiontimestamp'])
     
+    # print("# CHECK - 0")
+    # logger_meta_dat = pd.read_sql("SELECT * FROM tbl_wq_logger_metadata", g.eng)
+    # loggerraw_pkey = get_primary_key('tbl_wq_logger_raw', g.eng)
+    # loggermeta_pkey = get_primary_key('tbl_wq_logger_metadata', g.eng)
+
+    # raw_meta_shared_key = [x for x in loggerraw_pkey if x in loggermeta_pkey]
+
+    # # Description: Each raw data must correspond to metadata in database
+    # # Created Coder: Duy Nguyen
+    # # Created Date: 7/31/2024
+    # # Last Edited Date: 11/1/2024
+    # # Last Edited Coder: Duy Nguyen
+    # NOTE: This check is not necessary because below check will catch it
+    # args.update({
+    #     "dataframe": logger,
+    #     "tablename": "tbl_wq_logger_raw",
+    #     "badrows": mismatch(logger, logger_meta_dat, raw_meta_shared_key), 
+    #     "badcolumn": ','.join(raw_meta_shared_key),
+    #     "error_type": "Logic Error",
+    #     "error_message": 
+    #         "Each record in tbl_wq_logger_raw must have a corresponding metadata. You must submit the metadata before the raw data."
+    # })
+    # errs = [*errs, checkData(**args)]
+    # print("check ran - loggerraw - 0")
+
     print("# CHECK - 0")
-    logger_meta_dat = pd.read_sql("SELECT * FROM tbl_wq_logger_metadata", g.eng)
-    loggerraw_pkey = get_primary_key('tbl_wq_logger_raw', g.eng)
-    loggermeta_pkey = get_primary_key('tbl_wq_logger_metadata', g.eng)
-
-    raw_meta_shared_key = [x for x in loggerraw_pkey if x in loggermeta_pkey]
-
-    # Description: Each raw data must correspond to metadata in database
+     # Description: All info in logger must match the login info
     # Created Coder: Duy Nguyen
-    # Created Date: 7/31/2024
+    # Created Date: 11/1/2024 
     # Last Edited Date:
     # Last Edited Coder:
+    projectid = session.get('login_info').get('login_project')
+    siteid = session.get('login_info').get('login_siteid')
+    stationno = session.get('login_info').get('login_stationno')
+    sensorid = session.get('login_info').get('login_sensorid')
+    sensortype = session.get('login_info').get('login_sensortype')
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
-        "badrows": mismatch(logger, logger_meta_dat, raw_meta_shared_key), 
-        "badcolumn": ','.join(raw_meta_shared_key),
+        "badrows": logger[
+            (logger['projectid'] != projectid) |
+            (logger['siteid'] != siteid) |
+            (logger['stationno'] != stationno) |
+            (logger['sensorid'] != sensorid) |
+            (logger['sensortype'] != sensortype)
+        ].tmp_row.tolist(),
+        "badcolumn": "projectid,siteid,stationno,sensorid,sensortype",
         "error_type": "Logic Error",
-        "error_message": 
-            "Each record in tbl_wq_logger_raw must have a corresponding metadata. You must submit the metadata before the raw data."
+        "error_message": "All info in logger must match the login info"
     })
     errs = [*errs, checkData(**args)]
     print("check ran - loggerraw - 0")
-
 
     print("# CHECK - 1")
     # Description: The range of datetime in the submitted file needs to be within the selected [begin_date, end_date] on the login form
@@ -123,6 +151,8 @@ def logger_raw(all_dfs):
     # Created Date: 7/5/24 
     # Last Edited Date:
     # Last Edited Coder:
+
+
     login_start = pd.Timestamp(session.get('login_info').get('login_start'))
     login_end = pd.Timestamp(session.get('login_info').get('login_end'))
     
