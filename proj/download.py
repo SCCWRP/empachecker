@@ -63,11 +63,17 @@ def template_file():
             return "invalid table name provided in query string argument"
         
         data = read_sql(f"SELECT * FROM {tablename};", eng)
-        data.drop( set(data.columns).intersection(set(current_app.system_fields)), axis = 1, inplace = True )
+        data.drop( 
+            [x for x in list(set(data.columns).intersection(set(current_app.system_fields))) if x != 'objectid'], 
+            axis = 1, 
+            inplace = True 
+        )
 
         datapath = os.path.join(os.getcwd(), "export", "data", f'{tablename}.csv')
 
         search = read_sql(f"SELECT * FROM search;", eng)
+        search.drop(['objectid'], axis = 1, inplace = True)
+
 
         data = data.merge(
             search,
