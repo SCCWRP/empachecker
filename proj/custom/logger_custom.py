@@ -128,15 +128,18 @@ def logger_raw(all_dfs):
     stationno = session.get('login_info').get('login_stationno')
     sensorid = session.get('login_info').get('login_sensorid')
     sensortype = session.get('login_info').get('login_sensortype')
+    print("projectid,siteid,stationno,sensorid,sensortype")
+    print(projectid,siteid,stationno,sensorid,sensortype)
+
     args.update({
         "dataframe": logger,
         "tablename": "tbl_wq_logger_raw",
         "badrows": logger[
-            (logger['projectid'] != projectid) |
-            (logger['siteid'] != siteid) |
-            (logger['stationno'] != stationno) |
-            (logger['sensorid'] != sensorid) |
-            (logger['sensortype'] != sensortype)
+            (logger['projectid'].astype(str) != str(projectid)) |
+            (logger['siteid'].astype(str) != str(siteid)) |
+            (logger['stationno'].astype(str) != str(stationno)) |
+            (logger['sensorid'].astype(str) != str(sensorid)) |
+            (logger['sensortype'].astype(str) != str(sensortype))
         ].tmp_row.tolist(),
         "badcolumn": "projectid,siteid,stationno,sensorid,sensortype",
         "error_type": "Logic Error",
