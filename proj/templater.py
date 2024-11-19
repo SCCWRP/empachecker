@@ -5,6 +5,15 @@ from itertools import chain
 
 from .core.functions import get_primary_key
 
+
+def clean_data(value):
+    if pd.isnull(value):  # Handle NaN
+        return ""
+    value = str(value)
+    if value.startswith("="):  # Prevent formula interpretation
+        return "'" + value
+    return value
+
 # dynamic lookup lists to template
 templater = Blueprint('templater', __name__)
 @templater.route('/templater', methods = ['GET', 'POST'])
@@ -141,7 +150,9 @@ def template():
             'glossary': glossary
         },
         **{
-            lu_name: pd.read_sql(f"SELECT * from {lu_name}", eng).drop(columns=['objectid'], errors='ignore')
+            lu_name: pd.read_sql(f"SELECT * from {lu_name}", eng)
+            .drop(columns=['objectid'], errors='ignore')
+            .applymap(clean_data)  # Apply cleaning to each cell
             for lu_name in associated_lookup_lists
         }
     }
