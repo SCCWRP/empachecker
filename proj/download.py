@@ -525,8 +525,6 @@ def get_logger_data():
         AND raw_dat.sensorid = meta.sensorid
         WHERE raw_dat.{datetime_colname} >= '{start_date}' 
         AND raw_dat.{datetime_colname} <= '{end_date}'
-        AND meta.samplecollectiontimestampstart >= '{start_date}'
-        AND meta.samplecollectiontimestampend <= '{end_date}'
 
     """
 
