@@ -269,7 +269,8 @@ def adminauth():
         session['AUTHORIZED_FOR_ADMIN_FUNCTIONS'] = True
     else:
         session['AUTHORIZED_FOR_ADMIN_FUNCTIONS'] = False
-    
+    print("session['AUTHORIZED_FOR_ADMIN_FUNCTIONS']")
+    print(session.get("AUTHORIZED_FOR_ADMIN_FUNCTIONS"))
     return jsonify(message=str(session.get("AUTHORIZED_FOR_ADMIN_FUNCTIONS")).lower())
 
 
