@@ -86,25 +86,34 @@ def trash(all_dfs):
         print("# END LOGIC CHECK - 2")
 
         print("# LOGIC CHECK - 3")
-        # Description: If trash is 'No' in trashsamplearea, then the corresponding record should have 'None' in trashdebriscategory 
+        # Description: If trash is 'No' in trashsamplearea, then the corresponding record should have 'None' in debriscategory 
         # and 'No Trash Present' in debrisitem in quadrat
         # Created Coder: Duy Nguyen
         # Created Date: 11/22/2024
         # Last Edited Date: 
 
+        # Merge trashsamplearea and trashquadrattally based on shared primary keys
+        merged_sample_quadrat = pd.merge(
+            trashsamplearea,
+            trashquadrattally,
+            on=trashquadrattally_trashsamplearea_shared_pkey,
+            how='left',
+            suffixes=('_sample', '_quadrat')
+        )
+
         errs.append(
             checkData(
                 tablename='tbl_trashsamplearea',
-                badrows=trashsamplearea[
-                    (trashsamplearea['trash'] == 'No') &
+                badrows=merged_sample_quadrat[
+                    (merged_sample_quadrat['trash'] == 'No') &
                     (
-                        (trashquadrattally['trashdebriscategory'] != 'None') |
-                        (trashquadrattally['debrisitem'] != 'No Trash Present')
+                        (merged_sample_quadrat['debriscategory'] != 'None') |
+                        (merged_sample_quadrat['debrisitem'] != 'No Trash Present')
                     )
-                ],
-                badcolumn='trash, trashdebriscategory, debrisitem',
+                ].tmp_row_sample.tolist(),
+                badcolumn='trash',
                 error_type='Logic Error',
-                error_message="If trash is 'No' in trashsamplearea, the corresponding record in quadrat should have 'None' in trashdebriscategory and 'No Trash Present' in debrisitem."
+                error_message="If trash is 'No' in trashsamplearea, the corresponding record in quadrat should have 'None' in debriscategory and 'No Trash Present' in debrisitem."
             )
         )
         print("# END LOGIC CHECK - 3")
@@ -116,7 +125,7 @@ def trash(all_dfs):
         # Created Date: 11/16/2023
         # Last Edited Date: 
 
-        groupby_cols = ['projectid', 'estuaryname', 'sampledate', 'siteid', 'stationno', 'transect']
+        groupby_cols = ['projectid', 'estuaryname', 'samplecollectiondate', 'siteid', 'stationno', 'transect']
         errs.append(
             checkData(
                 tablename='tbl_trashsamplearea',
@@ -139,7 +148,7 @@ def trash(all_dfs):
 
  
     lu_trashplastic= pd.read_sql("SELECT item FROM lu_trashplastic",g.eng).item.tolist()
-    lu_trashnonplastic = pd.read_sql("SELECT coniitemtemstruction FROM lu_trashnonplastic",g.eng).item.tolist()
+    lu_trashnonplastic = pd.read_sql("SELECT item FROM lu_trashnonplastic",g.eng).item.tolist()
 
 
     ######################################################################################################################
@@ -160,15 +169,18 @@ def trash(all_dfs):
             checkData(
                 tablename='tbl_trashquadrattally',
                 badrows=trashquadrattally[
-                    ((trashquadrattally['resulttotal'].isnull()) & (trashquadrattally['debrisitem'] != 'No Trash Present')) |
-                    ((trashquadrattally['debrisitem'] != 'No Trash Present') &
-                    ((trashquadrattally['resulttotaltext'].isnull()) | ~trashquadrattally['resulttotaltext'].isin(['M', 'H'])))
-                ],
+                    (trashquadrattally['debrisitem'] != 'No Trash Present') & (
+                        trashquadrattally['resulttotal'].isnull() | 
+                        (trashquadrattally['resulttotal'].isnull() & trashquadrattally['resulttotaltext'].isnull()) |
+                        (trashquadrattally['resulttotal'].isnull() & ~trashquadrattally['resulttotaltext'].isin(['M', 'H']))
+                    )
+                ].tmp_row.tolist(),
                 badcolumn='resulttotal, debrisitem, resulttotaltext',
                 error_type='Logic Error',
                 error_message="If resulttotal is empty, debrisitem must be 'No Trash Present'. If debrisitem is not 'No Trash Present', resulttotaltext must be 'M' or 'H'."
             )
         )
+
         print("# END LOGIC CHECK - 5")
 
         print("# LOGIC CHECK - 6")
@@ -182,11 +194,11 @@ def trash(all_dfs):
                 tablename='tbl_trashquadrattally',
                 badrows=trashquadrattally[
                     (trashquadrattally['debriscategory'] == 'Plastic') &
-                    ~trashquadrattally['item'].isin(lu_trashplastic)
-                ],
-                badcolumn='debriscategory, item',
+                    ~trashquadrattally['debrisitem'].isin(lu_trashplastic)
+                ].tmp_row.tolist(),
+                badcolumn='debriscategory, debrisitem',
                 error_type='Logic Error',
-                error_message="If debriscategory is 'Plastic', item must be in lu_trashplastic."
+                error_message="If debriscategory is 'Plastic', debrisitem must be in lu_trashplastic."
             )
         )
         print("# END LOGIC CHECK - 6")
@@ -202,11 +214,11 @@ def trash(all_dfs):
                 tablename='tbl_trashquadrattally',
                 badrows=trashquadrattally[
                     (trashquadrattally['debriscategory'] == 'Non-Plastic') &
-                    ~trashquadrattally['item'].isin(lu_trashnonplastic)
-                ],
-                badcolumn='debriscategory, item',
+                    ~trashquadrattally['debrisitem'].isin(lu_trashnonplastic)
+                ].tmp_row.tolist(),
+                badcolumn='debriscategory, debrisitem',
                 error_type='Logic Error',
-                error_message="If debriscategory is 'Non-Plastic', item must be in lu_trashnonplastic."
+                error_message="If debriscategory is 'Non-Plastic', debrisitem must be in lu_trashnonplastic."
             )
         )
         print("# END LOGIC CHECK - 7")
@@ -230,17 +242,19 @@ def trash(all_dfs):
             checkData(
                 tablename='tbl_trashtimesearchtally',
                 badrows=trashtimesearchtally[
-                    ((trashtimesearchtally['resulttotal'].isnull()) & 
-                    (trashtimesearchtally['debrisitem'] != 'No Trash Present')) |
-                    ((trashtimesearchtally['debrisitem'] != 'No Trash Present') &
-                    ((trashtimesearchtally['resulttotaltext'].isnull()) | 
-                    ~trashtimesearchtally['resulttotaltext'].isin(['M', 'H'])))
-                ],
+                    (trashtimesearchtally['debrisitem'] != 'No Trash Present') & (
+                        trashtimesearchtally['resulttotal'].isnull() & 
+                        (trashtimesearchtally['resulttotaltext'].isnull() | ~trashtimesearchtally['resulttotaltext'].isin(['M', 'H']))
+                    )
+                ].tmp_row.tolist(),
                 badcolumn='resulttotal, debrisitem, resulttotaltext',
                 error_type='Logic Error',
                 error_message="If resulttotal is empty, debrisitem must be 'No Trash Present'. If debrisitem is not 'No Trash Present', resulttotaltext must be 'M' or 'H'."
             )
         )
+
+
+
         print("# END LOGIC CHECK - 8")
 
         print("# LOGIC CHECK - 9")
@@ -254,17 +268,17 @@ def trash(all_dfs):
                 tablename='tbl_trashtimesearchtally',
                 badrows=trashtimesearchtally[
                     (trashtimesearchtally['debriscategory'] == 'Plastic') &
-                    ~trashtimesearchtally['item'].isin(lu_trashplastic)
-                ],
-                badcolumn='debriscategory, item',
+                    ~trashtimesearchtally['debrisitem'].isin(lu_trashplastic)
+                ].tmp_row.tolist(),
+                badcolumn='debriscategory, debrisitem',
                 error_type='Logic Error',
-                error_message="If debriscategory is 'Plastic', item must be in lu_trashplastic."
+                error_message="If debriscategory is 'Plastic', debrisitem must be in lu_trashplastic."
             )
         )
         print("# END LOGIC CHECK - 9")
 
         print("# LOGIC CHECK - 10")
-        # Description: If debriscategory is 'Non-Plastic', then item must be in lu_trashnonplastic.
+        # Description: If debriscategory is 'Non-Plastic', then debrisitem must be in lu_trashnonplastic.
         # Created Coder: Duy Nguyen
         # Created Date: 11/22/2024
         # Last Edited Date: 
@@ -274,11 +288,11 @@ def trash(all_dfs):
                 tablename='tbl_trashtimesearchtally',
                 badrows=trashtimesearchtally[
                     (trashtimesearchtally['debriscategory'] == 'Non-Plastic') &
-                    ~trashtimesearchtally['item'].isin(lu_trashnonplastic)
-                ],
-                badcolumn='debriscategory, item',
+                    ~trashtimesearchtally['debrisitem'].isin(lu_trashnonplastic)
+                ].tmp_row.tolist(),
+                badcolumn='debriscategory, debrisitem',
                 error_type='Logic Error',
-                error_message="If debriscategory is 'Non-Plastic', item must be in lu_trashnonplastic."
+                error_message="If debriscategory is 'Non-Plastic', debrisitem must be in lu_trashnonplastic."
             )
         )
         print("# END LOGIC CHECK - 10")

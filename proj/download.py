@@ -734,7 +734,7 @@ def get_test_data():
     if dataset is None:
         return f"Datatype {dtype} not found in datasets"
 
-    if any(['logger' in dtype, 'trash' in dtype]):
+    if any(['logger' in dtype]):
         return "We won't do it for loggers or trash "
     
     try:
@@ -754,7 +754,8 @@ def get_test_data():
                         df.to_excel(writer, sheet_name=tbl, index=False)
                     else:
                         siteid = siteid_df.iloc[0, 0]
-                        df = pd.read_sql(f"SELECT * FROM {tbl} WHERE siteid = '{siteid}'", eng)
+                        #df = pd.read_sql(f"SELECT * FROM {tbl} WHERE siteid = '{siteid}'", eng)
+                        df = pd.read_sql(f"SELECT * FROM {tbl}", eng)
                         df.to_excel(writer, sheet_name=tbl, index=False)
 
         data.seek(0)
