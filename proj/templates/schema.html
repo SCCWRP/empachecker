@@ -279,7 +279,7 @@
                                         new_description: newValue.trim()
                                     };
                                     // Make the fetch call to the server
-                                    fetch('/checker/update_column_description', {
+                                    fetch('/empachecker/update_column_description', {
                                         method: 'POST',
                                         headers: {
                                             'Content-Type': 'application/json'
@@ -292,6 +292,7 @@
                                         return response.json();
                                     }).then(data => {
                                         console.log('Updated successfully');
+                                        alert("Description updated successfully!");
                                     }).catch((error) => {
                                         console.error('Error:', error);
                                     });
