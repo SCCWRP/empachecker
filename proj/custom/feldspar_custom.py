@@ -92,7 +92,7 @@ def feldspar(all_dfs):
     # NOTE (9/28/2023): Check was changed so the code now matched the updated check
     # NOTE (10/05/2023): Aria revised the error message
     # NOTE (2/15/2024): Added var to flag if there are mismatched rows (missing_feld_data) to be used in check 3
-
+    
     badrows = mismatch(felddata,feldmeta,felddata_feldmeta_shared_pkey)
 
     args.update({
@@ -158,9 +158,36 @@ def feldspar(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
     
- 
-    
+    print("# LOGIC CHECK - 5")
+    # Description: The sum of total_veg_cover and total_unveg_cover must equal 100.
+    # Created Coder: Duy Nguyen
+    # Created Date: 11/22/2024
+    # Last Edited Date: 
 
+    errs.append(
+        checkData(
+            tablename='tbl_feldspar_metadata',
+            badrows=feldmeta[
+                ~(
+                    # Exclude rows where both are -88
+                    ((feldmeta['total_veg_cover'] == -88) & (feldmeta['total_unveg_cover'] == -88)) |
+
+                    # If one is -88, the other must be 100
+                    ((feldmeta['total_veg_cover'] == -88) & (feldmeta['total_unveg_cover'] == 100)) |
+                    ((feldmeta['total_unveg_cover'] == -88) & (feldmeta['total_veg_cover'] == 100)) |
+
+                    # If neither is -88, their sum must equal 100
+                    ((feldmeta['total_veg_cover'] != -88) & 
+                    (feldmeta['total_unveg_cover'] != -88) & 
+                    (feldmeta['total_veg_cover'] + feldmeta['total_unveg_cover'] == 100))
+                )
+            ].index.tolist(),
+            badcolumn='total_veg_cover, total_unveg_cover',
+            error_type='Logic Error',
+            error_message="The sum of total_veg_cover and total_unveg_cover must equal 100. If either is -88, the other must be 100. Rows where both are -88 are excluded from validation."
+        )
+    )
+    print("# END LOGIC CHECK - 5")
 
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
