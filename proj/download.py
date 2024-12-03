@@ -496,36 +496,10 @@ def get_logger_data():
                 THEN raw_dat.raw_qvalue_qcflag_robot 
                 ELSE raw_dat.raw_qvalue_qcflag_human 
             END AS raw_qvalue_qcflag_final,
-            raw_dat.qaqc_comment,
-            meta.samplecollectiontimestampstart,
-            meta.samplecollectiontimestampend,
-            meta.season,
-            meta.latitude,
-            meta.longitude,
-            meta.profile,
-            meta.samplemetadatanotes,
-            meta.distance_off_bottom,
-            meta.elevation_time,
-            meta.elevation_units,
-            meta.elevation_corr,
-            meta.datum_latlong,
-            meta.length_line,
-            meta.elevation_timezone,
-            meta.elevation_ellipsoid,
-            meta.elevation_orthometric,
-            meta.elevation_datum,
-            meta.elevation_reading_location
+            raw_dat.qaqc_comment
         FROM {base_table} raw_dat
-        LEFT JOIN tbl_wq_logger_metadata meta
-        ON raw_dat.projectid = meta.projectid
-        AND raw_dat.siteid = meta.siteid
-        AND raw_dat.estuaryname = meta.estuaryname
-        AND raw_dat.stationno = meta.stationno
-        AND raw_dat.sensortype = meta.sensortype
-        AND raw_dat.sensorid = meta.sensorid
         WHERE raw_dat.{datetime_colname} >= '{start_date}' 
         AND raw_dat.{datetime_colname} <= '{end_date}'
-
     """
 
     conditions = []
