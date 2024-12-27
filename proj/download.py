@@ -728,8 +728,8 @@ def get_test_data():
                         df.to_excel(writer, sheet_name=tbl, index=False)
                     else:
                         siteid = siteid_df.iloc[0, 0]
-                        df = pd.read_sql(f"SELECT * FROM {tbl} WHERE siteid = '{siteid}'", eng)
-                        #df = pd.read_sql(f"SELECT * FROM {tbl}", eng)
+                        #df = pd.read_sql(f"SELECT * FROM {tbl} WHERE siteid = '{siteid}'", eng)
+                        df = pd.read_sql(f"SELECT * FROM {tbl}", eng)
                         df.to_excel(writer, sheet_name=tbl, index=False)
 
         data.seek(0)

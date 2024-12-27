@@ -517,6 +517,57 @@ def discretewq(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
 
+
+    print('START CHECK 21')
+    # Description: pressure range check
+    # Created Coder: Duy
+    # Created Date: 12/27/2024
+    # Last Edited Date:
+    # Last Edited Coder:
+
+    # Fetch the pressure unit lookup table
+    lu_pressure_unit = pd.read_sql("SELECT * FROM lu_pressure_unit", g.eng)
+
+    # Merge waterdata with lookup table to match units
+    merged_data = pd.merge(
+        waterdata,
+        lu_pressure_unit,
+        left_on='pressure_units',
+        right_on='unit',
+        how='left'
+    )
+
+    # Identify rows with invalid pressure values
+    merged_data['pressure_valid'] = (
+        ((merged_data['pressure_units'].str.lower() == 'not recorded') & (merged_data['pressure'] == -88)) |  # Special case
+        (
+            ~merged_data['pressure'].isnull() &                        # Ensure pressure is not null
+            ~merged_data['min'].isnull() &                            # Ensure min is defined
+            ~merged_data['max'].isnull() &                            # Ensure max is defined
+            (merged_data['pressure'] >= merged_data['min']) &         # Check min bound
+            (merged_data['pressure'] <= merged_data['max'])           # Check max bound
+        )
+    )
+
+    # Find bad rows
+    bad_rows = merged_data[~merged_data['pressure_valid']].tmp_row.tolist()
+
+    # Update args with the bad rows
+    args.update({
+        "dataframe": waterdata,
+        "tablename": 'tbl_waterquality_data',
+        "badrows": bad_rows,
+        "badcolumn": "pressure,pressure_units",
+        "error_type": "Out of Range",
+        "error_message": "Pressure value is out of the allowable range for the specified unit, or pressure must be -88 if units are 'Not Recorded'."
+    })
+    errs = [*errs, checkData(**args)]
+
+    print('END CHECK 21')
+
+
+
+
     print("-------------End of Discrete WQ Custom Check ----------")
     
     
