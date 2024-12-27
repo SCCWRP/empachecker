@@ -79,6 +79,7 @@ def toxicity(all_dfs):
     
     toxicitysummary_grabeventdetails_shared_pkey = [x for x in toxicitysummary_pkey if x in grabeventdetails_pkey]
     toxicitysummary_toxicitybatch_shared_pkey = [x for x in toxicitysummary_pkey if x in toxicitybatch_pkey]
+    toxicityresults_toxicitybatch_shared_pkey = [x for x in get_primary_key('tbl_toxicityresults', g.eng) if x in toxicitybatch_pkey]
 
     if 'samplecollectiondate' in toxicitysummary.columns:
         toxicitysummary['samplecollectiondate'] = pd.to_datetime(toxicitysummary['samplecollectiondate'])
@@ -166,20 +167,19 @@ def toxicity(all_dfs):
     # Last Edited Coder: Aria Askaryar
     # NOTE (9/18/23): Duy rewrites the logic check
     # NOTE (10/05/2023): Aria revised the error message
-
+    toxicityresults
     args.update({
-        "dataframe": toxicitybatch,
-        "tablename": "tbl_toxicitybatch",
-        "badrows": mismatch(toxicitybatch, toxicitysummary, toxicitysummary_toxicitybatch_shared_pkey), 
-        "badcolumn": ','.join(toxicitysummary_toxicitybatch_shared_pkey),
+        "dataframe": toxicityresults,
+        "tablename": "tbl_toxicityresults",
+        "badrows": mismatch(toxicityresults, toxicitybatch, toxicityresults_toxicitybatch_shared_pkey), 
+        "badcolumn": ','.join(toxicityresults_toxicitybatch_shared_pkey),
         "error_type": "Logic Error",
         "error_message": 
-            "Each record in tbl_toxicitybatch must have a corresponding record in tbl_toxicitysummary.  Please submit the metadata for these records first based on these columns: {}".format(
-            ','.join(toxicitysummary_toxicitybatch_shared_pkey)
+            "Each record in toxicityresults must have a corresponding record in toxicitybatch. Records are matched based on these columns: {}".format(
+            ','.join(toxicityresults_toxicitybatch_shared_pkey)
         )
     })
     errs = [*errs, checkData(**args)]
-
     print("# END of CHECK - 4")
 
 
