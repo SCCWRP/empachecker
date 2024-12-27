@@ -118,8 +118,127 @@ def benthiclarge(all_dfs):
 
     print("# END OF CHECK - 2")
     
+    print("# CHECK - 3")
+    # Description: Each record in benthiclarge_abundance must include corresponding record in benthiclarge_length when
+    # shell_type = whole, live_dead = live, and scientificname does not equal Nereididae (🛑 ERROR 🛑)
+    # Created Coder: Duy
+    # Created Date: 12/27/2024
+
+    # Get primary keys for benthiclarge_length and benthiclarge_abundance
+    benthiclarge_length = all_dfs['tbl_benthiclarge_length']
+    benthiclarge_length['tmp_row'] = benthiclarge_length.index
+
+    benthiclargeabundance_pkey = get_primary_key('tbl_benthiclarge_abundance', g.eng)
+    benthiclargelength_pkey = get_primary_key('tbl_benthiclarge_length', g.eng)
+
+    abundance_length_shared_pkey = [x for x in benthiclargeabundance_pkey if x in benthiclargelength_pkey]
+
+    # Filter abundance records based on the conditions
+    filtered_abundance = benthiclargeabundance[
+        (benthiclargeabundance['shell_type'].str.lower() == 'whole') &
+        (benthiclargeabundance['live_dead'].str.lower() == 'live') &
+        (benthiclargeabundance['scientificname'].str.lower() != 'nereididae')
+    ]
+
+    # Perform the mismatch check
+    args.update({
+        "dataframe": filtered_abundance,
+        "tablename": "tbl_benthiclarge_abundance",
+        "badrows": mismatch(filtered_abundance, benthiclarge_length, abundance_length_shared_pkey),
+        "badcolumn": ','.join(abundance_length_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Each record in benthiclarge_abundance must include a corresponding record in benthiclarge_length "+
+                        "when shell_type = whole, live_dead = live, and scientificname does not equal Nereididae. "+
+                        "Records are matched based on these columns: {}".format(','.join(abundance_length_shared_pkey))
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 3")
+
+    print("# CHECK - 4")
+    # Description: Each record in benthiclarge_length must include corresponding record in benthiclarge_abundance (🛑 ERROR 🛑)
+    # Created Coder: Duy
+    # Created Date: 12/27/2024
+
+    args.update({
+        "dataframe": benthiclarge_length,
+        "tablename": "tbl_benthiclarge_length",
+        "badrows": mismatch(benthiclarge_length, benthiclargeabundance, abundance_length_shared_pkey),
+        "badcolumn": ','.join(abundance_length_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": "Each record in benthiclarge_length must include a corresponding record in benthiclarge_abundance. "+
+                        "Records are matched based on these columns: {}".format(','.join(abundance_length_shared_pkey))
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 4")
+
     
-    
+    print("# CHECK - 5")
+    # Description: If scientificname contains the word 'unknown', then unknown_replicate must have a numeric value (🛑 ERROR 🛑)
+    # Created Coder: Duy
+    # Created Date: 12/27/2024
+
+    # Filter rows where scientificname contains 'unknown' but unknown_replicate is not numeric
+    check_5_bad_rows = benthiclargeabundance[
+        benthiclargeabundance['scientificname'].str.contains('unknown', case=False, na=False) &
+        ~benthiclargeabundance['unknown_replicate'].apply(lambda x: pd.to_numeric(x, errors='coerce')).notnull()
+    ].tmp_row.tolist()
+
+    args.update({
+        "dataframe": benthiclargeabundance,
+        "tablename": "tbl_benthiclarge_abundance",
+        "badrows": check_5_bad_rows,
+        "badcolumn": "scientificname,unknown_replicate",
+        "error_type": "Logic Error",
+        "error_message": "If scientificname contains the word 'unknown', then unknown_replicate must have a numeric value."
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 5")
+
+    print("# CHECK - 6")
+    # Description: Species_replicate should match total abundance for each unique record. If abundance > 10, then just need 10 records in length (🛑 ERROR 🛑)
+    # Created Coder: Duy
+    # Created Date: 12/27/2024
+
+    # Define the unique key fields for grouping
+    unique_key_fields = [
+        'projectid', 'siteid', 'estuaryname', 'stationno',
+        'samplecollectiondate', 'samplelocation', 'fieldreplicate',
+        'substrate', 'scientificname', 'live_dead'
+    ]
+
+    # Group by the unique record definition and check conditions
+    check_6_bad_rows = []
+    for _, group in benthiclargeabundance.groupby(unique_key_fields):
+        total_abundance = group['abundance'].sum()
+        species_replicates = group['species_replicate'].count()
+
+        # Condition 1: Species_replicate count must match abundance for abundance <= 10
+        if total_abundance <= 10 and species_replicates != total_abundance:
+            check_6_bad_rows.extend(group['tmp_row'].tolist())
+
+        # Condition 2: Species_replicate count must be 10 for abundance > 10
+        elif total_abundance > 10 and species_replicates != 10:
+            check_6_bad_rows.extend(group['tmp_row'].tolist())
+
+    args.update({
+        "dataframe": benthiclargeabundance,
+        "tablename": "tbl_benthiclarge_abundance",
+        "badrows": check_6_bad_rows,
+        "badcolumn": ','.join(unique_key_fields + ['species_replicate']),
+        "error_type": "Logic Error",
+        "error_message": "Species_replicate must match total abundance for each unique record. If abundance > 10, only 10 records in length are required. "+
+                        "Unique records are defined by these fields: {}".format(', '.join(unique_key_fields))
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 6")
+
+
+
+
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
     # ------------------------------------------------end of benthiclarge Logic Checks --------------------------------- #
