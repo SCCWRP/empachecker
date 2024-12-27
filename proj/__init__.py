@@ -87,6 +87,8 @@ app.excel_offset = CONFIG.get('EXCEL_OFFSET')
 
 
 app.data_required_sheets = CONFIG.get('DATA_REQUIRED_SHEETS')
+app.allowed_empty_sheets = CONFIG.get('ALLOWED_EMPTY_SHEETS')
+
 
 # Mail From
 app.mail_from =  CONFIG.get('MAIL_FROM')

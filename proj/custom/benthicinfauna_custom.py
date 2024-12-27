@@ -65,6 +65,8 @@ def benthicinfauna_lab(all_dfs):
     abundance_biomass_shared_pkey = [x for x in benthicbiomass_pkey if x in benthicabundance_pkey]
     labbatch_abundance_shared_pkey = [x for x in benthiclabbatch_pkey if x in benthicabundance_pkey]
     labbatch_grabeventdet_shared_pkey = [x for x in benthiclabbatch_pkey if x in grabeventdet_pkey]
+    labbatch_biomass_shared_pkey = [x for x in benthiclabbatch_pkey if x in benthicbiomass_pkey]
+
 
     print("# CHECK - 1")
     # Description: Each labbatch data must include corresponding records in grabevent_details
@@ -92,93 +94,108 @@ def benthicinfauna_lab(all_dfs):
             "<a href='/checker/templater?datatype=grab_field' target='_blank'>Field Template</a>."
     })
     errs = [*errs, checkData(**args)]  
-    print("# END OF CHECK - 2")
-
     print("# END OF CHECK - 1")
 
-    
+    # CHECK - 2
     print("# CHECK - 2")
-    # Description: Each labbatch data must include corresponding abundance data within session submission
-    # Created Coder: Aria Askaryar
-    # Created Date: NA
-    # Last Edited Date:  10/05/2023
-    # Last Edited Coder: Aria Askaryar
-    # NOTE (9/14/2023): Aria adjusts the format so it follows the coding standard.
-    # NOTE (10/05/2023): Aria revised the error message
-    args.update({
-        "dataframe": benthiclabbatch,
-        "tablename": "tbl_benthicinfauna_labbatch",
-        "badrows": mismatch(benthiclabbatch, benthicabundance, labbatch_abundance_shared_pkey), 
-        "badcolumn": ','.join(labbatch_abundance_shared_pkey),
-        "error_type": "Logic Error",
-        "error_message": "Each record in benthicinfauna_labbatch must have a corresponding record in benthicabundance. "+\
-            "Records are based on these columns: {}".format(
-            ','.join(labbatch_abundance_shared_pkey)
-        )
-    })
-    errs = [*errs, checkData(**args)]  
+    # Description: Each record in benthicinfauna_labbatch must include corresponding record in benthicinfauna_abundance when abundance_recorded = 'yes'
+    # Created Coder: Duy
+    # Created Date: 2/22/24
+    # Last Edited Date: NA
+    # Last Edited Coder: NA
+
+    if 'abundance_recorded' in benthiclabbatch.columns:
+        args.update({
+            "dataframe": benthiclabbatch[benthiclabbatch['abundance_recorded'].str.lower() == 'yes'],
+            "tablename": "tbl_benthicinfauna_labbatch",
+            "badrows": mismatch(
+                benthiclabbatch[benthiclabbatch['abundance_recorded'].str.lower() == 'yes'], 
+                benthicabundance, 
+                abundance_labbatch_shared_pkey  # Correct parameter
+            ),
+            "badcolumn": ','.join(abundance_labbatch_shared_pkey),
+            "error_type": "Logic Error",
+            "error_message": 
+                "Each record in benthicinfauna_labbatch with abundance_recorded = 'yes' must have a corresponding record in benthicinfauna_abundance."
+        })
+        errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 2")
 
+    # CHECK - 3
     print("# CHECK - 3")
-    # Description: Each abundance data must include corresponding labbatch data within session submission
-    # Created Coder: Aria Askaryar
-    # Created Date: NA
-    # Last Edited Date:  10/05/2023
-    # Last Edited Coder: Aria Askaryar
-    # NOTE (9/14/2023): Aria adjusts the format so it follows the coding standard.
-    # NOTE (10/05/2023): Aria revised the error message
-    args.update({
-        "dataframe": benthicabundance,
-        "tablename": "tbl_benthicinfauna_abundance",
-        "badrows": mismatch(benthicabundance, benthiclabbatch, abundance_labbatch_shared_pkey), 
-        "badcolumn": ','.join(abundance_labbatch_shared_pkey),
-        "error_type": "Logic Error",
-        "error_message": "Each record in benthic abundance must have a corresponding record in benthicinfauna_labbatch. "+\
-            "Records are matched based on these columns: {}".format(','.join(abundance_labbatch_shared_pkey))
-    })
-    errs = [*errs, checkData(**args)]
+    # Description: Each record in benthicinfauna_labbatch must include corresponding record in benthicinfauna_biomass when biomass_recorded = 'yes'
+    # Created Coder: Duy
+    # Created Date: 2/22/24
+    # Last Edited Date: NA
+    # Last Edited Coder: NA
+
+    if 'biomass_recorded' in benthiclabbatch.columns:
+        args.update({
+            "dataframe": benthiclabbatch[benthiclabbatch['biomass_recorded'].str.lower() == 'yes'],
+            "tablename": "tbl_benthicinfauna_labbatch",
+            "badrows": mismatch(
+                benthiclabbatch[benthiclabbatch['biomass_recorded'].str.lower() == 'yes'], 
+                benthicbiomass, 
+                labbatch_biomass_shared_pkey  # Correct parameter
+            ),
+            "badcolumn": ','.join(labbatch_biomass_shared_pkey),
+            "error_type": "Logic Error",
+            "error_message": 
+                "Each record in benthicinfauna_labbatch with biomass_recorded = 'yes' must have a corresponding record in benthicinfauna_biomass."
+        })
+        errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 3")
 
-    
+    # CHECK - 4
     print("# CHECK - 4")
-    # Description: Each record in benthicinfauna_abundance must include corresponding record in benthicinfauna_biomass
-    # Created Coder: Ayah Halabi
-    # Created Date: NA
-    # Last Edited Date:  10/05/2023
-    # Last Edited Coder: Aria Askaryar
-    # NOTE (9/14/2023): Ayah changed old check 4 to new logic check 4 from products QA. 
-    # NOTE (10/05/2023): Aria revised the error message 
+    # Description: Each record in benthicinfauna_abundance must include corresponding record in benthicinfauna_labbatch
+    # Created Coder: Duy
+    # Created Date: 2/22/24
+    # Last Edited Date: NA
+    # Last Edited Coder: NA
+
     args.update({
         "dataframe": benthicabundance,
         "tablename": "tbl_benthicinfauna_abundance",
-        "badrows": mismatch(benthicabundance, benthicbiomass,abundance_biomass_shared_pkey),
-        "badcolumn": ','.join(abundance_biomass_shared_pkey),
-        "error_type" : "Logic Warning",
-        "error_message" : "Each record in benthicinfauna_abundance must include a corresponding record in benthicinfauna_biomass. "+\
-            "Records are matched based on these columns: {}".format(','.join(abundance_biomass_shared_pkey))
+        "badrows": mismatch(
+            benthicabundance, 
+            benthiclabbatch, 
+            abundance_labbatch_shared_pkey  # Correct parameter
+        ),
+        "badcolumn": ','.join(abundance_labbatch_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": 
+            "Each record in benthicinfauna_abundance must have a corresponding record in benthicinfauna_labbatch."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 4")
 
+    # CHECK - 5
     print("# CHECK - 5")
-    # Description: Each record in benthicinfauna_abundance must include corresponding record in benthicinfauna_biomass
-    # Created Coder: Ayah Halabi
-    # Created Date: NA
-    # Last Edited Date:  10/05/2023
-    # Last Edited Coder: Aria Askaryar
-    # NOTE (9/14/2023): Ayah changed old check 4 to new logic check 4 from products QA. 
-    # NOTE (10/05/2023): Aria revised the error message 
+    # Description: Each record in benthicinfauna_biomass must include corresponding record in benthicinfauna_labbatch
+    # Created Coder: Duy
+    # Created Date: 2/22/24
+    # Last Edited Date: NA
+    # Last Edited Coder: NA
+
     args.update({
         "dataframe": benthicbiomass,
         "tablename": "tbl_benthicinfauna_biomass",
-        "badrows": mismatch(benthicbiomass, benthicabundance,abundance_biomass_shared_pkey),
-        "badcolumn": ','.join(abundance_biomass_shared_pkey),
-        "error_type" : "Logic Warning",
-        "error_message" : "Each record in benthicinfauna_biomass must include a corresponding record in benthicinfauna_abundance. "+\
-            "Records are matched based on these columns: {}".format(','.join(abundance_biomass_shared_pkey))
+        "badrows": mismatch(
+            benthicbiomass, 
+            benthiclabbatch, 
+            labbatch_biomass_shared_pkey  # Correct parameter
+        ),
+        "badcolumn": ','.join(labbatch_biomass_shared_pkey),
+        "error_type": "Logic Error",
+        "error_message": 
+            "Each record in benthicinfauna_biomass must have a corresponding record in benthicinfauna_labbatch."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 5")
+
+
+   
 
 
     ######################################################################################################################
