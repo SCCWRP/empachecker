@@ -54,7 +54,7 @@ def trash(all_dfs):
         print("# LOGIC CHECK - 1")
         # Description: Records in samplearea need to be in quadrat
         # Created Coder: Duy Nguyen
-        # Created Date: 11/22/2024
+        # Created Date: 12/27/2024
         # Last Edited Date: 
 
         errs.append(
@@ -71,7 +71,7 @@ def trash(all_dfs):
         print("# LOGIC CHECK - 2")
         # Description: Records in quadrat need to be in samplearea
         # Created Coder: Duy Nguyen
-        # Created Date: 11/22/2024
+        # Created Date: 12/27/2024
         # Last Edited Date: 
 
         errs.append(
@@ -125,7 +125,7 @@ def trash(all_dfs):
         # Created Date: 11/16/2023
         # Last Edited Date: 
 
-        groupby_cols = ['projectid', 'estuaryname', 'samplecollectiondate', 'siteid', 'stationno', 'transect']
+        groupby_cols = ['projectid', 'estuaryname', 'siteid', 'samplecollectiondate', 'stationno', 'transect']
         errs.append(
             checkData(
                 tablename='tbl_trashsamplearea',
@@ -169,10 +169,9 @@ def trash(all_dfs):
             checkData(
                 tablename='tbl_trashquadrattally',
                 badrows=trashquadrattally[
-                    (trashquadrattally['debrisitem'] != 'No Trash Present') & (
-                        trashquadrattally['resulttotal'].isnull() | 
-                        (trashquadrattally['resulttotal'].isnull() & trashquadrattally['resulttotaltext'].isnull()) |
-                        (trashquadrattally['resulttotal'].isnull() & ~trashquadrattally['resulttotaltext'].isin(['M', 'H']))
+                    (trashquadrattally['resulttotal'].isnull()) & (  # Check if resulttotal is empty
+                        ((trashquadrattally['debrisitem'] != 'No Trash Present') &  # debrisitem is not 'No Trash Present'
+                        (~trashquadrattally['resulttotaltext'].isin(['M', 'H']) | trashquadrattally['resulttotaltext'].isnull()))
                     )
                 ].tmp_row.tolist(),
                 badcolumn='resulttotal, debrisitem, resulttotaltext',
@@ -242,9 +241,9 @@ def trash(all_dfs):
             checkData(
                 tablename='tbl_trashtimesearchtally',
                 badrows=trashtimesearchtally[
-                    (trashtimesearchtally['debrisitem'] != 'No Trash Present') & (
-                        trashtimesearchtally['resulttotal'].isnull() & 
-                        (trashtimesearchtally['resulttotaltext'].isnull() | ~trashtimesearchtally['resulttotaltext'].isin(['M', 'H']))
+                    (trashtimesearchtally['resulttotal'].isnull()) & (  # Check if resulttotal is empty
+                        ((trashtimesearchtally['debrisitem'] != 'No Trash Present') &  # debrisitem is not 'No Trash Present'
+                        (~trashtimesearchtally['resulttotaltext'].isin(['M', 'H']) | trashtimesearchtally['resulttotaltext'].isnull()))
                     )
                 ].tmp_row.tolist(),
                 badcolumn='resulttotal, debrisitem, resulttotaltext',
