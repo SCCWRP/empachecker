@@ -32,8 +32,8 @@ def macroalgae(all_dfs):
 
     site_metadata = all_dfs['tbl_macroalgae_site_meta']
     transect_metadata = all_dfs['tbl_macroalgae_transect_meta']
-    transect_cover = all_dfs['tbl_floating_data']
-    floating = all_dfs['tbl_floating_data']
+    transect_cover = all_dfs['tbl_macroalgae_transect_cover']
+    floating = all_dfs['tbl_macroalgae_floating']
 
     site_metadata['tmp_row'] = site_metadata.index
     transect_metadata['tmp_row'] = transect_metadata.index
@@ -42,14 +42,12 @@ def macroalgae(all_dfs):
 
     site_metadata_pkey = get_primary_key('tbl_macroalgae_site_meta', g.eng)
     transect_metadata_pkey = get_primary_key('tbl_macroalgae_transect_meta', g.eng)
-    transect_cover_pkey = get_primary_key('tbl_floating_data', g.eng)
-    floating_pkey = get_primary_key('tbl_floating_data', g.eng)
+    transect_cover_pkey = get_primary_key('tbl_macroalgae_transect_cover', g.eng)
+    floating_pkey = get_primary_key('tbl_macroalgae_floating', g.eng)
 
     sitemetadata_transectmeta_shared_pkey = [x for x in site_metadata_pkey if x in transect_metadata_pkey]
+    sitemetadata_floating_shared_pkey = [x for x in site_metadata_pkey if x in floating_pkey]
     transectmeta_transectcover_shared_pkey = [x for x in transect_metadata_pkey if x in transect_cover_pkey]
-    transectcover_floating_shared_pkey = [x for x in transect_cover_pkey if x in floating_pkey]
-
-
 
 
     # Alter this args dictionary as you add checks and use it for the checkData function
@@ -66,6 +64,13 @@ def macroalgae(all_dfs):
 
     # CHECK - 1
     print("# CHECK - 1")
+    # Description: Each sample metadata must include corresponding abundance data (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 12/30/2024
+    # Last Edited Date: 12/30/2024
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (12/30/2024): Adjusted to follow the coding standard.
+
     args.update({
         "dataframe": site_metadata[site_metadata['transectmethod_surveyed'].str.lower() == 'yes'],
         "tablename": "tbl_macroalgae_site_meta",
@@ -83,15 +88,22 @@ def macroalgae(all_dfs):
 
     # CHECK - 2
     print("# CHECK - 2")
+    # Description: Each sample metadata must include corresponding floating method data (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 12/30/2024
+    # Last Edited Date: 12/30/2024
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (12/30/2024): Adjusted to follow the coding standard.
+
     args.update({
         "dataframe": site_metadata[site_metadata['floatingmethod_surveyed'].str.lower() == 'yes'],
         "tablename": "tbl_macroalgae_site_meta",
         "badrows": mismatch(
             site_metadata[site_metadata['floatingmethod_surveyed'].str.lower() == 'yes'],
             floating,
-            transectcover_floating_shared_pkey
+            sitemetadata_floating_shared_pkey
         ),
-        "badcolumn": ','.join(transectcover_floating_shared_pkey),
+        "badcolumn": ','.join(sitemetadata_floating_shared_pkey),
         "error_type": "Logic Error",
         "error_message": "Each record in macroalgae_site_metadata with floatingmethod_surveyed = 'yes' must include a corresponding record in macroalgae_floating."
     })
@@ -100,9 +112,16 @@ def macroalgae(all_dfs):
 
     # CHECK - 3
     print("# CHECK - 3")
+    # Description: Each transect cover record must include a corresponding site metadata record (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 12/30/2024
+    # Last Edited Date: 12/30/2024
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (12/30/2024): Adjusted to follow the coding standard.
+
     args.update({
         "dataframe": transect_cover,
-        "tablename": "tbl_floating_data",
+        "tablename": "tbl_macroalgae_transect_cover",
         "badrows": mismatch(transect_cover, site_metadata, sitemetadata_transectmeta_shared_pkey),
         "badcolumn": ','.join(sitemetadata_transectmeta_shared_pkey),
         "error_type": "Logic Error",
@@ -113,9 +132,16 @@ def macroalgae(all_dfs):
 
     # CHECK - 4
     print("# CHECK - 4")
+    # Description: Each transect cover record must include a corresponding transect metadata record (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 12/30/2024
+    # Last Edited Date: 12/30/2024
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (12/30/2024): Adjusted to follow the coding standard.
+
     args.update({
         "dataframe": transect_cover,
-        "tablename": "tbl_floating_data",
+        "tablename": "tbl_macroalgae_transect_cover",
         "badrows": mismatch(transect_cover, transect_metadata, transectmeta_transectcover_shared_pkey),
         "badcolumn": ','.join(transectmeta_transectcover_shared_pkey),
         "error_type": "Logic Error",
@@ -126,9 +152,16 @@ def macroalgae(all_dfs):
 
     # CHECK - 5
     print("# CHECK - 5")
+    # Description: Each floating data record must include a corresponding site metadata record (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 12/30/2024
+    # Last Edited Date: 12/30/2024
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (12/30/2024): Adjusted to follow the coding standard.
+
     args.update({
         "dataframe": floating,
-        "tablename": "tbl_floating_data",
+        "tablename": "tbl_macroalgae_floating",
         "badrows": mismatch(floating, site_metadata, sitemetadata_transectmeta_shared_pkey),
         "badcolumn": ','.join(sitemetadata_transectmeta_shared_pkey),
         "error_type": "Logic Error",
@@ -139,34 +172,67 @@ def macroalgae(all_dfs):
 
     # CHECK - 6
     print("# CHECK - 6")
+    # Description: For each plot replicate in transect_meta, total_algae_cover must equal the summed estimatedcover when covertype = algae in transect_cover (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 12/30/2024
+    # Last Edited Date: 12/30/2024
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (12/30/2024): Adjusted to handle cases where transect_cover has multiple rows per plotreplicate.
+
+    pkey_cols = ['projectid', 'estuaryname', 'siteid', 'samplecollectiondate', 'stationno', 'transectreplicate', 'plotreplicate']
+
+    # Extract relevant columns for metadata and cover
+    metadata_cols = [*pkey_cols, 'total_algae_cover', 'tmp_row']
+    cover_cols = [*pkey_cols, 'estimatedcover']
+
+    # Filter transect_cover for algae and group by primary keys to sum estimatedcover
+    transect_cover_aggregated = (
+        transect_cover[transect_cover['covertype'].str.lower() == 'algae']
+        .groupby(pkey_cols, as_index=False)
+        .agg({'estimatedcover': 'sum'})
+    )
+
+    # Merge aggregated cover data with transect_metadata
     transect_cover_merged = pd.merge(
-        transect_metadata[['plot_replicate', 'total_algae_cover', 'tmp_row']],
-        transect_cover[transect_cover['covertype'].str.lower() == 'algae'][['plot_replicate', 'estimatedcover', 'tmp_row']],
-        on='plot_replicate',
+        transect_metadata[metadata_cols],
+        transect_cover_aggregated,
+        on=pkey_cols,
         how='left'
     )
-    check_6_bad_rows = transect_cover_merged[
-        transect_cover_merged['total_algae_cover'] != transect_cover_merged['estimatedcover']
-    ]['tmp_row_x'].tolist()
 
+    # Identify bad rows where total_algae_cover does not match summed estimatedcover
+    check_6_bad_rows = transect_cover_merged[
+        (transect_cover_merged['total_algae_cover'] != transect_cover_merged['estimatedcover']) &
+        (~transect_cover_merged['total_algae_cover'].isnull()) &
+        (~transect_cover_merged['estimatedcover'].isnull())
+    ]['tmp_row'].tolist()
+
+    # Update error log
     args.update({
         "dataframe": transect_metadata,
         "tablename": "tbl_macroalgae_transect_meta",
         "badrows": check_6_bad_rows,
-        "badcolumn": "plot_replicate,total_algae_cover,estimatedcover",
+        "badcolumn": "projectid,estuaryname,siteid,samplecollectiondate,stationno,transectreplicate,plotreplicate",
         "error_type": "Logic Error",
-        "error_message": "For each plot replicate in transect_meta, total_algae_cover must equal estimatedcover when covertype = algae in transect_cover."
+        "error_message": "For each plot replicate in transect_meta, total_algae_cover must equal the summed estimatedcover when covertype = algae in transect_cover."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 6")
 
     # CHECK - 7
     print("# CHECK - 7")
+    # Description: For each plot replicate in transect_meta with non_algae_cover = 100, there must be one record with covertype = algae and estimatedcover = 0 in transect_cover (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 12/30/2024
+    # Last Edited Date: 12/30/2024
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (12/30/2024): Adjusted to follow the coding standard.
+
     check_7_bad_rows = []
     for _, group in transect_metadata.iterrows():
         if group['non_algae_cover'] == 100:
             corresponding_records = transect_cover[
-                (transect_cover['plot_replicate'] == group['plot_replicate']) &
+                (transect_cover['plotreplicate'] == group['plotreplicate']) &
                 (transect_cover['covertype'].str.lower() == 'algae') &
                 (transect_cover['estimatedcover'] == 0)
             ]
@@ -177,7 +243,7 @@ def macroalgae(all_dfs):
         "dataframe": transect_metadata,
         "tablename": "tbl_macroalgae_transect_meta",
         "badrows": check_7_bad_rows,
-        "badcolumn": "plot_replicate,non_algae_cover,covertype,estimatedcover",
+        "badcolumn": "plotreplicate,non_algae_cover,covertype,estimatedcover",
         "error_type": "Logic Error",
         "error_message": "For each plot replicate in transect_meta with non_algae_cover = 100, there must be one record with covertype = algae and estimatedcover = 0 in transect_cover."
     })
@@ -186,6 +252,13 @@ def macroalgae(all_dfs):
 
     # CHECK - 8
     print("# CHECK - 8")
+    # Description: waterclarity_length_cm must be between 0 and 300 (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 12/30/2024
+    # Last Edited Date: 12/30/2024
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (12/30/2024): Adjusted to follow the coding standard.
+
     args.update({
         "dataframe": site_metadata,
         "tablename": "tbl_macroalgae_site_meta",
@@ -200,10 +273,15 @@ def macroalgae(all_dfs):
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 8")
 
-
-
     # CHECK - 9
     print("# CHECK - 9")
+    # Description: transectreplicate must be greater than 0 (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 12/30/2024
+    # Last Edited Date: 12/30/2024
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (12/30/2024): Adjusted to follow the coding standard.
+
     args.update({
         "dataframe": transect_metadata,
         "tablename": "tbl_macroalgae_transect_meta",
@@ -217,64 +295,72 @@ def macroalgae(all_dfs):
 
     # CHECK - 10
     print("# CHECK - 10")
+    # Description: transectlength_m must be greater than 0 (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 12/30/2024
+    # Last Edited Date: 12/30/2024
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (12/30/2024): Adjusted to follow the coding standard.
+
     args.update({
         "dataframe": transect_metadata,
         "tablename": "tbl_macroalgae_transect_meta",
-        "badrows": transect_metadata[transect_metadata['transectlength_m'] <= 0]['tmp_row'].tolist(),
-        "badcolumn": "transectlength_m",
+        "badrows": transect_metadata[transect_metadata['transect_length_m'] <= 0]['tmp_row'].tolist(),
+        "badcolumn": "transect_length_m",
         "error_type": "Value Error",
         "error_message": "transectlength_m must be greater than 0."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 10")
 
+
     # CHECK - 11
     print("# CHECK - 11")
-    transect_metadata_sorted = transect_metadata.sort_values(
-        by=['projectid', 'siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'transectreplicate']
-    )
-    transect_metadata_sorted['expected_replicate'] = transect_metadata_sorted.groupby(
-        ['projectid', 'siteid', 'estuaryname', 'stationno', 'samplecollectiondate']
-    )['transectreplicate'].rank().astype(int)
-
-    badrows_11 = transect_metadata_sorted[
-        transect_metadata_sorted['transectreplicate'] != transect_metadata_sorted['expected_replicate']
-    ]['tmp_row'].tolist()
-
+    # Description: transectreplicate must be consecutive within primary keys (projectid, siteid, estuaryname, stationno, samplecollectiondate) (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 12/30/2024
+    # Last Edited Date: 12/30/2024
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (12/30/2024): Adjusted to follow the coding standard.
     args.update({
         "dataframe": transect_metadata,
         "tablename": "tbl_macroalgae_transect_meta",
-        "badrows": badrows_11,
-        "badcolumn": "transectreplicate",
-        "error_type": "Logic Error",
-        "error_message": "transectreplicate must be consecutive within primary keys (projectid, siteid, estuaryname, stationno, samplecollectiondate)."
+        "badrows": check_consecutiveness(transect_metadata, ['projectid','siteid','estuaryname','samplecollectiondate','stationno'], 'transectreplicate'), 
+        "badcolumn": 'transectreplicate',
+        "error_type": "Custom Error",
+        "error_message": " transectreplicate must be consecutive within a projectid,siteid,estuaryname,samplecollectiondate,stationno group"
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 11")
 
     # CHECK - 12
     print("# CHECK - 12")
-    transect_metadata_sorted['expected_plotreplicate'] = transect_metadata_sorted.groupby(
-        ['projectid', 'siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'transectreplicate']
-    )['plotreplicate'].rank().astype(int)
-
-    badrows_12 = transect_metadata_sorted[
-        transect_metadata_sorted['plotreplicate'] != transect_metadata_sorted['expected_plotreplicate']
-    ]['tmp_row'].tolist()
-
+    # Description: plotreplicate must be consecutive within 'projectid', 'siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'transectreplicate' (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 12/30/2024
+    # Last Edited Date: 12/30/2024
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (12/30/2024): Adjusted to follow the coding standard.
     args.update({
         "dataframe": transect_metadata,
         "tablename": "tbl_macroalgae_transect_meta",
-        "badrows": badrows_12,
-        "badcolumn": "plotreplicate",
-        "error_type": "Logic Error",
-        "error_message": "plotreplicate must be consecutive within 'projectid', 'siteid', 'estuaryname', 'stationno', 'samplecollectiondate', 'transectreplicate'."
+        "badrows": check_consecutiveness(transect_metadata, ['projectid','siteid','estuaryname','samplecollectiondate','stationno','transectreplicate'], 'plotreplicate'), 
+        "badcolumn": 'plotreplicate',
+        "error_type": "Custom Error",
+        "error_message": "plotreplicate must be consecutive within a projectid,siteid,estuaryname,samplecollectiondate,stationno,transectreplicate group"
     })
-    errs = [*errs, checkData(**args)]
+    errs = [*errs, checkData(**args)]   
     print("# END OF CHECK - 12")
 
     # CHECK - 13
     print("# CHECK - 13")
+    # Description: plotreplicate must be greater than 0 (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 12/30/2024
+    # Last Edited Date: 12/30/2024
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (12/30/2024): Adjusted to follow the coding standard.
+
     args.update({
         "dataframe": transect_metadata,
         "tablename": "tbl_macroalgae_transect_meta",
@@ -288,6 +374,13 @@ def macroalgae(all_dfs):
 
     # CHECK - 14
     print("# CHECK - 14")
+    # Description: For every plot, total_algae_cover + non_algae_cover must equal 100 (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 12/30/2024
+    # Last Edited Date: 12/30/2024
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (12/30/2024): Adjusted to follow the coding standard.
+
     args.update({
         "dataframe": transect_metadata,
         "tablename": "tbl_macroalgae_transect_meta",
@@ -301,12 +394,18 @@ def macroalgae(all_dfs):
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 14")
 
-
     # CHECK - 15
     print("# CHECK - 15")
+    # Description: If estimatedcover is 0, then scientificname must be 'Not recorded' (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 12/30/2024
+    # Last Edited Date: 12/30/2024
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (12/30/2024): Adjusted to follow the coding standard.
+
     args.update({
         "dataframe": transect_cover,
-        "tablename": "tbl_floating_data",
+        "tablename": "tbl_macroalgae_transect_cover",
         "badrows": transect_cover[
             (transect_cover['estimatedcover'] == 0) & (transect_cover['scientificname'].str.lower() != "not recorded")
         ]['tmp_row'].tolist(),
@@ -319,9 +418,16 @@ def macroalgae(all_dfs):
 
     # CHECK - 16
     print("# CHECK - 16")
+    # Description: If covertype is 'plant', then scientificname cannot be 'Not recorded' (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 12/30/2024
+    # Last Edited Date: 12/30/2024
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (12/30/2024): Adjusted to follow the coding standard.
+
     args.update({
         "dataframe": transect_cover,
-        "tablename": "tbl_floating_data",
+        "tablename": "tbl_macroalgae_transect_cover",
         "badrows": transect_cover[
             (transect_cover['covertype'].str.lower() == "plant") & (transect_cover['scientificname'].str.lower() == "not recorded")
         ]['tmp_row'].tolist(),
@@ -331,6 +437,7 @@ def macroalgae(all_dfs):
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 16")
+
 
 
 

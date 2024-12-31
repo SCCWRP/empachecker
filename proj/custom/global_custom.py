@@ -94,7 +94,7 @@ def global_custom(all_dfs, datatype = ''):
             # Last Edited Coder: Duy
             # NOTE (09/07/23): Edited to add status to the subset check above, since it's really checking all 3 columns
             # NOTE (1/12/24): Adjusted the error message 
-            if table_name in ['tbl_algaecover_data','tbl_floating_data','tbl_vegetativecover_data','tbl_savpercentcover_data']:
+            if table_name in ['tbl_macroalgae_transect_cover','tbl_macroalgae_floating','tbl_vegetativecover_data','tbl_savpercentcover_data']:
                 lu_df = lu_plantspecies
                 lu_list = 'lu_plantspecies'
             else:
@@ -267,100 +267,100 @@ def global_custom(all_dfs, datatype = ''):
             print("# END GLOBAL CUSTOM CHECK - 8")
 
 
-            print("# GLOBAL CUSTOM CHECK - 9")
-            # Description: A (lat,long) for a siteid needs to be either in its associate polygon. Give a warning if that's not the case. 
-            # Created Coder: Duy
-            # Created Date: 11/3/23
-            # Last Edited Date: 1/9/24
-            # Last Edited Coder: Duy
-            # NOTE (11/3/23): Created the check. Need to QA and this check does not consider 1 mile buffer.
-            # NOTE (11/6/23): Fixed an error where sites in submitted file do not exist in the spatial_empa_sites table and cause null in geometry column after merging.
-            # NOTE (11/8/23): Duy adjusted the check, comments were left below
-            # NOTE (11/8/23): The .to_file function (writing a geopandas dataframe to geojson file) seems to have a problem writing out the date columns
-            # so we just want to get the needed columns when writing out to geojson file
-            latlong_cols = current_app.datasets.get(datatype).get('latlong_cols', None)
+            # print("# GLOBAL CUSTOM CHECK - 9")
+            # # Description: A (lat,long) for a siteid needs to be either in its associate polygon. Give a warning if that's not the case. 
+            # # Created Coder: Duy
+            # # Created Date: 11/3/23
+            # # Last Edited Date: 1/9/24
+            # # Last Edited Coder: Duy
+            # # NOTE (11/3/23): Created the check. Need to QA and this check does not consider 1 mile buffer.
+            # # NOTE (11/6/23): Fixed an error where sites in submitted file do not exist in the spatial_empa_sites table and cause null in geometry column after merging.
+            # # NOTE (11/8/23): Duy adjusted the check, comments were left below
+            # # NOTE (11/8/23): The .to_file function (writing a geopandas dataframe to geojson file) seems to have a problem writing out the date columns
+            # # so we just want to get the needed columns when writing out to geojson file
+            # latlong_cols = current_app.datasets.get(datatype).get('latlong_cols', None)
             
-            # latlong_cols is a list of dictionaries of the tables with lat long columns
-            if latlong_cols is not None:
-                print(table_name)
-                tmp = [
-                    (x.get('latcol'), x.get('longcol'))
-                    for x in latlong_cols
-                    if x.get('tablename') == table_name
-                ][0]
-                latcol, longcol = tmp[0], tmp[1]
-                print("before geodataframe")
-                meta = gpd.GeoDataFrame(
-                    df, 
-                    geometry=gpd.points_from_xy(df[longcol], df[latcol])
-                )
-                meta_merged = meta.merge(
-                    spatial_empa_sites[['siteid','geometry']],
-                    how='left',
-                    on=['siteid'],
-                    suffixes=('_point', '_polygon')
-                )
+            # # latlong_cols is a list of dictionaries of the tables with lat long columns
+            # if latlong_cols is not None:
+            #     print(table_name)
+            #     tmp = [
+            #         (x.get('latcol'), x.get('longcol'))
+            #         for x in latlong_cols
+            #         if x.get('tablename') == table_name
+            #     ][0]
+            #     latcol, longcol = tmp[0], tmp[1]
+            #     print("before geodataframe")
+            #     meta = gpd.GeoDataFrame(
+            #         df, 
+            #         geometry=gpd.points_from_xy(df[longcol], df[latcol])
+            #     )
+            #     meta_merged = meta.merge(
+            #         spatial_empa_sites[['siteid','geometry']],
+            #         how='left',
+            #         on=['siteid'],
+            #         suffixes=('_point', '_polygon')
+            #     )
                 
-                # Display warnings when the points are associated with undelineated polygons
-                meta_unmatched = meta_merged[meta_merged['geometry_polygon'].isna()]
-                args = {
-                    "dataframe": df,
-                    "tablename": table_name,
-                    "badrows": meta_unmatched.tmp_row.tolist(),
-                    "badcolumn": f"{latcol}, {longcol}",
-                    "error_type": "Value Error",
-                    "is_core_error": False,
-                    "error_message": f"These points were not checked if their locations are valid because their associated polygons (SiteIDs: {','.join(list(set(meta_unmatched['siteid'])))})  were not created. Please contact Jan Walker (janw@sccwrp.org) to have the polygons added."
-                }
-                warnings = [*warnings, checkData(**args)]
+            #     # Display warnings when the points are associated with undelineated polygons
+            #     meta_unmatched = meta_merged[meta_merged['geometry_polygon'].isna()]
+            #     args = {
+            #         "dataframe": df,
+            #         "tablename": table_name,
+            #         "badrows": meta_unmatched.tmp_row.tolist(),
+            #         "badcolumn": f"{latcol}, {longcol}",
+            #         "error_type": "Value Error",
+            #         "is_core_error": False,
+            #         "error_message": f"These points were not checked if their locations are valid because their associated polygons (SiteIDs: {','.join(list(set(meta_unmatched['siteid'])))})  were not created. Please contact Jan Walker (janw@sccwrp.org) to have the polygons added."
+            #     }
+            #     warnings = [*warnings, checkData(**args)]
                 
-                # Display warnings when the points are outside of their associated polygons
-                meta_matched = meta_merged[~meta_merged['geometry_polygon'].isna()]
-                meta_matched_bad = meta_matched[
-                    meta_matched.apply(
-                        lambda row: not row['geometry_point'].within(row['geometry_polygon']), 
-                        axis=1
-                    )
-                ]
+            #     # Display warnings when the points are outside of their associated polygons
+            #     meta_matched = meta_merged[~meta_merged['geometry_polygon'].isna()]
+            #     meta_matched_bad = meta_matched[
+            #         meta_matched.apply(
+            #             lambda row: not row['geometry_point'].within(row['geometry_polygon']), 
+            #             axis=1
+            #         )
+            #     ]
                 
-                # Only write geojson when there are points that are outside polygon
-                if not meta_matched_bad.empty:
-                    # declare path
-                    save_path = os.path.join(os.getcwd(), "files", str(session.get('submissionid')))
+            #     # Only write geojson when there are points that are outside polygon
+            #     if not meta_matched_bad.empty:
+            #         # declare path
+            #         save_path = os.path.join(os.getcwd(), "files", str(session.get('submissionid')))
 
-                    # write points to geojson file
-                    tmp = meta[meta['tmp_row'].isin(meta_matched_bad['tmp_row'])] \
-                        .rename(
-                            columns={latcol: 'latitude', longcol: 'longitude'}   
-                        )
-                    tmp = tmp[['latitude','longitude','siteid','tmp_row','geometry']].to_file(
-                        os.path.join(save_path, "bad-points-geojson.json"), 
-                        driver='GeoJSON'
-                    )
+            #         # write points to geojson file
+            #         tmp = meta[meta['tmp_row'].isin(meta_matched_bad['tmp_row'])] \
+            #             .rename(
+            #                 columns={latcol: 'latitude', longcol: 'longitude'}   
+            #             )
+            #         tmp = tmp[['latitude','longitude','siteid','tmp_row','geometry']].to_file(
+            #             os.path.join(save_path, "bad-points-geojson.json"), 
+            #             driver='GeoJSON'
+            #         )
                     
-                    # write polygons to geojson file
-                    tmp = spatial_empa_sites[spatial_empa_sites['siteid'].isin(meta_matched_bad['siteid'])]\
-                        .rename(
-                            columns={latcol: 'latitude', longcol: 'longitude'}
-                        ) 
-                    tmp = tmp[['siteid','geometry']].to_file(
-                        os.path.join(save_path, "polygons-geojson.json"), 
-                        driver='GeoJSON'
-                    )
+            #         # write polygons to geojson file
+            #         tmp = spatial_empa_sites[spatial_empa_sites['siteid'].isin(meta_matched_bad['siteid'])]\
+            #             .rename(
+            #                 columns={latcol: 'latitude', longcol: 'longitude'}
+            #             ) 
+            #         tmp = tmp[['siteid','geometry']].to_file(
+            #             os.path.join(save_path, "polygons-geojson.json"), 
+            #             driver='GeoJSON'
+            #         )
                     
-                    args = {
-                        "dataframe": df,
-                        "tablename": table_name,
-                        "badrows": meta_matched_bad.tmp_row.tolist(),
-                        "badcolumn": f"{latcol}, {longcol}",
-                        "error_type": "Value Error",
-                        "is_core_error": False,
-                        "error_message": f"These points are not in their associated polygon, see Stations Visual Map tab. If you believe their locations are correct, then ignore warnings and submit the data."
-                    }
-                    warnings = [*warnings, checkData(**args)]
+            #         args = {
+            #             "dataframe": df,
+            #             "tablename": table_name,
+            #             "badrows": meta_matched_bad.tmp_row.tolist(),
+            #             "badcolumn": f"{latcol}, {longcol}",
+            #             "error_type": "Value Error",
+            #             "is_core_error": False,
+            #             "error_message": f"These points are not in their associated polygon, see Stations Visual Map tab. If you believe their locations are correct, then ignore warnings and submit the data."
+            #         }
+            #         warnings = [*warnings, checkData(**args)]
                 
 
-                print("# END GLOBAL CUSTOM CHECK - 9")
+            #     print("# END GLOBAL CUSTOM CHECK - 9")
 
 
 
