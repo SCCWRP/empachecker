@@ -100,7 +100,7 @@ def benthicinfauna_lab(all_dfs):
     print("# CHECK - 2")
     # Description: Each record in benthicinfauna_labbatch must include corresponding record in benthicinfauna_abundance when abundance_recorded = 'yes'
     # Created Coder: Duy
-    # Created Date: 2/22/24
+    # Created Date: 12/22/24
     # Last Edited Date: NA
     # Last Edited Coder: NA
 
@@ -125,7 +125,7 @@ def benthicinfauna_lab(all_dfs):
     print("# CHECK - 3")
     # Description: Each record in benthicinfauna_labbatch must include corresponding record in benthicinfauna_biomass when biomass_recorded = 'yes'
     # Created Coder: Duy
-    # Created Date: 2/22/24
+    # Created Date: 12/22/24
     # Last Edited Date: NA
     # Last Edited Coder: NA
 
@@ -150,7 +150,7 @@ def benthicinfauna_lab(all_dfs):
     print("# CHECK - 4")
     # Description: Each record in benthicinfauna_abundance must include corresponding record in benthicinfauna_labbatch
     # Created Coder: Duy
-    # Created Date: 2/22/24
+    # Created Date: 12/22/24
     # Last Edited Date: NA
     # Last Edited Coder: NA
 
@@ -174,7 +174,7 @@ def benthicinfauna_lab(all_dfs):
     print("# CHECK - 5")
     # Description: Each record in benthicinfauna_biomass must include corresponding record in benthicinfauna_labbatch
     # Created Coder: Duy
-    # Created Date: 2/22/24
+    # Created Date: 12/22/24
     # Last Edited Date: NA
     # Last Edited Coder: NA
 

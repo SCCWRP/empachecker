@@ -198,39 +198,52 @@ def benthiclarge(all_dfs):
     print("# END OF CHECK - 5")
 
     print("# CHECK - 6")
-    # Description: Species_replicate should match total abundance for each unique record. If abundance > 10, then just need 10 records in length (🛑 ERROR 🛑)
-    # Created Coder: Duy
-    # Created Date: 12/27/2024
+    # Description: For each unique record in benthiclargeabundance with live_dead = 'Live', the number of rows in benthiclarge_length must match abundance unless abundance > 10, in which case only 10 rows are required (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 12/30/2024
+    # Last Edited Date: 12/30/2024
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (12/30/2024): Added exception for abundance > 10, where only 10 records are required in benthiclarge_length.
 
-    # Define the unique key fields for grouping
+    # Define the unique key fields for matching
     unique_key_fields = [
         'projectid', 'siteid', 'estuaryname', 'stationno',
-        'samplecollectiondate', 'samplelocation', 'fieldreplicate',
-        'substrate', 'scientificname', 'live_dead'
+        'samplecollectiondate', 'samplelocation', 'fieldreplicate', 'scientificname'
     ]
 
-    # Group by the unique record definition and check conditions
-    check_6_bad_rows = []
-    for _, group in benthiclargeabundance.groupby(unique_key_fields):
-        total_abundance = group['abundance'].sum()
-        species_replicates = group['species_replicate'].count()
+    # Filter benthiclargeabundance for live_dead = 'Live'
+    abundance_live = benthiclargeabundance[benthiclargeabundance['live_dead'].str.lower() == 'live']
 
-        # Condition 1: Species_replicate count must match abundance for abundance <= 10
-        if total_abundance <= 10 and species_replicates != total_abundance:
-            check_6_bad_rows.extend(group['tmp_row'].tolist())
+    # Group benthiclarge_length by the same key fields to count rows
+    length_grouped = benthiclarge_length.groupby(unique_key_fields).size().reset_index(name='length_count')
 
-        # Condition 2: Species_replicate count must be 10 for abundance > 10
-        elif total_abundance > 10 and species_replicates != 10:
-            check_6_bad_rows.extend(group['tmp_row'].tolist())
+    # Merge abundance_live with the grouped length data
+    merged_data = pd.merge(
+        abundance_live,
+        length_grouped,
+        on=unique_key_fields,
+        how='left'
+    )
 
+    # Identify bad rows where:
+    # - abundance <= 10 and length_count != abundance
+    # - abundance > 10 and length_count != 10
+    check_6_bad_rows = merged_data[
+        ((merged_data['abundance'] <= 10) & (merged_data['length_count'] != merged_data['abundance'])) |
+        ((merged_data['abundance'] > 10) & (merged_data['length_count'] != 10))
+    ]['tmp_row'].tolist()
+
+    # Update the error log
     args.update({
         "dataframe": benthiclargeabundance,
         "tablename": "tbl_benthiclarge_abundance",
         "badrows": check_6_bad_rows,
-        "badcolumn": ','.join(unique_key_fields + ['species_replicate']),
+        "badcolumn": ','.join(unique_key_fields + ['abundance']),
         "error_type": "Logic Error",
-        "error_message": "Species_replicate must match total abundance for each unique record. If abundance > 10, only 10 records in length are required. "+
-                        "Unique records are defined by these fields: {}".format(', '.join(unique_key_fields))
+        "error_message": "For each unique record in benthiclargeabundance with live_dead = 'Live': "
+                        "if abundance <= 10, the number of rows in benthiclarge_length must match the abundance; "
+                        "if abundance > 10, only 10 rows are required in benthiclarge_length. "
+                        + "Unique records are defined by these fields: {}".format(', '.join(unique_key_fields))
     })
     errs = [*errs, checkData(**args)]
 

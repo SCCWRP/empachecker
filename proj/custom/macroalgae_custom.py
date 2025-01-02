@@ -226,24 +226,39 @@ def macroalgae(all_dfs):
     # Created Date: 12/30/2024
     # Last Edited Date: 12/30/2024
     # Last Edited Coder: Duy Nguyen
-    # NOTE (12/30/2024): Adjusted to follow the coding standard.
+    # NOTE (12/30/2024): Revised to properly validate records across two connected tables.
 
-    check_7_bad_rows = []
-    for _, group in transect_metadata.iterrows():
-        if group['non_algae_cover'] == 100:
-            corresponding_records = transect_cover[
-                (transect_cover['plotreplicate'] == group['plotreplicate']) &
-                (transect_cover['covertype'].str.lower() == 'algae') &
-                (transect_cover['estimatedcover'] == 0)
-            ]
-            if corresponding_records.empty:
-                check_7_bad_rows.append(group['tmp_row'])
+    pkey_cols = ['projectid', 'estuaryname', 'siteid', 'samplecollectiondate', 'stationno', 'transectreplicate', 'plotreplicate']
 
+    # Filter transect_metadata where non_algae_cover = 100
+    metadata_filtered = transect_metadata[transect_metadata['non_algae_cover'] == 100][pkey_cols + ['tmp_row']]
+
+    # Filter transect_cover for records with covertype = algae and estimatedcover = 0
+    cover_filtered = transect_cover[
+        (transect_cover['covertype'].str.lower() == 'algae') &
+        (transect_cover['estimatedcover'] == 0)
+    ][pkey_cols]
+
+    # Perform a left join to find metadata rows with no matching cover rows
+    metadata_with_cover_check = pd.merge(
+        metadata_filtered,
+        cover_filtered,
+        on=pkey_cols,
+        how='left',
+        indicator=True  # Add merge indicator to detect unmatched rows
+    )
+
+    # Find rows in metadata where there is no match in transect_cover
+    check_7_bad_rows = metadata_with_cover_check[
+        metadata_with_cover_check['_merge'] == 'left_only'
+    ]['tmp_row'].tolist()
+
+    # Update the error log
     args.update({
         "dataframe": transect_metadata,
         "tablename": "tbl_macroalgae_transect_meta",
         "badrows": check_7_bad_rows,
-        "badcolumn": "plotreplicate,non_algae_cover,covertype,estimatedcover",
+        "badcolumn": "projectid, estuaryname, siteid, samplecollectiondate, stationno, transectreplicate, plotreplicate",
         "error_type": "Logic Error",
         "error_message": "For each plot replicate in transect_meta with non_algae_cover = 100, there must be one record with covertype = algae and estimatedcover = 0 in transect_cover."
     })
