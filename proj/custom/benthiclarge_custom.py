@@ -198,7 +198,7 @@ def benthiclarge(all_dfs):
     print("# END OF CHECK - 5")
 
     print("# CHECK - 6")
-    # Description: For each unique record in benthiclargeabundance with live_dead = 'Live', the number of rows in benthiclarge_length must match abundance unless abundance > 10, in which case only 10 rows are required (🛑 ERROR 🛑)
+    # Description: For each unique record in benthiclargeabundance with live_dead = 'Live', shell_type = 'whole' and scientificname not equal 'nereididae', the number of rows in benthiclarge_length must match abundance unless abundance > 10, in which case only 10 rows are required (🛑 ERROR 🛑)
     # Created Coder: Duy Nguyen
     # Created Date: 12/30/2024
     # Last Edited Date: 12/30/2024
@@ -212,10 +212,21 @@ def benthiclarge(all_dfs):
     ]
 
     # Filter benthiclargeabundance for live_dead = 'Live'
-    abundance_live = benthiclargeabundance[benthiclargeabundance['live_dead'].str.lower() == 'live']
+    abundance_live = benthiclargeabundance[
+        (benthiclargeabundance['shell_type'].str.lower() == 'whole') &
+        (benthiclargeabundance['live_dead'].str.lower() == 'live') &
+        (benthiclargeabundance['scientificname'].str.lower() != 'nereididae')
+    
+    ]
+
+    filterd_benthiclarge_length = benthiclarge_length[
+        (benthiclarge_length['shell_type'].str.lower() == 'whole') &
+        (benthiclarge_length['live_dead'].str.lower() == 'live') &
+        (benthiclarge_length['scientificname'].str.lower() != 'nereididae')
+    ]
 
     # Group benthiclarge_length by the same key fields to count rows
-    length_grouped = benthiclarge_length.groupby(unique_key_fields).size().reset_index(name='length_count')
+    length_grouped = filterd_benthiclarge_length.groupby(unique_key_fields).size().reset_index(name='length_count')
 
     # Merge abundance_live with the grouped length data
     merged_data = pd.merge(
