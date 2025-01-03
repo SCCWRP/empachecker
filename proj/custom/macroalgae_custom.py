@@ -172,18 +172,19 @@ def macroalgae(all_dfs):
 
     # CHECK - 6
     print("# CHECK - 6")
-    # Description: For each plot replicate in transect_meta, total_algae_cover must equal the summed estimatedcover when covertype = algae in transect_cover (🛑 ERROR 🛑)
+    # Description: For each plot replicate in transect_meta, if total_algae_cover > 0, 
+    # there must be at least one record with covertype = 'algae', 
+    # and total_algae_cover must equal the summed estimatedcover for covertype = 'algae' in transect_cover.
     # Created Coder: Duy Nguyen
     # Created Date: 12/30/2024
-    # Last Edited Date: 12/30/2024
-    # Last Edited Coder: Duy Nguyen
-    # NOTE (12/30/2024): Adjusted to handle cases where transect_cover has multiple rows per plotreplicate.
+    # Last Edited Date: [Your Edit Date]
+    # Last Edited Coder: [Your Name]
 
     pkey_cols = ['projectid', 'estuaryname', 'siteid', 'samplecollectiondate', 'stationno', 'transectreplicate', 'plotreplicate']
 
     # Extract relevant columns for metadata and cover
     metadata_cols = [*pkey_cols, 'total_algae_cover', 'tmp_row']
-    cover_cols = [*pkey_cols, 'estimatedcover']
+    cover_cols = [*pkey_cols, 'covertype', 'estimatedcover']
 
     # Filter transect_cover for algae and group by primary keys to sum estimatedcover
     transect_cover_aggregated = (
@@ -200,11 +201,27 @@ def macroalgae(all_dfs):
         how='left'
     )
 
-    # Identify bad rows where total_algae_cover does not match summed estimatedcover
+    # Add a flag to check if covertype = 'algae' exists when total_algae_cover > 0
+    transect_cover_merged['algae_record_exists'] = (
+        transect_cover[pkey_cols + ['covertype']]
+        .query("covertype.str.lower() == 'algae'", engine='python')
+        .drop_duplicates(subset=pkey_cols)
+        .assign(algae_record_exists=True)
+        .set_index(pkey_cols)['algae_record_exists']
+        .reindex(transect_metadata.set_index(pkey_cols).index, fill_value=False)
+        .reset_index(drop=True)
+    )
+
+    # Identify bad rows
     check_6_bad_rows = transect_cover_merged[
-        (transect_cover_merged['total_algae_cover'] != transect_cover_merged['estimatedcover']) &
-        (~transect_cover_merged['total_algae_cover'].isnull()) &
-        (~transect_cover_merged['estimatedcover'].isnull())
+        (
+            (transect_cover_merged['total_algae_cover'] > 0) & 
+            (~transect_cover_merged['algae_record_exists'])  # Missing algae record
+        ) | (
+            (transect_cover_merged['total_algae_cover'] != transect_cover_merged['estimatedcover']) & 
+            (~transect_cover_merged['total_algae_cover'].isnull()) & 
+            (~transect_cover_merged['estimatedcover'].isnull())  # Mismatch in total cover
+        )
     ]['tmp_row'].tolist()
 
     # Update error log
@@ -214,10 +231,15 @@ def macroalgae(all_dfs):
         "badrows": check_6_bad_rows,
         "badcolumn": "projectid,estuaryname,siteid,samplecollectiondate,stationno,transectreplicate,plotreplicate",
         "error_type": "Logic Error",
-        "error_message": "For each plot replicate in transect_meta, total_algae_cover must equal the summed estimatedcover when covertype = algae in transect_cover."
+        "error_message": (
+            "For each plot replicate in transect_meta, if total_algae_cover > 0, there must be at least one record "
+            "with covertype = 'algae' in transect_cover. Additionally, total_algae_cover must equal the summed "
+            "estimatedcover for all such records."
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 6")
+
 
     # CHECK - 7
     print("# CHECK - 7")
