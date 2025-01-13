@@ -315,8 +315,8 @@ def check_consecutiveness(df, groupcols, col_to_check):
 def check_date_order(df, before_date, after_date):
     # This function checks that dates are in the correct order
 
-    df[before_date] = pd.to_datetime(df[before_date], format='%d/%m/%Y').dt.date
-    df[after_date] = pd.to_datetime(df[after_date], format='%d/%m/%Y').dt.date
+    df[before_date] = pd.to_datetime(df[before_date], errors='coerce').dt.date
+    df[after_date] = pd.to_datetime(df[after_date], errors='coerce').dt.date
     
     return df[(df[before_date] > df[after_date])].tmp_row.tolist()
 
