@@ -143,14 +143,18 @@ def main():
     assert len(all_dfs) > 0, f"submissionid - {session.get('submissionid')} all_dfs is empty"
     
     for tblname in all_dfs.keys():
-        all_dfs[tblname].columns = [x.lower() for x in all_dfs[tblname].columns]
+        all_dfs[tblname].columns = [
+            x.lower() if isinstance(x, str) else x 
+            for x in all_dfs[tblname].columns
+        ]
         all_dfs[tblname] = all_dfs[tblname].drop(
-            columns= [
+            columns=[
                 x 
                 for x in all_dfs[tblname].columns 
-                if x in current_app.system_fields
+                if isinstance(x, str) and x in current_app.system_fields
             ]
         )
+
     print("DONE - building 'all_dfs' dictionary")
 
 
