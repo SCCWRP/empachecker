@@ -174,7 +174,7 @@ def macroalgae(all_dfs):
     print("# CHECK - 6")
     # Description: For each plot replicate in transect_meta, if total_algae_cover > 0, 
     # there must be at least one record with covertype = 'algae', 
-    # and total_algae_cover must equal the summed estimatedcover for covertype = 'algae' in transect_cover.
+    # the summed estimatedcover for covertype = 'algae must great than or equal to total_algae_cover in transect_cover.
     # Created Coder: Duy Nguyen
     # Created Date: 12/30/2024
     # Last Edited Date: [Your Edit Date]
@@ -218,7 +218,7 @@ def macroalgae(all_dfs):
             (transect_cover_merged['total_algae_cover'] > 0) & 
             (~transect_cover_merged['algae_record_exists'])  # Missing algae record
         ) | (
-            (transect_cover_merged['total_algae_cover'] != transect_cover_merged['estimatedcover']) & 
+            (transect_cover_merged['estimatedcover'] < transect_cover_merged['total_algae_cover']) & 
             (~transect_cover_merged['total_algae_cover'].isnull()) & 
             (~transect_cover_merged['estimatedcover'].isnull())  # Mismatch in total cover
         )
@@ -233,8 +233,7 @@ def macroalgae(all_dfs):
         "error_type": "Logic Error",
         "error_message": (
             "For each plot replicate in transect_meta, if total_algae_cover > 0, there must be at least one record "
-            "with covertype = 'algae' in transect_cover. Additionally, total_algae_cover must equal the summed "
-            "estimatedcover for all such records."
+            "with covertype = 'algae' in transect_cover. Additionally, the summed estimatedcover for covertype = 'algae must great than or equal to total_algae_cover in transect_cover."
         )
     })
     errs = [*errs, checkData(**args)]
