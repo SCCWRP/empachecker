@@ -43,7 +43,11 @@ TEMPLATE_COLUMNS = [
     'raw_qvalue',
     'raw_qvalue_qcflag_human',
     'organization',
-    'wqnotes'
+    'wqnotes',
+    'raw_atmospheric_pressure_qcflag_human', 
+    'raw_atmospheric_pressure', 
+    'raw_atmospheric_pressure_unit', 
+    'raw_atmospheric_pressure_qcflag_robot'
 ]
 
 

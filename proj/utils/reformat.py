@@ -122,9 +122,11 @@ def read_ctd(ctd_path):
     return ctd_data
 
 def read_troll(troll_path):
+    print("inside read troll")
     # read csv header, get values for reading in as dataframe later
-    with open(troll_path) as troll_file:
+    with open(troll_path,  encoding='utf-8') as troll_file:
         troll_reader = csv.reader(troll_file)
+        print("troll reader")
         for i, row in enumerate(troll_reader):
             if 'Serial Number' in row:
                 serial_index = row.index('Serial Number')
@@ -133,7 +135,6 @@ def read_troll(troll_path):
                 timezone = row[0].split(": ")[1]
                 header_index = i + 4  # data begins 4 rows below 'Time Zone:' line, adjust for 0 indexing
                 break
-
     troll_data = pd.read_csv(troll_path, header = header_index, usecols = [0,2,3,4], skip_blank_lines=False)
     # if file has double empty line at end of file, pandas reads one as a row, so drop it
     if pd.isnull(troll_data.iloc[-1]).all():
