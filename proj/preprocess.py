@@ -111,7 +111,7 @@ def fix_case(all_dfs: dict):
 def fill_daubenmiremidpoint(all_dfs):
     print('begin fill_daubenmiremidpoint')
     for key in all_dfs.keys():
-        if key in ['tbl_vegetativecover_data','tbl_algaecover_data']:
+        if key in ['tbl_vegetativecover_data','tbl_macroalgae_transect_cover']:
             df = all_dfs[key]
             lu_estimatedcover = pd.read_sql('SELECT * from lu_estimatedcover', g.eng)
             lu_dict = {
