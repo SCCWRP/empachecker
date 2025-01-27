@@ -471,7 +471,7 @@ def macroalgae(all_dfs):
         "error_type": "Logic Error",
         "error_message": "If covertype is 'plant', then scientificname cannot be 'Not recorded'."
     })
-    errs = [*errs, checkData(**args)]
+    warnings = [*warnings, checkData(**args)]
     print("# END OF CHECK - 16")
 
 
