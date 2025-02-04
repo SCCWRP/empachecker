@@ -473,7 +473,41 @@ def macroalgae(all_dfs):
     })
     warnings = [*warnings, checkData(**args)]
     print("# END OF CHECK - 16")
+    
+    # CHECK - 17
+    print("# CHECK - 17")
+    # Description: If scientificname is not 'Not recorded', then scientificname needs to be one of the assigned covertypes to avoid misclassification.
+    # Created Coder: Duy Nguyen
+    # Created Date: 02/04/2025
+    # Last Edited Date: 02/04/2025
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (02/04/2025): Adjusted to handle multiple covertypes in lu_plantspecies.
 
+    # Load the lookup table for valid scientificname and associated covertypes
+    lu_plantspecies = pd.read_sql("SELECT DISTINCT scientificname, covertype FROM lu_plantspecies;", g.eng)
+
+    # Convert covertype in lu_plantspecies to lists, stripping spaces
+    lu_plantspecies['covertype_list'] = lu_plantspecies['covertype'].str.split(',').apply(lambda x: [val.strip() for val in x])
+    
+    # Create a dictionary mapping scientificname to valid covertypes
+    scientificname_to_covertypes = lu_plantspecies.set_index('scientificname')['covertype_list'].to_dict()
+
+    # Identify bad rows where scientificname is not 'Not recorded' but has an invalid covertype
+    badrows = transect_cover[
+        (transect_cover['scientificname'].str.lower() != 'not recorded') & 
+        ~transect_cover.apply(lambda row: row['covertype'] in scientificname_to_covertypes.get(row['scientificname'], []), axis=1)
+    ]['tmp_row'].tolist()
+
+    args.update({
+        "dataframe": transect_cover,
+        "tablename": "tbl_macroalgae_transect_cover",
+        "badrows": badrows,
+        "badcolumn": "scientificname,covertype",
+        "error_type": "Logic Error",
+        "error_message": "If scientificname is not 'Not recorded', then it must correspond to a valid covertype to avoid misclassification."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 17")
 
 
 
