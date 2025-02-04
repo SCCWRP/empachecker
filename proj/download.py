@@ -696,41 +696,46 @@ def grab_translator():
 
 @download.route('/test-data', methods=['GET'])
 def get_test_data():
-
     dtype = request.args.get('dtype')
     clean = str(request.args.get('clean')).lower() == 'true'
-    
+    get_all = str(request.args.get('get')).lower() == 'all'
+
     print("dtype:", dtype)
 
     dataset = current_app.datasets.get(dtype)
     eng = g.eng
-    
+
     if dataset is None:
         return f"Datatype {dtype} not found in datasets"
 
     if any(['logger' in dtype]):
-        return "We won't do it for loggers or trash "
+        return "We won't do it for loggers or trash"
     
     try:
         data = BytesIO()
-        # Pick a random site first, but this should be unique across tbl
-        siteid_df = pd.read_sql(f"SELECT DISTINCT siteid FROM {[x for x in dataset.get('tables') if x != 'tbl_protocol_metadata'][0]} LIMIT 1", eng)
-        print(siteid_df)
+        
+        # Pick a random site first, if not retrieving all data
+        if not get_all:
+            siteid_df = pd.read_sql(
+                f"SELECT DISTINCT siteid FROM {[x for x in dataset.get('tables') if x != 'tbl_protocol_metadata'][0]} LIMIT 1", 
+                eng
+            )
+            siteid = siteid_df.iloc[0, 0] if not siteid_df.empty else None
+        else:
+            siteid = None
+
         with pd.ExcelWriter(data, engine='openpyxl') as writer:
             for tbl in dataset.get('tables'):
                 print(tbl)
                 if tbl == 'tbl_protocol_metadata':
                     df = pd.read_sql(f'SELECT * FROM {tbl} LIMIT 1', eng)
-                    df.to_excel(writer, sheet_name=tbl, index=False)
                 else:
-                    if siteid_df.empty:
+                    if get_all or siteid is None:
                         df = pd.read_sql(f"SELECT * FROM {tbl}", eng)
-                        df.to_excel(writer, sheet_name=tbl, index=False)
                     else:
-                        siteid = siteid_df.iloc[0, 0]
-                        #df = pd.read_sql(f"SELECT * FROM {tbl} WHERE siteid = '{siteid}'", eng)
-                        df = pd.read_sql(f"SELECT * FROM {tbl}", eng)
-                        df.to_excel(writer, sheet_name=tbl, index=False)
+                        df = pd.read_sql(f"SELECT * FROM {tbl} WHERE siteid = '{siteid}'", eng)
+
+                df.to_excel(writer, sheet_name=tbl, index=False)
 
         data.seek(0)
         filename = f'{dtype}_test.xlsx'
