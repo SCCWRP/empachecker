@@ -28,8 +28,7 @@ def logger_meta(all_dfs):
     # This data type should only have tbl_example
     # example = all_dfs['tbl_example']
     meta = all_dfs['tbl_wq_logger_metadata']
-
-   
+    meta['tmp_row'] = meta.index
     errs = []
     warnings = []
 
@@ -44,6 +43,105 @@ def logger_meta(all_dfs):
         "is_core_error": False,
         "error_message": ""
     }
+
+    # CHECK - 2
+    print("# CHECK - 2")
+    # Description: Ensure there are no overlapping samplecollectiontimestampstart and samplecollectiontimestampend times **only if** there is a match on projectid, siteid, estuaryname, stationno, sensortype, and sensorid in the database. (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 02/07/2025
+    # Last Edited Date: 02/07/2025
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (02/07/2025): Optimized to check overlap **only if a match exists in the database**.
+
+    # Load only relevant columns from database
+    meta_db = pd.read_sql(
+        "SELECT projectid, siteid, estuaryname, stationno, sensortype, sensorid, samplecollectiontimestampstart, samplecollectiontimestampend FROM tbl_wq_logger_metadata",
+        g.eng
+    )
+
+    # Keep only records in new data that have a **matching key** in the database
+    meta_matched = meta.merge(
+        meta_db[['projectid', 'siteid', 'estuaryname', 'stationno', 'sensortype', 'sensorid']],
+        on=['projectid', 'siteid', 'estuaryname', 'stationno', 'sensortype', 'sensorid'],
+        how='inner'
+    )
+
+    # Merge matched new data with database records for overlap check
+    meta_combined = meta_matched.merge(
+        meta_db,
+        on=['projectid', 'siteid', 'estuaryname', 'stationno', 'sensortype', 'sensorid'],
+        suffixes=('_new', '_db'),
+        how='inner'
+    )
+
+    # Identify overlapping rows
+    overlapping_rows = meta_combined[
+        (meta_combined['samplecollectiontimestampstart_new'] < meta_combined['samplecollectiontimestampend_db']) &  # New start is before existing end
+        (meta_combined['samplecollectiontimestampend_new'] > meta_combined['samplecollectiontimestampstart_db'])    # New end is after existing start
+    ]
+
+    # Extract bad row indices from new data only
+    badrows = meta.merge(
+        overlapping_rows[['projectid', 'siteid', 'estuaryname', 'stationno', 'sensortype', 'sensorid', 'samplecollectiontimestampstart_new', 'samplecollectiontimestampend_new']],
+        left_on=['projectid', 'siteid', 'estuaryname', 'stationno', 'sensortype', 'sensorid', 'samplecollectiontimestampstart', 'samplecollectiontimestampend'],
+        right_on=['projectid', 'siteid', 'estuaryname', 'stationno', 'sensortype', 'sensorid', 'samplecollectiontimestampstart_new', 'samplecollectiontimestampend_new'],
+        how='inner'
+    )['tmp_row'].tolist()
+
+    args.update({
+        "dataframe": meta,
+        "tablename": "tbl_wq_logger_metadata",
+        "badrows": badrows,
+        "badcolumn": "projectid,siteid,estuaryname,stationno,sensortype,sensorid,samplecollectiontimestampstart,samplecollectiontimestampend",
+        "error_type": "Logic Error",
+        "error_message": "For the same projectid, siteid, estuaryname, stationno, sensortype, and sensorid, overlapping samplecollectiontimestampstart and samplecollectiontimestampend times are not allowed, including database records."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 2")
+
+    # CHECK - 3
+    print("# CHECK - 3")
+    # Description: Ensure samplecollectiontimestampstart is less than samplecollectiontimestampend (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 02/07/2025
+    # Last Edited Date: 02/07/2025
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (02/07/2025): Initial implementation.
+
+    args.update({
+        "dataframe": meta,
+        "tablename": "tbl_wq_logger_metadata",
+        "badrows": meta[
+            meta['samplecollectiontimestampstart'] >= meta['samplecollectiontimestampend']
+        ]['tmp_row'].tolist(),
+        "badcolumn": "samplecollectiontimestampstart,samplecollectiontimestampend",
+        "error_type": "Logic Error",
+        "error_message": "samplecollectiontimestampstart must be less than samplecollectiontimestampend."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 3")
+
+    # CHECK - 4
+    print("# CHECK - 4")
+    # Description: Ensure latitude and longitude are not equal to -88 (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 02/07/2025
+    # Last Edited Date: 02/07/2025
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (02/07/2025): Initial implementation.
+
+    args.update({
+        "dataframe": meta,
+        "tablename": "tbl_wq_logger_metadata",
+        "badrows": meta[
+            (meta['latitude'] == -88) | (meta['longitude'] == -88)
+        ]['tmp_row'].tolist(),
+        "badcolumn": "latitude,longitude",
+        "error_type": "Value Error",
+        "error_message": "Latitude and longitude cannot be -88."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 4")
 
     return {'errors': errs, 'warnings': warnings}
 
