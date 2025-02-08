@@ -1,29 +1,51 @@
+<!DOCTYPE html>
 <html>
   <head>
-    <style>
-        html,
-        body,
-        #viewDiv {
-          padding: 0;
-          margin: 0;
-          height: 100%;
-          width: 100%;
-        }
-    </style>
-  
-    <link rel="stylesheet" href="https://js.arcgis.com/4.25/esri/themes/light/main.css">
-    <script src="https://js.arcgis.com/4.25/"></script>
-
     <meta charset="utf-8" />
-    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
-    <script>
-      let script_root = {{request.script_root|tojson|safe}};
-      script_root = script_root.replace('/','');
-    </script>
+    <meta
+      name="viewport"
+      content="initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <title>Leaflet Map Example</title>
 
+    <!-- Leaflet CSS (SRI attributes removed) -->
+    <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+    integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="
+    crossorigin=""
+  />
+
+    <!-- Optional: Full-page map styling -->
+    <style>
+      html,
+      body,
+      #map {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+    </style>
+
+    <script>
+      let script_root = {{ request.script_root|tojson|safe }};
+      script_root = script_root.replace('/', '');
+    </script>
   </head>
+
   <body>
-    <div id="viewDiv"></div>
+    <!-- Map container -->
+    <div id="map"></div>
+
+    <!-- Leaflet JS (SRI attributes removed) -->
+    <script
+  src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+  integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM="
+  crossorigin=""
+></script>
+
+    <!-- Your custom script -->
+    <script src="{{ url_for('static', filename='stations_visual_map.js') }}"></script>
   </body>
-  <script src="{{url_for('static', filename='stations_visual_map.js')}}"></script>
 </html>

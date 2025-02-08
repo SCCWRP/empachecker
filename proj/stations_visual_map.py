@@ -15,23 +15,63 @@ get_map_info = Blueprint('get_map_info', __name__)
 @get_map_info.route('/getmapinfo', methods = ['GET','POST'], strict_slashes=False)
 def send_geojson():
 
-    arcgis_api_key = os.environ.get('ARCGIS_API_KEY')
-    
-    path_to_points_json = os.path.join(os.getcwd(), "files", str(session.get('submissionid')), "bad-points-geojson.json")
-    path_to_polygons_json = os.path.join(os.getcwd(), "files", str(session.get('submissionid')), "polygons-geojson.json")
+    # Example path construction
+    submission_id = session.get('submissionid', 'default')  
+    path_to_points_json = os.path.join(os.getcwd(), "files", str(submission_id), "bad-points-geojson.json")
+    path_to_polygons_json = os.path.join(os.getcwd(), "files", str(submission_id), "polygons-geojson.json")
 
+    # If the JSON file exists, load it. Otherwise, return sample GeoJSON.
     if os.path.exists(path_to_points_json):
         with open(path_to_points_json, 'r') as f:
             sites = json.load(f)
     else:
-        sites = "None"
-      
-    if os.path.exists(path_to_points_json):
+        # Default example: One point
+        sites = {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "name": "Sample Point 1"
+                    },
+                    "geometry": {
+                        "type": "Point",
+                        # Example: near New York City
+                        "coordinates": [-74.0060, 40.7128]
+                    }
+                }
+            ]
+        }
+
+    if os.path.exists(path_to_polygons_json):
         with open(path_to_polygons_json, 'r') as f:
             catchments = json.load(f)
     else:
-        catchments = "None"
-     
-    return jsonify(arcgis_api_key=arcgis_api_key, sites=sites, catchments=catchments)
+        # Default example: One polygon
+        catchments = {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "name": "Sample Polygon 1"
+                    },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [
+                            [
+                                [-74.009, 40.705],
+                                [-74.001, 40.705],
+                                [-74.001, 40.710],
+                                [-74.009, 40.710],
+                                [-74.009, 40.705]
+                            ]
+                        ]
+                    }
+                }
+            ]
+        }
+
+    return jsonify(sites=sites, catchments=catchments)
 
   
