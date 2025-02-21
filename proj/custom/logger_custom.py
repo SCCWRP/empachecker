@@ -143,6 +143,52 @@ def logger_meta(all_dfs):
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 4")
 
+    # CHECK - 5
+    print("# CHECK - 5")
+    # Description: Ensure sensorid is not 'Not recorded'. If sensorid is missing, input -88 (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 02/07/2025
+    # Last Edited Date: 02/07/2025
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (02/07/2025): Initial implementation.
+
+    args.update({
+        "dataframe": meta,
+        "tablename": "tbl_wq_logger_metadata",
+        "badrows": meta[
+            (meta['sensorid'] == 'Not recorded') | (meta['sensorid'].isnull())
+        ]['tmp_row'].tolist(),
+        "badcolumn": "sensorid",
+        "error_type": "Value Error",
+        "error_message": "Sensorid cannot be 'Not recorded'. If sensorid is missing, input -88."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 5")
+
+
+    # CHECK - 6
+    print("# CHECK - 6")
+    # Description: Ensure profile is not 'Not recorded' (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 02/07/2025
+    # Last Edited Date: 02/07/2025
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (02/07/2025): Initial implementation.
+
+    args.update({
+        "dataframe": meta,
+        "tablename": "tbl_wq_logger_metadata",
+        "badrows": meta[
+            meta['profile'] == 'Not recorded'
+        ]['tmp_row'].tolist(),
+        "badcolumn": "profile",
+        "error_type": "Value Error",
+        "error_message": "Profile cannot be 'Not recorded'."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 6")
+
+
     return {'errors': errs, 'warnings': warnings}
 
 
