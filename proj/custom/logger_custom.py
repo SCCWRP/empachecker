@@ -165,9 +165,6 @@ def logger_meta(all_dfs):
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 5")
 
-
-    # CHECK - 6
-    print("# CHECK - 6")
     # Description: Ensure profile is not 'Not recorded' (🛑 ERROR 🛑)
     # Created Coder: Duy Nguyen
     # Created Date: 02/07/2025
