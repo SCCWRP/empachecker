@@ -392,7 +392,8 @@ def get_logger_data():
     end_date = pd.Timestamp(payload.get('end_time'))
     if any([start_date is None, end_date is None]):
         return jsonify(message="Start Date and End Date must be provided")
-    ## 
+    if (end_date - start_date).days > 365:
+        return jsonify(message="Date range cannot exceed one year")
 
     # Optional Parameters
     projectid = payload.get('projectid')
