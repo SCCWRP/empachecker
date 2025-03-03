@@ -226,7 +226,7 @@ def fishseines(all_dfs):
     
     # first get the lu_fishmacrospecies 
     lu_fishmacrospecies = pd.read_sql("SELECT scientificname, fish_or_invert FROM lu_fishmacrospecies", g.eng)
-
+    print(fishabud)
     # then figure out if a species is a fish or invert by merging fishabud and lu_fishmacro
     fishabud_tmp = pd.merge(
         fishabud,
@@ -234,7 +234,8 @@ def fishseines(all_dfs):
         how='left',
         on=['scientificname']
     )
-
+    print("fishabud_tmp")
+    print(fishabud_tmp)
     # then filter the dataframe to get only fish and method == 'count'
     fishabud_tmp = fishabud_tmp[
         (fishabud_tmp['method'] == 'count') &
@@ -250,7 +251,7 @@ def fishseines(all_dfs):
     )
     # count the matching records and store the result in a column called num_matching_recs
     counted_records = merged_data.groupby(fishabud_fishdata_shared_pkey).size().reset_index(name='num_matching_recs')
-
+    print(counted_records)
     # then merge the result back to the fish abundance table to compare num_matching_recs with the abundance column
     merged_tmp = pd.merge(
         fishabud_tmp,
@@ -258,6 +259,8 @@ def fishseines(all_dfs):
         on=fishabud_fishdata_shared_pkey,
         how='inner'
     ).filter(items=[*fishabud_fishdata_shared_pkey,*['abundance','num_matching_recs','tmp_row']])
+    print(merged_tmp[['abundance','num_matching_recs']])
+
 
     badrows = merged_tmp[
         (   
