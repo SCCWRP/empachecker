@@ -392,14 +392,18 @@ def get_logger_data():
     end_date = pd.Timestamp(payload.get('end_time'))
     if any([start_date is None, end_date is None]):
         return jsonify(message="Start Date and End Date must be provided")
-    if (end_date - start_date).days > 365:
-        return jsonify(message="Date range cannot exceed one year")
+    print((end_date - start_date).days)
+
+    if (end_date - start_date).days > 93: #3 months
+        return jsonify(message="Date range cannot exceed 3 months")
 
     # Optional Parameters
     projectid = payload.get('projectid')
     siteid = payload.get('siteid')
     estuaryname = payload.get('estuaryname')
     sensortype = payload.get('sensortype')
+    
+    print("estuaryname", estuaryname)
 
     def format_items(param):
         if param:

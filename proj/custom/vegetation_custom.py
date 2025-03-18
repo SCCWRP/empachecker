@@ -180,6 +180,26 @@ def vegetation(all_dfs):
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 25")
 
+    print("# CHECK - 26")
+    # Description: When enteredabundance != -88, estimatedabundance must be equal to enteredabundance / quadratsize
+    # Created Coder: Caspian
+    # Created Date: 3/18/2025
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE ():
+
+    args.update({
+        "dataframe": epidata,
+        "tablename": "tbl_epifauna_data",
+        "badrows": epidata[(epidata["enteredabundance"] != -88) & 
+                        (epidata["estimatedabundance"] != epidata["enteredabundance"] / epidata["quadratsize"])].tmp_row.tolist(),
+        "badcolumn": "estimatedabundance",
+        "error_type": "Logic Error",
+        "error_message": "When enteredabundance is not -88, estimatedabundance must be equal to enteredabundance / quadratsize."
+    })
+
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 26")
 
 
 
