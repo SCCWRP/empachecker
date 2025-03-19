@@ -34,7 +34,7 @@ def global_custom(all_dfs, datatype = ''):
     # the spatial_empa_sites is for the site map check
     spatial_empa_sites = gpd.read_postgis("SELECT * FROM sde.spatial_empa_all_stations", g.eng, geom_col='geometry')
     spatial_empa_sites = spatial_empa_sites.to_crs(epsg=4326)
-    tbl_protocol_metadata = all_dfs['tbl_protocol_metadata']
+    tbl_protocol_metadata = all_dfs.get('tbl_protocol_metadata', pd.DataFrame({}))
 
     for table_name in all_dfs:
         if all_dfs[table_name].empty:
@@ -268,116 +268,63 @@ def global_custom(all_dfs, datatype = ''):
             errs = [*errs, checkData(**args)]
             print("# END GLOBAL CUSTOM CHECK - 8")
 
-
-            print("# GLOBAL CUSTOM CHECK - 9")
-            # Description: A (lat,long) for a station needs to be in its associate polygon.  Can turn into a warning by adding 'all-points-confirmed' to the notes column in tbl_protocol_metadata
-            # Created Coder: Duy
-            # Created Date: 11/3/23
-            # Last Edited Date: 1/9/24
-            # Last Edited Coder: Duy
-            # NOTE (11/3/23): Created the check. Need to QA and this check does not consider 1 mile buffer.
-            # NOTE (11/6/23): Fixed an error where sites in submitted file do not exist in the spatial_empa_sites table and cause null in geometry column after merging.
-            # NOTE (11/8/23): Duy adjusted the check, comments were left below
-            # NOTE (11/8/23): The .to_file function (writing a geopandas dataframe to geojson file) seems to have a problem writing out the date columns
-            # so we just want to get the needed columns when writing out to geojson file
-            latlong_cols = current_app.datasets.get(datatype).get('latlong_cols', None)
-            
-            # latlong_cols is a list of dictionaries of the tables with lat long columns
-            if latlong_cols is not None:
-                print(table_name)
-                tmp = [
-                    (x.get('latcol'), x.get('longcol'))
-                    for x in latlong_cols
-                    if x.get('tablename') == table_name
-                ][0]
-                latcol, longcol = tmp[0], tmp[1]
-                print("before geodataframe")
-                meta = gpd.GeoDataFrame(
-                    df, 
-                    geometry=gpd.points_from_xy(df[longcol], df[latcol])
-                )
-                meta_merged = meta.merge(
-                    spatial_empa_sites[['siteid','stationno','geometry']],
-                    how='left',
-                    on=['siteid','stationno'],
-                    suffixes=('_point', '_polygon')
-                )
+            if not tbl_protocol_metadata.empty:
+                print("# GLOBAL CUSTOM CHECK - 9")
+                # Description: A (lat,long) for a station needs to be in its associate polygon.  Can turn into a warning by adding 'all-points-confirmed' to the notes column in tbl_protocol_metadata
+                # Created Coder: Duy
+                # Created Date: 11/3/23
+                # Last Edited Date: 1/9/24
+                # Last Edited Coder: Duy
+                # NOTE (11/3/23): Created the check. Need to QA and this check does not consider 1 mile buffer.
+                # NOTE (11/6/23): Fixed an error where sites in submitted file do not exist in the spatial_empa_sites table and cause null in geometry column after merging.
+                # NOTE (11/8/23): Duy adjusted the check, comments were left below
+                # NOTE (11/8/23): The .to_file function (writing a geopandas dataframe to geojson file) seems to have a problem writing out the date columns
+                # so we just want to get the needed columns when writing out to geojson file
+                latlong_cols = current_app.datasets.get(datatype).get('latlong_cols', None)
                 
-                # Display warnings when the points are associated with undelineated polygons
-                meta_unmatched = meta_merged[meta_merged['geometry_polygon'].isna()]
-                args = {
-                    "dataframe": df,
-                    "tablename": table_name,
-                    "badrows": meta_unmatched.tmp_row.tolist(),
-                    "badcolumn": f"{latcol}, {longcol}",
-                    "error_type": "Value Error",
-                    "is_core_error": False,
-                    "error_message": f"These points were not checked if their locations are valid because their associated polygons ({', '.join(map(str, set(zip(meta_unmatched['siteid'], meta_unmatched['stationno']))))})  were not created. Please contact Jan Walker (janw@sccwrp.org) to have the polygons added."
-                }
-                if len(tbl_protocol_metadata) == 1:
-                    # Get the notes column, split values by commas, and check for 'all-points-confirmed'
-                    notes_values = tbl_protocol_metadata['notes'].iloc[0].split(',')
-                    notes_values = [note.strip() for note in notes_values]  # Remove extra spaces
-                    
-                    if 'all-points-confirmed' in notes_values:
-                        # If 'all-points-confirmed' is present, log as a warning
-                        warnings = [*warnings, checkData(**args)]
-                    else:
-                        # Otherwise, proceed with errors
-                        errs = [*errs, checkData(**args)]
-                else:
-                    # If tbl_protocol_metadata has more than one row, treat it as an error
-                    errs = [*errs, checkData(**args)]
-                
-                # Display warnings when the points are outside of their associated polygons
-                meta_matched = meta_merged[~meta_merged['geometry_polygon'].isna()]
-                meta_matched_bad = meta_matched[
-                    meta_matched.apply(
-                        lambda row: not row['geometry_point'].within(row['geometry_polygon']), 
-                        axis=1
+                # latlong_cols is a list of dictionaries of the tables with lat long columns
+                if latlong_cols is not None:
+                    print(table_name)
+                    tmp = [
+                        (x.get('latcol'), x.get('longcol'))
+                        for x in latlong_cols
+                        if x.get('tablename') == table_name
+                    ][0]
+                    latcol, longcol = tmp[0], tmp[1]
+                    print("before geodataframe")
+                    meta = gpd.GeoDataFrame(
+                        df, 
+                        geometry=gpd.points_from_xy(df[longcol], df[latcol])
                     )
-                ]
-            
-                # Only write geojson when there are points that are outside polygon
-                if not meta_matched_bad.empty:
-                    # declare path
-                    save_path = os.path.join(os.getcwd(), "files", str(session.get('submissionid')))
-
-                    # write points to geojson file
-                    tmp = meta[meta['tmp_row'].isin(meta_matched_bad['tmp_row'])] \
-                        .rename(
-                            columns={latcol: 'latitude', longcol: 'longitude'}   
-                        )
-                    tmp = tmp[['latitude','longitude','siteid','stationno','tmp_row','geometry']].to_file(
-                        os.path.join(save_path, "bad-points-geojson.json"), 
-                        driver='GeoJSON'
+                    meta_merged = meta.merge(
+                        spatial_empa_sites[['siteid','stationno','geometry']],
+                        how='left',
+                        on=['siteid','stationno'],
+                        suffixes=('_point', '_polygon')
                     )
                     
-                    # write polygons to geojson file
-                    tmp = spatial_empa_sites[
-                        spatial_empa_sites[['siteid', 'stationno']].apply(tuple, axis=1).isin(
-                            meta_matched_bad[['siteid', 'stationno']].apply(tuple, axis=1)
-                        )
-                    ].rename(columns={latcol: 'latitude', longcol: 'longitude'})
-                    tmp['siteid'] = tmp['siteid'].astype(str)
-                    tmp['stationno'] = tmp['stationno'].astype(int)  # Ensure stationno is an integer
-                    tmp = tmp[['siteid','stationno','geometry']].to_file(
-                        os.path.join(save_path, "polygons-geojson.json"), 
-                        driver='GeoJSON'
-                    )
-                    
+                    # Display warnings when the points are associated with undelineated polygons
+                    meta_unmatched = meta_merged[meta_merged['geometry_polygon'].isna()]
                     args = {
                         "dataframe": df,
                         "tablename": table_name,
-                        "badrows": meta_matched_bad.tmp_row.tolist(),
+                        "badrows": meta_unmatched.tmp_row.tolist(),
                         "badcolumn": f"{latcol}, {longcol}",
                         "error_type": "Value Error",
                         "is_core_error": False,
-                        "error_message": f"These points are not located within their associated polygon. Please refer to the Stations Visual Map tab. If you are certain that their locations are correct, update the <b>notes</b> column in the <b>tbl_protocol_metadata</b> table by adding the following text: '<b>all-points-confirmed</b>'. If you have multiple notes, you must separate them with commas."
+                        "error_message": f"These points were not checked if their locations are valid because their associated polygons ({', '.join(map(str, set(zip(meta_unmatched['siteid'], meta_unmatched['stationno']))))})  were not created. Please contact Jan Walker (janw@sccwrp.org) to have the polygons added."
                     }
                     if len(tbl_protocol_metadata) == 1:
                         # Get the notes column, split values by commas, and check for 'all-points-confirmed'
-                        notes_values = tbl_protocol_metadata['notes'].iloc[0].split(',')
+                        notes = tbl_protocol_metadata['notes'].iloc[0]
+                        if notes is None:
+                            notes_values = []  # or set a default value
+                        elif isinstance(notes, str):
+                            notes_values = notes.split(',')
+                        else:
+                            # If it's not a string, convert it to one and then split
+                            notes_values = str(notes).split(',')
+
                         notes_values = [note.strip() for note in notes_values]  # Remove extra spaces
                         
                         if 'all-points-confirmed' in notes_values:
@@ -389,9 +336,78 @@ def global_custom(all_dfs, datatype = ''):
                     else:
                         # If tbl_protocol_metadata has more than one row, treat it as an error
                         errs = [*errs, checkData(**args)]
+                    
+                    # Display warnings when the points are outside of their associated polygons
+                    meta_matched = meta_merged[~meta_merged['geometry_polygon'].isna()]
+                    meta_matched_bad = meta_matched[
+                        meta_matched.apply(
+                            lambda row: not row['geometry_point'].within(row['geometry_polygon']), 
+                            axis=1
+                        )
+                    ]
                 
+                    # Only write geojson when there are points that are outside polygon
+                    if not meta_matched_bad.empty:
+                        # declare path
+                        save_path = os.path.join(os.getcwd(), "files", str(session.get('submissionid')))
 
-                print("# END GLOBAL CUSTOM CHECK - 9")
+                        # write points to geojson file
+                        tmp = meta[meta['tmp_row'].isin(meta_matched_bad['tmp_row'])] \
+                            .rename(
+                                columns={latcol: 'latitude', longcol: 'longitude'}   
+                            )
+                        tmp = tmp[['latitude','longitude','siteid','stationno','tmp_row','geometry']].to_file(
+                            os.path.join(save_path, "bad-points-geojson.json"), 
+                            driver='GeoJSON'
+                        )
+                        
+                        # write polygons to geojson file
+                        tmp = spatial_empa_sites[
+                            spatial_empa_sites[['siteid', 'stationno']].apply(tuple, axis=1).isin(
+                                meta_matched_bad[['siteid', 'stationno']].apply(tuple, axis=1)
+                            )
+                        ].rename(columns={latcol: 'latitude', longcol: 'longitude'})
+                        tmp['siteid'] = tmp['siteid'].astype(str)
+                        tmp['stationno'] = tmp['stationno'].astype(int)  # Ensure stationno is an integer
+                        tmp = tmp[['siteid','stationno','geometry']].to_file(
+                            os.path.join(save_path, "polygons-geojson.json"), 
+                            driver='GeoJSON'
+                        )
+                        
+                        args = {
+                            "dataframe": df,
+                            "tablename": table_name,
+                            "badrows": meta_matched_bad.tmp_row.tolist(),
+                            "badcolumn": f"{latcol}, {longcol}",
+                            "error_type": "Value Error",
+                            "is_core_error": False,
+                            "error_message": f"These points are not located within their associated polygon. Please refer to the Stations Visual Map tab. If you are certain that their locations are correct, update the <b>notes</b> column in the <b>tbl_protocol_metadata</b> table by adding the following text: '<b>all-points-confirmed</b>'. If you have multiple notes, you must separate them with commas."
+                        }
+                        if len(tbl_protocol_metadata) == 1:
+                            # Get the notes column, split values by commas, and check for 'all-points-confirmed'
+                            notes = tbl_protocol_metadata['notes'].iloc[0]
+                            if notes is None:
+                                notes_values = []  # or set a default value
+                            elif isinstance(notes, str):
+                                notes_values = notes.split(',')
+                            else:
+                                # If it's not a string, convert it to one and then split
+                                notes_values = str(notes).split(',')
+
+                            notes_values = [note.strip() for note in notes_values]  # Remove extra spaces
+                            
+                            if 'all-points-confirmed' in notes_values:
+                                # If 'all-points-confirmed' is present, log as a warning
+                                warnings = [*warnings, checkData(**args)]
+                            else:
+                                # Otherwise, proceed with errors
+                                errs = [*errs, checkData(**args)]
+                        else:
+                            # If tbl_protocol_metadata has more than one row, treat it as an error
+                            errs = [*errs, checkData(**args)]
+                    
+
+                    print("# END GLOBAL CUSTOM CHECK - 9")
 
 
 
