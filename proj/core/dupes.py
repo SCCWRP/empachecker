@@ -61,7 +61,6 @@ def checkDuplicatesInProduction(dataframe, tablename, eng, *args, output = None,
     pkey = get_primary_key(tablename, eng)
     print(pkey)
     
-
     # initialize return values
     ret = []
 
@@ -79,27 +78,41 @@ def checkDuplicatesInProduction(dataframe, tablename, eng, *args, output = None,
     tmp_table_name = f'tmp_{dtype}_{submissionid}'
     
     # Load the dataframe to the database table
+    dataframe['tmp_row'] = dataframe.index
     dataframe.to_sql(tmp_table_name, con=eng, if_exists='replace', index=False)
 
     # SQL query to get common rows based on primary key
-    join_condition = " AND ".join([f"tmp.{col}::VARCHAR = tbl.{col}::VARCHAR" for col in pkey])
+    #join_condition = " AND ".join([f"tmp.{col}::VARCHAR = tbl.{col}::VARCHAR" for col in pkey])
 
-    # SQL query to get common rows based on the primary keys
-    query = f"""
-        SELECT tmp.* 
-        FROM {tmp_table_name} tmp
-        INNER JOIN {tablename} tbl
-        ON {join_condition};
-    """
-    
+    # SQL query using WHERE EXISTS clause
+    if tablename == 'tbl_wq_logger_raw':
+        query = f"""
+            SELECT tmp.*
+            FROM {tmp_table_name} tmp
+            WHERE EXISTS (
+                SELECT 1
+                FROM {tablename} tbl
+                WHERE {" AND ".join([f"tmp.{col} = tbl.{col}" for col in pkey])}
+            );
+        """
+    else:
+        query = f"""
+            SELECT tmp.*
+            FROM {tmp_table_name} tmp
+            WHERE EXISTS (
+                SELECT 1
+                FROM {tablename} tbl
+                WHERE {" AND ".join([f"tmp.{col}::VARCHAR = tbl.{col}::VARCHAR" for col in pkey])}
+            );
+        """
+
     print("Executing duplicate check query...")
+    print(query)
     
     # Execute the query and return the result as a DataFrame
     duplicates_df = pd.read_sql_query(query, eng)
-    badrows = duplicates_df.index.tolist()
+    badrows = duplicates_df.tmp_row.tolist()
 
-
-    
     ret = [
         checkData(
             dataframe = dataframe,
