@@ -1,4 +1,4 @@
-// 1. Initialize the map
+ // 1. Initialize the map
 const map = L.map('map').setView([37.5, -119.5], 6); // Centered on California
 
 // 2. Add a tile layer (e.g., OpenStreetMap)
@@ -8,7 +8,6 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 // 3. Create dropdown and add to the map
 const dropdown = L.control({ position: 'topright' });
-
 dropdown.onAdd = function (map) {
   const div = L.DomUtil.create('div', 'dropdown-container');
   div.innerHTML = `
@@ -19,7 +18,6 @@ dropdown.onAdd = function (map) {
   L.DomEvent.disableClickPropagation(div);
   return div;
 };
-
 dropdown.addTo(map);
 
 // 4. Fetch your GeoJSON data from the backend
@@ -27,6 +25,33 @@ fetch('/empachecker/getmapinfo')
   .then(response => response.json())
   .then(data => {
     console.log("data:", data);
+    
+    // Check for core check: if siteid or stationno is undefined, show notification and exit further processing
+    let coreCheckFailed = false;
+    
+    // Check sites data (if available)
+    if (data.sites !== "None" && data.sites.features && data.sites.features.length > 0) {
+      const firstSite = data.sites.features[0];
+      if (typeof firstSite.properties.siteid === 'undefined' || typeof firstSite.properties.stationno === 'undefined') {
+        coreCheckFailed = true;
+      }
+    }
+    
+    // Check catchments data (if available)
+    if (data.catchments !== "None" && data.catchments.features && data.catchments.features.length > 0) {
+      const firstCatchment = data.catchments.features[0];
+      if (typeof firstCatchment.properties.siteid === 'undefined' || typeof firstCatchment.properties.stationno === 'undefined') {
+        coreCheckFailed = true;
+      }
+    }
+    
+    if (coreCheckFailed) {
+      L.popup({ closeOnClick: false, autoClose: false })
+        .setLatLng(map.getCenter())
+        .setContent("You need to pass Core Check before this check")
+        .openOn(map);
+      return; // Stop further processing
+    }
     
     let polygonLayers = {}; // Store layers for easy access
     let firstPolygonKey = null; // Store the first polygon's key
@@ -50,7 +75,8 @@ fetch('/empachecker/getmapinfo')
               <b>Site ID:</b> ${feature.properties.siteid} <br>
               <b>Station No:</b> ${feature.properties.stationno} <br>
               <b>Latitude:</b> ${feature.properties.latitude} <br>
-              <b>Longitude:</b> ${feature.properties.longitude}
+              <b>Longitude:</b> ${feature.properties.longitude} <br>
+              <b>Row:</b> ${feature.properties.tmp_row + 2}
             `;
             layer.bindPopup(popupContent);
           }
@@ -106,8 +132,6 @@ fetch('/empachecker/getmapinfo')
         selector.value = firstPolygonKey;
       }
       
-      
-
       // Event listener for dropdown selection
       selector.addEventListener("change", function () {
         const selectedKey = this.value;
