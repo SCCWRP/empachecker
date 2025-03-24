@@ -181,25 +181,40 @@ def vegetation(all_dfs):
     print("# END OF CHECK - 25")
 
     print("# CHECK - 26")
-    # Description: When enteredabundance != -88, estimatedabundance must be equal to enteredabundance / quadratsize
+    # Description: 
+    #   • If enteredabundance == -88 OR quadratsize == -88, estimatedabundance must be -88.
+    #   • Otherwise (enteredabundance != -88 AND quadratsize != -88), estimatedabundance must equal enteredabundance / quadratsize.
     # Created Coder: Caspian
     # Created Date: 3/18/2025
-    # Last Edited Date: 
-    # Last Edited Coder: 
-    # NOTE ():
+
+    badrows = epidata[
+        (
+            ((epidata["enteredabundance"] == -88) | (epidata["quadratsize"] == -88))
+            & (epidata["estimatedabundance"] != -88)
+        )
+        | 
+        (
+            (epidata["enteredabundance"] != -88)
+            & (epidata["quadratsize"] != -88)
+            & (epidata["estimatedabundance"] != epidata["enteredabundance"] / epidata["quadratsize"])
+        )
+    ].tmp_row.tolist()
 
     args.update({
         "dataframe": epidata,
         "tablename": "tbl_epifauna_data",
-        "badrows": epidata[(epidata["enteredabundance"] != -88) & 
-                        (epidata["estimatedabundance"] != epidata["enteredabundance"] / epidata["quadratsize"])].tmp_row.tolist(),
+        "badrows": badrows,
         "badcolumn": "estimatedabundance",
         "error_type": "Logic Error",
-        "error_message": "When enteredabundance is not -88, estimatedabundance must be equal to enteredabundance / quadratsize."
+        "error_message": (
+            "When either enteredabundance or quadratsize is -88, estimatedabundance must be -88; "
+            "otherwise estimatedabundance must equal enteredabundance / quadratsize."
+        )
     })
 
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 26")
+
 
 
 
