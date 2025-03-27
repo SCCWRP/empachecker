@@ -222,16 +222,18 @@ def feldspar(all_dfs):
         print("Performing check 3")
         badrows = felddata[
             felddata.apply(
-                lambda row: row.notna().any() and row['average'] != np.nanmean(
-                    [
-                        row[side_no]
-                        for side_no in ['sideone','sidetwo','sidethree','sidefour']
-                        if row[side_no] != -88
-                    ]
+                lambda row: (
+                    row['average'] != -88
+                    and any(row[col] != -88 for col in ['sideone','sidetwo','sidethree','sidefour'])
+                    and round(row['average'], 3) != round(
+                        np.nanmean([row[col] for col in ['sideone','sidetwo','sidethree','sidefour'] if row[col] != -88]),
+                        3
+                    )
                 ),
                 axis=1
             )
         ].tmp_row.tolist()
+    
         args.update({
             "dataframe": felddata,
             "tablename": "tbl_feldspar_data",
