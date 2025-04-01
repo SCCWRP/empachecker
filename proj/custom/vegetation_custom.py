@@ -333,7 +333,7 @@ def vegetation(all_dfs):
         "error_type": "Replicate Error",
         "error_message": f"transectreplicate values must be consecutive (1,2,3, etc.) within a station for a specific date."
     })
-    errs = [*errs, checkData(**args)]
+    warnings = [*warnings, checkData(**args)]
 
 
     groupby_cols = ['projectid','siteid','estuaryname','stationno','samplecollectiondate','transectreplicate']
@@ -506,7 +506,7 @@ def vegetation(all_dfs):
         "error_type": "Replicate Error",
         "error_message": f"transectreplicate must be consecutive within primary keys (siteid, estuaryname, stationno, samplecollectiondate, transectreplicate, plotreplicate, covertype, scientificname, live_dead, unknownreplicate, projectid)"
     })
-    errs = [*errs, checkData(**args)]
+    warnings = [*warnings, checkData(**args)]
     print("# END OF CHECK - 12")
 
     print("# CHECK - 13")
