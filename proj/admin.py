@@ -327,20 +327,10 @@ def get_inventory_data():
     # Query data for the General using Pandas
     general_query = \
         """
-            SELECT DISTINCT
-                sop,
-                region,
-                siteid,
-                year,
-                season,
-                data_exists
+            SELECT 
+                *
             FROM
-                vw_qa_allsop_combined_final 
-            ORDER BY
-                sop,
-                region,
-                siteid,
-                year
+                vw_data_inventory
         """
     general_df = pd.read_sql(general_query, con=eng)
     general_df['year'] = general_df['year'].astype(int).astype(str)
@@ -442,19 +432,10 @@ def download_inventory_data_grouped_site():
 
     # Query data for the General using Pandas
     general_query = """
-        SELECT DISTINCT
-            siteid,
-            season,
-            YEAR,
-            sop,
-            data_exists 
+        SELECT 
+            * 
         FROM
-            vw_qa_allsop_combined_final 
-        ORDER BY
-            siteid,
-            season,
-            YEAR,
-            sop;
+            vw_data_inventory
     """
     general_df = pd.read_sql(general_query, con=eng)
 
@@ -468,11 +449,12 @@ def download_inventory_data_grouped_site():
         "6a": "SOP 6: Benthic infauna, small",
         "6b": "SOP 6: Benthic infauna, large",
         "7": "SOP 7: Macroalgae",
-        "8": "SOP 8: Fish - BRUVs - Field",
+        "8a": "SOP 8: Fish - BRUVs - Field",
         "8b": "SOP 8: Fish - BRUVs - Lab",
         "9": "SOP 9: Fish seines",
         "10": "SOP 10: Crab traps",
         "11": "SOP 11: Marsh plain vegetation and epifauna surveys",
+        "12": "SOP 12: Topographic survey",
         "13": "SOP 13: Sediment accretion rates",
         "15": "SOP 15: Trash monitoring"
     }
@@ -607,14 +589,14 @@ def get_sample_data():
         "sop5": "tbl_sedgrainsize_labbatch_data",
         "sop6a": "tbl_benthicinfauna_labbatch",
         "sop6b": "tbl_benthiclarge_metadata",
-        "sop7": "tbl_macroalgae_sample_metadata",
-        "sop8": "tbl_bruv_metadata",
+        "sop7": "tbl_macroalgae_site_meta",
+        "sop8a": "tbl_bruv_metadata",
         "sop8b": "tbl_bruv_data",
         "sop9": "tbl_fish_sample_metadata",
         "sop10": "tbl_crabtrap_metadata",
         "sop11": "tbl_vegetation_sample_metadata",
         "sop13": "tbl_feldspar_metadata",
-        "sop15": "tbl_trashsiteinfo"
+        "sop15": "tbl_trashsamplearea"
     }
 
     def get_date_range(year, season):
@@ -651,24 +633,15 @@ def get_sample_data():
     eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
 
     # Query the database for the sample collection date and created date
-    if sop_name == 'sop15':
-        query = f"""
-        SELECT sampledate, created_date
-        FROM {table_name}
-        WHERE siteid = :site_id
-        AND sampledate >= :start_date
-        AND sampledate <= :end_date
-        ORDER BY sampledate;
-        """
-    else:
-        query = f"""
-        SELECT samplecollectiondate, created_date
-        FROM {table_name}
-        WHERE siteid = :site_id
-        AND samplecollectiondate >= :start_date
-        AND samplecollectiondate <= :end_date
-        ORDER BY samplecollectiondate;
-        """
+
+    query = f"""
+    SELECT samplecollectiondate, created_date
+    FROM {table_name}
+    WHERE siteid = :site_id
+    AND samplecollectiondate >= :start_date
+    AND samplecollectiondate <= :end_date
+    ORDER BY samplecollectiondate;
+    """
 
     try:
         # Execute the query and fetch all results
@@ -682,14 +655,10 @@ def get_sample_data():
         # If data is found, process and join the dates
         if result:
             # Extract and sort the samplecollectiondate and created_date
-            if sop_name != 'sop15':
-                samplecollectiondates = sorted(set(
-                    row['samplecollectiondate'].strftime('%Y-%m-%d') for row in result if row['samplecollectiondate']
-                ))
-            else:
-                samplecollectiondates = sorted(set(
-                    row['sampledate'].strftime('%Y-%m-%d') for row in result if row['sampledate']
-                ))
+            samplecollectiondates = sorted(set(
+                row['samplecollectiondate'].strftime('%Y-%m-%d') for row in result if row['samplecollectiondate']
+            ))
+
             created_dates = sorted(set(
                 row['created_date'].strftime('%Y-%m-%d') for row in result if row['created_date']
             ))

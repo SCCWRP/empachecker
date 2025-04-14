@@ -9,7 +9,7 @@ const sopNameMapping = {
     "SOP 6: Benthic infauna, small": "sop6a",
     "SOP 6: Benthic infauna, large": "sop6b",
     "SOP 7: Macroalgae": "sop7",
-    "SOP 8: Fish - BRUVs - Field": "sop8",
+    "SOP 8: Fish - BRUVs - Field": "sop8a",
     "SOP 8: Fish - BRUVs - Lab": "sop8b",
     "SOP 9: Fish seines": "sop9",
     "SOP 10: Crab traps": "sop10",
