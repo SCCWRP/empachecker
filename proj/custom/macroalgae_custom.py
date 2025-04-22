@@ -288,23 +288,33 @@ def macroalgae(all_dfs):
 
     # CHECK - 8
     print("# CHECK - 8")
-    # Description: waterclarity_length_cm must be between 0 and 300 (🛑 ERROR 🛑)
+    # Description: waterclarity_length_cm must be between 0 and 300, unless waterclarity_equipment is 'Not recorded', in which case waterclarity_length_cm must be -88 (🛑 ERROR 🛑)
     # Created Coder: Duy Nguyen
     # Created Date: 12/30/2024
-    # Last Edited Date: 12/30/2024
-    # Last Edited Coder: Duy Nguyen
-    # NOTE (12/30/2024): Adjusted to follow the coding standard.
+    # Last Edited Date: [Your Edit Date]
+    # Last Edited Coder: [Your Name]
+    # NOTE ([Your Edit Date]): Added exception for waterclarity_equipment = 'Not recorded'.
 
     args.update({
         "dataframe": site_metadata,
         "tablename": "tbl_macroalgae_site_meta",
         "badrows": site_metadata[
-            (site_metadata['waterclarity_length_cm'] < 0) | 
-            (site_metadata['waterclarity_length_cm'] > 300)
+            (
+                ((site_metadata['waterclarity_length_cm'] < 0) | 
+                (site_metadata['waterclarity_length_cm'] > 300)) & 
+                (site_metadata['waterclarity_equipment'].str.lower() != 'not recorded')
+            ) | 
+            (
+                (site_metadata['waterclarity_equipment'].str.lower() == 'not recorded') & 
+                (site_metadata['waterclarity_length_cm'] != -88)
+            )
         ]['tmp_row'].tolist(),
-        "badcolumn": "waterclarity_length_cm",
+        "badcolumn": "waterclarity_length_cm,waterclarity_equipment",
         "error_type": "Range Error",
-        "error_message": "waterclarity_length_cm must be between 0 and 300."
+        "error_message": (
+            "waterclarity_length_cm must be between 0 and 300, unless waterclarity_equipment is 'Not recorded', "
+            "in which case waterclarity_length_cm must be -88."
+        )
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 8")
@@ -358,15 +368,16 @@ def macroalgae(all_dfs):
     # Last Edited Date: 12/30/2024
     # Last Edited Coder: Duy Nguyen
     # NOTE (12/30/2024): Adjusted to follow the coding standard.
-    args.update({
-        "dataframe": transect_metadata,
-        "tablename": "tbl_macroalgae_transect_meta",
-        "badrows": check_consecutiveness(transect_metadata, ['projectid','siteid','estuaryname','samplecollectiondate','stationno'], 'transectreplicate'), 
-        "badcolumn": 'transectreplicate',
-        "error_type": "Custom Error",
-        "error_message": " transectreplicate must be consecutive within a projectid,siteid,estuaryname,samplecollectiondate,stationno group"
-    })
-    errs = [*errs, checkData(**args)]
+    if not transect_metadata.empty:
+        args.update({
+            "dataframe": transect_metadata,
+            "tablename": "tbl_macroalgae_transect_meta",
+            "badrows": check_consecutiveness(transect_metadata, ['projectid','siteid','estuaryname','samplecollectiondate','stationno'], 'transectreplicate'), 
+            "badcolumn": 'transectreplicate',
+            "error_type": "Custom Error",
+            "error_message": "transectreplicate must be consecutive within a projectid,siteid,estuaryname,samplecollectiondate,stationno group"
+        })
+        errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 11")
 
     # CHECK - 12
@@ -377,15 +388,16 @@ def macroalgae(all_dfs):
     # Last Edited Date: 12/30/2024
     # Last Edited Coder: Duy Nguyen
     # NOTE (12/30/2024): Adjusted to follow the coding standard.
-    args.update({
-        "dataframe": transect_metadata,
-        "tablename": "tbl_macroalgae_transect_meta",
-        "badrows": check_consecutiveness(transect_metadata, ['projectid','siteid','estuaryname','samplecollectiondate','stationno','transectreplicate'], 'plotreplicate'), 
-        "badcolumn": 'plotreplicate',
-        "error_type": "Custom Error",
-        "error_message": "plotreplicate must be consecutive within a projectid,siteid,estuaryname,samplecollectiondate,stationno,transectreplicate group"
-    })
-    errs = [*errs, checkData(**args)]   
+    if not transect_metadata.empty:
+        args.update({
+            "dataframe": transect_metadata,
+            "tablename": "tbl_macroalgae_transect_meta",
+            "badrows": check_consecutiveness(transect_metadata, ['projectid','siteid','estuaryname','samplecollectiondate','stationno','transectreplicate'], 'plotreplicate'), 
+            "badcolumn": 'plotreplicate',
+            "error_type": "Custom Error",
+            "error_message": "plotreplicate must be consecutive within a projectid,siteid,estuaryname,samplecollectiondate,stationno,transectreplicate group"
+        })
+        errs = [*errs, checkData(**args)]   
     print("# END OF CHECK - 12")
 
     # CHECK - 13
