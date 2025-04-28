@@ -5,6 +5,7 @@ from flask import current_app, g
 import pandas as pd
 from pandas import DataFrame
 from .functions import checkData, checkLogic, mismatch, get_primary_key, check_consecutiveness
+from copy import deepcopy
 
 def sedchem_lab(all_dfs):
     
@@ -72,16 +73,16 @@ def sedchem_lab(all_dfs):
     # Last Edited Coder: Aria Askaryar
     # NOTE (09/12/2023): Ayah created logic check, has not tested yet
     # NOTE (10/05/2023): Aria revised the error message
-
+    sedlabbatch_copy = deepcopy(sedlabbatch)
     if 'samplecollectiondate' in sedlabbatch.columns:
-        sedlabbatch['samplecollectiondate'] = pd.to_datetime(sedlabbatch['samplecollectiondate'])
+        sedlabbatch_copy['samplecollectiondate'] = pd.to_datetime(sedlabbatch['samplecollectiondate'])
     if 'samplecollectiondate' in grabeventdetails.columns:
         grabeventdetails['samplecollectiondate'] = pd.to_datetime(grabeventdetails['samplecollectiondate'])
 
     args.update({
         "dataframe": sedlabbatch,
         "tablename": "tbl_sedchem_labbatch_data",
-        "badrows": mismatch(sedlabbatch, grabeventdetails, sedlabbatch_grabeventdetails_shared_pkey), 
+        "badrows": mismatch(sedlabbatch_copy, grabeventdetails, sedlabbatch_grabeventdetails_shared_pkey), 
         "badcolumn": ','.join(sedlabbatch_grabeventdetails_shared_pkey),
         "error_type": "Logic Error",
         "error_message": 

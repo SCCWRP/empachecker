@@ -111,11 +111,11 @@ def mismatch(df1, df2, mergecols = None, left_mergecols = None, right_mergecols 
 
     else:
         raise Exception("In mismatch function - improper use of function - No merging columns are defined")
-
     if not tmp.empty:
         badrows = tmp[pd.isnull(tmp._present_)][row_identifier].tolist() \
             if row_identifier not in (None, 'index') \
             else tmp[pd.isnull(tmp._present_)].index.tolist()
+
     else:
         badrows = []
 
