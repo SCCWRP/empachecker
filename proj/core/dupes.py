@@ -92,7 +92,11 @@ def checkDuplicatesInProduction(dataframe, tablename, eng, *args, output = None,
             WHERE EXISTS (
                 SELECT 1
                 FROM {tablename} tbl
-                WHERE {" AND ".join([f"tmp.{col} = tbl.{col}" for col in pkey])}
+                WHERE {" AND ".join([
+                    f"CAST(tmp.{col} AS VARCHAR) = tbl.{col}" if col == "sensorid" 
+                    else f"tmp.{col} = tbl.{col}" 
+                    for col in pkey
+                ])}
             );
         """
     else:
