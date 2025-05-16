@@ -128,11 +128,12 @@ def main():
             # Note also that only empty cells will be regarded as missing values
             sheet: pd.read_excel(
                 excel_path, 
-                sheet_name = sheet,
-                skiprows = current_app.excel_offset,
-                na_values = [''],
+                sheet_name=sheet,
+                skiprows=current_app.excel_offset,
+                na_values=[''],
                 dtype={"amountoftrash": str},
-                converters = {"preparationtime":str}
+                converters={"preparationtime": str},
+                parse_dates=["samplecollectiontimestamp"]
             )
             
             for sheet in pd.ExcelFile(excel_path).sheet_names

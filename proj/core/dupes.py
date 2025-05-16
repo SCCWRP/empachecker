@@ -79,6 +79,7 @@ def checkDuplicatesInProduction(dataframe, tablename, eng, *args, output = None,
     
     # Load the dataframe to the database table
     dataframe['tmp_row'] = dataframe.index
+
     dataframe.to_sql(tmp_table_name, con=eng, if_exists='replace', index=False)
 
     # SQL query to get common rows based on primary key
@@ -86,6 +87,9 @@ def checkDuplicatesInProduction(dataframe, tablename, eng, *args, output = None,
 
     # SQL query using WHERE EXISTS clause
     if tablename == 'tbl_wq_logger_raw':
+        # convert samplecollectiontimestamp to timestamp
+        dataframe['samplecollectiontimestamp'] = pd.to_datetime(dataframe['samplecollectiontimestamp'], errors='coerce')
+        print(dataframe['samplecollectiontimestamp'])
         query = f"""
             SELECT tmp.*
             FROM {tmp_table_name} tmp
@@ -93,8 +97,9 @@ def checkDuplicatesInProduction(dataframe, tablename, eng, *args, output = None,
                 SELECT 1
                 FROM {tablename} tbl
                 WHERE {" AND ".join([
-                    f"CAST(tmp.{col} AS VARCHAR) = tbl.{col}" if col == "sensorid" 
-                    else f"tmp.{col} = tbl.{col}" 
+                    f"CAST(tmp.{col} AS VARCHAR) = tbl.{col}" if col in ["sensorid","samplecollectiontimezone"]
+                    else f"CAST(tmp.{col} AS TIMESTAMP) = tbl.{col}" if col == "samplecollectiontimestamp"
+                    else f"tmp.{col} = tbl.{col}"
                     for col in pkey
                 ])}
             );
