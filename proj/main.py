@@ -132,8 +132,7 @@ def main():
                 skiprows=current_app.excel_offset,
                 na_values=[''],
                 dtype={"amountoftrash": str},
-                converters={"preparationtime": str},
-                parse_dates=["samplecollectiontimestamp"]
+                converters={"preparationtime": str}
             )
             
             for sheet in pd.ExcelFile(excel_path).sheet_names
@@ -155,6 +154,15 @@ def main():
                 if isinstance(x, str) and x in current_app.system_fields
             ]
         )
+        if 'samplecollectiontimestamp' in all_dfs[tblname].columns:
+            try:
+                all_dfs[tblname]['samplecollectiontimestamp'] = pd.Timestamp(
+                    all_dfs[tblname]['samplecollectiontimestamp'], 
+                    errors='coerce'
+                )
+            except Exception as e:
+                print(e)
+                return jsonify(user_error_msg=f"samplecollectiontimestamp column in {tblname} is not a valid date format")
 
     print("DONE - building 'all_dfs' dictionary")
 
