@@ -156,10 +156,8 @@ def main():
         )
         if 'samplecollectiontimestamp' in all_dfs[tblname].columns:
             try:
-                all_dfs[tblname]['samplecollectiontimestamp'] = pd.Timestamp(
-                    all_dfs[tblname]['samplecollectiontimestamp'], 
-                    errors='coerce'
-                )
+                all_dfs[tblname]['samplecollectiontimestamp'] = pd.to_datetime(all_dfs[tblname]['samplecollectiontimestamp'])
+                print(all_dfs[tblname]['samplecollectiontimestamp'].iloc[0:5])
             except Exception as e:
                 print(e)
                 return jsonify(user_error_msg=f"samplecollectiontimestamp column in {tblname} is not a valid date format")
