@@ -183,29 +183,12 @@ def main():
         if len(all_dfs[tblname]) > 50000:
             return jsonify(user_error_msg=f'Tab {tblname} has {len(all_dfs[tblname])} rows which exceeds the limitation of the checker (50k rows)')
 
-        # code below is for accepting sheets with no data. Only allowable sheets are tbl_cordgrass and tbl_feldspar_data
+        # table names should not be empty
         if (tblname not in current_app.allowed_empty_sheets) and (all_dfs[tblname].empty):
             return jsonify(user_error_msg=f'Please fill out the tab {tblname} before you continue')
     
     
-    ############################################ END PRE-CORE CHECKS ####################################################
-    
-
-    #print(match(all_dfs)) #uncommented to view
-
-    #remember to comment out the block below after edits
-    # print("match_dataset")
-    # print(match_dataset)
-    # print("match_report")
-    # print(match_report)
-    # print("all_dfs")
-    # print(all_dfs)
-
-    #NOTE if all tabs in all_dfs matched a database table, but there is still no match_dataset
-    # then the problem probably lies in __init__.py
-
-    # need an assert statement
-    # an assert statement makes sense because in this would be an issue on our side rather than the user's
+    ############################################ END PRE-CORE CHECKS ###################################################
 
 
 

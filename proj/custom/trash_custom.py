@@ -37,62 +37,60 @@ def trash(all_dfs):
         trashtimesearchtally['tmp_row'] = trashtimesearchtally.index
 
     # Primary keys
-    trashsamplearea_pkey = get_primary_key('tbl_trashsamplearea', g.eng) if not trashsamplearea.empty else []
-    trashquadrattally_pkey = get_primary_key('tbl_trashquadrattally', g.eng) if not trashquadrattally.empty else []
-    trashquadrattally_trashsamplearea_shared_pkey = (
-        [x for x in trashquadrattally_pkey if x in trashsamplearea_pkey]
-        if not trashsamplearea.empty and not trashquadrattally.empty
-        else []
-    )
+    trashsamplearea_pkey = get_primary_key('tbl_trashsamplearea', g.eng)
+    trashquadrattally_pkey = get_primary_key('tbl_trashquadrattally', g.eng)
+    trashquadrattally_trashsamplearea_shared_pkey = [x for x in trashquadrattally_pkey if x in trashsamplearea_pkey]
+    
     ######################################################################################################################
     #--------------------------------------------------------------------------------------------------------------------#
     #--------------------------------------------- Logic Checks ---------------------------------------------------------#
     #--------------------------------------------------------------------------------------------------------------------#
     ###################################################################################################################### 
 
+    #if not trashsamplearea.empty and not trashquadrattally.empty:
+    print("# LOGIC CHECK - 1")
+    # Description: Records in samplearea need to be in quadrat
+    # Created Coder: Duy Nguyen
+    # Created Date: 12/27/2024
+    # Last Edited Date: 
+
+    errs.append(
+        checkData(
+            tablename='tbl_trashsamplearea',
+            badrows=mismatch(trashsamplearea, trashquadrattally, trashquadrattally_trashsamplearea_shared_pkey),
+            badcolumn=','.join(trashquadrattally_trashsamplearea_shared_pkey),
+            error_type='Undefined Error',
+            error_message=f"Records in the trashsamplearea should have the corresponding records in the trashquadrattally based on these columns {','.join(trashquadrattally_trashsamplearea_shared_pkey)}"
+        )
+    )
+    print("# END LOGIC CHECK - 1")
+
+    print("# LOGIC CHECK - 2")
+    # Description: Records in quadrat need to be in samplearea
+    # Created Coder: Duy Nguyen
+    # Created Date: 12/27/2024
+    # Last Edited Date: 
+
+    errs.append(
+        checkData(
+            tablename='tbl_trashquadrattally',
+            badrows=mismatch(trashquadrattally, trashsamplearea, trashquadrattally_trashsamplearea_shared_pkey),
+            badcolumn=','.join(trashquadrattally_trashsamplearea_shared_pkey),
+            error_type='Undefined Error',
+            error_message=f"Records in the trashquadrattally should have the corresponding records in the trashsamplearea based on these columns {','.join(trashquadrattally_trashsamplearea_shared_pkey)}"
+        )
+    )
+    print("# END LOGIC CHECK - 2")
+
+    print("# LOGIC CHECK - 3")
+    # Description: If trash is 'No' in trashsamplearea, then the corresponding record should have 'None' in debriscategory 
+    # and 'No Trash Present' in debrisitem in quadrat
+    # Created Coder: Duy Nguyen
+    # Created Date: 11/22/2024
+    # Last Edited Date: 
+
+    # Merge trashsamplearea and trashquadrattally based on shared primary keys
     if not trashsamplearea.empty and not trashquadrattally.empty:
-        print("# LOGIC CHECK - 1")
-        # Description: Records in samplearea need to be in quadrat
-        # Created Coder: Duy Nguyen
-        # Created Date: 12/27/2024
-        # Last Edited Date: 
-
-        errs.append(
-            checkData(
-                tablename='tbl_trashsamplearea',
-                badrows=mismatch(trashsamplearea, trashquadrattally, trashquadrattally_trashsamplearea_shared_pkey),
-                badcolumn=','.join(trashquadrattally_trashsamplearea_shared_pkey),
-                error_type='Undefined Error',
-                error_message=f"Records in the trashsamplearea should have the corresponding records in the trashquadrattally based on these columns {','.join(trashquadrattally_trashsamplearea_shared_pkey)}"
-            )
-        )
-        print("# END LOGIC CHECK - 1")
-
-        print("# LOGIC CHECK - 2")
-        # Description: Records in quadrat need to be in samplearea
-        # Created Coder: Duy Nguyen
-        # Created Date: 12/27/2024
-        # Last Edited Date: 
-
-        errs.append(
-            checkData(
-                tablename='tbl_trashquadrattally',
-                badrows=mismatch(trashquadrattally, trashsamplearea, trashquadrattally_trashsamplearea_shared_pkey),
-                badcolumn=','.join(trashquadrattally_trashsamplearea_shared_pkey),
-                error_type='Undefined Error',
-                error_message=f"Records in the trashquadrattally should have the corresponding records in the trashsamplearea based on these columns {','.join(trashquadrattally_trashsamplearea_shared_pkey)}"
-            )
-        )
-        print("# END LOGIC CHECK - 2")
-
-        print("# LOGIC CHECK - 3")
-        # Description: If trash is 'No' in trashsamplearea, then the corresponding record should have 'None' in debriscategory 
-        # and 'No Trash Present' in debrisitem in quadrat
-        # Created Coder: Duy Nguyen
-        # Created Date: 11/22/2024
-        # Last Edited Date: 
-
-        # Merge trashsamplearea and trashquadrattally based on shared primary keys
         merged_sample_quadrat = pd.merge(
             trashsamplearea,
             trashquadrattally,
@@ -100,7 +98,7 @@ def trash(all_dfs):
             how='left',
             suffixes=('_sample', '_quadrat')
         )
-
+        
         errs.append(
             checkData(
                 tablename='tbl_trashsamplearea',
