@@ -48,8 +48,7 @@ fetch('/empachecker/getmapinfo')
     if (coreCheckFailed) {
       L.popup({ closeOnClick: false, autoClose: false })
         .setLatLng(map.getCenter())
-        .setContent("You need to pass Core Check before this check")
-        .openOn(map);
+        .setContent("No errors occurred for the points in polygon check. Either you did not pass core check or all of your points are inside the polygons.")
       return; // Stop further processing
     }
     
