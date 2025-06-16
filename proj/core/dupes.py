@@ -111,7 +111,11 @@ def checkDuplicatesInProduction(dataframe, tablename, eng, *args, output = None,
             WHERE EXISTS (
                 SELECT 1
                 FROM {tablename} tbl
-                WHERE {" AND ".join([f"tmp.{col}::VARCHAR = tbl.{col}::VARCHAR" for col in pkey])}
+                WHERE {" AND ".join([
+                    f"tmp.{col}::timestamp = tbl.{col}" if col == "samplecollectiondate"
+                    else f"tmp.{col}::VARCHAR = tbl.{col}::VARCHAR"
+                    for col in pkey
+                ])}
             );
         """
 
@@ -119,7 +123,19 @@ def checkDuplicatesInProduction(dataframe, tablename, eng, *args, output = None,
     print(query)
     
     # Execute the query and return the result as a DataFrame
-    duplicates_df = pd.read_sql_query(query, eng)
+    try:
+        duplicates_df = pd.read_sql_query(query, eng)
+    except Exception as e:
+        safe_query = f"""
+            SELECT tmp.*
+            FROM {tmp_table_name} tmp
+            WHERE EXISTS (
+                SELECT 1
+                FROM {tablename} tbl
+                WHERE {" AND ".join([f"tmp.{col}::VARCHAR = tbl.{col}::VARCHAR" for col in pkey])}
+            );
+        """
+        duplicates_df = pd.read_sql_query(safe_query, eng)
     badrows = duplicates_df.tmp_row.tolist()
 
     ret = [
