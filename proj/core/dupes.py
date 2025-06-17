@@ -113,15 +113,14 @@ def checkDuplicatesInProduction(dataframe, tablename, eng, *args, output = None,
                 FROM {tablename} tbl
                 WHERE {" AND ".join([
                     f"tmp.{col}::timestamp = tbl.{col}" if col == "samplecollectiondate"
-                    else f"tmp.{col}::VARCHAR = tbl.{col}::VARCHAR"
+                    else f"tmp.{col} = tbl.{col}"
                     for col in pkey
                 ])}
             );
         """
-
     print("Executing duplicate check query...")
     print(query)
-    
+
     # Execute the query and return the result as a DataFrame
     try:
         duplicates_df = pd.read_sql_query(query, eng)

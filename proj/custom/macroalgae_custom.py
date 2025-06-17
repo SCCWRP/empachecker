@@ -302,10 +302,10 @@ def macroalgae(all_dfs):
             (
                 ((site_metadata['waterclarity_length_cm'] < 0) | 
                 (site_metadata['waterclarity_length_cm'] > 300)) & 
-                (site_metadata['waterclarity_equipment'].str.lower() != 'not recorded')
+                (site_metadata['waterclarity_equipment'].astype(str).str.lower() != 'not recorded')
             ) | 
             (
-                (site_metadata['waterclarity_equipment'].str.lower() == 'not recorded') & 
+                (site_metadata['waterclarity_equipment'].astype(str).str.lower() == 'not recorded') & 
                 (site_metadata['waterclarity_length_cm'] != -88)
             )
         ]['tmp_row'].tolist(),
