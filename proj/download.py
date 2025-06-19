@@ -389,7 +389,12 @@ def get_logger_data():
 
     # Required Parameters
     start_date = pd.Timestamp(payload.get('start_time'))
-    end_date = pd.Timestamp(payload.get('end_time'))
+    # Parse end_time and set time to 23:59:48
+    end_time_str = payload.get('end_time')
+    if end_time_str:
+        end_date = pd.to_datetime(end_time_str).replace(hour=23, minute=59, second=48)
+    else:
+        end_date = None
     if any([start_date is None, end_date is None]):
         return jsonify(message="Start Date and End Date must be provided")
     print((end_date - start_date).days)
