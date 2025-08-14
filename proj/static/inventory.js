@@ -178,14 +178,9 @@ function createTabsAndContent(tabType, items) {
             buttonContainer.style.gap = '10px';
 
             const downloadButton = document.createElement('button');
-            downloadButton.innerText = 'Download Inventory Data';
+            downloadButton.innerText = 'Download Inventory Data as Excel';
             downloadButton.className = 'btn btn-primary';
             downloadButton.onclick = () => downloadInventoryData(); 
-
-            const downloadGroupedButton = document.createElement('button');
-            downloadGroupedButton.innerText = 'Download Inventory Data Grouped By Site';
-            downloadGroupedButton.className = 'btn btn-primary';
-            downloadGroupedButton.onclick = () => downloadInventoryDataGroupedBySite();
 
             const refreshButton = document.createElement('button');
             refreshButton.innerText = 'Refresh Inventory';
@@ -193,7 +188,6 @@ function createTabsAndContent(tabType, items) {
             refreshButton.onclick = () => refreshInventory();
 
             buttonContainer.appendChild(downloadButton);
-            buttonContainer.appendChild(downloadGroupedButton);
             //buttonContainer.appendChild(refreshButton);
 
             yearCheckboxContainer.appendChild(buttonContainer);
@@ -482,9 +476,69 @@ function hideLoader() {
     }
 }
 
-// Function to download the original general_df
-function downloadInventoryData() {
-    window.open('/empachecker/download-inventory-data', '_blank');
+
+// Modal for year selection before download
+function showDownloadYearModal() {
+    // If modal already exists, just show it
+    let modal = document.getElementById('downloadYearModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'downloadYearModal';
+        modal.className = 'modal fade';
+        modal.tabIndex = -1;
+        modal.setAttribute('aria-hidden', 'true');
+        modal.innerHTML = `
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Select Year to Download</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="downloadYearForm">
+                        <div class="mb-3">
+                            <label for="downloadYearSelect" class="form-label">Year</label>
+                            <select class="form-select" id="downloadYearSelect" required>
+                                <option value="2021">2021</option>
+                                <option value="2022">2022</option>
+                                <option value="2023">2023</option>
+                                <option value="2024">2024</option>
+                                <option value="2025">2025</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmDownloadYear">Download</button>
+                </div>
+            </div>
+        </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    // Add event listener for download button
+    document.getElementById('confirmDownloadYear').onclick = function() {
+        const year = document.getElementById('downloadYearSelect').value;
+        downloadInventoryData(year);
+        // Hide modal after click
+        const bsModal = bootstrap.Modal.getOrCreateInstance(modal);
+        bsModal.hide();
+    };
+
+    // Show the modal
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+}
+
+// Function to download the original general_df for a specific year
+function downloadInventoryData(year) {
+    if (!year) {
+        showDownloadYearModal();
+        return;
+    }
+    window.open(`/empachecker/download-inventory-data?year=${year}`, '_blank');
 }
 
 function downloadInventoryDataGroupedBySite() {

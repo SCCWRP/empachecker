@@ -398,33 +398,122 @@ def download_inventory_data():
 
     # Query data for the General using Pandas
     general_query = """
-        SELECT DISTINCT
-            sop,
-            region,
-            siteid,
-            year,
-            season,
-            months_with_data,
-            data_exists
+        SELECT 
+            sop,region,siteid,year,season,data_exists,months_with_data
         FROM
-            vw_qa_allsop_combined_final 
+            vw_data_inventory 
         ORDER BY
             sop,
             region,
             siteid,
             year
     """
+
     general_df = pd.read_sql(general_query, con=eng)
 
-    # Convert DataFrame to CSV
-    csv_data = general_df.to_csv(index=False)
-    buffer = io.StringIO(csv_data)
+    # Filter by year if provided
+    year_param = request.args.get('year')
+    if year_param:
+        general_df = general_df[general_df['year'] == int(year_param)]
 
-    # Send the CSV file to the user
-    return send_file(io.BytesIO(buffer.getvalue().encode()), 
-                     mimetype='text/csv', 
-                     as_attachment=True, 
-                     download_name='general_inventory_data.csv')
+    # SOP code to long name mapping
+    sop_code_longname = {
+        "field": "Field Grab",
+        "2": "SOP 2: Discrete environmental monitoring - point water quality measurements",
+        "3a": "SOP 3: Sediment chemistry",
+        "3b": "SOP 3: Sediment toxicity",
+        "4": "SOP 4: eDNA - field",
+        "5": "SOP 5: Sediment grain size analysis",
+        "6a": "SOP 6: Benthic infauna, small",
+        "6b": "SOP 6: Benthic infauna, large",
+        "7": "SOP 7: Macroalgae",
+        "8a": "SOP 8: Fish - BRUVs - Field",
+        "8b": "SOP 8: Fish - BRUVs - Lab",
+        "9": "SOP 9: Fish seines",
+        "10": "SOP 10: Crab traps",
+        "11": "SOP 11: Marsh plain vegetation and epifauna surveys",
+        "12": "SOP 12: Topographic survey",
+        "13": "SOP 13: Sediment accretion rates",
+        "15": "SOP 15: Trash monitoring"
+    }
+
+    # Map SOP codes to long names
+    general_df['sop'] = general_df['sop'].map(sop_code_longname)
+
+    # Ensure 'season' is ordered as Spring, Fall
+    season_cat = pd.CategoricalDtype(['Spring', 'Fall'], ordered=True)
+    general_df['season'] = general_df['season'].astype(season_cat)
+
+    # Pivot the DataFrame to wide format
+    pivot_df = general_df.pivot_table(
+        index=['siteid', 'year', 'season'],
+        columns='sop',
+        values='data_exists',
+        aggfunc='first'  # In case of duplicates, take the first
+    ).reset_index().sort_values(['siteid', 'year', 'season'])
+
+    # Flatten columns if needed
+    pivot_df.columns.name = None
+
+    # Desired SOP columns in order (long names)
+    sop_columns = [
+        "Field Grab",
+        "SOP 2: Discrete environmental monitoring - point water quality measurements",
+        "SOP 3: Sediment chemistry",
+        "SOP 3: Sediment toxicity",
+        "SOP 4: eDNA - field",
+        "SOP 5: Sediment grain size analysis",
+        "SOP 6: Benthic infauna, small",
+        "SOP 6: Benthic infauna, large",
+        "SOP 7: Macroalgae",
+        "SOP 8: Fish - BRUVs - Field",
+        "SOP 8: Fish - BRUVs - Lab",
+        "SOP 9: Fish seines",
+        "SOP 10: Crab traps",
+        "SOP 11: Marsh plain vegetation and epifauna surveys",
+        "SOP 12: Topographic survey",
+        "SOP 13: Sediment accretion rates",
+        "SOP 15: Trash monitoring"
+    ]
+    # Ensure all columns exist
+    for col in sop_columns:
+        if col not in pivot_df.columns:
+            pivot_df[col] = ''
+
+    # Reorder columns
+    ordered_cols = ['siteid', 'year', 'season'] + sop_columns
+    pivot_df = pivot_df[ordered_cols]
+
+    # Write to Excel with conditional formatting
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        pivot_df.to_excel(writer, index=False, sheet_name='Inventory Data')
+        workbook = writer.book
+        worksheet = writer.sheets['Inventory Data']
+
+        # Find the data range (excluding header)
+        nrows, ncols = pivot_df.shape
+        # Data starts at row 2 (1-indexed for Excel)
+        data_range = f'B2:{chr(65+ncols)}{nrows+1}' if ncols <= 26 else f'B2:{chr(64+(ncols//26))+chr(65+(ncols%26))}{nrows+1}'
+
+        # Define formats
+        red_format = workbook.add_format({'bg_color': '#FFC7CE', 'font_color': '#9C0006'})
+        green_format = workbook.add_format({'bg_color': '#C6EFCE', 'font_color': '#006100'})
+        grey_format = workbook.add_format({'bg_color': '#D9D9D9', 'font_color': '#808080'})
+
+        # Apply conditional formatting for each SOP column
+        for col_idx in range(3, ncols):  # skip siteid, year, season
+            col_letter = chr(65 + col_idx) if col_idx < 26 else chr(64 + (col_idx // 26)) + chr(65 + (col_idx % 26))
+            rng = f'{col_letter}2:{col_letter}{nrows+1}'
+            worksheet.conditional_format(rng, {'type': 'text', 'criteria': 'containing', 'value': 'Not Submitted', 'format': red_format})
+            worksheet.conditional_format(rng, {'type': 'text', 'criteria': 'containing', 'value': 'Data Available', 'format': green_format})
+            worksheet.conditional_format(rng, {'type': 'text', 'criteria': 'containing', 'value': 'Not Assigned', 'format': grey_format})
+
+    output.seek(0)
+    return send_file(output,
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                     as_attachment=True,
+                     download_name='general_inventory_data.xlsx')
 
 @admin.route('/download-inventory-data-grouped-site', methods=['GET'])
 def download_inventory_data_grouped_site():
