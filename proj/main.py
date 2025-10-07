@@ -63,7 +63,7 @@ def main():
 
 
     # We are assuming filename is an excel file or csv
-    supported_checker_filetypes = ('xls','csv','txt','xlsx')
+    supported_checker_filetypes = ('xls','txt','xlsx')
     if file_extension not in supported_checker_filetypes:
         errmsg = f"filename: {filename} is not a supported file type. Supported file types are {supported_checker_filetypes}"
         return jsonify(user_error_msg=errmsg)
