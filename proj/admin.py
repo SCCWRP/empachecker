@@ -764,4 +764,50 @@ def get_sample_data():
     except Exception as e:
         print(e)
         return jsonify({'error': str(e)}), 500
+
+
+@admin.route('/view-all-polygons', methods=['GET'])
+def view_all_polygons():
+    """Route to display all EMPA station polygons with dropdown filter by estuary"""
+    return render_template('view_all_polygons.html')
+
+
+@admin.route('/get-all-polygons-data', methods=['GET'])
+def get_all_polygons_data():
+    """API endpoint to fetch polygon data from spatial_empa_all_stations table"""
+    try:
+        eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
+        
+        # Query to get all polygon data with geometry as GeoJSON
+        query = """
+            SELECT 
+                estuaryname,
+                siteid,
+                stationno,
+                ST_AsGeoJSON(geometry) as geometry
+            FROM
+                spatial_empa_all_stations
+            ORDER BY
+                estuaryname,
+                stationno
+        """
+        
+        with eng.connect() as connection:
+            result = connection.execute(text(query)).fetchall()
+        
+        # Structure the data
+        polygons_data = []
+        for row in result:
+            polygons_data.append({
+                'estuaryname': row['estuaryname'],
+                'siteid': row['siteid'],
+                'stationno': row['stationno'],
+                'geometry': row['geometry']
+            })
+        
+        return jsonify(polygons_data)
+    
+    except Exception as e:
+        print(f"Error fetching polygon data: {e}")
+        return jsonify({'error': str(e)}), 500
     
