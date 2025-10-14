@@ -774,12 +774,23 @@ def view_all_polygons():
 
 @admin.route('/get-all-polygons-data', methods=['GET'])
 def get_all_polygons_data():
-    """API endpoint to fetch polygon data from spatial_empa_all_stations table"""
+    """API endpoint to fetch polygon data from both spatial_empa_all_sites and spatial_empa_all_stations tables"""
     try:
         eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
         
-        # Query to get all polygon data with geometry as GeoJSON
-        query = """
+        # Query to get estuary polygons (red)
+        estuary_query = """
+            SELECT 
+                estuaryname,
+                ST_AsGeoJSON(geometry) as geometry
+            FROM
+                spatial_empa_all_sites
+            ORDER BY
+                estuaryname
+        """
+        
+        # Query to get station polygons (blue)
+        station_query = """
             SELECT 
                 estuaryname,
                 siteid,
@@ -793,19 +804,32 @@ def get_all_polygons_data():
         """
         
         with eng.connect() as connection:
-            result = connection.execute(text(query)).fetchall()
+            estuary_result = connection.execute(text(estuary_query)).fetchall()
+            station_result = connection.execute(text(station_query)).fetchall()
         
         # Structure the data
-        polygons_data = []
-        for row in result:
-            polygons_data.append({
+        data = {
+            'estuaries': [],
+            'stations': []
+        }
+        
+        # Add estuary polygons
+        for row in estuary_result:
+            data['estuaries'].append({
+                'estuaryname': row['estuaryname'],
+                'geometry': row['geometry']
+            })
+        
+        # Add station polygons
+        for row in station_result:
+            data['stations'].append({
                 'estuaryname': row['estuaryname'],
                 'siteid': row['siteid'],
                 'stationno': row['stationno'],
                 'geometry': row['geometry']
             })
         
-        return jsonify(polygons_data)
+        return jsonify(data)
     
     except Exception as e:
         print(f"Error fetching polygon data: {e}")

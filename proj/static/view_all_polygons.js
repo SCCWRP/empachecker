@@ -1,7 +1,8 @@
 // Global variables
 let map;
-let polygonLayers = [];
-let allPolygonsData = [];
+let estuaryLayers = [];
+let stationLayers = [];
+let allPolygonsData = {};
 let estuaryGroups = {};
 
 // Initialize the map
@@ -37,76 +38,110 @@ async function fetchPolygonData() {
     } catch (error) {
         console.error('Error fetching polygon data:', error);
         alert('Failed to load station data. Please try again.');
-        return [];
+        return { estuaries: [], stations: [] };
     } finally {
         hideLoader();
     }
 }
 
-// Generate a color for each estuary
-function getEstuaryColor(estuaryName, index) {
-    const colors = [
-        '#3388ff', '#ff3333', '#33ff33', '#ffff33', '#ff33ff',
-        '#33ffff', '#ff8833', '#8833ff', '#33ff88', '#ff3388'
-    ];
-    return colors[index % colors.length];
-}
-
 // Add polygons to the map
 function addPolygonsToMap(polygonsData) {
     // Clear existing layers
-    polygonLayers.forEach(layer => map.removeLayer(layer));
-    polygonLayers = [];
+    estuaryLayers.forEach(layer => map.removeLayer(layer));
+    stationLayers.forEach(layer => map.removeLayer(layer));
+    estuaryLayers = [];
+    stationLayers = [];
     estuaryGroups = {};
 
-    // Group by estuary
-    const estuariesMap = {};
-    polygonsData.forEach(station => {
-        if (!estuariesMap[station.estuaryname]) {
-            estuariesMap[station.estuaryname] = [];
+    // Initialize estuary groups for all stations first (even if no estuary boundary exists)
+    const allEstuaryNames = new Set();
+    polygonsData.stations.forEach(station => {
+        allEstuaryNames.add(station.estuaryname);
+        if (!estuaryGroups[station.estuaryname]) {
+            estuaryGroups[station.estuaryname] = {
+                estuaryLayer: null,
+                stationLayers: []
+            };
         }
-        estuariesMap[station.estuaryname].push(station);
     });
 
-    // Create layers for each polygon
-    let colorIndex = 0;
-    Object.keys(estuariesMap).forEach(estuaryName => {
-        const color = getEstuaryColor(estuaryName, colorIndex++);
-        const stations = estuariesMap[estuaryName];
-        
-        estuaryGroups[estuaryName] = [];
+    // Add estuary polygons (RED) - these may not exist for all estuaries
+    polygonsData.estuaries.forEach(estuary => {
+        try {
+            const geojson = JSON.parse(estuary.geometry);
+            
+            const layer = L.geoJSON(geojson, {
+                style: {
+                    color: '#ff0000',      // Red border
+                    weight: 3,
+                    opacity: 0.8,
+                    fillColor: '#ff0000',  // Red fill
+                    fillOpacity: 0.2
+                }
+            }).bindPopup(`
+                <strong>Estuary:</strong> ${estuary.estuaryname}<br>
+                <strong>Type:</strong> Estuary Boundary
+            `);
 
-        stations.forEach(station => {
-            try {
-                const geojson = JSON.parse(station.geometry);
-                
-                const layer = L.geoJSON(geojson, {
-                    style: {
-                        color: color,
-                        weight: 2,
-                        opacity: 0.8,
-                        fillOpacity: 0.3
-                    }
-                }).bindPopup(`
-                    <strong>Estuary:</strong> ${station.estuaryname}<br>
-                    <strong>Site ID:</strong> ${station.siteid}<br>
-                    <strong>Station No:</strong> ${station.stationno}
-                `);
-
-                layer.addTo(map);
-                polygonLayers.push(layer);
-                estuaryGroups[estuaryName].push(layer);
-            } catch (e) {
-                console.error(`Error parsing geometry for ${station.siteid}:`, e);
+            layer.addTo(map);
+            estuaryLayers.push(layer);
+            
+            // Set estuary layer in the group
+            if (estuaryGroups[estuary.estuaryname]) {
+                estuaryGroups[estuary.estuaryname].estuaryLayer = layer;
+            } else {
+                estuaryGroups[estuary.estuaryname] = {
+                    estuaryLayer: layer,
+                    stationLayers: []
+                };
             }
-        });
+        } catch (e) {
+            console.error(`Error parsing estuary geometry for ${estuary.estuaryname}:`, e);
+        }
+    });
+
+    // Add station polygons (BLUE) - always plot these
+    polygonsData.stations.forEach(station => {
+        try {
+            const geojson = JSON.parse(station.geometry);
+            
+            const layer = L.geoJSON(geojson, {
+                style: {
+                    color: '#0000ff',      // Blue border
+                    weight: 2,
+                    opacity: 0.8,
+                    fillColor: '#0000ff',  // Blue fill
+                    fillOpacity: 0.3
+                }
+            }).bindPopup(`
+                <strong>Estuary:</strong> ${station.estuaryname}<br>
+                <strong>Site ID:</strong> ${station.siteid}<br>
+                <strong>Station No:</strong> ${station.stationno}<br>
+                <strong>Type:</strong> Station
+            `);
+
+            layer.addTo(map);
+            stationLayers.push(layer);
+            
+            // Add to estuary group (group already initialized above)
+            estuaryGroups[station.estuaryname].stationLayers.push(layer);
+        } catch (e) {
+            console.error(`Error parsing station geometry for ${station.siteid}:`, e);
+        }
     });
 }
 
 // Populate estuary dropdown
 function populateEstuaryDropdown(polygonsData) {
     const estuarySelect = document.getElementById('estuarySelect');
-    const estuaries = [...new Set(polygonsData.map(p => p.estuaryname))].sort();
+    
+    // Get unique estuary names from BOTH estuaries and stations
+    const estuariesFromBoundaries = new Set(polygonsData.estuaries.map(e => e.estuaryname));
+    const estuariesFromStations = new Set(polygonsData.stations.map(s => s.estuaryname));
+    
+    // Combine both sets to get all unique estuary names
+    const allEstuaries = new Set([...estuariesFromBoundaries, ...estuariesFromStations]);
+    const estuaries = [...allEstuaries].sort();
 
     // Clear existing options (except the first "All" option)
     estuarySelect.innerHTML = '<option value="">-- All Estuaries --</option>';
@@ -128,39 +163,59 @@ function zoomToEstuary(estuaryName) {
     }
 
     // Hide all polygons first
-    polygonLayers.forEach(layer => {
-        map.removeLayer(layer);
-    });
+    estuaryLayers.forEach(layer => map.removeLayer(layer));
+    stationLayers.forEach(layer => map.removeLayer(layer));
 
-    // Show only selected estuary polygons
-    const selectedLayers = estuaryGroups[estuaryName] || [];
-    if (selectedLayers.length > 0) {
+    // Show only selected estuary and its stations
+    const selectedGroup = estuaryGroups[estuaryName];
+    if (selectedGroup) {
         const bounds = L.latLngBounds([]);
-        selectedLayers.forEach(layer => {
+        
+        // Add estuary boundary
+        if (selectedGroup.estuaryLayer) {
+            selectedGroup.estuaryLayer.addTo(map);
+            bounds.extend(selectedGroup.estuaryLayer.getBounds());
+        }
+        
+        // Add all stations for this estuary
+        selectedGroup.stationLayers.forEach(layer => {
             layer.addTo(map);
             bounds.extend(layer.getBounds());
         });
         
         // Zoom to fit all polygons of selected estuary
-        map.fitBounds(bounds, { padding: [50, 50] });
+        if (bounds.isValid()) {
+            map.fitBounds(bounds, { padding: [50, 50] });
+        }
     }
 }
 
 // Show all polygons
 function showAllPolygons() {
-    polygonLayers.forEach(layer => {
+    // Add all estuary layers
+    estuaryLayers.forEach(layer => {
+        if (!map.hasLayer(layer)) {
+            layer.addTo(map);
+        }
+    });
+    
+    // Add all station layers
+    stationLayers.forEach(layer => {
         if (!map.hasLayer(layer)) {
             layer.addTo(map);
         }
     });
 
     // Fit bounds to all polygons
-    if (polygonLayers.length > 0) {
+    const allLayers = [...estuaryLayers, ...stationLayers];
+    if (allLayers.length > 0) {
         const bounds = L.latLngBounds([]);
-        polygonLayers.forEach(layer => {
+        allLayers.forEach(layer => {
             bounds.extend(layer.getBounds());
         });
-        map.fitBounds(bounds, { padding: [50, 50] });
+        if (bounds.isValid()) {
+            map.fitBounds(bounds, { padding: [50, 50] });
+        }
     }
 }
 
@@ -181,7 +236,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Fetch and display polygon data
     allPolygonsData = await fetchPolygonData();
     
-    if (allPolygonsData.length > 0) {
+    if (allPolygonsData.estuaries.length > 0 || allPolygonsData.stations.length > 0) {
         addPolygonsToMap(allPolygonsData);
         populateEstuaryDropdown(allPolygonsData);
         showAllPolygons();
