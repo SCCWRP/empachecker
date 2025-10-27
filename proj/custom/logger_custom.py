@@ -52,6 +52,7 @@ def logger_meta(all_dfs):
     # Last Edited Date: 02/07/2025
     # Last Edited Coder: Duy Nguyen
     # NOTE (02/07/2025): Optimized to check overlap **only if a match exists in the database**.
+    meta['sensorid'] = meta['sensorid'].astype('str')
 
     # Load only relevant columns from database
     meta_db = pd.read_sql(
