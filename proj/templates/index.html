@@ -91,6 +91,9 @@
           </div>
           {% else %}
           <div class="card-body">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <a href="{{url_for('admin.admin_portal')}}" class="btn btn-primary" target="_blank">Admin Portal</a>
+            </div>
             <div>
               <form id="dtype-form">
                 <label for="html">Select Submission Type:</label><br>

@@ -13,6 +13,29 @@ from .utils.route_auth import requires_auth
 
 admin = Blueprint('admin', __name__)
 
+@admin.route('/admin', methods=['GET', 'POST'])
+def admin_portal():
+    """Admin portal with password protection to access various tools"""
+    if request.method == 'POST':
+        # Handle logout
+        if request.form.get('logout'):
+            session.pop('ADMIN_PORTAL_AUTHORIZED', None)
+            return redirect(url_for('admin.admin_portal'))
+        
+        # Handle login
+        password = request.form.get('password')
+        if password == '3535$Harbor':
+            session['ADMIN_PORTAL_AUTHORIZED'] = True
+            return redirect(url_for('admin.admin_portal'))
+        else:
+            return render_template('admin_portal.html', error="Incorrect password")
+    
+    # Check if already authorized
+    if session.get('ADMIN_PORTAL_AUTHORIZED'):
+        return render_template('admin_portal.html', authorized=True)
+    
+    return render_template('admin_portal.html')
+
 @admin.route('/track')
 def tracking():
     print("start track")
@@ -305,7 +328,6 @@ def update_column_description():
 
 
 @admin.route('/inventory', methods=['GET', 'POST'])
-@requires_auth
 def report():
     return render_template("inventory-main.html")
 
