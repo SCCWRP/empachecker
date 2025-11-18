@@ -28,9 +28,34 @@
             font-family: Arial, sans-serif;
         }
 
-        #controls {
+        .tab-container {
             position: absolute;
             top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .tab-button {
+            padding: 8px 16px;
+            margin-right: 5px;
+            border: none;
+            background: #f0f0f0;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        .tab-button.active {
+            background: #007bff;
+            color: white;
+        }
+
+        #controls {
+            position: absolute;
+            top: 60px;
             right: 10px;
             z-index: 1000;
             background: white;
@@ -40,9 +65,26 @@
             min-width: 250px;
         }
 
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         #map {
             height: 100%;
             width: 100%;
+        }
+
+        #badPointsTable {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .table-responsive {
+            max-height: 300px;
         }
 
         .legend {
@@ -98,8 +140,14 @@
 </head>
 
 <body>
-    <!-- Controls Panel -->
-    <div id="controls">
+    <!-- Tab Selection -->
+    <div class="tab-container">
+        <button class="tab-button active" data-tab="estuary-tab">View by Estuary</button>
+        <button class="tab-button" data-tab="sop-tab">SOP Verification</button>
+    </div>
+
+    <!-- Controls Panel for Estuary Tab -->
+    <div id="controls" class="tab-content estuary-tab active">
         <h5>EMPA Stations</h5>
         <div class="mb-3">
             <label for="estuarySelect" class="form-label">Select Estuary:</label>
@@ -108,6 +156,50 @@
             </select>
         </div>
         <button id="resetBtn" class="btn btn-secondary btn-sm w-100">Reset View</button>
+    </div>
+
+    <!-- Controls Panel for SOP Tab -->
+    <div id="sopControls" class="tab-content sop-tab" style="position: absolute; top: 60px; right: 10px; z-index: 1000; background: white; padding: 15px; border-radius: 5px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); min-width: 350px; max-width: 400px;">
+        <h5>SOP Verification</h5>
+        <div class="mb-3">
+            <label for="sopSelect" class="form-label">Select SOP:</label>
+            <select id="sopSelect" class="form-select">
+                <option value="">-- Select SOP --</option>
+                <option value="tbl_grabevent">Field Grab</option>
+                <option value="tbl_wq_logger_metadata">SOP 1: Continuous environmental monitoring - Metadata</option>
+                <option value="tbl_waterquality_metadata">SOP 2: Discrete environmental monitoring - point water quality measurements</option>
+                <option value="tbl_edna_metadata">SOP 4: eDNA - field</option>
+                <option value="tbl_benthiclarge_metadata">SOP 6: Benthic infauna, large</option>
+                <option value="tbl_macroalgae_sample_metadata">SOP 7: Macroalgae</option>
+                <option value="tbl_bruv_metadata">SOP 8: Fish - BRUVs - field</option>
+                <option value="tbl_fish_sample_metadata">SOP 9: Fish seines</option>
+                <option value="tbl_crabtrap_metadata">SOP 10: Crab traps</option>
+                <option value="tbl_vegetation_sample_metadata">SOP 11: Marsh plain vegetation and epifauna surveys</option>
+                <option value="tbl_feldspar_metadata">SOP 13: Sediment accretion rates</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="badSiteSelect" class="form-label">Problematic Sites:</label>
+            <select id="badSiteSelect" class="form-select" disabled>
+                <option value="">-- Select SOP first --</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <select id="badPointSelect" class="form-select" disabled>
+                <option value="">-- Select site first --</option>
+            </select>
+        </div>
+        <button id="downloadBadPoints" class="btn btn-primary btn-sm w-100 mb-2" disabled>Download Report (CSV)</button>
+        <button id="resetSopBtn" class="btn btn-secondary btn-sm w-100">Reset View</button>
+        
+        <div id="badPointsTable" class="mt-3" style="display: none;">
+            <h6>Selected Point Details:</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered">
+                    <tbody id="badPointTableBody"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <!-- Legend -->

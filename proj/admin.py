@@ -13,28 +13,10 @@ from .utils.route_auth import requires_auth
 
 admin = Blueprint('admin', __name__)
 
-@admin.route('/admin', methods=['GET', 'POST'])
+@admin.route('/admin', methods=['GET'])
 def admin_portal():
-    """Admin portal with password protection to access various tools"""
-    if request.method == 'POST':
-        # Handle logout
-        if request.form.get('logout'):
-            session.pop('ADMIN_PORTAL_AUTHORIZED', None)
-            return redirect(url_for('admin.admin_portal'))
-        
-        # Handle login
-        password = request.form.get('password')
-        if password == '3535$Harbor':
-            session['ADMIN_PORTAL_AUTHORIZED'] = True
-            return redirect(url_for('admin.admin_portal'))
-        else:
-            return render_template('admin_portal.html', error="Incorrect password")
-    
-    # Check if already authorized
-    if session.get('ADMIN_PORTAL_AUTHORIZED'):
-        return render_template('admin_portal.html', authorized=True)
-    
-    return render_template('admin_portal.html')
+    """Admin portal - no password required"""
+    return render_template('admin_portal.html', authorized=True)
 
 @admin.route('/track')
 def tracking():
@@ -328,6 +310,7 @@ def update_column_description():
 
 
 @admin.route('/inventory', methods=['GET', 'POST'])
+@requires_auth
 def report():
     return render_template("inventory-main.html")
 
@@ -789,6 +772,7 @@ def get_sample_data():
 
 
 @admin.route('/view-all-polygons', methods=['GET'])
+@requires_auth
 def view_all_polygons():
     """Route to display all EMPA station polygons with dropdown filter by estuary"""
     return render_template('view_all_polygons.html')
@@ -855,5 +839,103 @@ def get_all_polygons_data():
     
     except Exception as e:
         print(f"Error fetching polygon data: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@admin.route('/get-sop-station-data', methods=['GET'])
+def get_sop_station_data():
+    """API endpoint to fetch station data from SOP metadata table and verify polygon matches"""
+    try:
+        table_name = request.args.get('table')
+        if not table_name:
+            return jsonify({'error': 'Table name required'}), 400
+        
+        eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
+        
+        # Handle different column names for different tables
+        lat_col = 'latitude'
+        long_col = 'longitude'
+        
+        if table_name == 'tbl_fish_sample_metadata':
+            lat_col = 'netbeginlatitude'
+            long_col = 'netbeginlongitude'
+        elif table_name == 'tbl_macroalgae_sample_metadata':
+            lat_col = 'transectbeginlatitude'
+            long_col = 'transectbeginlongitude'
+        
+        # Query to get metadata points and check if they fall within station polygons
+        query = f"""
+            WITH meta_points AS (
+                SELECT DISTINCT
+                    MIN(objectid) as objectid,
+                    siteid,
+                    stationno,
+                    {lat_col} as latitude,
+                    {long_col} as longitude,
+                    ST_SetSRID(ST_MakePoint({long_col}, {lat_col}), 4326) as geom
+                FROM {table_name}
+                WHERE {lat_col} IS NOT NULL AND {long_col} IS NOT NULL
+                GROUP BY siteid, stationno, {lat_col}, {long_col}
+            ),
+            station_polygons AS (
+                SELECT 
+                    siteid,
+                    stationno,
+                    geometry,
+                    estuaryname as sitename
+                FROM spatial_empa_all_stations
+            )
+            SELECT 
+                mp.objectid,
+                mp.siteid as siteid_meta,
+                mp.stationno as stationno_meta,
+                mp.latitude,
+                mp.longitude,
+                sp.stationno as stationno_polygon,
+                sp.sitename,
+                CASE 
+                    WHEN sp.stationno IS NOT NULL AND mp.stationno = sp.stationno THEN 'Match'
+                    WHEN sp.stationno IS NOT NULL AND mp.stationno != sp.stationno THEN 'No Match'
+                    ELSE 'Not in Polygon'
+                END as match_status,
+                ST_AsGeoJSON(sp.geometry) as polygon_geometry
+            FROM meta_points mp
+            LEFT JOIN station_polygons sp ON ST_Within(mp.geom, sp.geometry)
+            ORDER BY mp.siteid, mp.stationno, mp.objectid
+        """
+        
+        with eng.connect() as connection:
+            result = connection.execute(text(query)).fetchall()
+        
+        # Structure the data
+        data = {
+            'points': [],
+            'bad_points': []
+        }
+        
+        for row in result:
+            point_data = {
+                'objectid': row['objectid'],
+                'siteid_meta': row['siteid_meta'],
+                'stationno_meta': row['stationno_meta'],
+                'latitude': float(row['latitude']) if row['latitude'] else None,
+                'longitude': float(row['longitude']) if row['longitude'] else None,
+                'stationno_polygon': row['stationno_polygon'],
+                'sitename': row['sitename'],
+                'match_status': row['match_status'],
+                'polygon_geometry': row['polygon_geometry']
+            }
+            
+            data['points'].append(point_data)
+            
+            if row['match_status'] in ['No Match', 'Not in Polygon']:
+                data['bad_points'].append(point_data)
+        
+        return jsonify(data)
+    
+    except Exception as e:
+        print(f"Error fetching SOP station data: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     

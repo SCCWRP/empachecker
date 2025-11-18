@@ -1,4 +1,5 @@
 import os
+from functools import wraps
 from flask import request, make_response
 
 
@@ -17,6 +18,7 @@ def authenticate():
 
 def requires_auth(f):
     """Determines if the basic auth is correct"""
+    @wraps(f)
     def decorated(*args, **kwargs):
         auth = request.authorization
         if not auth or not check_auth(auth.username, auth.password):

@@ -72,13 +72,13 @@
         }
         
         .btn-schema {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
             color: white;
         }
         
         .btn-polygon {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
             color: white;
         }
@@ -144,58 +144,36 @@
             <p>Access administrative tools and utilities</p>
         </div>
         
-        {% if authorized %}
-            <!-- Authorized View - Show Tools -->
-            <div class="tools-section">
-                <a href="https://nexus.sccwrp.org/empachecker/inventory" target="_blank" class="btn tool-button btn-inventory">
-                    <span>
-                        <strong>Inventory</strong><br>
-                        <small>View and manage data inventory</small>
-                    </span>
-                    <div class="tool-icon">→</div>
-                </a>
-                
-                <a href="https://nexus.sccwrp.org/empachecker/schema" target="_blank" class="btn tool-button btn-schema">
-                    <span>
-                        <strong>Schema</strong><br>
-                        <small>Database schema documentation</small>
-                    </span>
-                    <div class="tool-icon">→</div>
-                </a>
-                
-                <a href="https://nexus.sccwrp.org/empachecker/view-all-polygons" target="_blank" class="btn tool-button btn-polygon">
-                    <span>
-                        <strong>Polygon Viewer</strong><br>
-                        <small>View estuary and station polygons</small>
-                    </span>
-                    <div class="tool-icon">→</div>
-                </a>
-            </div>
+        <!-- Admin Tools -->
+        <div class="tools-section">
+            <a href="https://nexus.sccwrp.org/empachecker/inventory" target="_blank" class="btn tool-button btn-inventory">
+                <span>
+                    <strong>Inventory</strong><br>
+                    <small>View and manage data inventory</small>
+                </span>
+                <div class="tool-icon">→</div>
+            </a>
             
-            <div class="text-center mt-4">
-                <a href="{{ url_for('admin.admin_portal') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="btn btn-outline-secondary">
-                    Logout
-                </a>
-                <form id="logout-form" action="{{ url_for('admin.admin_portal') }}" method="POST" style="display: none;">
-                    <input type="hidden" name="logout" value="true">
-                </form>
-            </div>
-        {% else %}
-            <!-- Login View -->
-            {% if error %}
-                <div class="error-message">
-                    <strong>Error:</strong> {{ error }}
-                </div>
-            {% endif %}
+            <a href="https://nexus.sccwrp.org/empachecker/schema" target="_blank" class="btn tool-button btn-schema">
+                <span>
+                    <strong>Schema</strong><br>
+                    <small>Database schema documentation</small>
+                </span>
+                <div class="tool-icon">→</div>
+            </a>
             
-            <form method="POST" class="login-form">
-                <div class="mb-3">
-                    <label for="password" class="form-label">Enter Admin Password</label>
-                    <input type="password" class="form-control password-input" id="password" name="password" required autofocus>
-                </div>
-                <button type="submit" class="btn login-button">Login</button>
-            </form>
-        {% endif %}
+            <a href="https://nexus.sccwrp.org/empachecker/view-all-polygons" target="_blank" class="btn tool-button btn-polygon">
+                <span>
+                    <strong>Polygon Viewer</strong><br>
+                    <small>View estuary and station polygons</small>
+                </span>
+                <div class="tool-icon">→</div>
+            </a>
+        </div>
+        
+        <div class="text-center mt-4">
+            <p class="text-muted"><small>Each tool requires authentication</small></p>
+        </div>
     </div>
     
     <!-- Bootstrap JS -->
