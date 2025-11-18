@@ -566,6 +566,113 @@ def discretewq(all_dfs):
     print('END CHECK 21')
 
 
+    print('START CHECK 22')
+    # Description: Values in tide column (comma-separated) must be in lu_tide lookup table
+    # Created Coder: Duy
+    # Created Date: 11/18/2025
+    # Last Edited Date:
+    # Last Edited Coder:
+
+    # Fetch the tide lookup table
+    lu_tide = pd.read_sql("SELECT tide FROM lu_tide", g.eng)
+    valid_tides = set(lu_tide['tide'].str.strip().str.lower())
+
+    # Function to validate comma-separated tide values
+    def validate_tide_values(tide_str):
+        if pd.isna(tide_str) or str(tide_str).strip() == '':
+            return True  # Allow empty/null values
+        
+        # Split by comma and validate each value
+        tide_values = [t.strip().lower() for t in str(tide_str).split(',')]
+        invalid_values = [t for t in tide_values if t and t not in valid_tides]
+        
+        return len(invalid_values) == 0
+
+    # Find bad rows where tide values are not in lookup table
+    watermeta['tide_valid'] = watermeta['tide'].apply(validate_tide_values)
+    bad_rows = watermeta[~watermeta['tide_valid']].tmp_row.tolist()
+
+    args.update({
+        "dataframe": watermeta,
+        "tablename": 'tbl_waterquality_metadata',
+        "badrows": bad_rows,
+        "badcolumn": "tide",
+        "error_type": "Invalid Value",
+        "error_message": "Tide values must be from the lu_tide lookup table. Multiple values should be comma-separated. Invalid tide value(s) found."
+    })
+    errs = [*errs, checkData(**args)]
+
+    print('END CHECK 22')
+
+
+    print('START CHECK 23')
+    # Description: Values in weather column (comma-separated) must be in lu_weather lookup table
+    # Created Coder: Duy
+    # Created Date: 11/18/2025
+    # Last Edited Date:
+    # Last Edited Coder:
+
+    # Fetch the weather lookup table
+    lu_weather = pd.read_sql("SELECT weather FROM lu_weather", g.eng)
+    valid_weather = set(lu_weather['weather'].str.strip().str.lower())
+
+    # Function to validate comma-separated weather values
+    def validate_weather_values(weather_str):
+        if pd.isna(weather_str) or str(weather_str).strip() == '':
+            return True  # Allow empty/null values
+        
+        # Split by comma and validate each value
+        weather_values = [w.strip().lower() for w in str(weather_str).split(',')]
+        invalid_values = [w for w in weather_values if w and w not in valid_weather]
+        
+        return len(invalid_values) == 0
+
+    # Find bad rows where weather values are not in lookup table
+    watermeta['weather_valid'] = watermeta['weather'].apply(validate_weather_values)
+    bad_rows = watermeta[~watermeta['weather_valid']].tmp_row.tolist()
+
+    args.update({
+        "dataframe": watermeta,
+        "tablename": 'tbl_waterquality_metadata',
+        "badrows": bad_rows,
+        "badcolumn": "weather",
+        "error_type": "Invalid Value",
+        "error_message": "Weather values must be from the lu_weather lookup table. Multiple values should be comma-separated. Invalid weather value(s) found."
+    })
+    errs = [*errs, checkData(**args)]
+
+    print('END CHECK 23')
+
+
+    print('START CHECK 24')
+    # Description: If weather_event is Y then weather_event_comment must not be empty
+    # Created Coder: Duy
+    # Created Date: 11/18/2025
+    # Last Edited Date:
+    # Last Edited Coder:
+
+    # Find rows where weather_event is Y but weather_event_comment is empty/null
+    bad_rows = watermeta[
+        (watermeta['weather_event'].str.upper() == 'Y') &
+        (
+            watermeta['weather_event_comment'].isna() |
+            (watermeta['weather_event_comment'].astype(str).str.strip() == '')
+        )
+    ].tmp_row.tolist()
+
+    args.update({
+        "dataframe": watermeta,
+        "tablename": 'tbl_waterquality_metadata',
+        "badrows": bad_rows,
+        "badcolumn": "weather_event,weather_event_comment",
+        "error_type": "Missing Required Value",
+        "error_message": "If weather_event is 'Y', then weather_event_comment must not be empty. Please provide a comment describing the weather event."
+    })
+    errs = [*errs, checkData(**args)]
+
+    print('END CHECK 24')
+
+
 
 
     print("-------------End of Discrete WQ Custom Check ----------")
