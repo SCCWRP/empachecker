@@ -260,6 +260,42 @@ def benthiclarge(all_dfs):
 
     print("# END OF CHECK - 6")
 
+    print("# CHECK - 7")
+    # Description: All values in tide column must be in lu_tide (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 12/19/2024
+    # NOTE: Users can enter multiple values separated by comma
+
+    # Get valid tide values from lu_tide
+    lu_tide_query = "SELECT tide FROM lu_tide"
+    lu_tide_df = pd.read_sql(lu_tide_query, g.eng)
+    valid_tide_values = lu_tide_df['tide'].str.lower().tolist()
+
+    # Function to check if all comma-separated values are valid
+    def check_tide_values(tide_value):
+        if pd.isna(tide_value) or str(tide_value).strip() == '':
+            return True
+        # Split by comma, strip whitespace, and check each value
+        tide_list = [t.strip().lower() for t in str(tide_value).split(',') if t.strip()]
+        return all(t in valid_tide_values for t in tide_list) if tide_list else True
+
+    # Find bad rows where any tide value is not in lu_tide
+    check_7_bad_rows = benthiclargemeta[
+        ~benthiclargemeta['tide'].apply(check_tide_values)
+    ]['tmp_row'].tolist()
+
+    args.update({
+        "dataframe": benthiclargemeta,
+        "tablename": "tbl_benthiclarge_metadata",
+        "badrows": check_7_bad_rows,
+        "badcolumn": "tide",
+        "error_type": "Lookup List Error",
+        "error_message": "All values in tide column must be in lu_tide lookup table. Multiple values can be separated by comma."
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 7")
+
 
 
 
