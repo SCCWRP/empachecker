@@ -749,7 +749,7 @@ def get_sample_data():
         # If data is found, process and join the dates
         if result:
             # Extract and sort the samplecollectiondate and created_date
-            samplecollectiondates = sorted(set(
+            samplecollectiondate = sorted(set(
                 row['samplecollectiondate'].strftime('%Y-%m-%d') for row in result if row['samplecollectiondate']
             ))
 
@@ -759,7 +759,7 @@ def get_sample_data():
             
             # Join the sorted dates into a comma-separated string
             return jsonify({
-                'samplecollectiondate': ', '.join(samplecollectiondates) if samplecollectiondates else 'N/A',
+                'samplecollectiondate': ', '.join(samplecollectiondate) if samplecollectiondate else 'N/A',
                 'created_date': ', '.join(created_dates) if created_dates else 'N/A'
             })
         else:
@@ -842,6 +842,50 @@ def get_all_polygons_data():
         return jsonify({'error': str(e)}), 500
 
 
+@admin.route('/save-station-qa', methods=['POST'])
+def save_station_qa():
+    """API endpoint to save QA action (confirm or edit) for a station"""
+    try:
+        data = request.get_json()
+        
+        sop = data.get('sop')
+        region = data.get('region')
+        siteid = data.get('siteid')
+        objectids = data.get('objectids')
+        action = data.get('action')
+        comment = data.get('comment', '')
+        last_edited_user = data.get('last_edited_user', '')
+        
+        if not all([sop, siteid, objectids, action, last_edited_user]):
+            return jsonify({'error': 'Missing required fields'}), 400
+        
+        eng = create_engine(os.environ.get('DB_CONNECTION_STRING_STATIONSQA'))
+        
+        insert_query = text("""
+            INSERT INTO spatial_stations_qa (sop, region, siteid, objectids, action, comment, last_edited_user, last_edited_date)
+            VALUES (:sop, :region, :siteid, :objectids, :action, :comment, :last_edited_user, NOW())
+        """)
+        
+        with eng.begin() as connection:
+            connection.execute(insert_query, {
+                'sop': sop,
+                'region': region,
+                'siteid': siteid,
+                'objectids': objectids,
+                'action': action,
+                'comment': comment,
+                'last_edited_user': last_edited_user
+            })
+        
+        return jsonify({'message': 'QA action saved successfully'}), 200
+    
+    except Exception as e:
+        print(f"Error saving station QA: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 @admin.route('/get-sop-station-data', methods=['GET'])
 def get_sop_station_data():
     """API endpoint to fetch station data from SOP metadata table and verify polygon matches"""
@@ -867,15 +911,18 @@ def get_sop_station_data():
         query = f"""
             WITH meta_points AS (
                 SELECT DISTINCT
-                    MIN(objectid) as objectid,
-                    siteid,
-                    stationno,
-                    {lat_col} as latitude,
-                    {long_col} as longitude,
-                    ST_SetSRID(ST_MakePoint({long_col}, {lat_col}), 4326) as geom
-                FROM {table_name}
-                WHERE {lat_col} IS NOT NULL AND {long_col} IS NOT NULL
-                GROUP BY siteid, stationno, {lat_col}, {long_col}
+                    STRING_AGG(DISTINCT t.objectid::text, ', ' ORDER BY t.objectid::text) as objectid,
+                    t.siteid,
+                    t.stationno,
+                    t.{lat_col} as latitude,
+                    t.{long_col} as longitude,
+                    ST_SetSRID(ST_MakePoint(t.{long_col}, t.{lat_col}), 4326) as geom,
+                    STRING_AGG(DISTINCT TO_CHAR(t.samplecollectiondate, 'YYYY-MM-DD'), ', ' ORDER BY TO_CHAR(t.samplecollectiondate, 'YYYY-MM-DD')) as samplecollectiondate,
+                    s.region
+                FROM {table_name} t
+                LEFT JOIN search s ON t.siteid = s.siteid
+                WHERE t.{lat_col} IS NOT NULL AND t.{long_col} IS NOT NULL
+                GROUP BY t.siteid, t.stationno, t.{lat_col}, t.{long_col}, s.region
             ),
             station_polygons AS (
                 SELECT 
@@ -891,6 +938,8 @@ def get_sop_station_data():
                 mp.stationno as stationno_meta,
                 mp.latitude,
                 mp.longitude,
+                mp.samplecollectiondate,
+                mp.region,
                 sp.stationno as stationno_polygon,
                 sp.sitename,
                 CASE 
@@ -898,12 +947,23 @@ def get_sop_station_data():
                     WHEN sp.stationno IS NOT NULL AND mp.stationno != sp.stationno THEN 'No Match'
                     ELSE 'Not in Polygon'
                 END as match_status,
-                ST_AsGeoJSON(sp.geometry) as polygon_geometry
+                ST_AsGeoJSON(sp.geometry) as polygon_geometry,
+                qa.action as qa_action,
+                qa.last_edited_date as qa_last_edited_date
             FROM meta_points mp
             LEFT JOIN station_polygons sp ON ST_Within(mp.geom, sp.geometry)
-            ORDER BY mp.siteid, mp.stationno, mp.objectid
+            LEFT JOIN LATERAL (
+                SELECT action, last_edited_date, sop
+                FROM spatial_stations_qa
+                WHERE spatial_stations_qa.siteid = mp.siteid
+                    AND spatial_stations_qa.objectids::varchar = mp.objectid::varchar
+                ORDER BY last_edited_date DESC
+                LIMIT 1
+            ) qa ON true
+            ORDER BY mp.region, mp.siteid, mp.stationno, mp.objectid
         """
-        
+        print(query)
+       
         with eng.connect() as connection:
             result = connection.execute(text(query)).fetchall()
         
@@ -920,10 +980,13 @@ def get_sop_station_data():
                 'stationno_meta': row['stationno_meta'],
                 'latitude': float(row['latitude']) if row['latitude'] else None,
                 'longitude': float(row['longitude']) if row['longitude'] else None,
+                'samplecollectiondates': row['samplecollectiondate'] if row['samplecollectiondate'] else 'N/A',
+                'region': row['region'],
                 'stationno_polygon': row['stationno_polygon'],
                 'sitename': row['sitename'],
                 'match_status': row['match_status'],
-                'polygon_geometry': row['polygon_geometry']
+                'polygon_geometry': row['polygon_geometry'],
+                'qa_action': row['qa_action']
             }
             
             data['points'].append(point_data)

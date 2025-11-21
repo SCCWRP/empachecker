@@ -179,17 +179,17 @@
             </select>
         </div>
         <div class="mb-3">
+            <label for="regionSelect" class="form-label">Region:</label>
+            <select id="regionSelect" class="form-select" disabled>
+                <option value="">-- Select SOP first --</option>
+            </select>
+        </div>
+        <div class="mb-3">
             <label for="badSiteSelect" class="form-label">Problematic Sites:</label>
             <select id="badSiteSelect" class="form-select" disabled>
                 <option value="">-- Select SOP first --</option>
             </select>
         </div>
-        <div class="mb-3">
-            <select id="badPointSelect" class="form-select" disabled>
-                <option value="">-- Select site first --</option>
-            </select>
-        </div>
-        <button id="downloadBadPoints" class="btn btn-primary btn-sm w-100 mb-2" disabled>Download Report (CSV)</button>
         <button id="resetSopBtn" class="btn btn-secondary btn-sm w-100">Reset View</button>
         
         <div id="badPointsTable" class="mt-3" style="display: none;">

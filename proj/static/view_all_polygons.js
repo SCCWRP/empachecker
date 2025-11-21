@@ -262,8 +262,6 @@ function switchTab(tabName) {
     } else if (tabName === 'sop-tab') {
         // SOP tab - wait for user to select SOP
         document.getElementById('sopSelect').value = '';
-        document.getElementById('badPointSelect').disabled = true;
-        document.getElementById('downloadBadPoints').disabled = true;
     }
 }
 
@@ -302,8 +300,7 @@ async function fetchSopStationData(tableName) {
 async function handleSopSelection(tableName) {
     if (!tableName) {
         clearMap();
-        document.getElementById('badPointSelect').disabled = true;
-        document.getElementById('downloadBadPoints').disabled = true;
+        document.getElementById('regionSelect').disabled = true;
         document.getElementById('badPointsTable').style.display = 'none';
         return;
     }
@@ -342,26 +339,62 @@ async function handleSopSelection(tableName) {
         });
     });
     
-    // Add markers for bad points (red)
+    // Add markers for bad points with color based on QA status
     sopStationData.bad_points.forEach(point => {
+        // Determine color based on qa_action: green for confirm, yellow/orange for edit, red for none
+        let markerColor = 'red';
+        if (point.qa_action === 'confirm') {
+            markerColor = '#28a745'; // Bootstrap success green
+        } else if (point.qa_action === 'edit') {
+            markerColor = '#ffc107'; // Bootstrap warning yellow
+        }
+        
         const marker = L.circleMarker([point.latitude, point.longitude], {
             radius: 6,
-            color: 'red',
-            fillColor: 'red',
+            color: markerColor,
+            fillColor: markerColor,
             fillOpacity: 0.8
-        }).bindPopup(`
-            <strong>ObjectID:</strong> ${point.objectid}<br>
-            <strong>Site Name:</strong> ${point.sitename || 'N/A'}<br>
-            <strong>SiteID:</strong> ${point.siteid_meta}<br>
-            <strong>Station (Meta):</strong> ${point.stationno_meta}<br>
-            <strong>Station (Polygon):</strong> ${point.stationno_polygon || 'N/A'}<br>
-            <strong>Status:</strong> ${point.match_status}<br>
-            <strong>Lat:</strong> ${point.latitude.toFixed(6)}<br>
-            <strong>Long:</strong> ${point.longitude.toFixed(6)}
-        `);
+        });
+        
+        // Store the point data with the marker for later updates
+        marker.pointData = point;
+        
+        const popupContent = `
+            <div>
+                <strong>ObjectID:</strong> ${point.objectid}<br>
+                <strong>SiteID:</strong> ${point.siteid_meta}<br>
+                <strong>Station (Meta):</strong> ${point.stationno_meta}<br>
+                <strong>Station (Polygon):</strong> ${point.stationno_polygon || 'N/A'}<br>
+                <strong>Status:</strong> ${point.match_status}<br>
+                <strong>Sample Collection Date(s):</strong> ${point.samplecollectiondates || 'N/A'}<br>
+                <strong>Lat:</strong> ${point.latitude.toFixed(6)}<br>
+                <strong>Long:</strong> ${point.longitude.toFixed(6)}<br>
+                ${point.qa_action ? `<strong>QA Status:</strong> ${point.qa_action}<br>` : ''}
+                <div style="margin-top: 10px;">
+                    <button class="btn btn-success btn-sm" onclick="handleConfirmPoint('${point.objectid}', '${point.siteid_meta}', '${point.region || ''}')">Confirm</button>
+                    <button class="btn btn-warning btn-sm" onclick="handleEditPoint('${point.objectid}', '${point.siteid_meta}', '${point.region || ''}')">Edit</button>
+                </div>
+            </div>
+        `;
+        
+        marker.bindPopup(popupContent);
         marker.addTo(map);
         sopMarkers.push(marker);
     });
+    
+    // Populate region dropdown
+    const regionSelect = document.getElementById('regionSelect');
+    regionSelect.innerHTML = '<option value="">-- All regions --</option>';
+    
+    const uniqueRegions = [...new Set(sopStationData.bad_points.map(p => p.region).filter(r => r))].sort();
+    uniqueRegions.forEach(region => {
+        const option = document.createElement('option');
+        option.value = region;
+        option.textContent = region;
+        regionSelect.appendChild(option);
+    });
+    
+    regionSelect.disabled = sopStationData.bad_points.length === 0;
     
     // Populate problematic sites dropdown (unique siteids)
     const badSiteSelect = document.getElementById('badSiteSelect');
@@ -376,11 +409,6 @@ async function handleSopSelection(tableName) {
     });
     
     badSiteSelect.disabled = sopStationData.bad_points.length === 0;
-    
-    // Initially populate all bad points
-    populateBadPointsDropdown('');
-    
-    document.getElementById('downloadBadPoints').disabled = sopStationData.bad_points.length === 0;
     
     // Fit bounds to show all data
     const allLayers = [...sopPolygonLayers, ...sopMarkers];
@@ -401,97 +429,235 @@ async function handleSopSelection(tableName) {
     hideLoader();
 }
 
-// Populate bad points dropdown based on selected site
-function populateBadPointsDropdown(siteid) {
-    const badPointSelect = document.getElementById('badPointSelect');
-    badPointSelect.innerHTML = '<option value="">-- Select point --</option>';
+// Handle region selection
+function handleRegionSelection(region) {
+    document.getElementById('badPointsTable').style.display = 'none';
+    document.getElementById('badSiteSelect').value = '';
     
-    const filteredPoints = siteid 
-        ? sopStationData.bad_points.filter(p => p.siteid_meta === siteid)
+    // Filter sites by region
+    const badSiteSelect = document.getElementById('badSiteSelect');
+    badSiteSelect.innerHTML = '<option value="">-- All problematic sites --</option>';
+    
+    const filteredPoints = region 
+        ? sopStationData.bad_points.filter(p => p.region === region)
         : sopStationData.bad_points;
     
-    filteredPoints.forEach(point => {
-        const idx = sopStationData.bad_points.indexOf(point);
+    const uniqueSites = [...new Set(filteredPoints.map(p => p.siteid_meta))].sort();
+    uniqueSites.forEach(siteid => {
         const option = document.createElement('option');
-        option.value = idx;
-        option.textContent = `Station ${point.stationno_meta} - Lat: ${point.latitude.toFixed(6)}, Long: ${point.longitude.toFixed(6)}`;
-        badPointSelect.appendChild(option);
+        option.value = siteid;
+        option.textContent = siteid;
+        badSiteSelect.appendChild(option);
     });
     
-    badPointSelect.disabled = filteredPoints.length === 0;
+    // Clear and redraw markers based on region filter
+    sopMarkers.forEach(marker => map.removeLayer(marker));
+    sopMarkers = [];
     
-    // If a site is selected, zoom to show all points for that site
-    if (siteid && filteredPoints.length > 0) {
+    filteredPoints.forEach(point => {
+        // Determine color based on qa_action
+        let markerColor = 'red';
+        if (point.qa_action === 'confirm') {
+            markerColor = '#28a745'; // Bootstrap success green
+        } else if (point.qa_action === 'edit') {
+            markerColor = '#ffc107'; // Bootstrap warning yellow
+        }
+        
+        const marker = L.circleMarker([point.latitude, point.longitude], {
+            radius: 6,
+            color: markerColor,
+            fillColor: markerColor,
+            fillOpacity: 0.8
+        });
+        
+        // Store the point data with the marker
+        marker.pointData = point;
+        
+        const popupContent = `
+            <div>
+                <strong>ObjectID:</strong> ${point.objectid}<br>
+                <strong>SiteID:</strong> ${point.siteid_meta}<br>
+                <strong>Station (Meta):</strong> ${point.stationno_meta}<br>
+                <strong>Station (Polygon):</strong> ${point.stationno_polygon || 'N/A'}<br>
+                <strong>Status:</strong> ${point.match_status}<br>
+                <strong>Sample Collection Date(s):</strong> ${point.samplecollectiondates || 'N/A'}<br>
+                <strong>Lat:</strong> ${point.latitude.toFixed(6)}<br>
+                <strong>Long:</strong> ${point.longitude.toFixed(6)}<br>
+                ${point.qa_action ? `<strong>QA Status:</strong> ${point.qa_action}<br>` : ''}
+                <div style="margin-top: 10px;">
+                    <button class="btn btn-success btn-sm" onclick="handleConfirmPoint('${point.objectid}', '${point.siteid_meta}', '${point.region || ''}')">Confirm</button>
+                    <button class="btn btn-warning btn-sm" onclick="handleEditPoint('${point.objectid}', '${point.siteid_meta}', '${point.region || ''}')">Edit</button>
+                </div>
+            </div>
+        `;
+        
+        marker.bindPopup(popupContent);
+        marker.addTo(map);
+        sopMarkers.push(marker);
+    });
+    
+    // If a region is selected, zoom to show all points for that region
+    if (region && filteredPoints.length > 0) {
         const bounds = L.latLngBounds(filteredPoints.map(p => [p.latitude, p.longitude]));
         map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 });
     }
 }
 
-// Handle bad site selection
-function handleBadSiteSelection(siteid) {
-    document.getElementById('badPointsTable').style.display = 'none';
-    document.getElementById('badPointSelect').value = '';
-    populateBadPointsDropdown(siteid);
-}
-
-// Handle bad point selection
-function handleBadPointSelection(idx) {
-    if (idx === '') {
-        document.getElementById('badPointsTable').style.display = 'none';
-        return;
-    }
+// Handle confirm point action
+async function handleConfirmPoint(objectids, siteid, region) {
+    const userName = prompt('Please enter your name:');
     
-    const point = sopStationData.bad_points[idx];
-    
-    // Zoom to selected point
-    map.setView([point.latitude, point.longitude], 15);
-    
-    // Open popup for the marker
-    sopMarkers[idx].openPopup();
-    
-    // Show details table
-    const tableBody = document.getElementById('badPointTableBody');
-    tableBody.innerHTML = `
-        <tr><th>ObjectID</th><td>${point.objectid}</td></tr>
-        <tr><th>Site Name</th><td>${point.sitename || 'N/A'}</td></tr>
-        <tr><th>SiteID (Meta)</th><td>${point.siteid_meta}</td></tr>
-        <tr><th>Station (Meta)</th><td>${point.stationno_meta}</td></tr>
-        <tr><th>Station (Polygon)</th><td>${point.stationno_polygon || 'N/A'}</td></tr>
-        <tr><th>Match Status</th><td>${point.match_status}</td></tr>
-        <tr><th>Latitude</th><td>${point.latitude.toFixed(6)}</td></tr>
-        <tr><th>Longitude</th><td>${point.longitude.toFixed(6)}</td></tr>
-    `;
-    
-    document.getElementById('badPointsTable').style.display = 'block';
-}
-
-// Download bad points as CSV
-function downloadBadPointsCSV() {
-    if (!sopStationData.bad_points || sopStationData.bad_points.length === 0) {
-        alert('No mismatched points to download');
+    if (userName === null || userName.trim() === '') {
+        alert('User name is required');
         return;
     }
     
     const sopSelect = document.getElementById('sopSelect');
-    const selectedText = sopSelect.options[sopSelect.selectedIndex].text;
+    const sopTable = sopSelect.value;
+    const sopText = sopSelect.options[sopSelect.selectedIndex].text;
     
-    // Create CSV content
-    let csv = 'ObjectID,Site Name,SiteID (Meta),Latitude,Longitude,Station (Meta),Station (Polygon),Match Status\n';
+    try {
+        const response = await fetch(`/${script_root}/save-station-qa`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                sop: sopText,
+                region: region,
+                siteid: siteid,
+                objectids: objectids,
+                action: 'confirm',
+                comment: '',
+                last_edited_user: userName.trim()
+            })
+        });
+        
+        if (response.ok) {
+            alert('Point confirmed successfully!');
+            // Update marker color to green
+            updateMarkerColor(objectids, siteid, '#28a745', 'confirm');
+        } else {
+            const error = await response.json();
+            alert('Error confirming point: ' + (error.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error confirming point:', error);
+        alert('Error confirming point: ' + error.message);
+    }
+}
+
+// Handle edit point action
+async function handleEditPoint(objectids, siteid, region) {
+    const userName = prompt('Please enter your name:');
     
-    sopStationData.bad_points.forEach(point => {
-        csv += `${point.objectid},${point.sitename || 'N/A'},${point.siteid_meta},${point.latitude.toFixed(6)},${point.longitude.toFixed(6)},${point.stationno_meta},${point.stationno_polygon || 'N/A'},${point.match_status}\n`;
+    if (userName === null || userName.trim() === '') {
+        alert('User name is required');
+        return;
+    }
+    
+    const comment = prompt('Please enter a comment for this edit:');
+    
+    if (comment === null) {
+        return; // User cancelled
+    }
+    
+    const sopSelect = document.getElementById('sopSelect');
+    const sopTable = sopSelect.value;
+    const sopText = sopSelect.options[sopSelect.selectedIndex].text;
+    
+    try {
+        const response = await fetch(`/${script_root}/save-station-qa`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                sop: sopText,
+                region: region,
+                siteid: siteid,
+                objectids: objectids,
+                action: 'edit',
+                comment: comment,
+                last_edited_user: userName.trim()
+            })
+        });
+        
+        if (response.ok) {
+            alert('Edit recorded successfully!');
+            // Update marker color to yellow/orange
+            updateMarkerColor(objectids, siteid, '#ffc107', 'edit');
+        } else {
+            const error = await response.json();
+            alert('Error recording edit: ' + (error.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error recording edit:', error);
+        alert('Error recording edit: ' + error.message);
+    }
+}
+
+// Update marker color after QA action
+function updateMarkerColor(objectids, siteid, color, action) {
+    // Find the marker that matches this objectids and siteid
+    sopMarkers.forEach(marker => {
+        if (marker.pointData && 
+            marker.pointData.objectid === objectids && 
+            marker.pointData.siteid_meta === siteid) {
+            // Update the marker style
+            marker.setStyle({
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.8
+            });
+            // Update the point data
+            marker.pointData.qa_action = action;
+            
+            // Update the popup content
+            const point = marker.pointData;
+            const popupContent = `
+                <div>
+                    <strong>ObjectID:</strong> ${point.objectid}<br>
+                    <strong>SiteID:</strong> ${point.siteid_meta}<br>
+                    <strong>Station (Meta):</strong> ${point.stationno_meta}<br>
+                    <strong>Station (Polygon):</strong> ${point.stationno_polygon || 'N/A'}<br>
+                    <strong>Status:</strong> ${point.match_status}<br>
+                    <strong>Sample Collection Date(s):</strong> ${point.samplecollectiondates || 'N/A'}<br>
+                    <strong>Lat:</strong> ${point.latitude.toFixed(6)}<br>
+                    <strong>Long:</strong> ${point.longitude.toFixed(6)}<br>
+                    <strong>QA Status:</strong> ${action}<br>
+                    <div style="margin-top: 10px;">
+                        <button class="btn btn-success btn-sm" onclick="handleConfirmPoint('${point.objectid}', '${point.siteid_meta}', '${point.region || ''}')">Confirm</button>
+                        <button class="btn btn-warning btn-sm" onclick="handleEditPoint('${point.objectid}', '${point.siteid_meta}', '${point.region || ''}')">Edit</button>
+                    </div>
+                </div>
+            `;
+            marker.setPopupContent(popupContent);
+        }
     });
+}
+
+// Handle bad site selection
+function handleBadSiteSelection(siteid) {
+    document.getElementById('badPointsTable').style.display = 'none';
     
-    // Create download link
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${selectedText}-polygon-check-report.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+    const regionSelect = document.getElementById('regionSelect');
+    const selectedRegion = regionSelect.value;
+    
+    // If a site is selected, zoom to show all points for that site
+    if (siteid) {
+        let filteredPoints = sopStationData.bad_points.filter(p => p.siteid_meta === siteid);
+        
+        // Also apply region filter if selected
+        if (selectedRegion) {
+            filteredPoints = filteredPoints.filter(p => p.region === selectedRegion);
+        }
+        
+        if (filteredPoints.length > 0) {
+            const bounds = L.latLngBounds(filteredPoints.map(p => [p.latitude, p.longitude]));
+            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 });
+        }
+    }
 }
 
 // Event listeners for tab switching
@@ -506,23 +672,20 @@ document.getElementById('sopSelect').addEventListener('change', (e) => {
     handleSopSelection(e.target.value);
 });
 
+document.getElementById('regionSelect').addEventListener('change', (e) => {
+    handleRegionSelection(e.target.value);
+});
+
 document.getElementById('badSiteSelect').addEventListener('change', (e) => {
     handleBadSiteSelection(e.target.value);
 });
 
-document.getElementById('badPointSelect').addEventListener('change', (e) => {
-    handleBadPointSelection(e.target.value);
-});
-
-document.getElementById('downloadBadPoints').addEventListener('click', downloadBadPointsCSV);
-
 document.getElementById('resetSopBtn').addEventListener('click', () => {
     document.getElementById('sopSelect').value = '';
+    document.getElementById('regionSelect').value = '';
+    document.getElementById('regionSelect').disabled = true;
     document.getElementById('badSiteSelect').value = '';
     document.getElementById('badSiteSelect').disabled = true;
-    document.getElementById('badPointSelect').value = '';
-    document.getElementById('badPointSelect').disabled = true;
-    document.getElementById('downloadBadPoints').disabled = true;
     document.getElementById('badPointsTable').style.display = 'none';
     clearMap();
 });
