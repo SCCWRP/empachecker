@@ -162,8 +162,14 @@
     <div id="sopControls" class="tab-content sop-tab" style="position: absolute; top: 60px; right: 10px; z-index: 1000; background: white; padding: 15px; border-radius: 5px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); min-width: 350px; max-width: 400px;">
         <h5>SOP Verification</h5>
         <div class="mb-3">
+            <label for="regionSelect" class="form-label">Region:</label>
+            <select id="regionSelect" class="form-select">
+                <option value="">-- Select Region --</option>
+            </select>
+        </div>
+        <div class="mb-3">
             <label for="sopSelect" class="form-label">Select SOP:</label>
-            <select id="sopSelect" class="form-select">
+            <select id="sopSelect" class="form-select" disabled>
                 <option value="">-- Select SOP --</option>
                 <option value="tbl_grabevent">Field Grab</option>
                 <option value="tbl_wq_logger_metadata">SOP 1: Continuous environmental monitoring - Metadata</option>
@@ -179,15 +185,9 @@
             </select>
         </div>
         <div class="mb-3">
-            <label for="regionSelect" class="form-label">Region:</label>
-            <select id="regionSelect" class="form-select" disabled>
-                <option value="">-- Select SOP first --</option>
-            </select>
-        </div>
-        <div class="mb-3">
             <label for="badSiteSelect" class="form-label">Problematic Sites:</label>
             <select id="badSiteSelect" class="form-select" disabled>
-                <option value="">-- Select SOP first --</option>
+                <option value="">-- Select Region and SOP first --</option>
             </select>
         </div>
         <button id="resetSopBtn" class="btn btn-secondary btn-sm w-100">Reset View</button>

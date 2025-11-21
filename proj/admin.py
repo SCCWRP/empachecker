@@ -886,6 +886,28 @@ def save_station_qa():
         return jsonify({'error': str(e)}), 500
 
 
+@admin.route('/get-all-regions', methods=['GET'])
+def get_all_regions():
+    """API endpoint to fetch all unique regions from search table"""
+    try:
+        eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
+        
+        query = text("""
+            SELECT DISTINCT region
+            FROM search
+            WHERE region IS NOT NULL
+            ORDER BY region
+        """)
+        
+        with eng.connect() as conn:
+            result = conn.execute(query)
+            regions = [row[0] for row in result]
+        
+        return jsonify({'regions': regions})
+    except Exception as e:
+        print(f"Error fetching regions: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @admin.route('/get-sop-station-data', methods=['GET'])
 def get_sop_station_data():
     """API endpoint to fetch station data from SOP metadata table and verify polygon matches"""
@@ -922,6 +944,7 @@ def get_sop_station_data():
                 FROM {table_name} t
                 LEFT JOIN search s ON t.siteid = s.siteid
                 WHERE t.{lat_col} IS NOT NULL AND t.{long_col} IS NOT NULL
+                    AND t.{lat_col} <> -88 AND t.{long_col} <> -88
                 GROUP BY t.siteid, t.stationno, t.{lat_col}, t.{long_col}, s.region
             ),
             station_polygons AS (
@@ -956,7 +979,11 @@ def get_sop_station_data():
                 SELECT action, last_edited_date, sop
                 FROM spatial_stations_qa
                 WHERE spatial_stations_qa.siteid = mp.siteid
-                    AND spatial_stations_qa.objectids::varchar = mp.objectid::varchar
+                    AND EXISTS (
+                        SELECT 1
+                        FROM unnest(string_to_array(spatial_stations_qa.objectids, ', ')) AS qa_oid
+                        WHERE qa_oid = ANY(string_to_array(mp.objectid, ', '))
+                    )
                 ORDER BY last_edited_date DESC
                 LIMIT 1
             ) qa ON true

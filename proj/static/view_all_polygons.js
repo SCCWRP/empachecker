@@ -260,8 +260,10 @@ function switchTab(tabName) {
     if (tabName === 'estuary-tab') {
         showAllPolygons();
     } else if (tabName === 'sop-tab') {
-        // SOP tab - wait for user to select SOP
+        // SOP tab - load regions and wait for user to select region first
         document.getElementById('sopSelect').value = '';
+        document.getElementById('sopSelect').disabled = true;
+        populateRegionDropdown();
     }
 }
 
@@ -296,11 +298,61 @@ async function fetchSopStationData(tableName) {
     }
 }
 
+// Fetch all regions on page load
+async function fetchAllRegions() {
+    try {
+        const response = await fetch(`/${script_root}/get-all-regions`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch regions');
+        }
+        const data = await response.json();
+        return data.regions;
+    } catch (error) {
+        console.error('Error fetching regions:', error);
+        return [];
+    }
+}
+
+// Populate region dropdown
+async function populateRegionDropdown() {
+    const regionSelect = document.getElementById('regionSelect');
+    regionSelect.innerHTML = '<option value="">-- Select Region --</option>';
+    
+    const regions = await fetchAllRegions();
+    regions.forEach(region => {
+        const option = document.createElement('option');
+        option.value = region;
+        option.textContent = region;
+        regionSelect.appendChild(option);
+    });
+}
+
+// Handle region selection (enables SOP dropdown)
+function handleRegionSelectionFirst(region) {
+    const sopSelect = document.getElementById('sopSelect');
+    
+    if (!region) {
+        // If no region selected, disable SOP
+        sopSelect.disabled = true;
+        sopSelect.value = '';
+        clearMap();
+        document.getElementById('badSiteSelect').disabled = true;
+        return;
+    }
+    
+    // Enable SOP dropdown when region is selected
+    sopSelect.disabled = false;
+    
+    // If SOP is already selected, reload data with region filter
+    if (sopSelect.value) {
+        handleSopSelection(sopSelect.value);
+    }
+}
+
 // Handle SOP selection
 async function handleSopSelection(tableName) {
     if (!tableName) {
         clearMap();
-        document.getElementById('regionSelect').disabled = true;
         document.getElementById('badPointsTable').style.display = 'none';
         return;
     }
@@ -382,19 +434,13 @@ async function handleSopSelection(tableName) {
         sopMarkers.push(marker);
     });
     
-    // Populate region dropdown
+    // Filter points by selected region
     const regionSelect = document.getElementById('regionSelect');
-    regionSelect.innerHTML = '<option value="">-- All regions --</option>';
+    const selectedRegion = regionSelect.value;
     
-    const uniqueRegions = [...new Set(sopStationData.bad_points.map(p => p.region).filter(r => r))].sort();
-    uniqueRegions.forEach(region => {
-        const option = document.createElement('option');
-        option.value = region;
-        option.textContent = region;
-        regionSelect.appendChild(option);
-    });
-    
-    regionSelect.disabled = sopStationData.bad_points.length === 0;
+    if (selectedRegion) {
+        sopStationData.bad_points = sopStationData.bad_points.filter(p => p.region === selectedRegion);
+    }
     
     // Populate problematic sites dropdown (unique siteids)
     const badSiteSelect = document.getElementById('badSiteSelect');
@@ -429,8 +475,16 @@ async function handleSopSelection(tableName) {
     hideLoader();
 }
 
-// Handle region selection
+// Handle region selection for filtering (after SOP is loaded)
 function handleRegionSelection(region) {
+    const sopSelect = document.getElementById('sopSelect');
+    
+    // If SOP is selected, reload with region filter
+    if (sopSelect.value) {
+        handleSopSelection(sopSelect.value);
+        return;
+    }
+    
     document.getElementById('badPointsTable').style.display = 'none';
     document.getElementById('badSiteSelect').value = '';
     
@@ -673,7 +727,9 @@ document.getElementById('sopSelect').addEventListener('change', (e) => {
 });
 
 document.getElementById('regionSelect').addEventListener('change', (e) => {
-    handleRegionSelection(e.target.value);
+    if (currentTab === 'sop-tab') {
+        handleRegionSelectionFirst(e.target.value);
+    }
 });
 
 document.getElementById('badSiteSelect').addEventListener('change', (e) => {
@@ -682,8 +738,8 @@ document.getElementById('badSiteSelect').addEventListener('change', (e) => {
 
 document.getElementById('resetSopBtn').addEventListener('click', () => {
     document.getElementById('sopSelect').value = '';
+    document.getElementById('sopSelect').disabled = true;
     document.getElementById('regionSelect').value = '';
-    document.getElementById('regionSelect').disabled = true;
     document.getElementById('badSiteSelect').value = '';
     document.getElementById('badSiteSelect').disabled = true;
     document.getElementById('badPointsTable').style.display = 'none';
