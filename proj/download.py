@@ -718,8 +718,8 @@ def get_test_data():
     if dataset is None:
         return f"Datatype {dtype} not found in datasets"
 
-    if any(['logger' in dtype]):
-        return "We won't do it for loggers or trash"
+    # if any(['logger' in dtype]):
+    #     return "We won't do it for loggers or trash"
     
     try:
         data = BytesIO()
