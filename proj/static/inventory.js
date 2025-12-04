@@ -1,30 +1,31 @@
-// Define the SOPs and Logger parameters
-const sopNameMapping = {
-    "Field Grab": "sopfield",
-    "SOP 2: Discrete environmental monitoring - point water quality measurements": "sop2",
-    "SOP 3: Sediment chemistry": "sop3a",
-    "SOP 3: Sediment toxicity": "sop3b",
-    "SOP 4: eDNA - field": "sop4",
-    "SOP 5: Sediment grain size analysis": "sop5",
-    "SOP 6: Benthic infauna, small": "sop6a",
-    "SOP 6: Benthic infauna, large": "sop6b",
-    "SOP 7: Macroalgae": "sop7",
-    "SOP 8: Fish - BRUVs - Field": "sop8a",
-    "SOP 8: Fish - BRUVs - Lab": "sop8b",
-    "SOP 9: Fish seines": "sop9",
-    "SOP 10: Crab traps": "sop10",
-    "SOP 11: Marsh plain vegetation and epifauna surveys": "sop11",
-    "SOP 13: Sediment accretion rates": "sop13",
-    "SOP 15: Trash monitoring": "sop15"
-};
-
-const loggerParameters = [
-    'raw_chlorophyll', 'raw_conductivity', 'raw_depth', 'raw_do', 'raw_do_pct',
-    'raw_h2otemp', 'raw_orp', 'raw_ph', 'raw_pressure', 'raw_qvalue',
-    'raw_salinity', 'raw_turbidity'
+// Define the SOPs - ordered list for table columns
+const sopColumns = [
+    { name: "Field Grab", code: "sopfield", description: "Field Grab" },
+    { name: "SOP 2", code: "sop2", description: "SOP 2: Discrete environmental monitoring - point water quality measurements" },
+    { name: "SOP 3a", code: "sop3a", description: "SOP 3: Sediment chemistry" },
+    { name: "SOP 3b", code: "sop3b", description: "SOP 3: Sediment toxicity" },
+    { name: "SOP 4", code: "sop4", description: "SOP 4: eDNA - field" },
+    { name: "SOP 5", code: "sop5", description: "SOP 5: Sediment grain size analysis" },
+    { name: "SOP 6a", code: "sop6a", description: "SOP 6: Benthic infauna, small" },
+    { name: "SOP 6b", code: "sop6b", description: "SOP 6: Benthic infauna, large" },
+    { name: "SOP 7", code: "sop7", description: "SOP 7: Macroalgae" },
+    { name: "SOP 8a", code: "sop8a", description: "SOP 8: Fish - BRUVs - Field" },
+    { name: "SOP 8b", code: "sop8b", description: "SOP 8: Fish - BRUVs - Lab" },
+    { name: "SOP 9", code: "sop9", description: "SOP 9: Fish seines" },
+    { name: "SOP 10", code: "sop10", description: "SOP 10: Crab traps" },
+    { name: "SOP 11", code: "sop11", description: "SOP 11: Marsh plain vegetation and epifauna surveys" },
+    { name: "SOP 13", code: "sop13", description: "SOP 13: Sediment accretion rates" },
+    { name: "SOP 15", code: "sop15", description: "SOP 15: Trash monitoring" }
 ];
 
+// Reverse mapping for modal display
+const sopCodeToName = {};
+sopColumns.forEach(sop => {
+    sopCodeToName[sop.code] = sop.description;
+});
+
 let inventoryData = {};
+let flatData = []; // Flat array for easier filtering/display
 
 // Function to fetch inventory data from the backend
 async function fetchInventoryData() {
@@ -41,314 +42,298 @@ async function fetchInventoryData() {
     }
 }
 
-// Function to create sub-tabs and content for both General and Logger
-function createTabsAndContent(tabType, items) {
-    const subTabsContainer = document.getElementById(`${tabType}SubTabs`);
-    const tabContentContainer = document.getElementById(`${tabType}TabContent`);
-
-    items.forEach((item, index) => {
-        // Determine tab name and ID based on whether it's general or logger
-        let tabName, tabID;
-        if (tabType === 'general') {
-            // If general, item represents the descriptive SOP name
-            tabName = item;
-            tabID = sopNameMapping[item]; // Fetch the corresponding SOP code from the mapping
-        } else {
-            // If logger, item represents the parameter directly
-            tabName = item;
-            tabID = item;
-        }
-
-        // Create the tab header
-        const tabHeader = document.createElement('li');
-        tabHeader.className = 'nav-item';
-        tabHeader.setAttribute('role', 'presentation');
-
-        const tabButton = document.createElement('button');
-        tabButton.className = `nav-link ${index === 0 ? 'active' : ''}`;
-        tabButton.id = `${tabID}-tab`;
-        tabButton.setAttribute('data-bs-toggle', 'tab');
-        tabButton.setAttribute('data-bs-target', `#${tabID}`);
-        tabButton.setAttribute('type', 'button');
-        tabButton.setAttribute('role', 'tab');
-        tabButton.setAttribute('aria-controls', tabID);
-        tabButton.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
-        tabButton.innerText = tabName;
-
-        tabHeader.appendChild(tabButton);
-        subTabsContainer.appendChild(tabHeader);
-
-        // Create the tab content container
-        const tabContent = document.createElement('div');
-        tabContent.className = `tab-pane fade ${index === 0 ? 'show active' : ''}`;
-        tabContent.id = tabID;
-        tabContent.setAttribute('role', 'tabpanel');
-        tabContent.setAttribute('aria-labelledby', `${tabID}-tab`);
-
-        // Create a filter input field for Site ID filtering
-        const filterContainer = document.createElement('div');
-        filterContainer.className = 'mb-3';
-        const filterInput = document.createElement('input');
-        filterInput.type = 'text';
-        filterInput.placeholder = 'Filter by Site ID. You can enter multiple IDs separated by commas.';
-        filterInput.className = 'form-control site-filter';
-        filterInput.dataset.tableId = `table_${tabID}`; // Associate the filter with the specific table
-        filterContainer.appendChild(filterInput);
-
-        // Create the legend container
-        const legendContainer = document.createElement('div');
-        legendContainer.className = 'mb-3'; // Main container
-
-        // Container for inline legend items (Info, Data Available, Not Submitted, Not Assigned)
-        const inlineLegendContainer = document.createElement('div');
-        inlineLegendContainer.className = 'd-flex align-items-center'; // Flex container for horizontal alignment
-        inlineLegendContainer.style.gap = '10px'; // Add some spacing between legend items
-
-        // Add the first four legend items (in the same line)
-        const inlineLegendTexts = [
-            { text: "Info:", class: 'text-muted' },
-            { text: "Data Available: Can be downloaded using the Advanced Query Tool on empa.sccwrp.org", class: 'text-success' },
-            { text: "Not Submitted: Data are expected for this site, but not submitted yet", class: 'text-danger' },
-            { text: "Not Assigned: Data are not expected for this site", class: 'text-muted' }
-        ];
-
-        inlineLegendTexts.forEach(legend => {
-            const legendItem = document.createElement('span'); // Use span for inline items
-            legendItem.innerText = legend.text;
-            legendItem.className = legend.class;
-            inlineLegendContainer.appendChild(legendItem);
+// Transform nested data into flat array structure
+function transformToFlatData(data) {
+    const flat = [];
+    const generalData = data.general.data;
+    
+    // Get all unique site IDs across all SOPs
+    const allSites = new Set();
+    const allYears = new Set();
+    
+    Object.keys(generalData).forEach(sopCode => {
+        Object.keys(generalData[sopCode]).forEach(siteId => {
+            allSites.add(siteId);
+            Object.keys(generalData[sopCode][siteId]).forEach(year => {
+                allYears.add(year);
+            });
         });
-
-        // Add inline legend container to the main legend container
-        legendContainer.appendChild(inlineLegendContainer);
-
-        // Container for months (both on the same line)
-        const monthsLegendContainer = document.createElement('div');
-        monthsLegendContainer.className = 'd-flex align-items-center'; // Flex container for horizontal alignment
-        monthsLegendContainer.style.gap = '10px'; // Add some spacing between legend items
-
-        // Add the months (on the same line)
-        const monthsLegendTexts = [
-            { text: "Months for Fall: 7,8,9,10,11,12,1 (following year), 2(following year)", class: '' },
-            { text: "Months for Spring: 3,4,5,6", class: '' }
-        ];
-
-        monthsLegendTexts.forEach(legend => {
-            const legendItem = document.createElement('span'); // Use span for inline items
-            legendItem.innerText = legend.text;
-            legendItem.className = legend.class;
-            monthsLegendContainer.appendChild(legendItem);
-        });
-
-        // Add the months container to the main legend container
-        legendContainer.appendChild(monthsLegendContainer);
-
-
-        // Create a checkbox container for year selection
-        const yearCheckboxContainer = document.createElement('div');
-        yearCheckboxContainer.className = 'mb-3';
-
-        const minYear = tabType === 'general' ? inventoryData.general.minYear : inventoryData.logger.minYear;
-        const maxYear = tabType === 'general' ? inventoryData.general.maxYear : inventoryData.logger.maxYear;
-
-        const label = document.createElement('label');
-        label.innerText = 'Toggle Years: ';
-        yearCheckboxContainer.appendChild(label);
-
-        for (let year = minYear; year <= maxYear; year++) {
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.checked = true; // Initially checked (visible)
-            checkbox.className = 'year-checkbox';
-            checkbox.dataset.tableId = `table_${tabID}`;
-            checkbox.dataset.year = year;
-            checkbox.style.marginLeft = '5px';
-
-            const checkboxLabel = document.createElement('span');
-            checkboxLabel.innerText = ` ${year} `;
-
-            yearCheckboxContainer.appendChild(checkbox);
-            yearCheckboxContainer.appendChild(checkboxLabel);
-        }
-
-        // Add "Download Inventory Data" and "Refresh Inventory" buttons
-        if (tabType === 'general') {
-            const buttonContainer = document.createElement('div');
-            buttonContainer.className = 'mb-3 d-flex align-items-center';
-            buttonContainer.style.gap = '10px';
-
-            const downloadButton = document.createElement('button');
-            downloadButton.innerText = 'Download Inventory Data as Excel';
-            downloadButton.className = 'btn btn-primary';
-            downloadButton.onclick = () => downloadInventoryData(); 
-
-            const refreshButton = document.createElement('button');
-            refreshButton.innerText = 'Refresh Inventory';
-            refreshButton.className = 'btn btn-secondary';
-            refreshButton.onclick = () => refreshInventory();
-
-            buttonContainer.appendChild(downloadButton);
-            //buttonContainer.appendChild(refreshButton);
-
-            yearCheckboxContainer.appendChild(buttonContainer);
-        } else {
-            const buttonContainer = document.createElement('div');
-            buttonContainer.className = 'mb-3 d-flex align-items-center';
-            buttonContainer.style.gap = '10px';
-
-            const downloadButton = document.createElement('button');
-            downloadButton.innerText = 'Download Inventory Logger Data';
-            downloadButton.className = 'btn btn-primary';
-            downloadButton.onclick = () => downloadInventoryLoggerData();
-
-            buttonContainer.appendChild(downloadButton);
-            yearCheckboxContainer.appendChild(buttonContainer);
-        }
-
-        // Create the table inside the tab content
-        const tableContainer = document.createElement('div');
-        tableContainer.className = 'table-responsive';
-
-        const table = document.createElement('table');
-        table.className = 'table table-bordered w-100 text-center';
-        table.id = `table_${tabID}`;
-
-        const thead = document.createElement('thead');
-        thead.className = 'table-primary';
-        table.appendChild(thead);
-
-        const tbody = document.createElement('tbody');
-        table.appendChild(tbody);
-
-        tableContainer.appendChild(table);
-
-        // Append all elements to the tab content
-        tabContent.appendChild(filterContainer); // Add the filter input above the table
-        tabContent.appendChild(legendContainer); // Add the legend container below the filter input
-        tabContent.appendChild(yearCheckboxContainer); // Add the checkbox container above the table
-        tabContent.appendChild(tableContainer);
-        tabContentContainer.appendChild(tabContent);
     });
-}
-
-
-// Function to create table headers for a given table
-function createTableHeaders(tableHead, minYear, maxYear, tabType) {
-    tableHead.innerHTML = ''; // Clear existing headers
-    const headerRow1 = document.createElement('tr');
-
-    const siteIDTh = document.createElement('th');
-    siteIDTh.innerText = 'Site ID';
-    headerRow1.appendChild(siteIDTh);
-
-    for (let year = minYear; year <= maxYear; year++) {
-        const yearHeader = document.createElement('th');
-        yearHeader.setAttribute('colspan', tabType === 'general' ? 2 : 12); // Use 2 columns for general, 12 for logger
-        yearHeader.innerText = year;
-        headerRow1.appendChild(yearHeader);
-    }
-
-    tableHead.appendChild(headerRow1);
-
-    const headerRow2 = document.createElement('tr');
-    const emptyTh = document.createElement('th'); // Placeholder for "Site ID"
-    headerRow2.appendChild(emptyTh);
-
-    for (let year = minYear; year <= maxYear; year++) {
-        if (tabType === 'general') {
-            // Add "Spring" and "Fall" columns
-            const springHeader = document.createElement('th');
-            springHeader.innerText = 'Spring';
-            headerRow2.appendChild(springHeader);
-
-            const fallHeader = document.createElement('th');
-            fallHeader.innerText = 'Fall';
-            headerRow2.appendChild(fallHeader);
-        } else {
-            // For logger, add the 12 months
-            for (let month = 1; month <= 12; month++) {
-                const monthHeader = document.createElement('th');
-                monthHeader.innerText = month;
-                headerRow2.appendChild(monthHeader);
-            }
-        }
-    }
-
-    tableHead.appendChild(headerRow2);
-}
-
-// Function to populate the table body with data
-function populateTableBody(type, parameter, tableBody) {
-    tableBody.innerHTML = ''; // Clear existing body rows
-
-    const dataForParameter = inventoryData[type].data[parameter] || {}; // Fetch data for the current parameter/SOP
-    const sites = Object.keys(dataForParameter);
-
-    sites.forEach(siteID => {
-        const row = document.createElement('tr');
-
-        const siteIDCell = document.createElement('td');
-        siteIDCell.innerText = siteID;
-        row.appendChild(siteIDCell);
-
-        for (let year = inventoryData[type].minYear; year <= inventoryData[type].maxYear; year++) {
-            const yearData = dataForParameter[siteID]?.[year.toString()] || {};
-
-            if (type === 'general') {
-                // Handle Spring and Fall for general tab
-                const seasons = ['Spring', 'Fall'];
-                seasons.forEach(season => {
-                    const cell = document.createElement('td');
-                    const cellValue = yearData[season] || 'Not Assigned'; // Default to 'Not Submitted' if not found
-                    cell.innerText = cellValue;
-
-                    // Add CSS classes based on value
-                    if (cellValue.includes('Data Available')) {
-                        cell.classList.add('green-cell');
-                        // Attach click listener to open modal
-                        cell.addEventListener('click', () => showCellInfoModal(type, parameter, siteID, year, season, cellValue));
-                    } else if (cellValue.includes('Not Submitted')) {
-                        cell.classList.add('red-cell');
+    
+    // Create flat rows: one row per siteId + year + season combination
+    const seasons = ['Spring', 'Fall'];
+    const sortedSites = Array.from(allSites).sort();
+    const sortedYears = Array.from(allYears).sort();
+    
+    sortedSites.forEach(siteId => {
+        sortedYears.forEach(year => {
+            seasons.forEach(season => {
+                const row = {
+                    siteId,
+                    year,
+                    season,
+                    sops: {}
+                };
+                
+                // Populate each SOP column
+                sopColumns.forEach(sop => {
+                    const sopData = generalData[sop.code];
+                    if (sopData && sopData[siteId] && sopData[siteId][year]) {
+                        row.sops[sop.code] = sopData[siteId][year][season] || 'Not Assigned';
+                    } else {
+                        row.sops[sop.code] = 'Not Assigned';
                     }
-                    row.appendChild(cell);
                 });
+                
+                flat.push(row);
+            });
+        });
+    });
+    
+    return flat;
+}
+
+// Create table headers
+function createTableHeaders() {
+    const headerRow = document.getElementById('tableHeader');
+    const filterRow = document.getElementById('filterRow');
+    headerRow.innerHTML = '';
+    filterRow.innerHTML = '';
+    
+    // Fixed columns
+    const fixedHeaders = ['Site ID', 'Year', 'Season'];
+    fixedHeaders.forEach((header, index) => {
+        const th = document.createElement('th');
+        th.innerText = header;
+        headerRow.appendChild(th);
+        
+        // Filter cell
+        const filterTh = document.createElement('th');
+        filterTh.style.padding = '4px';
+        
+        if (header === 'Season') {
+            // Dropdown for Season filter
+            const filterSelect = document.createElement('select');
+            filterSelect.className = 'form-select form-select-sm column-filter';
+            filterSelect.dataset.column = 'season';
+            filterSelect.innerHTML = `
+                <option value="">All</option>
+                <option value="spring">Spring</option>
+                <option value="fall">Fall</option>
+            `;
+            filterSelect.addEventListener('change', filterAndRenderTable);
+            filterTh.appendChild(filterSelect);
+        } else {
+            // Empty filter cell for Site ID and Year (no filter needed)
+            filterTh.innerText = '';
+        }
+        filterRow.appendChild(filterTh);
+    });
+    
+    // SOP columns
+    sopColumns.forEach(sop => {
+        const th = document.createElement('th');
+        th.style.cursor = 'pointer';
+        
+        // Create text span
+        const textSpan = document.createElement('span');
+        textSpan.innerText = sop.name;
+        th.appendChild(textSpan);
+        
+        // Create info icon with Bootstrap tooltip
+        const infoIcon = document.createElement('span');
+        infoIcon.innerHTML = ' &#9432;'; // Unicode info symbol
+        infoIcon.style.fontSize = '0.8em';
+        infoIcon.style.opacity = '0.7';
+        infoIcon.setAttribute('data-bs-toggle', 'tooltip');
+        infoIcon.setAttribute('data-bs-placement', 'top');
+        infoIcon.setAttribute('title', sop.description);
+        th.appendChild(infoIcon);
+        
+        // Also show alert on click for mobile/accessibility
+        th.addEventListener('click', () => {
+            alert(sop.description);
+        });
+        
+        headerRow.appendChild(th);
+        
+        // Filter cell for SOP
+        const filterTh = document.createElement('th');
+        filterTh.style.padding = '4px';
+        const filterSelect = document.createElement('select');
+        filterSelect.className = 'form-select form-select-sm column-filter';
+        filterSelect.dataset.column = sop.code;
+        filterSelect.innerHTML = `
+            <option value="">All</option>
+            <option value="Data Available">Data Available</option>
+            <option value="Not Submitted">Not Submitted</option>
+            <option value="Not Assigned">Not Assigned</option>
+        `;
+        filterSelect.addEventListener('change', filterAndRenderTable);
+        filterTh.appendChild(filterSelect);
+        filterRow.appendChild(filterTh);
+    });
+    
+    // Initialize Bootstrap tooltips
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
+}
+
+// Create year radio buttons (single select)
+function createYearCheckboxes() {
+    const container = document.getElementById('yearCheckboxContainer');
+    container.innerHTML = '';
+    
+    const minYear = parseInt(inventoryData.general.minYear);
+    const maxYear = parseInt(inventoryData.general.maxYear);
+    const currentYear = new Date().getFullYear();
+    
+    for (let year = minYear; year <= maxYear; year++) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'form-check form-check-inline';
+        
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.className = 'form-check-input year-radio';
+        radio.name = 'yearSelect';
+        radio.id = `year-${year}`;
+        radio.value = year;
+        radio.checked = (year === currentYear); // Default to current year only
+        radio.addEventListener('change', filterAndRenderTable);
+        
+        const label = document.createElement('label');
+        label.className = 'form-check-label';
+        label.htmlFor = `year-${year}`;
+        label.innerText = year;
+        
+        wrapper.appendChild(radio);
+        wrapper.appendChild(label);
+        container.appendChild(wrapper);
+    }
+}
+
+// Get selected year from radio buttons
+function getSelectedYears() {
+    const selectedRadio = document.querySelector('.year-radio:checked');
+    return selectedRadio ? [selectedRadio.value] : [];
+}
+
+// Get site filter value
+function getSiteFilter() {
+    const input = document.getElementById('siteFilter');
+    return input ? input.value.toLowerCase().trim() : '';
+}
+
+// Get column filters
+function getColumnFilters() {
+    const filters = {};
+    document.querySelectorAll('.column-filter').forEach(input => {
+        const column = input.dataset.column;
+        const value = input.value.toLowerCase().trim();
+        if (value) {
+            filters[column] = value;
+        }
+    });
+    return filters;
+}
+
+// Filter and render the table
+function filterAndRenderTable() {
+    const selectedYears = getSelectedYears();
+    const siteFilter = getSiteFilter();
+    const siteFilters = siteFilter ? siteFilter.split(',').map(s => s.trim()).filter(s => s) : [];
+    const columnFilters = getColumnFilters();
+    
+    // Filter flat data
+    let filteredData = flatData.filter(row => {
+        // Year filter (from radio button)
+        if (!selectedYears.includes(row.year)) {
+            return false;
+        }
+        
+        // Site filter (from top filter input)
+        if (siteFilters.length > 0) {
+            const matches = siteFilters.some(filter => 
+                row.siteId.toLowerCase().includes(filter)
+            );
+            if (!matches) return false;
+        }
+        
+        // Column filters
+        for (const [column, filterValue] of Object.entries(columnFilters)) {
+            if (column === 'season') {
+                if (!row.season.toLowerCase().includes(filterValue)) return false;
             } else {
-                // For logger, iterate through 12 months
-                for (let month = 1; month <= 12; month++) {
-                    const cell = document.createElement('td');
-                    const cellValue = yearData[month.toString()] || 'n'; // Default to 'n' if not found
-                    cell.innerText = cellValue;
-
-                    // Add the green-cell class if the cell value is 'y'
-                    if (cellValue === 'y') {
-                        cell.classList.add('green-cell');
-                    } 
-
-                    // // Attach click listener to open modal
-                    // cell.addEventListener('click', () => showCellInfoModal(type, parameter, siteID, year, `Month ${month}`, cellValue));
-
-                    row.appendChild(cell);
-                }
+                // SOP column filter
+                const sopValue = (row.sops[column] || '').toLowerCase();
+                if (!sopValue.includes(filterValue)) return false;
             }
         }
+        
+        return true;
+    });
+    
+    renderTable(filteredData);
+}
 
-        tableBody.appendChild(row);
+// Render the table with given data
+function renderTable(data) {
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '';
+    
+    data.forEach(row => {
+        const tr = document.createElement('tr');
+        
+        // Site ID cell
+        const siteCell = document.createElement('td');
+        siteCell.innerText = row.siteId;
+        tr.appendChild(siteCell);
+        
+        // Year cell
+        const yearCell = document.createElement('td');
+        yearCell.innerText = row.year;
+        tr.appendChild(yearCell);
+        
+        // Season cell
+        const seasonCell = document.createElement('td');
+        seasonCell.innerText = row.season;
+        tr.appendChild(seasonCell);
+        
+        // SOP cells
+        sopColumns.forEach(sop => {
+            const cell = document.createElement('td');
+            const cellValue = row.sops[sop.code] || 'Not Assigned';
+            cell.innerText = cellValue;
+            
+            // Add CSS classes based on value
+            if (cellValue.includes('Data Available')) {
+                cell.classList.add('green-cell');
+                cell.style.cursor = 'pointer';
+                // Attach click listener to open modal
+                cell.addEventListener('click', () => {
+                    showCellInfoModal(sop.description, row.siteId, row.year, row.season, cellValue);
+                });
+            } else if (cellValue.includes('Not Submitted')) {
+                cell.classList.add('red-cell');
+            }
+            
+            tr.appendChild(cell);
+        });
+        
+        tbody.appendChild(tr);
     });
 }
 
-// When a cell is clicked, get the value (e.g., 'sop2', 'sop6b') and send it to the Flask route
-function showCellInfoModal(type, parameter, siteID, year, season, cellValue) {
-
-    const sopValue = sopNameMapping[parameter];  // Send the value instead of the descriptive name
-
+// When a cell is clicked, show modal with details
+function showCellInfoModal(sopName, siteID, year, season, cellValue) {
     // Update the modal with basic information
-    document.getElementById('modalSop').innerText = parameter;
+    document.getElementById('modalSop').innerText = sopName;
     document.getElementById('modalSiteId').innerText = siteID;
     document.getElementById('modalSeason').innerText = season;
     document.getElementById('modalYear').innerText = year;
     
     // Call to Flask route to fetch additional data
-    fetch(`/empachecker/get-sample-data?sop=${encodeURIComponent(parameter)}&siteid=${encodeURIComponent(siteID)}&year=${encodeURIComponent(year)}&season=${encodeURIComponent(season)}`)
+    fetch(`/empachecker/get-sample-data?sop=${encodeURIComponent(sopName)}&siteid=${encodeURIComponent(siteID)}&year=${encodeURIComponent(year)}&season=${encodeURIComponent(season)}`)
         .then(response => response.json())
         .then(data => {
             // Populate the modal with additional data from Flask
@@ -366,101 +351,7 @@ function showCellInfoModal(type, parameter, siteID, year, season, cellValue) {
     modal.show();
 }
 
-
-// Event listener to handle clicks on sub-tabs
-function setupTabListeners(tabType, items) {
-    const subTabsContainer = document.getElementById(`${tabType}SubTabs`);
-
-    // Iterate over the items list
-    items.forEach((item) => {
-        let tabID = tabType === 'general' ? sopNameMapping[item] : item;
-
-        // Find the tab button by ID and set up the click listener
-        const tabButton = document.getElementById(`${tabID}-tab`);
-        
-        tabButton.addEventListener('click', () => {
-            const tableID = `table_${tabID}`;
-            const tableHead = document.getElementById(tableID).getElementsByTagName('thead')[0];
-            const tableBody = document.getElementById(tableID).getElementsByTagName('tbody')[0];
-
-            // Create table headers and populate body for the selected parameter/SOP
-            createTableHeaders(tableHead, inventoryData[tabType].minYear, inventoryData[tabType].maxYear, tabType);
-            populateTableBody(tabType, tabID, tableBody);
-        });
-    });
-}
-
-
-
-// Function to filter table rows based on multiple siteIDs separated by commas
-function filterTableBySiteID(event) {
-    const filterValue = event.target.value.toLowerCase(); // Get the filter input and convert to lowercase
-    const filterValuesArray = filterValue.split(',').map(value => value.trim()); // Split by commas and trim each value
-    const tableID = event.target.dataset.tableId; // Get the associated table ID
-    const table = document.getElementById(tableID);
-    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
-
-    for (const row of rows) {
-        const siteIDCell = row.getElementsByTagName('td')[0]; // Assuming the first cell contains the siteID
-        if (siteIDCell) {
-            const siteIDText = siteIDCell.textContent || siteIDCell.innerText;
-            // Check if any of the filter values match the siteID
-            const isMatch = filterValuesArray.some(value => siteIDText.toLowerCase().includes(value));
-            row.style.display = isMatch ? '' : 'none';
-        }
-    }
-}
-
-
-// Function to hide/unhide columns based on year selection
-function toggleYearColumns(event) {
-    const year = parseInt(event.target.dataset.year); // Get the year from the checkbox
-    const tableID = event.target.dataset.tableId; // Get the associated table ID
-    const table = document.getElementById(tableID);
-
-    // Determine whether we're in the general or logger tab
-    const tabType = tableID.includes("sop") ? 'general' : 'logger';
-
-    // Retrieve the correct minYear and maxYear based on the tab type
-    const minYear = inventoryData[tabType].minYear; 
-    const maxYear = inventoryData[tabType].maxYear;
-
-    // Adjust the number of columns per year based on the tab type
-    const columnsPerYear = tabType === 'general' ? 2 : 12; // 2 columns for general (Spring, Fall), 12 for logger
-
-    // Calculate the column index range for the selected year
-    const yearIndex = year - minYear; // Calculate the relative index of the year
-    const startIndex = 1 + (yearIndex * columnsPerYear); // Start column index (1-based due to 'Site ID')
-    const endIndex = startIndex + columnsPerYear - 1; // End column index
-
-    // Iterate through each row
-    const rows = table.getElementsByTagName('tr');
-    
-    for (const row of rows) {
-        const cells = Array.from(row.children); // Get all cells in the row as an array
-
-        // Calculate the actual start and end indices for the row
-        let currentColIndex = 0; // Track the current column index within the row
-        
-        for (let i = 0; i < cells.length; i++) {
-            const cell = cells[i];
-            const colSpan = cell.colSpan || 1; // Get the column span of the cell (default to 1)
-
-            // Check if the current cell range falls within the year range we're toggling
-            if (currentColIndex >= startIndex && currentColIndex <= endIndex) {
-                cell.style.display = event.target.checked ? '' : 'none'; // Show or hide the cell
-            }
-
-            // Update the current column index by adding the column span
-            currentColIndex += colSpan;
-
-            // Stop the loop if we've exceeded the endIndex
-            if (currentColIndex > endIndex) break;
-        }
-    }
-}
-
-
+// Show loader
 function showLoader() {
     const loader = document.getElementById('loader');
     if (loader) {
@@ -468,7 +359,7 @@ function showLoader() {
     }
 }
 
-// Function to hide the loader
+// Hide loader
 function hideLoader() {
     const loader = document.getElementById('loader');
     if (loader) {
@@ -476,17 +367,25 @@ function hideLoader() {
     }
 }
 
-
 // Modal for year selection before download
 function showDownloadYearModal() {
-    // If modal already exists, just show it
     let modal = document.getElementById('downloadYearModal');
+    const maxYear = inventoryData.general ? inventoryData.general.maxYear : new Date().getFullYear();
+    const minYear = inventoryData.general ? inventoryData.general.minYear : 2021;
+    
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'downloadYearModal';
         modal.className = 'modal fade';
         modal.tabIndex = -1;
         modal.setAttribute('aria-hidden', 'true');
+        
+        // Build year options dynamically
+        let yearOptions = '';
+        for (let y = parseInt(maxYear); y >= parseInt(minYear); y--) {
+            yearOptions += `<option value="${y}"${y == maxYear ? ' selected' : ''}>${y}</option>`;
+        }
+        
         modal.innerHTML = `
         <div class="modal-dialog">
             <div class="modal-content">
@@ -499,11 +398,7 @@ function showDownloadYearModal() {
                         <div class="mb-3">
                             <label for="downloadYearSelect" class="form-label">Year</label>
                             <select class="form-select" id="downloadYearSelect" required>
-                                <option value="2021">2021</option>
-                                <option value="2022">2022</option>
-                                <option value="2023">2023</option>
-                                <option value="2024">2024</option>
-                                <option value="2025">2025</option>
+                                ${yearOptions}
                             </select>
                         </div>
                     </form>
@@ -516,23 +411,24 @@ function showDownloadYearModal() {
         </div>
         `;
         document.body.appendChild(modal);
+    } else {
+        // Update selection to most recent year
+        document.getElementById('downloadYearSelect').value = maxYear;
     }
 
     // Add event listener for download button
     document.getElementById('confirmDownloadYear').onclick = function() {
         const year = document.getElementById('downloadYearSelect').value;
         downloadInventoryData(year);
-        // Hide modal after click
         const bsModal = bootstrap.Modal.getOrCreateInstance(modal);
         bsModal.hide();
     };
 
-    // Show the modal
     const bsModal = new bootstrap.Modal(modal);
     bsModal.show();
 }
 
-// Function to download the original general_df for a specific year
+// Download inventory data
 function downloadInventoryData(year) {
     if (!year) {
         showDownloadYearModal();
@@ -541,86 +437,32 @@ function downloadInventoryData(year) {
     window.open(`/empachecker/download-inventory-data?year=${year}`, '_blank');
 }
 
-function downloadInventoryDataGroupedBySite() {
-    window.open('/empachecker/download-inventory-data-grouped-site', '_blank');
-}
-
-function downloadInventoryLoggerData() {
-    window.open('/empachecker/download-inventory-logger-data', '_blank');
-}
-
-// Function to refresh inventory data
-async function refreshInventory() {
-    alert('Sending request to refresh inventory data. This may take up to 5 minutes. Please wait until the loader disappears.');
-
-    showLoader(); // Show loader while refreshing data
-
-    try {
-        const response = await fetch('/empachecker/refresh-inventory', { method: 'POST' });
-        if (!response.ok) {
-            throw new Error('Failed to refresh inventory');
-        }
-
-        // After refreshing, reload the inventory data
-        const data = await fetchInventoryData();
-        if (data) {
-            // Update the inventory data
-            Object.assign(inventoryData, data);
-            // You may want to reinitialize your tabs or refresh the display
-            alert('Inventory refreshed successfully. Refresh the page to see the most up-to-date data.');
-        }
-    } catch (error) {
-        console.error('Error refreshing inventory:', error);
-        alert('Failed to refresh inventory');
-    } finally {
-        hideLoader(); // Hide loader after operation completes
-    }
-}
-
-
-
-
-// Attach the toggleYearColumns function to all year checkboxes
-document.addEventListener('change', (event) => {
-    if (event.target.classList.contains('year-checkbox')) {
-        toggleYearColumns(event);
-    }
-});
-
-
-
-// Attach the filterTableBySiteID function to all filter inputs
-document.addEventListener('input', (event) => {
-    if (event.target.classList.contains('site-filter')) {
-        filterTableBySiteID(event);
-    }
-});
-
-
-// Fetch and populate the inventoryData when the page loads
+// Initialize page
 document.addEventListener('DOMContentLoaded', async () => {
-    showLoader(); // Show loader while fetching data
+    showLoader();
 
     const data = await fetchInventoryData();
 
     if (data) {
-        // Populate the inventoryData object
-        Object.assign(inventoryData, data);
-
-        // Create tabs and content
-        createTabsAndContent('general', Object.keys(sopNameMapping));
-        createTabsAndContent('logger', loggerParameters);
-
-        // Set up tab listeners
-        setupTabListeners('general', Object.keys(sopNameMapping));
-        setupTabListeners('logger', loggerParameters);
-
-        // Automatically trigger the first tab's click event to populate it on page load
-        document.getElementById('sopfield-tab').click();
-        document.getElementById('raw_chlorophyll-tab').click();
+        // Store the data
+        inventoryData = data;
+        
+        // Transform to flat structure
+        flatData = transformToFlatData(data);
+        
+        // Create table headers
+        createTableHeaders();
+        
+        // Create year checkboxes
+        createYearCheckboxes();
+        
+        // Initial render
+        filterAndRenderTable();
+        
+        // Set up event listeners
+        document.getElementById('siteFilter').addEventListener('input', filterAndRenderTable);
+        document.getElementById('downloadBtn').addEventListener('click', () => downloadInventoryData());
     }
     
-    hideLoader(); 
-
+    hideLoader();
 });
-
