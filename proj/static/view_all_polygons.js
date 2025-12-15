@@ -135,32 +135,44 @@ function addPolygonsToMap(polygonsData) {
     });
 }
 
-// Populate estuary dropdown
-function populateEstuaryDropdown(polygonsData) {
+// Populate estuary dropdown and checkboxes
+function populateEstuaryControls(polygonsData) {
     const estuarySelect = document.getElementById('estuarySelect');
-    
+    const checkboxContainer = document.getElementById('estuaryCheckboxes');
+
     // Get unique estuary names from BOTH estuaries and stations
     const estuariesFromBoundaries = new Set(polygonsData.estuaries.map(e => e.estuaryname));
     const estuariesFromStations = new Set(polygonsData.stations.map(s => s.estuaryname));
-    
+
     // Combine both sets to get all unique estuary names
     const allEstuaries = new Set([...estuariesFromBoundaries, ...estuariesFromStations]);
     const estuaries = [...allEstuaries].sort();
 
-    // Clear existing options (except the first "All" option)
+    // Clear existing options (keep the "All" option)
     estuarySelect.innerHTML = '<option value="">-- All Estuaries --</option>';
+    checkboxContainer.innerHTML = '';
 
     estuaries.forEach(estuary => {
+        // Add to dropdown
         const option = document.createElement('option');
         option.value = estuary;
         option.textContent = estuary;
         estuarySelect.appendChild(option);
+
+        // Add checkbox
+        const checkDiv = document.createElement('div');
+        checkDiv.className = 'form-check';
+        checkDiv.innerHTML = `
+            <input class="form-check-input estuary-checkbox" type="checkbox" value="${estuary}" id="chk_${estuary.replace(/\s+/g, '_')}">
+            <label class="form-check-label" for="chk_${estuary.replace(/\s+/g, '_')}">${estuary}</label>
+        `;
+        checkboxContainer.appendChild(checkDiv);
     });
 }
 
-// Zoom to selected estuary
-function zoomToEstuary(estuaryName) {
-    if (!estuaryName) {
+// Zoom to selected estuaries (supports multiple selection)
+function zoomToEstuaries(estuaryNames) {
+    if (!estuaryNames || estuaryNames.length === 0) {
         // Reset to show all
         showAllPolygons();
         return;
@@ -170,28 +182,36 @@ function zoomToEstuary(estuaryName) {
     estuaryLayers.forEach(layer => map.removeLayer(layer));
     stationLayers.forEach(layer => map.removeLayer(layer));
 
-    // Show only selected estuary and its stations
-    const selectedGroup = estuaryGroups[estuaryName];
-    if (selectedGroup) {
-        const bounds = L.latLngBounds([]);
-        
-        // Add estuary boundary
-        if (selectedGroup.estuaryLayer) {
-            selectedGroup.estuaryLayer.addTo(map);
-            bounds.extend(selectedGroup.estuaryLayer.getBounds());
+    const bounds = L.latLngBounds([]);
+
+    // Show selected estuaries and their stations
+    estuaryNames.forEach(estuaryName => {
+        const selectedGroup = estuaryGroups[estuaryName];
+        if (selectedGroup) {
+            // Add estuary boundary
+            if (selectedGroup.estuaryLayer) {
+                selectedGroup.estuaryLayer.addTo(map);
+                bounds.extend(selectedGroup.estuaryLayer.getBounds());
+            }
+
+            // Add all stations for this estuary
+            selectedGroup.stationLayers.forEach(layer => {
+                layer.addTo(map);
+                bounds.extend(layer.getBounds());
+            });
         }
-        
-        // Add all stations for this estuary
-        selectedGroup.stationLayers.forEach(layer => {
-            layer.addTo(map);
-            bounds.extend(layer.getBounds());
-        });
-        
-        // Zoom to fit all polygons of selected estuary
-        if (bounds.isValid()) {
-            map.fitBounds(bounds, { padding: [50, 50] });
-        }
+    });
+
+    // Zoom to fit all polygons of selected estuaries
+    if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [50, 50] });
     }
+}
+
+// Get selected estuaries from checkboxes
+function getCheckedEstuaries() {
+    const checkboxes = document.querySelectorAll('.estuary-checkbox:checked');
+    return Array.from(checkboxes).map(cb => cb.value);
 }
 
 // Show all polygons
@@ -225,12 +245,43 @@ function showAllPolygons() {
 
 // Event listeners
 document.getElementById('estuarySelect').addEventListener('change', (e) => {
-    zoomToEstuary(e.target.value);
+    const selectedEstuary = e.target.value;
+    if (selectedEstuary) {
+        zoomToEstuaries([selectedEstuary]);
+    } else {
+        showAllPolygons();
+    }
 });
 
 document.getElementById('resetBtn').addEventListener('click', () => {
     document.getElementById('estuarySelect').value = '';
     showAllPolygons();
+});
+
+// Select All checkbox
+document.getElementById('selectAllEstuaries').addEventListener('change', (e) => {
+    const checkboxes = document.querySelectorAll('.estuary-checkbox');
+    checkboxes.forEach(cb => cb.checked = e.target.checked);
+});
+
+// Update Select All when individual checkboxes change
+document.getElementById('estuaryCheckboxes').addEventListener('change', (e) => {
+    if (e.target.classList.contains('estuary-checkbox')) {
+        const allCheckboxes = document.querySelectorAll('.estuary-checkbox');
+        const checkedCheckboxes = document.querySelectorAll('.estuary-checkbox:checked');
+        document.getElementById('selectAllEstuaries').checked = allCheckboxes.length === checkedCheckboxes.length;
+    }
+});
+
+document.getElementById('downloadShapefileBtn').addEventListener('click', () => {
+    const checkedEstuaries = getCheckedEstuaries();
+    if (checkedEstuaries.length === 0) {
+        alert('Please select at least one estuary to download.');
+        return;
+    }
+    let url = `/${script_root}/download-polygons-shapefile`;
+    url += `?estuaries=${encodeURIComponent(checkedEstuaries.join(','))}`;
+    window.location.href = url;
 });
 
 // Tab switching functionality
@@ -749,13 +800,13 @@ document.getElementById('resetSopBtn').addEventListener('click', () => {
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', async () => {
     initMap();
-    
+
     // Fetch and display polygon data
     allPolygonsData = await fetchPolygonData();
-    
+
     if (allPolygonsData.estuaries.length > 0 || allPolygonsData.stations.length > 0) {
         addPolygonsToMap(allPolygonsData);
-        populateEstuaryDropdown(allPolygonsData);
+        populateEstuaryControls(allPolygonsData);
         showAllPolygons();
     } else {
         alert('No station data available.');

@@ -1,5 +1,6 @@
 import os, time, re
 import pandas as pd
+import geopandas as gpd
 from bs4 import BeautifulSoup
 from flask import Blueprint, g, current_app, render_template, redirect, url_for, session, request, jsonify, render_template_string, send_file
 from io import StringIO
@@ -7,6 +8,8 @@ import psycopg2
 from psycopg2 import sql
 from sqlalchemy import create_engine, text
 import io
+import tempfile
+import zipfile
 
 from .utils.db import metadata_summary
 from .utils.route_auth import requires_auth
@@ -783,10 +786,10 @@ def get_all_polygons_data():
     """API endpoint to fetch polygon data from both spatial_empa_all_sites and spatial_empa_all_stations tables"""
     try:
         eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
-        
+
         # Query to get estuary polygons (red)
         estuary_query = """
-            SELECT 
+            SELECT
                 estuaryname,
                 ST_AsGeoJSON(geometry) as geometry
             FROM
@@ -794,10 +797,10 @@ def get_all_polygons_data():
             ORDER BY
                 estuaryname
         """
-        
+
         # Query to get station polygons (blue)
         station_query = """
-            SELECT 
+            SELECT
                 estuaryname,
                 siteid,
                 stationno,
@@ -808,24 +811,24 @@ def get_all_polygons_data():
                 estuaryname,
                 stationno
         """
-        
+
         with eng.connect() as connection:
             estuary_result = connection.execute(text(estuary_query)).fetchall()
             station_result = connection.execute(text(station_query)).fetchall()
-        
+
         # Structure the data
         data = {
             'estuaries': [],
             'stations': []
         }
-        
+
         # Add estuary polygons
         for row in estuary_result:
             data['estuaries'].append({
                 'estuaryname': row['estuaryname'],
                 'geometry': row['geometry']
             })
-        
+
         # Add station polygons
         for row in station_result:
             data['stations'].append({
@@ -834,7 +837,7 @@ def get_all_polygons_data():
                 'stationno': row['stationno'],
                 'geometry': row['geometry']
             })
-        
+
         return jsonify(data)
     
     except Exception as e:
@@ -1022,10 +1025,104 @@ def get_sop_station_data():
                 data['bad_points'].append(point_data)
         
         return jsonify(data)
-    
+
     except Exception as e:
         print(f"Error fetching SOP station data: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
-    
+
+
+@admin.route('/download-polygons-shapefile', methods=['GET'])
+def download_polygons_shapefile():
+    """Download estuaries and stations polygons as a shapefile zip"""
+    try:
+        eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
+
+        # Get selected estuaries from query parameter (comma-separated)
+        selected_estuaries = request.args.get('estuaries', '')
+        estuary_list = [e.strip() for e in selected_estuaries.split(',') if e.strip()] if selected_estuaries else []
+
+        # Build WHERE clause if estuaries are selected
+        if estuary_list:
+            placeholders = ', '.join([f"'{e}'" for e in estuary_list])
+            estuary_where = f"WHERE estuaryname IN ({placeholders})"
+            station_where = f"WHERE siteid IN ({placeholders})"
+        else:
+            estuary_where = ""
+            station_where = ""
+
+        # Query to get estuary polygons with geometry
+        estuary_query = f"""
+            SELECT
+                estuaryname,
+                geometry
+            FROM
+                spatial_empa_all_sites
+            {estuary_where}
+            ORDER BY
+                estuaryname
+        """
+
+        # Query to get station polygons with geometry
+        station_query = f"""
+            SELECT
+                estuaryname,
+                siteid,
+                stationno,
+                geometry
+            FROM
+                spatial_empa_all_stations
+            {station_where}
+            ORDER BY
+                estuaryname,
+                stationno
+        """
+
+        # Read data as GeoDataFrames directly from PostGIS
+        gdf_estuaries = gpd.read_postgis(estuary_query, eng, geom_col='geometry')
+        gdf_stations = gpd.read_postgis(station_query, eng, geom_col='geometry')
+
+        # Create a temporary directory to store shapefiles
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create subdirectories for each layer
+            estuaries_dir = os.path.join(tmpdir, 'estuaries')
+            stations_dir = os.path.join(tmpdir, 'stations')
+            os.makedirs(estuaries_dir)
+            os.makedirs(stations_dir)
+
+            # Save estuaries shapefile
+            estuaries_shp_path = os.path.join(estuaries_dir, 'estuaries.shp')
+            gdf_estuaries.to_file(estuaries_shp_path)
+
+            # Save stations shapefile
+            stations_shp_path = os.path.join(stations_dir, 'stations.shp')
+            gdf_stations.to_file(stations_shp_path)
+
+            # Create a zip file containing both shapefiles
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                # Add estuary shapefile components
+                for filename in os.listdir(estuaries_dir):
+                    file_path = os.path.join(estuaries_dir, filename)
+                    zipf.write(file_path, os.path.join('estuaries', filename))
+
+                # Add station shapefile components
+                for filename in os.listdir(stations_dir):
+                    file_path = os.path.join(stations_dir, filename)
+                    zipf.write(file_path, os.path.join('stations', filename))
+
+            zip_buffer.seek(0)
+
+            return send_file(
+                zip_buffer,
+                mimetype='application/zip',
+                as_attachment=True,
+                download_name='empa_polygons.zip'
+            )
+
+    except Exception as e:
+        print(f"Error downloading shapefile: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
