@@ -1047,7 +1047,7 @@ def download_polygons_shapefile():
         if estuary_list:
             placeholders = ', '.join([f"'{e}'" for e in estuary_list])
             estuary_where = f"WHERE estuaryname IN ({placeholders})"
-            station_where = f"WHERE siteid IN ({placeholders})"
+            station_where = f"WHERE estuaryname IN ({placeholders})"
         else:
             estuary_where = ""
             station_where = ""
@@ -1063,7 +1063,7 @@ def download_polygons_shapefile():
             ORDER BY
                 estuaryname
         """
-
+        print(station_where)
         # Query to get station polygons with geometry
         station_query = f"""
             SELECT
