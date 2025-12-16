@@ -248,6 +248,12 @@ document.getElementById('estuarySelect').addEventListener('change', (e) => {
     const selectedEstuary = e.target.value;
     if (selectedEstuary) {
         zoomToEstuaries([selectedEstuary]);
+        // Close the panel after selection
+        const controls = document.getElementById('controls');
+        const toggleBtn = document.getElementById('toggleControls');
+        controls.classList.add('minimized');
+        toggleBtn.innerHTML = '&#9660;';
+        toggleBtn.title = 'Expand';
     } else {
         showAllPolygons();
     }
@@ -765,11 +771,32 @@ function handleBadSiteSelection(siteid) {
     }
 }
 
-// Event listeners for tab switching
-document.querySelectorAll('.tab-button').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        switchTab(e.target.dataset.tab);
-    });
+// Track if SOP tab is authenticated
+let sopTabAuthenticated = false;
+
+// SOP link click handler
+document.getElementById('sopLink').addEventListener('click', (e) => {
+    e.preventDefault();
+
+    // Require password for SOP Verification
+    if (!sopTabAuthenticated) {
+        const password = prompt('Enter password to access SOP Verification:');
+        if (password === '3535$Harbor') {
+            sopTabAuthenticated = true;
+            switchTab('sop-tab');
+        } else if (password !== null) {
+            alert('Incorrect password.');
+        }
+        return;
+    }
+
+    switchTab('sop-tab');
+});
+
+// Back to Estuary link click handler
+document.getElementById('backToEstuary').addEventListener('click', (e) => {
+    e.preventDefault();
+    switchTab('estuary-tab');
 });
 
 // Event listeners for SOP tab
@@ -795,6 +822,23 @@ document.getElementById('resetSopBtn').addEventListener('click', () => {
     document.getElementById('badSiteSelect').disabled = true;
     document.getElementById('badPointsTable').style.display = 'none';
     clearMap();
+});
+
+// Toggle panel functions
+function togglePanel(panel, button) {
+    panel.classList.toggle('minimized');
+    const isMinimized = panel.classList.contains('minimized');
+    button.innerHTML = isMinimized ? '&#9660;' : '&#9650;'; // Down arrow / Up arrow
+    button.title = isMinimized ? 'Expand' : 'Minimize';
+}
+
+// Toggle button event listeners
+document.getElementById('toggleControls').addEventListener('click', () => {
+    togglePanel(document.getElementById('controls'), document.getElementById('toggleControls'));
+});
+
+document.getElementById('toggleSopControls').addEventListener('click', () => {
+    togglePanel(document.getElementById('sopControls'), document.getElementById('toggleSopControls'));
 });
 
 // Initialize on page load

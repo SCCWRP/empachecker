@@ -28,34 +28,43 @@
             font-family: Arial, sans-serif;
         }
 
-        .tab-container {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 1000;
-            background: white;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-        }
-
-        .tab-button {
-            padding: 8px 16px;
-            margin-right: 5px;
+        .toggle-btn {
+            background: none;
             border: none;
-            background: #f0f0f0;
             cursor: pointer;
+            font-size: 16px;
+            padding: 2px 8px;
             border-radius: 3px;
         }
 
-        .tab-button.active {
-            background: #007bff;
-            color: white;
+        .toggle-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .panel-header h5 {
+            margin: 0;
+        }
+
+        #controls.minimized .panel-content,
+        #sopControls.minimized .panel-content {
+            display: none;
+        }
+
+        #controls.minimized .panel-header,
+        #sopControls.minimized .panel-header {
+            margin-bottom: 0;
         }
 
         #controls {
             position: absolute;
-            top: 60px;
+            top: 70px;
             right: 10px;
             z-index: 1000;
             background: white;
@@ -140,78 +149,87 @@
 </head>
 
 <body>
-    <!-- Tab Selection -->
-    <div class="tab-container">
-        <button class="tab-button active" data-tab="estuary-tab">View by Estuary</button>
-        <button class="tab-button" data-tab="sop-tab">SOP Verification</button>
+    <!-- Banner -->
+    <div style="position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; background: white; padding: 10px 30px; border-radius: 5px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
+        <h4 style="margin: 0; font-weight: bold;">Monitoring Estuaries</h4>
     </div>
 
     <!-- Controls Panel for Estuary Tab -->
-    <div id="controls" class="tab-content estuary-tab active">
-        <h5>EMPA Stations</h5>
-        <div class="mb-3">
-            <label for="estuarySelect" class="form-label">View Estuary:</label>
-            <select id="estuarySelect" class="form-select">
-                <option value="">-- All Estuaries --</option>
-            </select>
+    <div id="controls" class="tab-content estuary-tab active minimized">
+        <div class="panel-header">
+            <h5>Select an estuary <a href="#" id="sopLink" style="font-size: 12px; margin-left: 10px;">(SOP)</a></h5>
+            <button class="toggle-btn" id="toggleControls" title="Expand">&#9660;</button>
         </div>
-        <button id="resetBtn" class="btn btn-secondary btn-sm w-100">Reset View</button>
-        <hr>
-        <div class="mb-2">
-            <label class="form-label fw-bold">Download Shapefile:</label>
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="selectAllEstuaries">
-                <label class="form-check-label" for="selectAllEstuaries"><em>Select All</em></label>
+        <div class="panel-content">
+            <div class="mb-3">
+                <label for="estuarySelect" class="form-label">View Estuary:</label>
+                <select id="estuarySelect" class="form-select">
+                    <option value="">-- All Estuaries --</option>
+                </select>
             </div>
-            <div id="estuaryCheckboxes" style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 8px; margin-top: 5px;">
+            <button id="resetBtn" class="btn btn-secondary btn-sm w-100">Reset View</button>
+            <hr>
+            <div class="mb-2">
+                <label class="form-label fw-bold">Download Shapefile:</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="selectAllEstuaries">
+                    <label class="form-check-label" for="selectAllEstuaries"><em>Select All</em></label>
+                </div>
+                <div id="estuaryCheckboxes" style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 8px; margin-top: 5px;">
+                </div>
             </div>
+            <button id="downloadShapefileBtn" class="btn btn-success btn-sm w-100">
+                Download Shapefile (ZIP)
+            </button>
+            <small class="text-muted d-block mt-1">If you would like to make changes, please download a shapefile and send it Jan Walker (janw@sccwrp.org)</small>
         </div>
-        <button id="downloadShapefileBtn" class="btn btn-success btn-sm w-100">
-            Download Shapefile (ZIP)
-        </button>
-        <small class="text-muted d-block mt-1">Select estuaries above to download</small>
     </div>
 
     <!-- Controls Panel for SOP Tab -->
-    <div id="sopControls" class="tab-content sop-tab" style="position: absolute; top: 60px; right: 10px; z-index: 1000; background: white; padding: 15px; border-radius: 5px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); min-width: 350px; max-width: 400px;">
-        <h5>SOP Verification</h5>
-        <div class="mb-3">
-            <label for="regionSelect" class="form-label">Region:</label>
-            <select id="regionSelect" class="form-select">
-                <option value="">-- Select Region --</option>
-            </select>
+    <div id="sopControls" class="tab-content sop-tab minimized" style="position: absolute; top: 70px; right: 10px; z-index: 1000; background: white; padding: 15px; border-radius: 5px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); min-width: 350px; max-width: 400px;">
+        <div class="panel-header">
+            <h5><a href="#" id="backToEstuary" style="font-size: 12px; margin-right: 5px;">&larr;</a> SOP Verification</h5>
+            <button class="toggle-btn" id="toggleSopControls" title="Expand">&#9660;</button>
         </div>
-        <div class="mb-3">
-            <label for="sopSelect" class="form-label">Select SOP:</label>
-            <select id="sopSelect" class="form-select" disabled>
-                <option value="">-- Select SOP --</option>
-                <option value="tbl_grabevent">Field Grab</option>
-                <option value="tbl_wq_logger_metadata">SOP 1: Continuous environmental monitoring - Metadata</option>
-                <option value="tbl_waterquality_metadata">SOP 2: Discrete environmental monitoring - point water quality measurements</option>
-                <option value="tbl_edna_metadata">SOP 4: eDNA - field</option>
-                <option value="tbl_benthiclarge_metadata">SOP 6: Benthic infauna, large</option>
-                <option value="tbl_macroalgae_sample_metadata">SOP 7: Macroalgae</option>
-                <option value="tbl_bruv_metadata">SOP 8: Fish - BRUVs - field</option>
-                <option value="tbl_fish_sample_metadata">SOP 9: Fish seines</option>
-                <option value="tbl_crabtrap_metadata">SOP 10: Crab traps</option>
-                <option value="tbl_vegetation_sample_metadata">SOP 11: Marsh plain vegetation and epifauna surveys</option>
-                <option value="tbl_feldspar_metadata">SOP 13: Sediment accretion rates</option>
-            </select>
-        </div>
-        <div class="mb-3">
-            <label for="badSiteSelect" class="form-label">Problematic Sites:</label>
-            <select id="badSiteSelect" class="form-select" disabled>
-                <option value="">-- Select Region and SOP first --</option>
-            </select>
-        </div>
-        <button id="resetSopBtn" class="btn btn-secondary btn-sm w-100">Reset View</button>
-        
-        <div id="badPointsTable" class="mt-3" style="display: none;">
-            <h6>Selected Point Details:</h6>
-            <div class="table-responsive">
-                <table class="table table-sm table-bordered">
-                    <tbody id="badPointTableBody"></tbody>
-                </table>
+        <div class="panel-content">
+            <div class="mb-3">
+                <label for="regionSelect" class="form-label">Region:</label>
+                <select id="regionSelect" class="form-select">
+                    <option value="">-- Select Region --</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="sopSelect" class="form-label">Select SOP:</label>
+                <select id="sopSelect" class="form-select" disabled>
+                    <option value="">-- Select SOP --</option>
+                    <option value="tbl_grabevent">Field Grab</option>
+                    <option value="tbl_wq_logger_metadata">SOP 1: Continuous environmental monitoring - Metadata</option>
+                    <option value="tbl_waterquality_metadata">SOP 2: Discrete environmental monitoring - point water quality measurements</option>
+                    <option value="tbl_edna_metadata">SOP 4: eDNA - field</option>
+                    <option value="tbl_benthiclarge_metadata">SOP 6: Benthic infauna, large</option>
+                    <option value="tbl_macroalgae_sample_metadata">SOP 7: Macroalgae</option>
+                    <option value="tbl_bruv_metadata">SOP 8: Fish - BRUVs - field</option>
+                    <option value="tbl_fish_sample_metadata">SOP 9: Fish seines</option>
+                    <option value="tbl_crabtrap_metadata">SOP 10: Crab traps</option>
+                    <option value="tbl_vegetation_sample_metadata">SOP 11: Marsh plain vegetation and epifauna surveys</option>
+                    <option value="tbl_feldspar_metadata">SOP 13: Sediment accretion rates</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="badSiteSelect" class="form-label">Problematic Sites:</label>
+                <select id="badSiteSelect" class="form-select" disabled>
+                    <option value="">-- Select Region and SOP first --</option>
+                </select>
+            </div>
+            <button id="resetSopBtn" class="btn btn-secondary btn-sm w-100">Reset View</button>
+
+            <div id="badPointsTable" class="mt-3" style="display: none;">
+                <h6>Selected Point Details:</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <tbody id="badPointTableBody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

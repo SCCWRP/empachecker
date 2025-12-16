@@ -775,7 +775,6 @@ def get_sample_data():
 
 
 @admin.route('/view-all-polygons', methods=['GET'])
-@requires_auth
 def view_all_polygons():
     """Route to display all EMPA station polygons with dropdown filter by estuary"""
     return render_template('view_all_polygons.html')
