@@ -22,7 +22,7 @@ from .custom import *
 upload = Blueprint('upload', __name__)
 @upload.route('/upload',methods = ['GET','POST'])
 def main():
-    
+
     # -------------------------------------------------------------------------- #
 
     # First, the routine to upload the file(s)
@@ -37,7 +37,7 @@ def main():
     else:
         # i'd like to figure a way we can do it without writing the thing to an excel file
         # ... maybe
-        # it would have to be written to a BytesIO object, which is completely possible, 
+        # it would have to be written to a BytesIO object, which is completely possible,
         #   but i think we might want to save the file to be able to give to them later
         f = files[0]
         filename = secure_filename(f.filename)
@@ -55,8 +55,8 @@ def main():
         # Put their original filename in the submission tracking table
         g.eng.execute(
             f"""
-            UPDATE submission_tracking_table 
-            SET original_filename = '{filename}' 
+            UPDATE submission_tracking_table
+            SET original_filename = '{filename}'
             WHERE submissionid = {session.get('submissionid')};
             """
         )
@@ -71,13 +71,13 @@ def main():
     print("DONE uploading files")
 
     # -------------------------------------------------------------------------- #
-    
+
     # Read in the excel file to make a dictionary of dataframes (all_dfs)
 
     # if they are not submitting logger_raw data, this if block shouldnt get executed, because session.get('login_info').get('login_filetype') should return None
     # raw-file or formatted-template are the two possible values (from config.json)
     print("session.get('login_info').get('login_filetype')")
-    print(session.get('login_info').get('login_filetype')) 
+    print(session.get('login_info').get('login_filetype'))
     if session.get('login_info').get('login_filetype') == 'raw-file':
         print("Reformat")
         try:
@@ -86,7 +86,7 @@ def main():
             print(e)
             errmsg = f"Invalid logger file type.\n The checker is expecting to receive a raw format from these loggers: tidbit, troll, ctd, minidot, hydrolab.\n If you are dropping a formatted template (Note that all raw files will be converted to formatted template, so if you download a file on the report screen, it will be in formatted template), please switch to Formatted Template in the form."
             return jsonify(user_error_msg=errmsg)
-        
+
         # fill in the columns that should be populated from the data from the login form
         formatted_data = formatted_data.assign(
             projectid = session.get('login_info').get('login_project'),
@@ -110,7 +110,7 @@ def main():
         filename = f"{str(filename)}.xlsx"
         excel_path = os.path.join( session['submission_dir'], filename )
         session['excel_path'] = excel_path
-    
+
     elif (session.get('login_info').get('login_filetype') == 'formatted-template') and (Path(session.get('excel_path')).suffix != '.xlsx'):
         return jsonify(user_error_msg='Formatted Template was selected as filetype in the Session Login Information but you submitted a Raw File')
     else:
@@ -127,30 +127,30 @@ def main():
 
             # Note also that only empty cells will be regarded as missing values
             sheet: pd.read_excel(
-                excel_path, 
+                excel_path,
                 sheet_name=sheet,
                 skiprows=current_app.excel_offset,
                 na_values=[''],
                 dtype={"amountoftrash": str},
                 converters={"preparationtime": str}
             )
-            
+
             for sheet in pd.ExcelFile(excel_path).sheet_names
-            
+
             if ((sheet not in current_app.tabs_to_ignore) and (not sheet.startswith('lu_')))
         }
     print(all_dfs)
     assert len(all_dfs) > 0, f"submissionid - {session.get('submissionid')} all_dfs is empty"
-    
+
     for tblname in all_dfs.keys():
         all_dfs[tblname].columns = [
-            x.lower() if isinstance(x, str) else x 
+            x.lower() if isinstance(x, str) else x
             for x in all_dfs[tblname].columns
         ]
         all_dfs[tblname] = all_dfs[tblname].drop(
             columns=[
-                x 
-                for x in all_dfs[tblname].columns 
+                x
+                for x in all_dfs[tblname].columns
                 if isinstance(x, str) and x in current_app.system_fields
             ]
         )
@@ -175,7 +175,7 @@ def main():
     # if the tab didnt match any table it will not alter that item in the all_dfs dictionary
     print("Running match tables routine")
     match_dataset, match_report, all_dfs = match(all_dfs)
-    
+
 
     ############################################ PRE-CORE CHECKS ########################################################
     for tblname in all_dfs.keys():
@@ -186,8 +186,8 @@ def main():
         # table names should not be empty
         if (tblname not in current_app.allowed_empty_sheets) and (all_dfs[tblname].empty):
             return jsonify(user_error_msg=f'Please fill out the tab {tblname} before you continue')
-    
-    
+
+
     ############################################ END PRE-CORE CHECKS ###################################################
 
 
@@ -206,11 +206,11 @@ def main():
             match_dataset = match_dataset,
             matched_all_tables = False
         )
-    
+
     # If they made it this far, a dataset was matched
     g.eng.execute(
         f"""
-        UPDATE submission_tracking_table 
+        UPDATE submission_tracking_table
         SET datatype = '{match_dataset}'
         WHERE submissionid = {session.get('submissionid')};
         """
@@ -239,24 +239,24 @@ def main():
     # write all_dfs again to the same excel path
     # Later, if the data is clean, the loading routine will use the tab names to load the data to the appropriate tables
     #   There is an assert statement (in load.py) which asserts that the tab names of the excel file match a table in the database
-    #   With the way the code is structured, that should always be the case, but the assert statement will let us know if we messed up or need to fix something 
+    #   With the way the code is structured, that should always be the case, but the assert statement will let us know if we messed up or need to fix something
     #   Technically we could write it back with the original tab names, and use the tab_to_table_map in load.py,
     #   But for now, the tab_table_map is mainly used by the javascript in the front end, to display error messages to the user
     writer = pd.ExcelWriter(excel_path, engine = 'xlsxwriter', options = {"strings_to_formulas":False})
     for tblname in all_dfs.keys():
         all_dfs[tblname].to_excel(
-            writer, 
-            sheet_name = tblname, 
-            startrow = current_app.excel_offset, 
+            writer,
+            sheet_name = tblname,
+            startrow = current_app.excel_offset,
             index=False
         )
     writer.save()
-    
+
     # Yes this is weird but if we write the all_dfs back to the excel file, and read it back in,
     # this ensures 100% that the data is loaded exactly in the same state as it was in when it was checked
     all_dfs = {
         sheet: pd.read_excel(
-            excel_path, 
+            excel_path,
             sheet_name = sheet,
             skiprows = current_app.excel_offset,
             na_values = [''],
@@ -266,7 +266,7 @@ def main():
         if ((sheet not in current_app.tabs_to_ignore) and (not sheet.startswith('lu_')))
     }
 
-    
+
     # ----------------------------------------- #
 
     # Core Checks
@@ -283,10 +283,10 @@ def main():
         for tblname in set([y for x in current_app.datasets.values() for y in x.get('tables')])
     }
 
-   
+
     # tack on core errors to errors list
-    
-    # debug = False will cause corechecks to run with multiprocessing, 
+
+    # debug = False will cause corechecks to run with multiprocessing,
     # but the logs will not show as much useful information
     print("Right before core runs")
     core_output = core(all_dfs, g.eng, dbmetadata, debug = True)
@@ -296,21 +296,21 @@ def main():
     errs.extend(core_output['core_errors'])
     warnings.extend(core_output['core_warnings'])
 
-    # clear up some memory space, i never wanted to store the core checks output in memory anyways 
+    # clear up some memory space, i never wanted to store the core checks output in memory anyways
     # other than appending it to the errors/warnings list
 
     del core_output
     collect()
-    
-    
-    
+
+
+
     print("DONE - Core Checks")
 
 
 
     # ----------------------------------------- #
 
-    
+
     # Custom Checks based on match dataset
 
     assert match_dataset in current_app.datasets.keys(), \
@@ -319,28 +319,28 @@ def main():
 
     # if there are no core errors, run custom checks
 
-    # Users complain about this. 
+    # Users complain about this.
     # However, often times, custom check functions make basic assumptions about the data,
-    # which would depend on the data passing core checks. 
-    
+    # which would depend on the data passing core checks.
+
     # For example, it may assume that a certain column contains only numeric values, in order to check if the number
     # falls within an expected range of values, etc.
     # This makes the assumption that all values in that column are numeric, which is checked and enforced by Core Checks
 
-    if errs == []: 
+    if errs == []:
         print("Custom Checks")
         print(f"Datatype: {match_dataset}")
 
-        # custom output should be a dictionary where errors and warnings are the keys and the values are a list of "errors" 
+        # custom output should be a dictionary where errors and warnings are the keys and the values are a list of "errors"
         # (structured the same way as errors are as seen in core checks section)
-        
+
         # The custom checks function is stored in __init__.py in the datasets dictionary and accessed and called accordingly
         # match_dataset is a string, which should also be the same as one of the function names imported from custom, so we can "eval" it
         try:
             custom_output = eval(match_dataset)(all_dfs)
 
             print(f'Custom Output: {custom_output}')
-            
+
             # Duy: We define global custom checks are the checks that apply to multiple datatypes.
             # the goal is to extend the custom output dictionnary
             # the output of global custom should look the same as the custom_output
@@ -351,14 +351,12 @@ def main():
             # extend the custom output
             custom_output.get('errors').extend(global_custom_output.get('errors'))
             custom_output.get('warnings').extend(global_custom_output.get('warnings'))
-            
         except NameError as err:
             print("Error with custom checks")
             print(err)
             raise Exception(f"""Error calling custom checks function "{match_dataset}" - may not be defined, or was not imported correctly.""")
         except Exception as e:
             raise Exception(e)
-        
         print("custom_output: ")
         print(custom_output)
         #example
@@ -380,7 +378,7 @@ def main():
 
         print("DONE - Custom Checks")
 
-    # End Custom Checks section    
+    # End Custom Checks section
 
     # Begin Visual Map Checks:
 
@@ -413,10 +411,10 @@ def main():
 
     # By default the error and warnings collection methods assume that no rows were skipped in reading in of excel file.
     # It adds 1 to the row number when getting the error/warning, since excel is 1 based but the python dataframe indexing is zero based.
-    # Therefore the row number in the errors and warnings will only match with their excel file's row if the column headers are actually in 
+    # Therefore the row number in the errors and warnings will only match with their excel file's row if the column headers are actually in
     #   the first row of the excel file.
     # These next few lines of code should correct that
-    for e in errs: 
+    for e in errs:
         assert type(e['rows']) == list, \
             "rows key in errs dict must be a list"
     errs = correct_row_offset(errs, offset = current_app.excel_offset)
@@ -433,9 +431,9 @@ def main():
 
     # mark_workbook function returns the file path to which it saved the marked excel file
     session['marked_excel_path'] = mark_workbook(
-        all_dfs = all_dfs, 
-        excel_path = session.get('excel_path'), 
-        errs = errs, 
+        all_dfs = all_dfs,
+        excel_path = session.get('excel_path'),
+        errs = errs,
         warnings = warnings
     )
 
@@ -447,7 +445,7 @@ def main():
         station_visual_map = True
     else:
         station_visual_map = False
-        
+
     # These are the values we are returning to the browser as a json
     returnvals = {
         "filename" : filename,
@@ -463,9 +461,9 @@ def main():
         "table_to_tab_map" : session['table_to_tab_map'],
         "has_visual_map": station_visual_map,
         "final_submit_requested": session.get('final_submit_requested', True),
-        
+
         # to display the login email on the submission info tab
-        "login_email": session.get("login_info", dict()).get('login_email', "non_existing_email@sccwrp.org") 
+        "login_email": session.get("login_info", dict()).get('login_email', "non_existing_email@sccwrp.org")
     }
 
     if match_dataset == 'logger_raw':
@@ -544,3 +542,4 @@ def upload_error_handler(error):
         mail_server = current_app.config['MAIL_SERVER']
     )
     return response
+
