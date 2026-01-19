@@ -37,8 +37,9 @@ def tracking():
                         AND ORIGINAL_FILENAME IS NOT NULL
                     ORDER BY CREATED_DATE DESC
                     '''
-    session_results = g.eng.execute(sql_session)
-    session_json = [dict(r) for r in session_results]
+    with g.eng.connect() as conn:
+        session_results = conn.execute(text(sql_session))
+        session_json = [dict(r._mapping) for r in session_results]
     authorized = session.get("AUTHORIZED_FOR_ADMIN_FUNCTIONS")
     
     # session is a reserved word in flask - renaming to something different
@@ -213,7 +214,8 @@ def column_order():
             
             tables = current_app.datasets.get(datatype).get("tables")
             for tbl in tables:
-                df = pd.read_sql(f"{basequery} WHERE table_name = '{tbl}';", eng)
+                with eng.connect() as conn:
+                    df = pd.read_sql(f"{basequery} WHERE table_name = '{tbl}';", conn)
 
                 df.fillna('', inplace = True)
 
@@ -327,21 +329,22 @@ def report_download():
 def get_inventory_data():
     eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
 
-    # Query data for the Logger using Pandas
-    logger_query = "SELECT * FROM mvw_qa_raw_logger_combined_final"
-    logger_df = pd.read_sql(logger_query, con=eng)
-    logger_df['year'] = logger_df['year'].astype(int).astype(str)
+    with eng.connect() as conn:
+        # Query data for the Logger using Pandas
+        logger_query = "SELECT * FROM mvw_qa_raw_logger_combined_final"
+        logger_df = pd.read_sql(logger_query, con=conn)
+        logger_df['year'] = logger_df['year'].astype(int).astype(str)
 
-    # Query data for the General using Pandas
-    general_query = \
-        """
-            SELECT 
-                *
-            FROM
-                vw_data_inventory
-        """
-    general_df = pd.read_sql(general_query, con=eng)
-    general_df['year'] = general_df['year'].astype(int).astype(str)
+        # Query data for the General using Pandas
+        general_query = \
+            """
+                SELECT 
+                    *
+                FROM
+                    vw_data_inventory
+            """
+        general_df = pd.read_sql(general_query, con=conn)
+        general_df['year'] = general_df['year'].astype(int).astype(str)
 
     # Prepare the data structure
     inventory_data = {
@@ -417,7 +420,8 @@ def download_inventory_data():
             year
     """
 
-    general_df = pd.read_sql(general_query, con=eng)
+    with eng.connect() as conn:
+        general_df = pd.read_sql(general_query, con=conn)
 
     # Filter by year if provided
     year_param = request.args.get('year')
@@ -534,7 +538,8 @@ def download_inventory_data_grouped_site():
         FROM
             vw_data_inventory
     """
-    general_df = pd.read_sql(general_query, con=eng)
+    with eng.connect() as conn:
+        general_df = pd.read_sql(general_query, con=conn)
 
     sop_name_mapping = {
         "field": "Field Grab",
@@ -606,7 +611,8 @@ def download_inventory_logger_data():
 
     # Query data for the General using Pandas
     general_query = "SELECT * FROM mvw_qa_raw_logger_combined_final"
-    general_df = pd.read_sql(general_query, con=eng)
+    with eng.connect() as conn:
+        general_df = pd.read_sql(general_query, con=conn)
 
     # Convert DataFrame to CSV
     csv_data = general_df.to_csv(index=False)
@@ -622,7 +628,9 @@ def download_inventory_logger_data():
 def refresh_inventory():
     eng = g.eng
     try:
-        eng.execute("SELECT refresh_all_materialized_views();")
+        with eng.connect() as conn:
+            conn.execute(text("SELECT refresh_all_materialized_views();"))
+            conn.commit()
         return jsonify({'message': 'Inventory refreshed successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -655,7 +663,8 @@ def get_logger_graph_data():
     """
     print(query)
     # Execute the query and load the result into a pandas DataFrame
-    df = pd.read_sql(query, eng)
+    with eng.connect() as conn:
+        df = pd.read_sql(query, conn)
 
     # Ensure that there is data for the requested parameter
     if df.empty:

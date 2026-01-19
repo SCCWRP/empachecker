@@ -2,10 +2,10 @@ from inspect import currentframe
 from flask import current_app, g, session
 import pandas as pd
 from .functions import checkData, checkLogic, mismatch,get_primary_key
-from .yeahbuoy_custom import yeahbuoy
 
 
-from numpy import NaN
+
+
 from sqlalchemy.exc import ProgrammingError
 
 def logger_meta(all_dfs):
@@ -383,8 +383,8 @@ def logger_raw(all_dfs):
         
         logger = logger.merge( lu_list, on = [ f'raw_{param}_unit' ], how = 'left' )
 
-        logger['min'] = logger['min'].fillna(NaN)
-        logger['max'] = logger['max'].fillna(NaN)
+        logger['min'] = logger['min'].fillna(float('nan'))
+        logger['max'] = logger['max'].fillna(float('nan'))
 
 
         # QAQC Flags based on this website

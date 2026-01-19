@@ -1,42 +1,50 @@
-FROM debian:latest
+FROM debian
 # FROM debian:sid
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update 
-RUN apt-get install -y apt-utils
-RUN apt-get install -y python3-pip python3-dev build-essential libssl-dev libffi-dev
-RUN apt-get install -y postgresql postgresql-contrib
+RUN apt-get update && apt-get install -y apt-utils
+RUN apt-get update && apt-get install -y python3-pip python3-dev build-essential libssl-dev libffi-dev
+RUN apt-get update && apt-get install -y postgresql postgresql-contrib
 RUN apt-get install -y libpcre3 libpcre3-dev
 RUN apt-get install -y vim
-RUN apt-get install -y libpq-dev && pip3 install psycopg2
+RUN apt-get install -y libpq-dev && pip3 install --break-system-packages psycopg2
 RUN apt-get install -y libgdal-dev
 RUN apt-get install -y libproj-dev
 # RUN apt-get install -y cython cython3
 RUN apt-get install -y cython3
 RUN apt-get install -y python3-pyproj
-RUN pip3 install wheel
-RUN pip3 install uwsgi flask ipython
-RUN pip3 install xlrd flask_session
-RUN pip3 install flask_cors
-RUN pip3 install Werkzeug
-RUN pip3 install sqlalchemy
-RUN pip3 install xlsxwriter
-RUN pip3 install openpyxl
-RUN pip3 install numpy 
-RUN pip3 install pandas 
-RUN pip3 install postgis
+RUN pip3 install --break-system-packages wheel
+RUN pip3 install --break-system-packages uwsgi flask ipython
+RUN pip3 install --break-system-packages xlrd flask_session
+RUN pip3 install --break-system-packages flask_cors
+RUN pip3 install --break-system-packages Werkzeug
+RUN pip3 install --break-system-packages "sqlalchemy<2.0.0"
+RUN pip3 install --break-system-packages xlsxwriter
+RUN pip3 install --break-system-packages openpyxl
+RUN pip3 install --break-system-packages "numpy<2.0.0"
+RUN pip3 install --break-system-packages "pandas<2.0.0" 
+RUN pip3 install --break-system-packages postgis
 ENV PROJ_DIR=/usr/
-RUN pip3 install fiona
-RUN pip3 install shapely
+RUN pip3 install --break-system-packages fiona
+RUN pip3 install --break-system-packages shapely
 ENV PROJ_LIBDIR=/usr/lib
 ENV PROJ_INCDIR=/usr/lib
-RUN pip3 install geopandas 
-RUN pip3 install folium 
-RUN pip3 install matplotlib 
+RUN pip3 install --break-system-packages "geopandas<1.0.0"
+RUN pip3 install --break-system-packages folium 
+RUN pip3 install --break-system-packages matplotlib 
 #RUN pip3 install arcgis 
-RUN pip3 install scipy 
-RUN pip3 install shapely 
-RUN pip3 install requests 
+RUN pip3 install --break-system-packages scipy 
+RUN pip3 install --break-system-packages shapely 
+RUN pip3 install --break-system-packages requests 
+RUN pip3 install --break-system-packages beautifulsoup4
 #RUN pip3 install opencv-python
+
+# Download AWS RDS certificate bundle and set up for PostgreSQL
+RUN apt-get install -y curl ca-certificates
+RUN mkdir -p /root/.postgresql && \
+    curl -o /root/.postgresql/root.crt https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem && \
+    chmod 644 /root/.postgresql/root.crt && \
+    chmod 755 /root/.postgresql && \
+    chmod 755 /root
 
 RUN mkdir -p /var/www/checker/
 #WORKDIR /var/www/checker/
