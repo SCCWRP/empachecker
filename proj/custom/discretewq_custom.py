@@ -653,7 +653,7 @@ def discretewq(all_dfs):
 
     # Find rows where weather_event is Y but weather_event_comment is empty/null
     bad_rows = watermeta[
-        (watermeta['weather_event'].str.upper() == 'Y') &
+        (watermeta['weather_event'].astype(str).str.upper() == 'Y') &
         (
             watermeta['weather_event_comment'].isna() |
             (watermeta['weather_event_comment'].astype(str).str.strip() == '')
