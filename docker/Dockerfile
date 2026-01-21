@@ -20,8 +20,6 @@ RUN pip3 install --break-system-packages Werkzeug
 RUN pip3 install --break-system-packages "sqlalchemy<2.0.0"
 RUN pip3 install --break-system-packages xlsxwriter
 RUN pip3 install --break-system-packages openpyxl
-RUN pip3 install --break-system-packages "numpy<2.0.0"
-RUN pip3 install --break-system-packages "pandas<2.0.0" 
 RUN pip3 install --break-system-packages postgis
 ENV PROJ_DIR=/usr/
 RUN pip3 install --break-system-packages fiona
@@ -36,7 +34,9 @@ RUN pip3 install --break-system-packages scipy
 RUN pip3 install --break-system-packages shapely 
 RUN pip3 install --break-system-packages requests 
 RUN pip3 install --break-system-packages beautifulsoup4
-#RUN pip3 install opencv-python
+RUN pip3 install --break-system-packages numpy==1.23.5
+RUN pip3 install --break-system-packages pandas==1.5.2 
+
 
 # Download AWS RDS certificate bundle and set up for PostgreSQL
 RUN apt-get install -y curl ca-certificates
