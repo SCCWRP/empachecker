@@ -248,12 +248,7 @@ document.getElementById('estuarySelect').addEventListener('change', (e) => {
     const selectedEstuary = e.target.value;
     if (selectedEstuary) {
         zoomToEstuaries([selectedEstuary]);
-        // Close the panel after selection
-        const controls = document.getElementById('controls');
-        const toggleBtn = document.getElementById('toggleControls');
-        controls.classList.add('minimized');
-        toggleBtn.innerHTML = '&#9660;';
-        toggleBtn.title = 'Expand';
+        // Keep the panel open so user can see their selection
     } else {
         showAllPolygons();
     }
@@ -834,6 +829,11 @@ function togglePanel(panel, button) {
 
 // Toggle button event listeners
 document.getElementById('toggleControls').addEventListener('click', () => {
+    togglePanel(document.getElementById('controls'), document.getElementById('toggleControls'));
+});
+
+// Make the estuary header clickable to toggle panel
+document.getElementById('estuaryHeader').addEventListener('click', () => {
     togglePanel(document.getElementById('controls'), document.getElementById('toggleControls'));
 });
 
