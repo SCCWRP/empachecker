@@ -273,7 +273,12 @@ def fill_wentworth_class(all_dfs):
         
         shared_pkey = [x for x in labbatch_pkey if x in data_pkey]
         
-        data['phi'] = data['phi'].apply(lambda x: float(x))
+        # Try to convert phi to float, if it fails (non-numeric values), skip processing
+        try:
+            data['phi'] = data['phi'].apply(lambda x: float(x) if pd.notna(x) else x)
+        except (ValueError, TypeError):
+            # If phi column contains non-numeric values, return without processing
+            return all_dfs
 
         data = data.merge(
             labbatch[labbatch_pkey + ['analyticalmethod']],
