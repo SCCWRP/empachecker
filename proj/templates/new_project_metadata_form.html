@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Project Metadata Form - EMPA Checker</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Leaflet CSS for maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" 
+          integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin=""/>
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .form-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 40px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .form-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 20px;
+        }
+        
+        .form-header h1 {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .form-section {
+            margin-bottom: 30px;
+        }
+        
+        .form-section-title {
+            color: #667eea;
+            font-weight: 600;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .form-label {
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 8px;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .agency-entry, .polygon-entry {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .sop-checkbox {
+            margin-bottom: 10px;
+        }
+        
+        .sop-description {
+            margin-left: 30px;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .estuary-checkbox-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .estuary-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+        
+        .estuary-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .estuary-checkbox {
+            flex-shrink: 0;
+        }
+        
+        .estuary-label {
+            flex-grow: 1;
+            margin-left: 10px;
+            margin-bottom: 0;
+        }
+        
+        .view-map-btn {
+            flex-shrink: 0;
+            margin-left: 10px;
+            padding: 4px 12px;
+            font-size: 0.85em;
+        }
+        
+        .mini-map-modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .mini-map-content {
+            position: relative;
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 800px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        
+        .mini-map-close {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+            z-index: 10001;
+        }
+        
+        .mini-map-close:hover,
+        .mini-map-close:focus {
+            color: #000;
+        }
+        
+        .mini-map {
+            height: 400px;
+            width: 100%;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="form-container">
+            <div class="form-header">
+                <h1>New Project Metadata Form</h1>
+                <p class="text-muted">Complete the form below to register a new project</p>
+            </div>
+            
+            <form id="projectMetadataForm" method="POST">
+                <!-- Basic Project Information -->
+                <div class="form-section">
+                    <h3 class="form-section-title">Basic Project Information</h3>
+                    
+                    <div class="mb-3">
+                        <label for="projectName" class="form-label">Project Name *</label>
+                        <input type="text" class="form-control" id="projectName" name="projectName" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="abbreviation" class="form-label">Abbreviation (Project ID) *</label>
+                        <input type="text" class="form-control" id="abbreviation" name="abbreviation" 
+                               placeholder="e.g., EMPA, SMB" required>
+                        <small class="form-text text-muted">This will be used as the project identifier</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="mainGoals" class="form-label">Main Goals/Objectives *</label>
+                        <textarea class="form-control" id="mainGoals" name="mainGoals" rows="4" required></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="projectStart" class="form-label">Project Start Date *</label>
+                            <input type="datetime-local" class="form-control" id="projectStart" name="projectStart" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="projectEnd" class="form-label">Project End Date *</label>
+                            <input type="datetime-local" class="form-control" id="projectEnd" name="projectEnd" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Agency Participation -->
+                <div class="form-section">
+                    <h3 class="form-section-title">Agency Participation</h3>
+                    <div id="agenciesContainer">
+                        <!-- Dynamic agency entries will be added here -->
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="addAgencyBtn">+ Add Agency</button>
+                </div>
+                
+                <!-- Main Contact Information -->
+                <div class="form-section">
+                    <h3 class="form-section-title">Main Contact Information</h3>
+                    
+                    <div class="mb-3">
+                        <label for="contactName" class="form-label">Contact Name *</label>
+                        <input type="text" class="form-control" id="contactName" name="contactName" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="institution" class="form-label">Institution *</label>
+                        <input type="text" class="form-control" id="institution" name="institution" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">Email *</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="phone" class="form-label">Phone Number *</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Estuary/Location Information -->
+                <div class="form-section">
+                    <h3 class="form-section-title">Estuary/Location Information</h3>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Select Estuaries Where Project is Taking Place</label>
+                        <div id="estuaryCheckboxContainer" class="estuary-checkbox-container">
+                            <div class="text-center text-muted">Loading estuaries...</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Map Modal -->
+                <div id="mapModal" class="mini-map-modal">
+                    <div class="mini-map-content">
+                        <span class="mini-map-close">&times;</span>
+                        <h5 id="mapModalTitle">Site Location</h5>
+                        <div id="miniMap" class="mini-map"></div>
+                    </div>
+                </div>
+                
+                <!-- New Polygons -->
+                <div class="form-section">
+                    <h3 class="form-section-title">New Polygons (Optional)</h3>
+                    <div id="polygonsContainer">
+                        <!-- Dynamic polygon entries will be added here -->
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="addPolygonBtn">+ Add New Polygon</button>
+                </div>
+                
+                <!-- SOP Selection -->
+                <div class="form-section">
+                    <h3 class="form-section-title">Standard Operating Procedures (SOPs)</h3>
+                    <p class="text-muted">Select all SOPs you will be using to collect data:</p>
+                    
+                    <div class="sop-checkbox">
+                        <input type="checkbox" class="form-check-input" id="sop1" name="sop" value="sop1">
+                        <label class="form-check-label" for="sop1">SOP 1: Continuous environmental monitoring</label>
+                        <div class="sop-description" id="sop1-desc">
+                            <label class="form-label">Purpose for using this SOP:</label>
+                            <textarea class="form-control" name="sop1_purpose" rows="2"></textarea>
+                            <label class="form-label mt-2">Specific guidelines:</label>
+                            <textarea class="form-control" name="sop1_guidelines" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="sop-checkbox">
+                        <input type="checkbox" class="form-check-input" id="sop2" name="sop" value="sop2">
+                        <label class="form-check-label" for="sop2">SOP 2: Discrete environmental monitoring – point water quality measurements</label>
+                        <div class="sop-description" id="sop2-desc">
+                            <label class="form-label">Purpose for using this SOP:</label>
+                            <textarea class="form-control" name="sop2_purpose" rows="2"></textarea>
+                            <label class="form-label mt-2">Specific guidelines:</label>
+                            <textarea class="form-control" name="sop2_guidelines" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="sop-checkbox">
+                        <input type="checkbox" class="form-check-input" id="sop3" name="sop" value="sop3">
+                        <label class="form-check-label" for="sop3">SOP 3: Sediment and water quality</label>
+                        <div class="sop-description" id="sop3-desc">
+                            <label class="form-label">Purpose for using this SOP:</label>
+                            <textarea class="form-control" name="sop3_purpose" rows="2"></textarea>
+                            <label class="form-label mt-2">Specific guidelines:</label>
+                            <textarea class="form-control" name="sop3_guidelines" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="sop-checkbox">
+                        <input type="checkbox" class="form-check-input" id="sop4" name="sop" value="sop4">
+                        <label class="form-check-label" for="sop4">SOP 4: eDNA</label>
+                        <div class="sop-description" id="sop4-desc">
+                            <label class="form-label">Purpose for using this SOP:</label>
+                            <textarea class="form-control" name="sop4_purpose" rows="2"></textarea>
+                            <label class="form-label mt-2">Specific guidelines:</label>
+                            <textarea class="form-control" name="sop4_guidelines" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="sop-checkbox">
+                        <input type="checkbox" class="form-check-input" id="sop5" name="sop" value="sop5">
+                        <label class="form-check-label" for="sop5">SOP 5: Sediment grainsize</label>
+                        <div class="sop-description" id="sop5-desc">
+                            <label class="form-label">Purpose for using this SOP:</label>
+                            <textarea class="form-control" name="sop5_purpose" rows="2"></textarea>
+                            <label class="form-label mt-2">Specific guidelines:</label>
+                            <textarea class="form-control" name="sop5_guidelines" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="sop-checkbox">
+                        <input type="checkbox" class="form-check-input" id="sop6a" name="sop" value="sop6a">
+                        <label class="form-check-label" for="sop6a">SOP 6: Benthic infauna, small</label>
+                        <div class="sop-description" id="sop6a-desc">
+                            <label class="form-label">Purpose for using this SOP:</label>
+                            <textarea class="form-control" name="sop6a_purpose" rows="2"></textarea>
+                            <label class="form-label mt-2">Specific guidelines:</label>
+                            <textarea class="form-control" name="sop6a_guidelines" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="sop-checkbox">
+                        <input type="checkbox" class="form-check-input" id="sop6b" name="sop" value="sop6b">
+                        <label class="form-check-label" for="sop6b">SOP 6: Benthic infauna, large</label>
+                        <div class="sop-description" id="sop6b-desc">
+                            <label class="form-label">Purpose for using this SOP:</label>
+                            <textarea class="form-control" name="sop6b_purpose" rows="2"></textarea>
+                            <label class="form-label mt-2">Specific guidelines:</label>
+                            <textarea class="form-control" name="sop6b_guidelines" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="sop-checkbox">
+                        <input type="checkbox" class="form-check-input" id="sop7a" name="sop" value="sop7a">
+                        <label class="form-check-label" for="sop7a">SOP 7: Macroalgae</label>
+                        <div class="sop-description" id="sop7a-desc">
+                            <label class="form-label">Purpose for using this SOP:</label>
+                            <textarea class="form-control" name="sop7a_purpose" rows="2"></textarea>
+                            <label class="form-label mt-2">Specific guidelines:</label>
+                            <textarea class="form-control" name="sop7a_guidelines" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="sop-checkbox">
+                        <input type="checkbox" class="form-check-input" id="sop7b" name="sop" value="sop7b">
+                        <label class="form-check-label" for="sop7b">SOP 7: SAV</label>
+                        <div class="sop-description" id="sop7b-desc">
+                            <label class="form-label">Purpose for using this SOP:</label>
+                            <textarea class="form-control" name="sop7b_purpose" rows="2"></textarea>
+                            <label class="form-label mt-2">Specific guidelines:</label>
+                            <textarea class="form-control" name="sop7b_guidelines" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="sop-checkbox">
+                        <input type="checkbox" class="form-check-input" id="sop8" name="sop" value="sop8">
+                        <label class="form-check-label" for="sop8">SOP 8: Fish - BRUVs</label>
+                        <div class="sop-description" id="sop8-desc">
+                            <label class="form-label">Purpose for using this SOP:</label>
+                            <textarea class="form-control" name="sop8_purpose" rows="2"></textarea>
+                            <label class="form-label mt-2">Specific guidelines:</label>
+                            <textarea class="form-control" name="sop8_guidelines" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="sop-checkbox">
+                        <input type="checkbox" class="form-check-input" id="sop9" name="sop" value="sop9">
+                        <label class="form-check-label" for="sop9">SOP 9: Fish seines</label>
+                        <div class="sop-description" id="sop9-desc">
+                            <label class="form-label">Purpose for using this SOP:</label>
+                            <textarea class="form-control" name="sop9_purpose" rows="2"></textarea>
+                            <label class="form-label mt-2">Specific guidelines:</label>
+                            <textarea class="form-control" name="sop9_guidelines" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="sop-checkbox">
+                        <input type="checkbox" class="form-check-input" id="sop10" name="sop" value="sop10">
+                        <label class="form-check-label" for="sop10">SOP 10: Crab traps</label>
+                        <div class="sop-description" id="sop10-desc">
+                            <label class="form-label">Purpose for using this SOP:</label>
+                            <textarea class="form-control" name="sop10_purpose" rows="2"></textarea>
+                            <label class="form-label mt-2">Specific guidelines:</label>
+                            <textarea class="form-control" name="sop10_guidelines" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="sop-checkbox">
+                        <input type="checkbox" class="form-check-input" id="sop11" name="sop" value="sop11">
+                        <label class="form-check-label" for="sop11">SOP 11: Marsh plain vegetation and epifauna surveys</label>
+                        <div class="sop-description" id="sop11-desc">
+                            <label class="form-label">Purpose for using this SOP:</label>
+                            <textarea class="form-control" name="sop11_purpose" rows="2"></textarea>
+                            <label class="form-label mt-2">Specific guidelines:</label>
+                            <textarea class="form-control" name="sop11_guidelines" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="sop-checkbox">
+                        <input type="checkbox" class="form-check-input" id="sop12" name="sop" value="sop12">
+                        <label class="form-check-label" for="sop12">SOP 12: Topographic surveys</label>
+                        <div class="sop-description" id="sop12-desc">
+                            <label class="form-label">Purpose for using this SOP:</label>
+                            <textarea class="form-control" name="sop12_purpose" rows="2"></textarea>
+                            <label class="form-label mt-2">Specific guidelines:</label>
+                            <textarea class="form-control" name="sop12_guidelines" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="sop-checkbox">
+                        <input type="checkbox" class="form-check-input" id="sop13" name="sop" value="sop13">
+                        <label class="form-check-label" for="sop13">SOP 13: Sediment accretion rates</label>
+                        <div class="sop-description" id="sop13-desc">
+                            <label class="form-label">Purpose for using this SOP:</label>
+                            <textarea class="form-control" name="sop13_purpose" rows="2"></textarea>
+                            <label class="form-label mt-2">Specific guidelines:</label>
+                            <textarea class="form-control" name="sop13_guidelines" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="sop-checkbox">
+                        <input type="checkbox" class="form-check-input" id="sop14" name="sop" value="sop14">
+                        <label class="form-check-label" for="sop14">SOP 14: Trail cameras</label>
+                        <div class="sop-description" id="sop14-desc">
+                            <label class="form-label">Purpose for using this SOP:</label>
+                            <textarea class="form-control" name="sop14_purpose" rows="2"></textarea>
+                            <label class="form-label mt-2">Specific guidelines:</label>
+                            <textarea class="form-control" name="sop14_guidelines" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="sop-checkbox">
+                        <input type="checkbox" class="form-check-input" id="sop15" name="sop" value="sop15">
+                        <label class="form-check-label" for="sop15">SOP 15: Trash and microplastics</label>
+                        <div class="sop-description" id="sop15-desc">
+                            <label class="form-label">Purpose for using this SOP:</label>
+                            <textarea class="form-control" name="sop15_purpose" rows="2"></textarea>
+                            <label class="form-label mt-2">Specific guidelines:</label>
+                            <textarea class="form-control" name="sop15_guidelines" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Submit Button -->
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary">Submit Project Metadata</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Leaflet JS for maps -->
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" 
+            integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+    
+    <script>
+        let agencyCount = 0;
+        let polygonCount = 0;
+        let estuariesData = [];
+        let miniMap = null;
+        
+        // Load estuaries from database
+        async function loadEstuaries() {
+            try {
+                const response = await fetch('/empachecker/api/get-estuaries');
+                const data = await response.json();
+                
+                const container = document.getElementById('estuaryCheckboxContainer');
+                container.innerHTML = '';
+                
+                if (data.status === 'success') {
+                    estuariesData = data.data;
+                    
+                    data.data.forEach((item, index) => {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'estuary-item';
+                        
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.className = 'form-check-input estuary-checkbox';
+                        checkbox.id = `estuary_${index}`;
+                        checkbox.name = 'estuary';
+                        checkbox.value = item.siteid;
+                        
+                        const label = document.createElement('label');
+                        label.className = 'form-check-label estuary-label';
+                        label.htmlFor = `estuary_${index}`;
+                        label.textContent = `${item.estuary} (${item.siteid})`;
+                        
+                        const viewMapBtn = document.createElement('button');
+                        viewMapBtn.type = 'button';
+                        viewMapBtn.className = 'btn btn-sm btn-outline-primary view-map-btn';
+                        viewMapBtn.textContent = '📍 View Map';
+                        viewMapBtn.onclick = function() {
+                            showMiniMap(item);
+                        };
+                        
+                        itemDiv.appendChild(checkbox);
+                        itemDiv.appendChild(label);
+                        if (item.geometry) {
+                            itemDiv.appendChild(viewMapBtn);
+                        }
+                        
+                        container.appendChild(itemDiv);
+                    });
+                } else {
+                    container.innerHTML = '<div class="text-center text-danger">Error loading estuaries</div>';
+                }
+            } catch (error) {
+                console.error('Error loading estuaries:', error);
+                document.getElementById('estuaryCheckboxContainer').innerHTML = '<div class="text-center text-danger">Error loading estuaries</div>';
+            }
+        }
+        
+        // Show mini map with geometry
+        function showMiniMap(estuaryData) {
+            const modal = document.getElementById('mapModal');
+            const mapTitle = document.getElementById('mapModalTitle');
+            
+            mapTitle.textContent = `${estuaryData.estuary} (${estuaryData.siteid})`;
+            modal.style.display = 'block';
+            
+            // Initialize map if not already done
+            if (!miniMap) {
+                miniMap = L.map('miniMap').setView([33.5, -118.0], 10);
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(miniMap);
+            }
+            
+            // Clear existing layers
+            miniMap.eachLayer(function(layer) {
+                if (layer instanceof L.GeoJSON) {
+                    miniMap.removeLayer(layer);
+                }
+            });
+            
+            // Add geometry if available
+            if (estuaryData.geometry) {
+                try {
+                    const geojson = JSON.parse(estuaryData.geometry);
+                    const layer = L.geoJSON(geojson, {
+                        style: {
+                            color: '#3388ff',
+                            weight: 2,
+                            fillOpacity: 0.3
+                        }
+                    }).addTo(miniMap);
+                    
+                    // Fit map to geometry bounds
+                    miniMap.fitBounds(layer.getBounds());
+                } catch (e) {
+                    console.error('Error parsing geometry:', e);
+                }
+            }
+            
+            // Invalidate size after showing modal (fixes display issues)
+            setTimeout(() => {
+                miniMap.invalidateSize();
+            }, 100);
+        }
+        
+        // Close modal
+        document.querySelector('.mini-map-close').onclick = function() {
+            document.getElementById('mapModal').style.display = 'none';
+        };
+        
+        window.onclick = function(event) {
+            const modal = document.getElementById('mapModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+        
+        // Add agency entry
+        document.getElementById('addAgencyBtn').addEventListener('click', function() {
+            agencyCount++;
+            const container = document.getElementById('agenciesContainer');
+            const agencyEntry = document.createElement('div');
+            agencyEntry.className = 'agency-entry';
+            agencyEntry.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label">Agency Name</label>
+                    <input type="text" class="form-control" name="agency_${agencyCount}_name" placeholder="Enter agency name">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Role</label>
+                    <select class="form-select" name="agency_${agencyCount}_role">
+                        <option value="">Select role...</option>
+                        <option value="partner">Partner</option>
+                        <option value="funding">Funding</option>
+                        <option value="advisory">Advisory</option>
+                    </select>
+                </div>
+                <button type="button" class="btn btn-sm btn-danger remove-agency">Remove</button>
+            `;
+            container.appendChild(agencyEntry);
+            
+            // Add remove functionality
+            agencyEntry.querySelector('.remove-agency').addEventListener('click', function() {
+                agencyEntry.remove();
+            });
+        });
+        
+        // Add polygon entry
+        document.getElementById('addPolygonBtn').addEventListener('click', function() {
+            polygonCount++;
+            const container = document.getElementById('polygonsContainer');
+            const polygonEntry = document.createElement('div');
+            polygonEntry.className = 'polygon-entry';
+            polygonEntry.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label">Estuary Name</label>
+                    <input type="text" class="form-control" name="polygon_${polygonCount}_estuary" placeholder="Enter estuary name">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Site ID</label>
+                    <input type="text" class="form-control" name="polygon_${polygonCount}_siteid" placeholder="Enter site ID">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Upload Shapefile</label>
+                    <input type="file" class="form-control" name="polygon_${polygonCount}_shapefile" accept=".zip,.shp">
+                    <small class="form-text text-muted">
+                        <a href="#" target="_blank">Download an example shapefile here</a>
+                    </small>
+                </div>
+                <button type="button" class="btn btn-sm btn-danger remove-polygon">Remove</button>
+            `;
+            container.appendChild(polygonEntry);
+            
+            // Add remove functionality
+            polygonEntry.querySelector('.remove-polygon').addEventListener('click', function() {
+                polygonEntry.remove();
+            });
+        });
+        
+        // Toggle SOP description fields
+        document.querySelectorAll('input[name="sop"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const descId = this.id + '-desc';
+                const descDiv = document.getElementById(descId);
+                if (descDiv) {
+                    descDiv.style.display = this.checked ? 'block' : 'none';
+                }
+            });
+        });
+        
+        // Form submission
+        document.getElementById('projectMetadataForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('/empachecker/new-project-metadata-form', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    alert('Project metadata submitted successfully!');
+                    this.reset();
+                } else {
+                    alert('Error submitting form: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error submitting form. Please try again.');
+            }
+        });
+        
+        // Load estuaries on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadEstuaries();
+        });
+    </script>
+</body>
+</html>

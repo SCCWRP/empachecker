@@ -1134,3 +1134,61 @@ def download_polygons_shapefile():
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
+
+@admin.route('/new-project-metadata-form', methods=['GET', 'POST'])
+def new_project_metadata_form():
+    """New Project Metadata Form"""
+    authorized = session.get("AUTHORIZED_FOR_ADMIN_FUNCTIONS")
+    
+    if request.method == 'GET':
+        return render_template('new_project_metadata_form.html', authorized=authorized)
+    
+    elif request.method == 'POST':
+        # Handle form submission
+        # Placeholder for future implementation
+        form_data = request.form.to_dict()
+        return jsonify({
+            'status': 'success',
+            'message': 'Form submitted successfully',
+            'data': form_data
+        })
+
+
+@admin.route('/api/get-estuaries', methods=['GET'])
+def get_estuaries():
+    """API endpoint to fetch estuary data from lu_siteid table with geometry"""
+    try:
+        eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
+        
+        with eng.connect() as conn:
+            # Get unique siteids with their estuary names and geometry from spatial_empa_all_sites
+            query = text("""
+                SELECT DISTINCT 
+                    l.siteid, 
+                    l.estuary,
+                    ST_AsGeoJSON(s.geometry) as geometry
+                FROM lu_siteid l
+                LEFT JOIN spatial_empa_all_sites s ON l.siteid = s.siteid
+                ORDER BY l.estuary, l.siteid
+            """)
+            result = conn.execute(query)
+            estuaries = [
+                {
+                    'siteid': row.siteid, 
+                    'estuary': row.estuary,
+                    'geometry': row.geometry
+                } 
+                for row in result
+            ]
+        
+        return jsonify({
+            'status': 'success',
+            'data': estuaries
+        })
+    except Exception as e:
+        print(f"Error fetching estuaries: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
