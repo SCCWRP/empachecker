@@ -7,6 +7,7 @@ from .functions import checkData, checkLogic, mismatch, get_primary_key, check_b
 import re
 import time
 import os
+from datetime import datetime
 import geopandas as gpd
 import traceback
 
@@ -272,11 +273,11 @@ def global_custom(all_dfs, datatype = ''):
                 # Allow us to trace back errors
                 try:
                     print("# GLOBAL CUSTOM CHECK - 9")
-                    # Description: A (lat,long) for a station needs to be in its associate polygon.  Can turn into a warning by adding 'all-points-confirmed' to the notes column in tbl_protocol_metadata
+                    # Description: A (lat,long) for a station needs to be in its associate polygon.  Can turn into a warning by adding 'all-points-confirmed-yyyy-mm-dd' to the notes column in tbl_protocol_metadata
                     # Created Coder: Duy
                     # Created Date: 11/3/23
-                    # Last Edited Date: 1/7/26
-                    # Last Edited Coder: Addison Grant
+                    # Last Edited Date: 1/30/26
+                    # Last Edited Coder: System
                     # NOTE (11/3/23): Created the check. Need to QA and this check does not consider 1 mile buffer.
                     # NOTE (11/6/23): Fixed an error where sites in submitted file do not exist in the spatial_empa_sites table and cause null in geometry column after merging.
                     # NOTE (11/8/23): Duy adjusted the check, comments were left below
@@ -285,6 +286,12 @@ def global_custom(all_dfs, datatype = ''):
                     # NOTE (1/7/25): Addison wrapped the check in try-except and used traceback to find a breaking line
                     #                He wrapped the main logic in an if-statment. Check only proceeds if tmp list is
                     #                not empty.
+                    # NOTE (1/30/26): Changed to require date-stamped confirmation 'all-points-confirmed-yyyy-mm-dd'
+                    
+                    # Get current date for confirmation check
+                    current_date = datetime.now().strftime('%Y-%m-%d')
+                    confirmation_text = f'all-points-confirmed-{current_date}'
+                    
                     latlong_cols = current_app.datasets.get(datatype).get('latlong_cols', None)
                     
                     # latlong_cols is a list of dictionaries of the tables with lat long columns
@@ -323,7 +330,7 @@ def global_custom(all_dfs, datatype = ''):
                                 "error_message": f"These points were not checked if their locations are valid because their associated polygons ({', '.join(map(str, set(zip(meta_unmatched['siteid'], meta_unmatched['stationno']))))})  were not created. Please contact Jan Walker (janw@sccwrp.org) to have the polygons added."
                             }
                             if len(tbl_protocol_metadata) == 1:
-                                # Get the notes column, split values by commas, and check for 'all-points-confirmed'
+                                # Get the notes column, split values by commas, and check for date-stamped confirmation
                                 notes = tbl_protocol_metadata['notes'].iloc[0]
                                 if notes is None:
                                     notes_values = []  # or set a default value
@@ -335,8 +342,8 @@ def global_custom(all_dfs, datatype = ''):
 
                                 notes_values = [note.strip() for note in notes_values]  # Remove extra spaces
                                 
-                                if 'all-points-confirmed' in notes_values:
-                                    # If 'all-points-confirmed' is present, log as a warning
+                                if confirmation_text in notes_values:
+                                    # If date-stamped confirmation is present, log as a warning
                                     warnings = [*warnings, checkData(**args)]
                                 else:
                                     # Otherwise, proceed with errors
@@ -389,10 +396,10 @@ def global_custom(all_dfs, datatype = ''):
                                     "badcolumn": f"{latcol}, {longcol}",
                                     "error_type": "Value Error",
                                     "is_core_error": False,
-                                    "error_message": f"These points are not located within their associated polygon. Please refer to the Stations Visual Map tab. If you are certain that their locations are correct, update the <b>notes</b> column in the <b>tbl_protocol_metadata</b> table by adding the following text: '<b>all-points-confirmed</b>'. If you have multiple notes, you must separate them with commas."
+                                    "error_message": f"These points are not located within their associated polygon. Please refer to the Stations Visual Map tab. If you are certain that their locations are correct, update the <b>notes</b> column in the <b>tbl_protocol_metadata</b> table by adding the following text: '<b>{confirmation_text}</b>'. If you have multiple notes, you must separate them with commas."
                                 }
                                 if len(tbl_protocol_metadata) == 1:
-                                    # Get the notes column, split values by commas, and check for 'all-points-confirmed'
+                                    # Get the notes column, split values by commas, and check for date-stamped confirmation
                                     notes = tbl_protocol_metadata['notes'].iloc[0]
                                     if notes is None:
                                         notes_values = []  # or set a default value
@@ -404,8 +411,8 @@ def global_custom(all_dfs, datatype = ''):
 
                                     notes_values = [note.strip() for note in notes_values]  # Remove extra spaces
                                     
-                                    if 'all-points-confirmed' in notes_values:
-                                        # If 'all-points-confirmed' is present, log as a warning
+                                    if confirmation_text in notes_values:
+                                        # If date-stamped confirmation is present, log as a warning
                                         warnings = [*warnings, checkData(**args)]
                                     else:
                                         # Otherwise, proceed with errors
