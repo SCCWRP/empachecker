@@ -72,20 +72,25 @@ def benthicinfauna_lab(all_dfs):
     # Description: Each labbatch data must include corresponding records in grabevent_details
     # Created Coder: Duy
     # Created Date: 2/22/24
-    # Last Edited Date:  NA
-    # Last Edited Coder: NA
+    # Last Edited Date:  02/04/2026
+    # Last Edited Coder: System
     # NOTE (09/27/23): Duy created the check, QA'ed
     # NOTE (2/22/24): Make sure that samplecollectiondate have the same format, so later when we do astype(str), it doesn't randomly add 00:00:00 to the date
+    # NOTE (02/04/2026): Updated to explicitly filter grabevent_details for sampletype = 'infauna'
 
     if 'samplecollectiondate' in benthiclabbatch.columns:
         benthiclabbatch['samplecollectiondate'] = pd.to_datetime(benthiclabbatch['samplecollectiondate'])
-    if 'samplecollectiondate' in grabevent_details.columns:
-        grabevent_details['samplecollectiondate'] = pd.to_datetime(grabevent_details['samplecollectiondate'])
+    
+    # Filter grabevent_details for sampletype = 'infauna'
+    grabevent_details_filtered = grabevent_details[grabevent_details['sampletype'] == 'infauna']
+    
+    if 'samplecollectiondate' in grabevent_details_filtered.columns:
+        grabevent_details_filtered['samplecollectiondate'] = pd.to_datetime(grabevent_details_filtered['samplecollectiondate'])
 
     args.update({
         "dataframe": benthiclabbatch,
         "tablename": "tbl_benthicinfauna_labbatch",
-        "badrows": mismatch(benthiclabbatch, grabevent_details, labbatch_grabeventdet_shared_pkey), 
+        "badrows": mismatch(benthiclabbatch, grabevent_details_filtered, labbatch_grabeventdet_shared_pkey), 
         "badcolumn": ','.join(labbatch_grabeventdet_shared_pkey),
         "error_type": "Logic Error",
         "error_message": 

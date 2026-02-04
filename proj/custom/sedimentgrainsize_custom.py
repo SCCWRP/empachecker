@@ -75,20 +75,25 @@ def sedimentgrainsize_lab(all_dfs):
     # Description: Each labbatch data must correspond to grabeventdetails in database
     # Created Coder: Ayah
     # Created Date: 09/15/2021
-    # Last Edited Date: 10/05/2023
-    # Last Edited Coder: Aria Askaryar
+    # Last Edited Date: 02/04/2026
+    # Last Edited Coder: System
     # NOTE (09/12/2023): Ayah created logic check, has not tested yet
     # NOTE (10/05/2023): Aria revised the error message
+    # NOTE (02/04/2026): Updated to explicitly filter grabeventdetails for sampletype = 'grainsize'
 
     if 'samplecollectiondate' in sed_labbatch.columns:
         sed_labbatch['samplecollectiondate'] = pd.to_datetime(sed_labbatch['samplecollectiondate'])
-    if 'samplecollectiondate' in grabeventdetails.columns:
-        grabeventdetails['samplecollectiondate'] = pd.to_datetime(grabeventdetails['samplecollectiondate'])
+    
+    # Filter grabeventdetails for sampletype = 'grainsize'
+    grabeventdetails_filtered = grabeventdetails[grabeventdetails['sampletype'] == 'grainsize']
+    
+    if 'samplecollectiondate' in grabeventdetails_filtered.columns:
+        grabeventdetails_filtered['samplecollectiondate'] = pd.to_datetime(grabeventdetails_filtered['samplecollectiondate'])
 
     args.update({
         "dataframe": sed_labbatch,
         "tablename": "tbl_sedgrainsize_labbatch_data",
-        "badrows": mismatch(sed_labbatch, grabeventdetails, sed_labbatch_grabevntdetails_shared_key), 
+        "badrows": mismatch(sed_labbatch, grabeventdetails_filtered, sed_labbatch_grabevntdetails_shared_key), 
         "badcolumn": ','.join(sed_labbatch_grabevntdetails_shared_key),
         "error_type": "Logic Error",
         "error_message": 

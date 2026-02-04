@@ -69,20 +69,25 @@ def sedchem_lab(all_dfs):
     # Description: Each labbatch data must correspond to grabeventdetails in database based on their shared pkeys (🛑 ERROR 🛑)
     # Created Coder: Ayah 
     # Created Date: 09/12/2023
-    # Last Edited Date: 10/05/2023
-    # Last Edited Coder: Aria Askaryar
+    # Last Edited Date: 02/04/2026
+    # Last Edited Coder: System
     # NOTE (09/12/2023): Ayah created logic check, has not tested yet
     # NOTE (10/05/2023): Aria revised the error message
+    # NOTE (02/04/2026): Updated to filter grabeventdetails for sampletype in ('nutrients', 'chemistry')
     sedlabbatch_copy = deepcopy(sedlabbatch)
     if 'samplecollectiondate' in sedlabbatch.columns:
         sedlabbatch_copy['samplecollectiondate'] = pd.to_datetime(sedlabbatch['samplecollectiondate'])
-    if 'samplecollectiondate' in grabeventdetails.columns:
-        grabeventdetails['samplecollectiondate'] = pd.to_datetime(grabeventdetails['samplecollectiondate'])
+    
+    # Filter grabeventdetails for sampletype in ('nutrients', 'chemistry')
+    grabeventdetails_filtered = grabeventdetails[grabeventdetails['sampletype'].isin(['nutrients', 'chemistry'])]
+    
+    if 'samplecollectiondate' in grabeventdetails_filtered.columns:
+        grabeventdetails_filtered['samplecollectiondate'] = pd.to_datetime(grabeventdetails_filtered['samplecollectiondate'])
 
     args.update({
         "dataframe": sedlabbatch,
         "tablename": "tbl_sedchem_labbatch_data",
-        "badrows": mismatch(sedlabbatch_copy, grabeventdetails, sedlabbatch_grabeventdetails_shared_pkey), 
+        "badrows": mismatch(sedlabbatch_copy, grabeventdetails_filtered, sedlabbatch_grabeventdetails_shared_pkey), 
         "badcolumn": ','.join(sedlabbatch_grabeventdetails_shared_pkey),
         "error_type": "Logic Error",
         "error_message": 
