@@ -430,6 +430,79 @@ def global_custom(all_dfs, datatype = ''):
                     raise e
 
 
+        if 'tide' in df.columns:
+            print("# GLOBAL CUSTOM CHECK - 10 Tide values must be from lookup list lu_tide")
+            # Description: If tide column exists, user can enter multiple values separated by commas. All values must exist in lu_tide table
+            # Created Coder: System
+            # Created Date: 02/04/2026
+            # Last Edited Date: 
+            # Last Edited Coder: 
+            # NOTE (02/04/2026): Created check for comma-separated tide values
+            
+            lu_tide = pd.read_sql('SELECT tide FROM lu_tide', g.eng)
+            valid_tide_values = set(lu_tide['tide'].str.strip())
+            
+            def check_tide_values(tide_value):
+                if pd.isna(tide_value) or str(tide_value).strip() == '':
+                    return False
+                # Split by comma and check each value
+                values = [v.strip() for v in str(tide_value).split(',')]
+                return not all(v in valid_tide_values for v in values if v != '')
+            
+            args = {
+                "dataframe": df,
+                "tablename": table_name,
+                "badrows": df[df['tide'].apply(check_tide_values)].tmp_row.tolist(),
+                "badcolumn": "tide",
+                "error_type": "Value Error",
+                "is_core_error": False,
+                "error_message": f'''
+                    All tide values must match entries in lookup list 
+                    <a href="/{lu_list_script_root}/scraper?action=help&layer=lu_tide" target="_blank">
+                        lu_tide
+                    </a>. You can enter multiple values separated by commas (e.g., "high,low").
+                '''
+            }
+            errs = [*errs, checkData(**args)]
+            print("# END GLOBAL CUSTOM CHECK - 10")
+
+
+        if 'substrate' in df.columns:
+            print("# GLOBAL CUSTOM CHECK - 11 Substrate values must be from lookup list lu_substrate")
+            # Description: If substrate column exists, user can enter multiple values separated by commas. All values must exist in lu_substrate table
+            # Created Coder: System
+            # Created Date: 02/04/2026
+            # Last Edited Date: 
+            # Last Edited Coder: 
+            # NOTE (02/04/2026): Created check for comma-separated substrate values
+            
+            lu_substrate = pd.read_sql('SELECT substrate FROM lu_substrate', g.eng)
+            valid_substrate_values = set(lu_substrate['substrate'].str.strip())
+            
+            def check_substrate_values(substrate_value):
+                if pd.isna(substrate_value) or str(substrate_value).strip() == '':
+                    return False
+                # Split by comma and check each value
+                values = [v.strip() for v in str(substrate_value).split(',')]
+                return not all(v in valid_substrate_values for v in values if v != '')
+            
+            args = {
+                "dataframe": df,
+                "tablename": table_name,
+                "badrows": df[df['substrate'].apply(check_substrate_values)].tmp_row.tolist(),
+                "badcolumn": "substrate",
+                "error_type": "Value Error",
+                "is_core_error": False,
+                "error_message": f'''
+                    All substrate values must match entries in lookup list 
+                    <a href="/{lu_list_script_root}/scraper?action=help&layer=lu_substrate" target="_blank">
+                        lu_substrate
+                    </a>. You can enter multiple values separated by commas (e.g., "sand,gravel").
+                '''
+            }
+            errs = [*errs, checkData(**args)]
+            print("# END GLOBAL CUSTOM CHECK - 11")
+
 
     print("end global custom checks")
     return {'errors': errs, 'warnings': warnings}
