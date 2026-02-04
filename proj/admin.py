@@ -1145,14 +1145,69 @@ def new_project_metadata_form():
         return render_template('new_project_metadata_form.html', authorized=authorized)
     
     elif request.method == 'POST':
-        # Handle form submission
-        # Placeholder for future implementation
-        form_data = request.form.to_dict()
-        return jsonify({
-            'status': 'success',
-            'message': 'Form submitted successfully',
-            'data': form_data
-        })
+        try:
+            # Handle form submission
+            form_data = request.form.to_dict()
+            
+            # Create directory for project files if it doesn't exist
+            project_id = form_data.get('abbreviation', '').strip()
+            if not project_id:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Project abbreviation is required'
+                }), 400
+            
+            # Create directory structure: files/projects/{project_id}/sops/
+            project_dir = os.path.join(os.getcwd(), 'files', 'projects', project_id, 'sops')
+            os.makedirs(project_dir, exist_ok=True)
+            
+            # Handle SOP file uploads
+            uploaded_sops = []
+            for key in request.files:
+                if key.endswith('_file'):
+                    file = request.files[key]
+                    if file and file.filename:
+                        # Validate file type
+                        if not file.filename.lower().endswith('.pdf'):
+                            return jsonify({
+                                'status': 'error',
+                                'message': f'Invalid file type for {file.filename}. Only PDF files are allowed.'
+                            }), 400
+                        
+                        # Extract SOP identifier (e.g., 'sop1' from 'sop1_file')
+                        sop_id = key.replace('_file', '')
+                        
+                        # Create safe filename
+                        safe_filename = re.sub(r'[^\w\s-]', '', sop_id).strip()
+                        timestamp = int(time.time())
+                        filename = f"{safe_filename}_{timestamp}.pdf"
+                        
+                        # Save file
+                        filepath = os.path.join(project_dir, filename)
+                        file.save(filepath)
+                        
+                        uploaded_sops.append({
+                            'sop_id': sop_id,
+                            'purpose': form_data.get(f'{sop_id}_purpose', ''),
+                            'guidelines': form_data.get(f'{sop_id}_guidelines', ''),
+                            'filename': filename,
+                            'filepath': filepath
+                        })
+            
+            return jsonify({
+                'status': 'success',
+                'message': 'Form submitted successfully',
+                'data': form_data,
+                'uploaded_sops': uploaded_sops
+            })
+        except Exception as e:
+            print(f"Error submitting project metadata form: {e}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({
+                'status': 'error',
+                'message': str(e)
+            }), 500
 
 
 @admin.route('/api/get-estuaries', methods=['GET'])

@@ -14,19 +14,20 @@
     
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f5f5f5;
             min-height: 100vh;
-            padding: 40px 0;
+            margin: 0;
+            padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 18px;
         }
         
         .form-container {
             background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            padding: 40px;
-            max-width: 900px;
-            margin: 0 auto;
+            padding: 40px 60px;
+            min-height: 100vh;
+            width: 100%;
+            box-sizing: border-box;
         }
         
         .form-header {
@@ -40,6 +41,7 @@
             color: #333;
             font-weight: 600;
             margin-bottom: 10px;
+            font-size: 2.8em;
         }
         
         .form-section {
@@ -49,7 +51,7 @@
         .form-section-title {
             color: #667eea;
             font-weight: 600;
-            font-size: 1.2em;
+            font-size: 1.7em;
             margin-bottom: 15px;
             padding-bottom: 5px;
             border-bottom: 1px solid #e0e0e0;
@@ -59,12 +61,14 @@
             font-weight: 500;
             color: #555;
             margin-bottom: 8px;
+            font-size: 1.2em;
         }
         
         .form-control, .form-select {
             border-radius: 8px;
             border: 1px solid #ddd;
-            padding: 10px;
+            padding: 12px;
+            font-size: 1.15em;
         }
         
         .form-control:focus, .form-select:focus {
@@ -75,9 +79,10 @@
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
-            padding: 12px 30px;
+            padding: 14px 35px;
             border-radius: 8px;
             font-weight: 500;
+            font-size: 1.25em;
         }
         
         .btn-primary:hover {
@@ -88,9 +93,10 @@
         .btn-secondary {
             background: #6c757d;
             border: none;
-            padding: 12px 30px;
+            padding: 14px 35px;
             border-radius: 8px;
             font-weight: 500;
+            font-size: 1.2em;
         }
         
         .agency-entry, .polygon-entry {
@@ -146,7 +152,7 @@
             flex-shrink: 0;
             margin-left: 10px;
             padding: 4px 12px;
-            font-size: 0.85em;
+            font-size: 1em;
         }
         
         .mini-map-modal {
@@ -194,6 +200,58 @@
             margin-top: 10px;
         }
         
+        .custom-sop-entry {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .file-upload-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .file-upload-input {
+            cursor: pointer;
+        }
+        
+        .file-upload-info {
+            font-size: 1.1em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        .sample-btn {
+            display: inline-block;
+            margin-left: 10px;
+            padding: 6px 14px;
+            background-color: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .sample-btn:hover {
+            background-color: #764ba2;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .form-text {
+            font-size: 1.1em;
+        }
+        
+        .field-error {
+            border: 2px solid #dc3545 !important;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+        }
+        
     </style>
 </head>
 <body>
@@ -201,7 +259,7 @@
         <div class="form-container">
             <div class="form-header">
                 <h1>New Project Metadata Form</h1>
-                <p class="text-muted">Complete the form below to register a new project</p>
+                <p class="text-muted" style="font-size: 1.15em;">Complete the form below to register a new project</p>
             </div>
             
             <form id="projectMetadataForm" method="POST">
@@ -229,18 +287,18 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="projectStart" class="form-label">Project Start Date *</label>
-                            <input type="datetime-local" class="form-control" id="projectStart" name="projectStart" required>
+                            <input type="date" class="form-control" id="projectStart" name="projectStart" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="projectEnd" class="form-label">Project End Date *</label>
-                            <input type="datetime-local" class="form-control" id="projectEnd" name="projectEnd" required>
+                            <label for="projectEnd" class="form-label">Project End Date</label>
+                            <input type="date" class="form-control" id="projectEnd" name="projectEnd">
                         </div>
                     </div>
                 </div>
                 
                 <!-- Agency Participation -->
                 <div class="form-section">
-                    <h3 class="form-section-title">Agency Participation</h3>
+                    <h3 class="form-section-title">Partner Participation</h3>
                     <div id="agenciesContainer">
                         <!-- Dynamic agency entries will be added here -->
                     </div>
@@ -278,10 +336,11 @@
                     <h3 class="form-section-title">Estuary/Location Information</h3>
                     
                     <div class="mb-3">
-                        <label class="form-label">Select Estuaries Where Project is Taking Place</label>
+                        <label class="form-label">Select Estuaries Where Project is Taking Place *</label>
                         <div id="estuaryCheckboxContainer" class="estuary-checkbox-container">
                             <div class="text-center text-muted">Loading estuaries...</div>
                         </div>
+                        <div id="estuaryError" style="color: red; display: none; margin-top: 5px;">Please select at least one estuary</div>
                     </div>
                 </div>
                 
@@ -294,9 +353,19 @@
                     </div>
                 </div>
                 
+                <!-- Sample Response Modal -->
+                <div id="sampleModal" class="mini-map-modal">
+                    <div class="mini-map-content" style="max-width: 700px;">
+                        <span class="mini-map-close" onclick="closeSampleModal()">&times;</span>
+                        <h5 id="sampleModalTitle" class="mb-3">Sample Response</h5>
+                        <div id="sampleModalContent" style="max-height: 400px; overflow-y: auto; line-height: 1.6;"></div>
+                    </div>
+                </div>
+                
                 <!-- New Polygons -->
                 <div class="form-section">
-                    <h3 class="form-section-title">New Polygons (Optional)</h3>
+                    <h3 class="form-section-title">Add new estuary polygon (Optional)</h3>
+                    <p class="text-muted" style="font-size: 1.1em;"><strong>Note:</strong> If you have any question or request regarding estuary/station boundary, please contact Jan Walker (<a href="mailto:janw@sccwrp.org">janw@sccwrp.org</a>)</p>
                     <div id="polygonsContainer">
                         <!-- Dynamic polygon entries will be added here -->
                     </div>
@@ -306,16 +375,19 @@
                 <!-- SOP Selection -->
                 <div class="form-section">
                     <h3 class="form-section-title">Standard Operating Procedures (SOPs)</h3>
-                    <p class="text-muted">Select all SOPs you will be using to collect data:</p>
+                    <p class="text-muted" style="font-size: 1.1em;">Select all SOPs you will be following to collect/submit data: *</p>
+                    <div id="sopError" style="color: red; display: none; margin-bottom: 15px; font-size: 1.1em;">Please select at least one SOP</div>
                     
                     <div class="sop-checkbox">
                         <input type="checkbox" class="form-check-input" id="sop1" name="sop" value="sop1">
                         <label class="form-check-label" for="sop1">SOP 1: Continuous environmental monitoring</label>
                         <div class="sop-description" id="sop1-desc">
-                            <label class="form-label">Purpose for using this SOP:</label>
-                            <textarea class="form-control" name="sop1_purpose" rows="2"></textarea>
-                            <label class="form-label mt-2">Specific guidelines:</label>
-                            <textarea class="form-control" name="sop1_guidelines" rows="2"></textarea>
+                            <label class="form-label">If you have your own SOP, upload it here:</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" class="form-control file-upload-input" name="sop1_file" accept=".pdf">
+                                <div class="file-upload-info">Maximum file size: 10MB. Only PDF files are accepted.</div>
+                            </div>
+                            <div class="data-submission-container"></div>
                         </div>
                     </div>
                     
@@ -323,10 +395,12 @@
                         <input type="checkbox" class="form-check-input" id="sop2" name="sop" value="sop2">
                         <label class="form-check-label" for="sop2">SOP 2: Discrete environmental monitoring – point water quality measurements</label>
                         <div class="sop-description" id="sop2-desc">
-                            <label class="form-label">Purpose for using this SOP:</label>
-                            <textarea class="form-control" name="sop2_purpose" rows="2"></textarea>
-                            <label class="form-label mt-2">Specific guidelines:</label>
-                            <textarea class="form-control" name="sop2_guidelines" rows="2"></textarea>
+                            <label class="form-label">If you have your own SOP, upload it here:</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" class="form-control file-upload-input" name="sop2_file" accept=".pdf">
+                                <div class="file-upload-info">Maximum file size: 10MB. Only PDF files are accepted.</div>
+                            </div>
+                            <div class="data-submission-container"></div>
                         </div>
                     </div>
                     
@@ -334,10 +408,12 @@
                         <input type="checkbox" class="form-check-input" id="sop3" name="sop" value="sop3">
                         <label class="form-check-label" for="sop3">SOP 3: Sediment and water quality</label>
                         <div class="sop-description" id="sop3-desc">
-                            <label class="form-label">Purpose for using this SOP:</label>
-                            <textarea class="form-control" name="sop3_purpose" rows="2"></textarea>
-                            <label class="form-label mt-2">Specific guidelines:</label>
-                            <textarea class="form-control" name="sop3_guidelines" rows="2"></textarea>
+                            <label class="form-label">If you have your own SOP, upload it here:</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" class="form-control file-upload-input" name="sop3_file" accept=".pdf">
+                                <div class="file-upload-info">Maximum file size: 10MB. Only PDF files are accepted.</div>
+                            </div>
+                            <div class="data-submission-container"></div>
                         </div>
                     </div>
                     
@@ -345,10 +421,12 @@
                         <input type="checkbox" class="form-check-input" id="sop4" name="sop" value="sop4">
                         <label class="form-check-label" for="sop4">SOP 4: eDNA</label>
                         <div class="sop-description" id="sop4-desc">
-                            <label class="form-label">Purpose for using this SOP:</label>
-                            <textarea class="form-control" name="sop4_purpose" rows="2"></textarea>
-                            <label class="form-label mt-2">Specific guidelines:</label>
-                            <textarea class="form-control" name="sop4_guidelines" rows="2"></textarea>
+                            <label class="form-label">If you have your own SOP, upload it here:</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" class="form-control file-upload-input" name="sop4_file" accept=".pdf">
+                                <div class="file-upload-info">Maximum file size: 10MB. Only PDF files are accepted.</div>
+                            </div>
+                            <div class="data-submission-container"></div>
                         </div>
                     </div>
                     
@@ -356,10 +434,12 @@
                         <input type="checkbox" class="form-check-input" id="sop5" name="sop" value="sop5">
                         <label class="form-check-label" for="sop5">SOP 5: Sediment grainsize</label>
                         <div class="sop-description" id="sop5-desc">
-                            <label class="form-label">Purpose for using this SOP:</label>
-                            <textarea class="form-control" name="sop5_purpose" rows="2"></textarea>
-                            <label class="form-label mt-2">Specific guidelines:</label>
-                            <textarea class="form-control" name="sop5_guidelines" rows="2"></textarea>
+                            <label class="form-label">If you have your own SOP, upload it here:</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" class="form-control file-upload-input" name="sop5_file" accept=".pdf">
+                                <div class="file-upload-info">Maximum file size: 10MB. Only PDF files are accepted.</div>
+                            </div>
+                            <div class="data-submission-container"></div>
                         </div>
                     </div>
                     
@@ -367,10 +447,12 @@
                         <input type="checkbox" class="form-check-input" id="sop6a" name="sop" value="sop6a">
                         <label class="form-check-label" for="sop6a">SOP 6: Benthic infauna, small</label>
                         <div class="sop-description" id="sop6a-desc">
-                            <label class="form-label">Purpose for using this SOP:</label>
-                            <textarea class="form-control" name="sop6a_purpose" rows="2"></textarea>
-                            <label class="form-label mt-2">Specific guidelines:</label>
-                            <textarea class="form-control" name="sop6a_guidelines" rows="2"></textarea>
+                            <label class="form-label">If you have your own SOP, upload it here:</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" class="form-control file-upload-input" name="sop6a_file" accept=".pdf">
+                                <div class="file-upload-info">Maximum file size: 10MB. Only PDF files are accepted.</div>
+                            </div>
+                            <div class="data-submission-container"></div>
                         </div>
                     </div>
                     
@@ -378,10 +460,12 @@
                         <input type="checkbox" class="form-check-input" id="sop6b" name="sop" value="sop6b">
                         <label class="form-check-label" for="sop6b">SOP 6: Benthic infauna, large</label>
                         <div class="sop-description" id="sop6b-desc">
-                            <label class="form-label">Purpose for using this SOP:</label>
-                            <textarea class="form-control" name="sop6b_purpose" rows="2"></textarea>
-                            <label class="form-label mt-2">Specific guidelines:</label>
-                            <textarea class="form-control" name="sop6b_guidelines" rows="2"></textarea>
+                            <label class="form-label">If you have your own SOP, upload it here:</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" class="form-control file-upload-input" name="sop6b_file" accept=".pdf">
+                                <div class="file-upload-info">Maximum file size: 10MB. Only PDF files are accepted.</div>
+                            </div>
+                            <div class="data-submission-container"></div>
                         </div>
                     </div>
                     
@@ -389,10 +473,12 @@
                         <input type="checkbox" class="form-check-input" id="sop7a" name="sop" value="sop7a">
                         <label class="form-check-label" for="sop7a">SOP 7: Macroalgae</label>
                         <div class="sop-description" id="sop7a-desc">
-                            <label class="form-label">Purpose for using this SOP:</label>
-                            <textarea class="form-control" name="sop7a_purpose" rows="2"></textarea>
-                            <label class="form-label mt-2">Specific guidelines:</label>
-                            <textarea class="form-control" name="sop7a_guidelines" rows="2"></textarea>
+                            <label class="form-label">If you have your own SOP, upload it here:</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" class="form-control file-upload-input" name="sop7a_file" accept=".pdf">
+                                <div class="file-upload-info">Maximum file size: 10MB. Only PDF files are accepted.</div>
+                            </div>
+                            <div class="data-submission-container"></div>
                         </div>
                     </div>
                     
@@ -400,10 +486,12 @@
                         <input type="checkbox" class="form-check-input" id="sop7b" name="sop" value="sop7b">
                         <label class="form-check-label" for="sop7b">SOP 7: SAV</label>
                         <div class="sop-description" id="sop7b-desc">
-                            <label class="form-label">Purpose for using this SOP:</label>
-                            <textarea class="form-control" name="sop7b_purpose" rows="2"></textarea>
-                            <label class="form-label mt-2">Specific guidelines:</label>
-                            <textarea class="form-control" name="sop7b_guidelines" rows="2"></textarea>
+                            <label class="form-label">If you have your own SOP, upload it here:</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" class="form-control file-upload-input" name="sop7b_file" accept=".pdf">
+                                <div class="file-upload-info">Maximum file size: 10MB. Only PDF files are accepted.</div>
+                            </div>
+                            <div class="data-submission-container"></div>
                         </div>
                     </div>
                     
@@ -411,10 +499,12 @@
                         <input type="checkbox" class="form-check-input" id="sop8" name="sop" value="sop8">
                         <label class="form-check-label" for="sop8">SOP 8: Fish - BRUVs</label>
                         <div class="sop-description" id="sop8-desc">
-                            <label class="form-label">Purpose for using this SOP:</label>
-                            <textarea class="form-control" name="sop8_purpose" rows="2"></textarea>
-                            <label class="form-label mt-2">Specific guidelines:</label>
-                            <textarea class="form-control" name="sop8_guidelines" rows="2"></textarea>
+                            <label class="form-label">If you have your own SOP, upload it here:</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" class="form-control file-upload-input" name="sop8_file" accept=".pdf">
+                                <div class="file-upload-info">Maximum file size: 10MB. Only PDF files are accepted.</div>
+                            </div>
+                            <div class="data-submission-container"></div>
                         </div>
                     </div>
                     
@@ -422,10 +512,12 @@
                         <input type="checkbox" class="form-check-input" id="sop9" name="sop" value="sop9">
                         <label class="form-check-label" for="sop9">SOP 9: Fish seines</label>
                         <div class="sop-description" id="sop9-desc">
-                            <label class="form-label">Purpose for using this SOP:</label>
-                            <textarea class="form-control" name="sop9_purpose" rows="2"></textarea>
-                            <label class="form-label mt-2">Specific guidelines:</label>
-                            <textarea class="form-control" name="sop9_guidelines" rows="2"></textarea>
+                            <label class="form-label">If you have your own SOP, upload it here:</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" class="form-control file-upload-input" name="sop9_file" accept=".pdf">
+                                <div class="file-upload-info">Maximum file size: 10MB. Only PDF files are accepted.</div>
+                            </div>
+                            <div class="data-submission-container"></div>
                         </div>
                     </div>
                     
@@ -433,10 +525,12 @@
                         <input type="checkbox" class="form-check-input" id="sop10" name="sop" value="sop10">
                         <label class="form-check-label" for="sop10">SOP 10: Crab traps</label>
                         <div class="sop-description" id="sop10-desc">
-                            <label class="form-label">Purpose for using this SOP:</label>
-                            <textarea class="form-control" name="sop10_purpose" rows="2"></textarea>
-                            <label class="form-label mt-2">Specific guidelines:</label>
-                            <textarea class="form-control" name="sop10_guidelines" rows="2"></textarea>
+                            <label class="form-label">If you have your own SOP, upload it here:</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" class="form-control file-upload-input" name="sop10_file" accept=".pdf">
+                                <div class="file-upload-info">Maximum file size: 10MB. Only PDF files are accepted.</div>
+                            </div>
+                            <div class="data-submission-container"></div>
                         </div>
                     </div>
                     
@@ -444,10 +538,12 @@
                         <input type="checkbox" class="form-check-input" id="sop11" name="sop" value="sop11">
                         <label class="form-check-label" for="sop11">SOP 11: Marsh plain vegetation and epifauna surveys</label>
                         <div class="sop-description" id="sop11-desc">
-                            <label class="form-label">Purpose for using this SOP:</label>
-                            <textarea class="form-control" name="sop11_purpose" rows="2"></textarea>
-                            <label class="form-label mt-2">Specific guidelines:</label>
-                            <textarea class="form-control" name="sop11_guidelines" rows="2"></textarea>
+                            <label class="form-label">If you have your own SOP, upload it here:</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" class="form-control file-upload-input" name="sop11_file" accept=".pdf">
+                                <div class="file-upload-info">Maximum file size: 10MB. Only PDF files are accepted.</div>
+                            </div>
+                            <div class="data-submission-container"></div>
                         </div>
                     </div>
                     
@@ -455,10 +551,12 @@
                         <input type="checkbox" class="form-check-input" id="sop12" name="sop" value="sop12">
                         <label class="form-check-label" for="sop12">SOP 12: Topographic surveys</label>
                         <div class="sop-description" id="sop12-desc">
-                            <label class="form-label">Purpose for using this SOP:</label>
-                            <textarea class="form-control" name="sop12_purpose" rows="2"></textarea>
-                            <label class="form-label mt-2">Specific guidelines:</label>
-                            <textarea class="form-control" name="sop12_guidelines" rows="2"></textarea>
+                            <label class="form-label">If you have your own SOP, upload it here:</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" class="form-control file-upload-input" name="sop12_file" accept=".pdf">
+                                <div class="file-upload-info">Maximum file size: 10MB. Only PDF files are accepted.</div>
+                            </div>
+                            <div class="data-submission-container"></div>
                         </div>
                     </div>
                     
@@ -466,10 +564,12 @@
                         <input type="checkbox" class="form-check-input" id="sop13" name="sop" value="sop13">
                         <label class="form-check-label" for="sop13">SOP 13: Sediment accretion rates</label>
                         <div class="sop-description" id="sop13-desc">
-                            <label class="form-label">Purpose for using this SOP:</label>
-                            <textarea class="form-control" name="sop13_purpose" rows="2"></textarea>
-                            <label class="form-label mt-2">Specific guidelines:</label>
-                            <textarea class="form-control" name="sop13_guidelines" rows="2"></textarea>
+                            <label class="form-label">If you have your own SOP, upload it here:</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" class="form-control file-upload-input" name="sop13_file" accept=".pdf">
+                                <div class="file-upload-info">Maximum file size: 10MB. Only PDF files are accepted.</div>
+                            </div>
+                            <div class="data-submission-container"></div>
                         </div>
                     </div>
                     
@@ -477,10 +577,12 @@
                         <input type="checkbox" class="form-check-input" id="sop14" name="sop" value="sop14">
                         <label class="form-check-label" for="sop14">SOP 14: Trail cameras</label>
                         <div class="sop-description" id="sop14-desc">
-                            <label class="form-label">Purpose for using this SOP:</label>
-                            <textarea class="form-control" name="sop14_purpose" rows="2"></textarea>
-                            <label class="form-label mt-2">Specific guidelines:</label>
-                            <textarea class="form-control" name="sop14_guidelines" rows="2"></textarea>
+                            <label class="form-label">If you have your own SOP, upload it here:</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" class="form-control file-upload-input" name="sop14_file" accept=".pdf">
+                                <div class="file-upload-info">Maximum file size: 10MB. Only PDF files are accepted.</div>
+                            </div>
+                            <div class="data-submission-container"></div>
                         </div>
                     </div>
                     
@@ -488,10 +590,12 @@
                         <input type="checkbox" class="form-check-input" id="sop15" name="sop" value="sop15">
                         <label class="form-check-label" for="sop15">SOP 15: Trash and microplastics</label>
                         <div class="sop-description" id="sop15-desc">
-                            <label class="form-label">Purpose for using this SOP:</label>
-                            <textarea class="form-control" name="sop15_purpose" rows="2"></textarea>
-                            <label class="form-label mt-2">Specific guidelines:</label>
-                            <textarea class="form-control" name="sop15_guidelines" rows="2"></textarea>
+                            <label class="form-label">If you have your own SOP, upload it here:</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" class="form-control file-upload-input" name="sop15_file" accept=".pdf">
+                                <div class="file-upload-info">Maximum file size: 10MB. Only PDF files are accepted.</div>
+                            </div>
+                            <div class="data-submission-container"></div>
                         </div>
                     </div>
                 </div>
@@ -625,11 +729,53 @@
         };
         
         window.onclick = function(event) {
-            const modal = document.getElementById('mapModal');
-            if (event.target === modal) {
-                modal.style.display = 'none';
+            const mapModal = document.getElementById('mapModal');
+            const sampleModal = document.getElementById('sampleModal');
+            if (event.target === mapModal) {
+                mapModal.style.display = 'none';
+            }
+            if (event.target === sampleModal) {
+                sampleModal.style.display = 'none';
             }
         };
+        
+        // Sample responses
+        const sampleResponses = {
+            dataPurpose: {
+                title: 'Example: Why is the data being collected?',
+                content: 'The community assemblage of fish is a key indicator of ecological condition in estuaries. Understanding estuarine fish communities requires measures of fish density and species richness. We recommend three methods for quantifying fish species richness and abundance with the following prioritization: 1) Fish seines (SOP 9), 2) Baited Remote Underwater Video (BRUVs) (SOP 8), 3) Baited Traps (SOP 10). This dataset includes the fish data collected following SOP 9. This SOP provides a standard approach to quantitatively assess the distribution, relative abundances, species richness, and diversity of fish for the EMPA program. For more details, see SOP 9 on https://empa.sccwrp.org.'
+            },
+            locationAccuracy: {
+                title: 'Example: Location Accuracy',
+                content: 'The geographical locations were not QA/QC. The latitude and longitudes are the raw values from the GPS, therefore locations may be off due to handheld GPS discrepancies. -88 was used if the latitude and longitude was not reported.'
+            },
+            legalRestrictions: {
+                title: 'Example: Legal Restrictions',
+                content: 'Although these data have been processed successfully on a computer system at SCCWRP, no warranty expressed or implied is made regarding the accuracy or utility of the data on any other system or for general or scientific purposes, nor shall the act of distribution constitute any such warranty. This disclaimer applies both to individual use of the data and aggregate use with other data. It is strongly recommended that these data are directly acquired from a SCCWRP server, and not indirectly through other sources which may have changed the data in some way. It is also strongly recommended that careful attention be paid to the contents of the metadata file associated with these data. SCCWRP shall not be held liable for improper or incorrect use of the data described and/or contained herein.'
+            },
+            dataGaps: {
+                title: 'Example: Data Gaps',
+                content: 'We are not permitted to collect data in the rain for safety concerns, collection is cancelled if there is insufficient staff available or interest from the public, and programs were cancelled during COVID-19 for safety reasons.'
+            }
+        };
+        
+        // Show sample modal
+        function showSampleModal(type) {
+            const modal = document.getElementById('sampleModal');
+            const title = document.getElementById('sampleModalTitle');
+            const content = document.getElementById('sampleModalContent');
+            
+            if (sampleResponses[type]) {
+                title.textContent = sampleResponses[type].title;
+                content.textContent = sampleResponses[type].content;
+                modal.style.display = 'block';
+            }
+        }
+        
+        // Close sample modal
+        function closeSampleModal() {
+            document.getElementById('sampleModal').style.display = 'none';
+        }
         
         // Add agency entry
         document.getElementById('addAgencyBtn').addEventListener('click', function() {
@@ -677,8 +823,8 @@
                     <input type="text" class="form-control" name="polygon_${polygonCount}_siteid" placeholder="Enter site ID">
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Upload Shapefile</label>
-                    <input type="file" class="form-control" name="polygon_${polygonCount}_shapefile" accept=".zip,.shp">
+                    <label class="form-label">Upload estuary and station boundaries as shapefiles (accepted format: .zip. You must include .shp, .shx, and .dbf files inside the zip. Without .shx or .dbf, a GIS software cannot open it.)</label>
+                    <input type="file" class="form-control" name="polygon_${polygonCount}_shapefile" accept=".zip">
                     <small class="form-text text-muted">
                         <a href="#" target="_blank">Download an example shapefile here</a>
                     </small>
@@ -693,6 +839,91 @@
             });
         });
         
+        // Function to generate data submission fields
+        function generateDataSubmissionFields(sopId) {
+            return `
+                <hr class="my-4">
+                <h6 class="text-primary mb-3">Data Submission Information</h6>
+                <label class="form-label">
+                    Why is the data being collected?
+                    <button type="button" class="sample-btn" onclick="showSampleModal('dataPurpose')">View example response</button>
+                </label>
+                <small class="form-text text-muted d-block mb-2">How will it get used in the scheme of the project, or how could it be used by future researchers?</small>
+                <textarea class="form-control mb-3" name="${sopId}_data_purpose" rows="3" required></textarea>
+                
+                <div class="mb-3">
+                    <label class="form-label">Specific guidelines on how this dataset should be used/published that we should be aware of:</label>
+                    <textarea class="form-control" name="${sopId}_specific_guidelines" rows="3" required></textarea>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Dataset Start Date</label>
+                        <input type="date" class="form-control" name="${sopId}_dataset_start_date" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Dataset End Date</label>
+                        <input type="date" class="form-control" name="${sopId}_dataset_end_date" required>
+                    </div>
+                </div>
+                
+                <label class="form-label">Geographic Bounding Coordinates</label>
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <input type="number" step="any" class="form-control" name="${sopId}_west_bounding" placeholder="West Longitude (-180 to 180)" required>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <input type="number" step="any" class="form-control" name="${sopId}_east_bounding" placeholder="East Longitude (-180 to 180)" required>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <input type="number" step="any" class="form-control" name="${sopId}_north_bounding" placeholder="North Latitude (-90 to 90)" required>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <input type="number" step="any" class="form-control" name="${sopId}_south_bounding" placeholder="South Latitude (-90 to 90)" required>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Coordinate System</label>
+                    <select class="form-select" name="${sopId}_coordinate_system" required>
+                        <option value="">Select...</option>
+                        <option value="WGS84">WGS 84 (EPSG:4326)</option>
+                        <option value="NAD83">NAD 83 (EPSG:4269)</option>
+                        <option value="NAD27">NAD 27 (EPSG:4267)</option>
+                        <option value="WebMercator">Web Mercator (EPSG:3857)</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">
+                        Location Accuracy
+                        <button type="button" class="sample-btn" onclick="showSampleModal('locationAccuracy')">View example response</button>
+                    </label>
+                    <small class="form-text text-muted d-block mb-2">How are missing or unreported latitude/longitude values represented, and how accurate are the recorded locations overall?</small>
+                    <input type="text" class="form-control" name="${sopId}_location_accuracy" placeholder="e.g., ±5 meters" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">
+                        Legal Restrictions
+                        <button type="button" class="sample-btn" onclick="showSampleModal('legalRestrictions')">View example response</button>
+                    </label>
+                    <small class="form-text text-muted d-block mb-2">Are there any warranties or legal liabilities related to the use and distribution of these data?</small>
+                    <textarea class="form-control" name="${sopId}_legal_restrictions" rows="2" required></textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">
+                        Data Gaps
+                        <button type="button" class="sample-btn" onclick="showSampleModal('dataGaps')">View example response</button>
+                    </label>
+                    <small class="form-text text-muted d-block mb-2">What factors contribute to missing data or inconsistencies in sampling effort across sites and time?</small>
+                    <textarea class="form-control" name="${sopId}_data_gaps" rows="2" required></textarea>
+                </div>
+            `;
+        }
+        
         // Toggle SOP description fields
         document.querySelectorAll('input[name="sop"]').forEach(checkbox => {
             checkbox.addEventListener('change', function() {
@@ -700,6 +931,18 @@
                 const descDiv = document.getElementById(descId);
                 if (descDiv) {
                     descDiv.style.display = this.checked ? 'block' : 'none';
+                    
+                    // Find the data submission container and populate or clear it
+                    const dataContainer = descDiv.querySelector('.data-submission-container');
+                    if (dataContainer) {
+                        if (this.checked) {
+                            // Populate with data submission fields
+                            dataContainer.innerHTML = generateDataSubmissionFields(this.id);
+                        } else {
+                            // Clear the fields when unchecked
+                            dataContainer.innerHTML = '';
+                        }
+                    }
                 }
             });
         });
@@ -707,6 +950,72 @@
         // Form submission
         document.getElementById('projectMetadataForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            // Remove previous error highlighting
+            document.querySelectorAll('.field-error').forEach(el => {
+                el.classList.remove('field-error');
+            });
+            
+            let hasErrors = false;
+            const missingFields = [];
+            
+            // Validate all required input fields, textareas, and selects
+            const requiredFields = this.querySelectorAll('input[required], textarea[required], select[required]');
+            requiredFields.forEach(field => {
+                // Check if field is visible (not in a hidden SOP section)
+                const isVisible = field.offsetParent !== null;
+                
+                if (isVisible) {
+                    if (field.type === 'checkbox' || field.type === 'radio') {
+                        // Skip individual checkbox/radio validation (handled separately)
+                        return;
+                    }
+                    
+                    if (!field.value || field.value.trim() === '') {
+                        field.classList.add('field-error');
+                        hasErrors = true;
+                        missingFields.push(field);
+                    }
+                }
+            });
+            
+            // Validate at least one estuary is selected
+            const estuaryCheckboxes = document.querySelectorAll('input[name="estuary"]:checked');
+            const estuaryError = document.getElementById('estuaryError');
+            
+            if (estuaryCheckboxes.length === 0) {
+                estuaryError.style.display = 'block';
+                hasErrors = true;
+            } else {
+                estuaryError.style.display = 'none';
+            }
+            
+            // Validate at least one SOP is selected
+            const sopCheckboxes = document.querySelectorAll('input[name="sop"]:checked');
+            const sopError = document.getElementById('sopError');
+            
+            if (sopCheckboxes.length === 0) {
+                sopError.style.display = 'block';
+                hasErrors = true;
+            } else {
+                sopError.style.display = 'none';
+            }
+            
+            // If there are errors, show alert and scroll to first error
+            if (hasErrors) {
+                alert('One of the required fields is missing');
+                
+                // Scroll to first missing field or error message
+                if (estuaryCheckboxes.length === 0) {
+                    estuaryError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else if (sopCheckboxes.length === 0) {
+                    sopError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else if (missingFields.length > 0) {
+                    missingFields[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    missingFields[0].focus();
+                }
+                return;
+            }
             
             const formData = new FormData(this);
             
@@ -733,6 +1042,19 @@
         // Load estuaries on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadEstuaries();
+            
+            // Remove error highlighting when user interacts with field
+            document.addEventListener('input', function(e) {
+                if (e.target.classList.contains('field-error')) {
+                    e.target.classList.remove('field-error');
+                }
+            });
+            
+            document.addEventListener('change', function(e) {
+                if (e.target.classList.contains('field-error')) {
+                    e.target.classList.remove('field-error');
+                }
+            });
         });
     </script>
 </body>
