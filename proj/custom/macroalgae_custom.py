@@ -522,6 +522,31 @@ def macroalgae(all_dfs):
     print("# END OF CHECK - 17")
 
 
+    # CHECK - 18
+    print("# CHECK - 18")
+    # Description: If cover_type = SAV, then live_dead must = live; If cover_type = thatch/wrack, then live_dead must = dead (case-insensitive)
+    # Created Coder: System
+    # Created Date: 02/04/2026
+    # Last Edited Date: 02/04/2026
+    # Last Edited Coder: System
+    # NOTE (02/04/2026): Created check for cover_type and live_dead relationship, case-insensitive
+
+    badrows = transect_cover[
+        ((transect_cover['covertype'].str.lower() == 'sav') & (transect_cover['live_dead'].str.lower() != 'live')) |
+        ((transect_cover['covertype'].str.lower() == 'thatch/wrack') & (transect_cover['live_dead'].str.lower() != 'dead'))
+    ]['tmp_row'].tolist()
+
+    args.update({
+        "dataframe": transect_cover,
+        "tablename": "tbl_macroalgae_transect_cover",
+        "badrows": badrows,
+        "badcolumn": "covertype,live_dead",
+        "error_type": "Logic Error",
+        "error_message": "If covertype = 'SAV', then live_dead must = 'live'. If covertype = 'thatch/wrack', then live_dead must = 'dead'."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 18")
+
 
 
     ########################################################### LEGACY CHECKS ###########################################################

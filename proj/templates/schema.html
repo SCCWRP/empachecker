@@ -58,6 +58,46 @@
             padding: 0;
         }
 
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            flex-direction: column;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 15px;
+            font-size: 18px;
+            color: #333;
+            font-weight: 500;
+        }
+
         {% endif %}
 
         .table td, .table th {
@@ -68,13 +108,19 @@
 </head>
 
 <body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading schema information...</div>
+    </div>
+
     {% if datatypes %}
     <div class = "container">
         <h2 class="title">Table Information for each datatype</h2>
         <ul class="list-group">
             {% for dtyp, dtyp_info in datatypes.items() %}
                 <li  class="list-group-item">
-                    <a href="{{request.script_root}}/schema?datatype={{dtyp}}">{{dtyp_info.label}}</a>
+                    <a href="{{request.script_root}}/schema?datatype={{dtyp}}" class="datatype-link">{{dtyp_info.label}}</a>
                 </li>
             {% endfor %}
         </ul>
@@ -180,6 +226,19 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
     <script>
+        // Show loading spinner when clicking on datatype links
+        document.addEventListener('DOMContentLoaded', function() {
+            var datatypeLinks = document.querySelectorAll('.datatype-link');
+            var loadingOverlay = document.getElementById('loadingOverlay');
+            
+            datatypeLinks.forEach(function(link) {
+                link.addEventListener('click', function(e) {
+                    // Show loading overlay
+                    loadingOverlay.classList.add('active');
+                });
+            });
+        });
+
         // JavaScript function to check the password and update the UI
         function checkPassword() {
             var userPassword = {
