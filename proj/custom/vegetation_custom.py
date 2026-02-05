@@ -235,14 +235,15 @@ def vegetation(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
 
-    print("# CHECK - 4")
+    # print("# CHECK - 4")
     # Description: Range for coordinates for transectbeginlongitude must be greater than -114.043 or transectendlongitude must be less than -124.502 (within CA)
     # Created Coder:
     # Created Date: 
-    # Last Edited Date: 09/29/2023
-    # Last Edited Coder: Caspian
+    # Last Edited Date: 02/05/2026
+    # Last Edited Coder: Duy
     # NOTE (09/14/2023): Adjust code to match coding standard
     # NOTE (09/29/2023): transectbeginlongitude has been removed from this table
+    # NOTE (02/05/2026): Check commented out per user request
 
     # args.update({
     #     "dataframe": vegmeta,
@@ -253,16 +254,17 @@ def vegetation(all_dfs):
     #     "error_message" : "Your longitude coordinates are outside of california, check your minus sign in your longitude data."
     # })
     # warnings = [*warnings, checkData(**args)]    
-    print("# END OF CHECK - 4")
+    # print("# END OF CHECK - 4")
 
-    print("# CHECK - 5")
+    # print("# CHECK - 5")
     # Description: Range for coordinates for transectbeginlatitude must be greater than 28 or transectendlatitude must be less than 41.992 (within CA including Baja)
     # Created Coder:
     # Created Date: 
-    # Last Edited Date: 09/29/2023
-    # Last Edited Coder: Caspian
+    # Last Edited Date: 02/05/2026
+    # Last Edited Coder: Duy
     # NOTE (09/14/2023): Adjust code to match coding standard
     # NOTE (09/29/2023): transectbeginlatitude has been removed from this table
+    # NOTE (02/05/2026): Check commented out per user request
 
     # args.update({
     #     "dataframe": vegmeta,
@@ -275,7 +277,7 @@ def vegetation(all_dfs):
     # warnings = [*warnings, checkData(**args)]
 
 
-    print("# END OF CHECK - 5")
+    # print("# END OF CHECK - 5")
 
     print("# CHECK - 6a")
     # Description: If method is obs_plant, both vegetated_cover and non_vegetated must be -88 or empty
@@ -791,6 +793,24 @@ def vegetation(all_dfs):
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 20")
 
+    # print("# CHECK - 21")
+    # # Description: if total_stems is 0 or -88, then plantheight_replicate must be -88
+    # # Created Coder: System
+    # # Created Date: 02/05/2026
+    # # Last Edited Date: 02/05/2026
+    # # Last Edited Coder: Duy
+    # # NOTE (02/05/2026): Check created and commented out per user request
+    
+    # args.update({
+    #     "dataframe": cordgrass,
+    #     "tablename": "tbl_cordgrass",
+    #     "badrows": cordgrass[((cordgrass['total_stems'] == 0) | (cordgrass['total_stems'] == -88)) & (cordgrass['plantheight_replicate'] != -88)].tmp_row.to_list(),
+    #     "badcolumn": 'plantheight_replicate',
+    #     "error_type" : "Logic Error",
+    #     "error_message" : 'If total_stems is 0 or -88, then plantheight_replicate must be -88.'
+    # })
+    # errs = [*errs, checkData(**args)]
+    # print("# END OF CHECK - 21")
 
     print("# CHECK - 22")
     # Description: total_stems is nonnegative, unless no value then -88 OK

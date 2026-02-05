@@ -90,38 +90,14 @@ def crabtrap(all_dfs):
 
 
     print("# CHECK - 2")
-    # Description: Each abundance data must include corresponding metadata (🛑 ERROR 🛑)
+    # Description: Each crabtrap metadata must include corresponding crab biomass length data when trap success is yes (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 10/05/2023
-    # Last Edited Coder: Aria Askaryar
-    # NOTE (08/29/23): Zaib adjusts the format so it follows the coding standard.
-    # NOTE (10/05/23): Aria revised the error message
-    args.update({
-        "dataframe": crabinvert,
-        "tablename": "tbl_crabfishinvert_abundance",
-        "badrows": mismatch(crabinvert, crabmeta, crabmeta_crabinvert_shared_pkey), 
-        "badcolumn": ','.join(crabmeta_crabinvert_shared_pkey),
-        "error_type": "Logic Error",
-        "error_message": "Each abundance data must include corresponding metadata. "+\
-            "Records are matched based on these columns: {}".format(
-            ','.join(crabmeta_crabinvert_shared_pkey)
-        )
-    })
-    errs = [*errs, checkData(**args)]
-    print("# END OF CHECK - 2")
-
-
-
-    print("# CHECK - 3")
-    # Description: Each crabtrap_metadata must include corresponding crab_biomass_length data when trap success is yes (🛑 ERROR 🛑)
-    # Created Coder: NA
-    # Created Date: NA
-    # Last Edited Date: 10/05/2023
-    # Last Edited Coder: Aria Askaryar
+    # Last Edited Date: 02/05/2026
+    # Last Edited Coder: Duy
     # NOTE (08/29/23): Zaib adjusts the format so it follows the coding standard.
     # NOTE (08/29/23): Adjusted code so that trapsuccess must = yes
-    # NOTE (10/05/23): Aria revised the error message
+    # NOTE (02/05/2026): Renumbered from check 3 to match accuracy checklist
     args.update({
         "dataframe": crabmeta,
         "tablename": "tbl_crabtrap_metadata",
@@ -134,18 +110,18 @@ def crabtrap(all_dfs):
         )
     })
     errs = [*errs, checkData(**args)]
-    print("# END OF CHECK - 3")
+    print("# END OF CHECK - 2")
 
 
 
-    print("# CHECK - 4")
-    # Description: Each length data must include corresponding metadata (🛑 ERROR 🛑)
+    print("# CHECK - 3")
+    # Description: Each crabbiomass_length data must include corresponding metadata (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 10/05/2023
-    # Last Edited Coder: Aria Askaryar
+    # Last Edited Date: 02/05/2026
+    # Last Edited Coder: Duy
     # NOTE (08/29/23): Zaib adjusts the format so it follows the coding standard.
-    # NOTE (10/05/23): Aria revised the error message
+    # NOTE (02/05/2026): Renumbered from check 4 to match accuracy checklist
     args.update({
         "dataframe": crabmass,
         "tablename": "tbl_crabbiomass_length",
@@ -157,19 +133,19 @@ def crabtrap(all_dfs):
             ','.join(crabmeta_crabmass_shared_pkey)
         )
     })
-
     errs = [*errs, checkData(**args)]
-    print("# END OF CHECK - 4")
+    print("# END OF CHECK - 3")
 
 
-    print("# CHECK - 5")
+
+    print("# CHECK - 4")
     # Description: Each abundance data must include corresponding length data (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 10/05/2023
-    # Last Edited Coder: Aria Askaryar
+    # Last Edited Date: 02/05/2026
+    # Last Edited Coder: Duy
     # NOTE (08/29/23): Zaib adjusts the format so it follows the coding standard.
-    # NOTE (10/05/23): Aria revised the error message
+    # NOTE (02/05/2026): Renumbered from check 5 to match accuracy checklist
     args.update({
         "dataframe": crabinvert,
         "tablename": "tbl_crabfishinvert_abundance",
@@ -182,18 +158,17 @@ def crabtrap(all_dfs):
         )
     })
     errs = [*errs, checkData(**args)]
-    print("# END OF CHECK - 5")
+    print("# END OF CHECK - 4")
 
 
-
-    print("# CHECK - 6")
-    # Description: Each length data data must include corresponding abundance data (🛑 ERROR 🛑)
+    print("# CHECK - 5")
+    # Description: Each crabbiomass_length data must include corresponding abundance data (🛑 ERROR 🛑)
     # Created Coder: NA
     # Created Date: NA
-    # Last Edited Date: 10/05/2023
-    # Last Edited Coder: Aria Askaryar
+    # Last Edited Date: 02/05/2026
+    # Last Edited Coder: Duy
     # NOTE (08/29/23): Zaib adjusts the format so it follows the coding standard.
-    # NOTE (10/05/23): Aria revised the error message
+    # NOTE (02/05/2026): Renumbered from check 6 to match accuracy checklist
     args.update({
         "dataframe": crabmass,
         "tablename": "tbl_crabbiomass_length",
@@ -206,38 +181,41 @@ def crabtrap(all_dfs):
         )
     })
     errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 5")
+
+
+
+    print("# CHECK - 6")
+    # Description: If trapsuccess is no, then there should be no records in the crabfishinvert_abundance tab and crabbiomass_length (🛑 ERROR 🛑)
+    # Created Coder: Caspian
+    # Created Date: 09/27/2023
+    # Last Edited Date: 02/05/2026
+    # Last Edited Coder: Duy
+    # NOTE (02/05/2026): Renumbered from check 14, uncommented and fixed
+
+    args.update({
+        "dataframe": crabmeta,
+        "tablename": 'tbl_crabtrap_metadata',
+        "badrows": list(set(match(crabmeta, crabinvert, crabmeta_crabinvert_shared_pkey)) & set(crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'no')].tmp_row.to_list())),
+        "badcolumn": "trapsuccess",
+        "error_type": "Logic Error",
+        "error_message": "If trapsuccess is no, then there should be no records in the crabfishinvert_abundance"
+    })
+
+    errs = [*errs, checkData(**args)]
+
+    args.update({
+        "dataframe": crabmeta,
+        "tablename": 'tbl_crabtrap_metadata',
+        "badrows": list(set(match(crabmeta, crabmass, crabmeta_crabmass_shared_pkey)) & set(crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'no')].tmp_row.to_list())),
+        "badcolumn": "trapsuccess",
+        "error_type": "Logic Error",
+        "error_message": "If trapsuccess is no, then there should be no records in the crabbiomass_length"
+    })
+
+    errs = [*errs, checkData(**args)]
+
     print("# END OF CHECK - 6")
-
-    # print("# CHECK - 14")
-    # # Description: If trapsuccess is no, then there should be no records in the crabfishinvert_abundance tab and crabbiomass_length (🛑 ERROR 🛑)
-    # # Created Coder: Caspian
-    # # Created Date: 09/27/2023
-    # # Last Edited Date: 09/27/2023
-    # # Last Edited Coder: Caspian
-
-    # args.update({
-    #     "dataframe": crabmeta,
-    #     "tablename": 'tbl_crabtrap_metadata',
-    #     "badrows": list(set(match(crabmeta, crabinvert, crabmeta_crabinvert_shared_pkey)) & set(crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'no')].tmp_row.to_list())),
-    #     "badcolumn": "trapsuccess",
-    #     "error_type": "Undefined Error",
-    #     "error_message": "If trapsuccess is no, then there should be no records in the crabfishinvert_abundance"
-    # })
-
-    # errs = [*errs, checkData(**args)]
-
-    # args.update({
-    #     "dataframe": crabmeta,
-    #     "tablename": 'tbl_crabtrap_metadata',
-    #     "badrows": list(set(match(crabmeta, crabmass, crabmeta_crabmass_shared_pkey)) & set(crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'no')].tmp_row.to_list())),
-    #     "badcolumn": "trapsuccess",
-    #     "error_type": "Undefined Error",
-    #     "error_message": "If trapsuccess is no, then there should be no records in the crabbiomass_length"
-    # })
-
-    # errs = [*errs, checkData(**args)]
-
-    # print("# END OF CHECK - 14")
 
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #
@@ -327,6 +305,28 @@ def crabtrap(all_dfs):
     
     print("# END OF CHECK - 9")
 
+    print("# CHECK - 10")
+    # Description: deploymentdate must be before samplecollectiondate (🛑 ERROR 🛑)
+    # Created Coder: Caspian T
+    # Created Date: 09/21/2023
+    # Last Edited Date: 02/05/2026
+    # Last Edited Coder: Duy
+    # NOTE:(09/22/2023): For some reason this check causes an error when placed before check 10, which is the order it's in in the QA doc. The terminal says it's a problem with
+    # NOTE:(09/22/2023): check 10, so I'm going to leave this like this for now and come back to it later
+    # NOTE:(02/05/2026): Moved from end of file to after check 9 to match accuracy checklist
+
+    args.update({
+        "dataframe": crabmeta,
+        "tablename": "tbl_crabtrap_metadata",
+        "badrows" : check_date_order(crabmeta, 'deploymentdate', 'samplecollectiondate'),
+        "badcolumn": "deploymentdate",
+        "error_type": "Date Error",
+        "error_message": "deploymentdate must be before samplecollectiondate"
+    })
+    errs = [*errs, checkData(**args)]
+    
+    print("# END OF CHECK - 10")
+
     
 
 
@@ -348,12 +348,12 @@ def crabtrap(all_dfs):
     # ---------------------------------------------------------------------------------------------------------------------------------- #
     ######################################################################################################################################
     
-    print("# CHECK - 10")
+    print("# CHECK - 11")
     # Description: If catch is no then abundance should be 0 (🛑 ERROR 🛑)
     # Created Coder: Duy Nguyen
     # Created Date: 10/04/2022
-    # Last Edited Date: 9/7/2023
-    # Last Edited Coder: Robert Butler
+    # Last Edited Date: 02/05/2026
+    # Last Edited Coder: Duy
     # NOTE (11/02/2022): (Robert) We cant use index to get the bad rows since we merged dataframes and the index gets reset
     # We must preserve the original index values of the dataframe that we are checking 
     #  so that we can correctly tell the user which rows are bad
@@ -365,6 +365,7 @@ def crabtrap(all_dfs):
     # That would have got flagged at core checks
     # NOTE (8/29/23): Zaib adjusts the format so it follows the coding standard.
     # NOTE (9/7/2023): assigned invert tmp row to be crabinvert tmp_row rather than crabinvert.index - Robert
+    # NOTE (02/05/2026): Renumbered from check 10 to check 11
     
     merged = pd.merge(
         crabinvert.assign(invert_tmp_row = crabinvert.tmp_row),
@@ -387,11 +388,11 @@ def crabtrap(all_dfs):
         "error_message": "If catch is no in crabtrap_metadata then abundance should be 0 in crabfishinvert_abundance"
     })
     errs = [*errs, checkData(**args)]
-    print("# END OF CHECK - 10")
+    print("# END OF CHECK - 11")
 
     
 
-    print("# CHECK - 11")
+    print("# CHECK - 12")
     # Description: If catch is yes then abundance is non-zero integer (🛑 ERROR 🛑)
     # Created Coder: Duy Nguyen
     # Created Date: 10/04/2022
@@ -428,19 +429,20 @@ def crabtrap(all_dfs):
         "error_message": "If catch is yes in crabtrap_metadata, then abundance should be a positive integer in crabfishinvert_abundance"
     })
     errs = [*errs, checkData(**args)]
-    print("# END OF CHECK - 11")
+    print("# END OF CHECK - 12")
 
 
 
     
     
-    print("# CHECK - 12")
+    print("# CHECK - 13")
     # Description: Range for abundance must be between [0, 100] unless it is -88 (🛑 ERROR 🛑)
     # Created Coder: Duy Nguyen
     # Created Date: 10/04/2022
-    # Last Edited Date: 9/7/2023
-    # Last Edited Coder: Robert Butler
+    # Last Edited Date: 02/05/2026
+    # Last Edited Coder: Duy
     # NOTE (8/29/23): Robert adjusts the format so it follows the coding standard. (I also added the & pd.notnull(x) part)
+    # NOTE (02/05/2026): Renumbered from check 12 to check 13
     args.update({
         "dataframe": crabinvert,
         "tablename": 'tbl_crabfishinvert_abundance',
@@ -454,15 +456,16 @@ def crabtrap(all_dfs):
         "error_message": "Your abundance value must be between 0 to 100, unless it is a -88 indicating a missing value."
     })
     errs.append(checkData(**args))
-    print("# END OF CHECK - 12")
+    print("# END OF CHECK - 13")
 
-    print("# CHECK - 18")
+    print("# CHECK - 14")
     # Description: Replicate must be consecutive within a primary key  (🛑 ERROR 🛑)
     # Created Coder: Caspian T.
     # Created Date: 09/22/2023
-    # Last Edited Date: 7/11/24
-    # Last Edited Coder: Duy Nguyen.
+    # Last Edited Date: 02/05/2026
+    # Last Edited Coder: Duy
     # NOTE (7/11/24): Check was written incorrectly. Duy fixed it.
+    # NOTE (02/05/2026): Renumbered from check 18 to check 14
 
     groupby_cols = [x for x in crabinvert_pkey if x not in ['scientificname', 'replicate']]
     args.update({
@@ -475,7 +478,7 @@ def crabtrap(all_dfs):
     })
     errs = [*errs, checkData(**args)]
     
-    print("# END OF CHECK - 18")
+    print("# END OF CHECK - 14")
 
     ######################################################################################################################################
     # ---------------------------------------------------------------------------------------------------------------------------------- #
@@ -498,13 +501,36 @@ def crabtrap(all_dfs):
     ######################################################################################################################################
 
 
-    print("# CHECK - 13")
+    print("# CHECK - 15")
+    # Description: replicate must be consecutive within primary keys (🛑 ERROR 🛑)
+    # Created Coder: Caspian T.
+    # Created Date: 09/22/2023
+    # Last Edited Date: 02/05/2026
+    # Last Edited Coder: Duy
+    # NOTE (7/11/24): Check was written incorrectly. scientificname and speciesplirecate should not be in the grouping. Duy fixed it.
+    # NOTE (02/05/2026): Renumbered from check 17 to check 15
+
+    groupby_cols = [x for x in crabmass_pkey if x not in ['scientificname', 'replicate' , 'speciesreplicate']]
+    args.update({
+        "dataframe": crabmass,
+        "tablename": "tbl_crabbiomass_length",
+        "badrows" : check_consecutiveness(crabmass, groupby_cols, 'replicate'),
+        "badcolumn": "replicate",
+        "error_type": "Replicate Error",
+        "error_message": f"replicate values must be consecutive. Records are grouped by {','.join(groupby_cols)}"
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 15")
+
+    print("# CHECK - 16")
     # Description: speciesreplicate must be consecutive within primary keys (🛑 ERROR 🛑)
     # Created Coder: Caspian T.
     # Created Date: 09/22/2023
-    # Last Edited Date: 7/11/24
-    # Last Edited Coder: Duy Nguyen.
+    # Last Edited Date: 02/05/2026
+    # Last Edited Coder: Duy
     # NOTE (7/11/24): Check was written incorrectly. Duy fixed it.
+    # NOTE (02/05/2026): Renumbered from check 13 to check 16
 
     groupby_cols = [x for x in crabmass_pkey if x not in ['speciesreplicate']]
     print(groupby_cols)
@@ -518,28 +544,7 @@ def crabtrap(all_dfs):
     })
     errs = [*errs, checkData(**args)]
 
-    print("# END OF CHECK - 13")
-
-    print("# CHECK - 17")
-    # Description: replicate must be consecutive within primary keys (🛑 ERROR 🛑)
-    # Created Coder: Caspian T.
-    # Created Date: 09/22/2023
-    # Last Edited Date: 7/11/24
-    # Last Edited Coder: Duy Nguyen.
-    # NOTE (7/11/24): Check was written incorrectly. scientificname and speciesplirecate should not be in the grouping. Duy fixed it.
-
-    groupby_cols = [x for x in crabmass_pkey if x not in ['scientificname', 'replicate' , 'speciesreplicate']]
-    args.update({
-        "dataframe": crabmass,
-        "tablename": "tbl_crabbiomass_length",
-        "badrows" : check_consecutiveness(crabmass, groupby_cols, 'replicate'),
-        "badcolumn": "replicate",
-        "error_type": "Replicate Error",
-        "error_message": f"replicate values must be consecutive. Records are grouped by {','.join(groupby_cols)}"
-    })
-    errs = [*errs, checkData(**args)]
-
-    print("# END OF CHECK - 17")
+    print("# END OF CHECK - 16")
 
     ######################################################################################################################################
     # ---------------------------------------------------------------------------------------------------------------------------------- #
@@ -547,13 +552,14 @@ def crabtrap(all_dfs):
     # ---------------------------------------------------------------------------------------------------------------------------------- #
     ######################################################################################################################################  
     
-    print("# CHECK - 16")
+    print("# CHECK - 17")
     # Description: if catch is no in crabtrap_metadata, then biomass_g and length_mm should be -88(🛑 ERROR 🛑)
     # Created Coder: Duy Nguyen
     # Created Date: 09/25/2023
-    # Last Edited Date: 
-    # Last Edited Coder: 
+    # Last Edited Date: 02/05/2026
+    # Last Edited Coder: Duy
     # NOTE (09/25/2023): Duy created the check, not QA
+    # NOTE (02/05/2026): Renumbered from check 16 to check 17
     merged = pd.merge(
         crabmass,
         crabmeta[[*crabmeta_crabmass_shared_pkey, *['catch']]],
@@ -576,27 +582,6 @@ def crabtrap(all_dfs):
     })
     errs = [*errs, checkData(**args)]
     
-    print("# END OF CHECK - 16")
-
-    print("# CHECK - 15")
-    # Description: deploymentdate must be before samplecollectiondate (🛑 ERROR 🛑)
-    # Created Coder: Caspian T
-    # Created Date: 09/21/2023
-    # Last Edited Date: 09/22/2023
-    # Last Edited Coder: Caspian T
-    # NOTE:(09/22/2023): For some reason this check causes an error when placed before check 10, which is the order it's in in the QA doc. The terminal says it's a problem with
-    # NOTE:(09/22/2023): check 10, so I'm going to leave this like this for now and come back to it later
-
-    args.update({
-        "dataframe": crabmeta,
-        "tablename": "tbl_crabtrap_metadata",
-        "badrows" : check_date_order(crabmeta, 'deploymentdate', 'samplecollectiondate'),
-        "badcolumn": "deploymentdate",
-        "error_type": "Date Error",
-        "error_message": "deploymentdate must be before samplecollectiondate"
-    })
-    errs = [*errs, checkData(**args)]
-    
-    print("# END OF CHECK - 15")
+    print("# END OF CHECK - 17")
 
     return {'errors': errs, 'warnings': warnings}

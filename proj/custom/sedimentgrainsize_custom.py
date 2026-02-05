@@ -76,7 +76,7 @@ def sedimentgrainsize_lab(all_dfs):
     # Created Coder: Ayah
     # Created Date: 09/15/2021
     # Last Edited Date: 02/04/2026
-    # Last Edited Coder: System
+    # Last Edited Coder: Duy
     # NOTE (09/12/2023): Ayah created logic check, has not tested yet
     # NOTE (10/05/2023): Aria revised the error message
     # NOTE (02/04/2026): Updated to explicitly filter grabeventdetails for sampletype = 'grainsize'

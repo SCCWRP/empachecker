@@ -48,11 +48,13 @@ def trash(all_dfs):
     ###################################################################################################################### 
 
     #if not trashsamplearea.empty and not trashquadrattally.empty:
-    print("# LOGIC CHECK - 1")
+    print("# CHECK - 1")
     # Description: Records in samplearea need to be in quadrat
     # Created Coder: Duy Nguyen
     # Created Date: 12/27/2024
-    # Last Edited Date: 
+    # Last Edited Date: 02/05/2026
+    # Last Edited Coder: Duy
+    # NOTE (02/05/2026): Changed print statement to CHECK format for consistency 
 
     errs.append(
         checkData(
@@ -63,13 +65,15 @@ def trash(all_dfs):
             error_message=f"Records in the trashsamplearea should have the corresponding records in the trashquadrattally based on these columns {','.join(trashquadrattally_trashsamplearea_shared_pkey)}"
         )
     )
-    print("# END LOGIC CHECK - 1")
+    print("# END OF CHECK - 1")
 
-    print("# LOGIC CHECK - 2")
+    print("# CHECK - 2")
     # Description: Records in quadrat need to be in samplearea
     # Created Coder: Duy Nguyen
     # Created Date: 12/27/2024
-    # Last Edited Date: 
+    # Last Edited Date: 02/05/2026
+    # Last Edited Coder: Duy
+    # NOTE (02/05/2026): Changed print statement to CHECK format for consistency
 
     errs.append(
         checkData(
@@ -80,14 +84,16 @@ def trash(all_dfs):
             error_message=f"Records in the trashquadrattally should have the corresponding records in the trashsamplearea based on these columns {','.join(trashquadrattally_trashsamplearea_shared_pkey)}"
         )
     )
-    print("# END LOGIC CHECK - 2")
+    print("# END OF CHECK - 2")
 
-    print("# LOGIC CHECK - 3")
+    print("# CHECK - 3")
     # Description: If trash is 'No' in trashsamplearea, then the corresponding record should have 'None' in debriscategory 
     # and 'No Trash Present' in debrisitem in quadrat
     # Created Coder: Duy Nguyen
     # Created Date: 11/22/2024
-    # Last Edited Date: 
+    # Last Edited Date: 02/05/2026
+    # Last Edited Coder: Duy
+    # NOTE (02/05/2026): Changed print statement to CHECK format for consistency
 
     # Merge trashsamplearea and trashquadrattally based on shared primary keys
     if not trashsamplearea.empty and not trashquadrattally.empty:
@@ -114,14 +120,16 @@ def trash(all_dfs):
                 error_message="If trash is 'No' in trashsamplearea, the corresponding record in quadrat should have 'None' in debriscategory and 'No Trash Present' in debrisitem."
             )
         )
-        print("# END LOGIC CHECK - 3")
+        print("# END OF CHECK - 3")
 
     if not trashsamplearea.empty:
-        print("# LOGIC CHECK - 4")
+        print("# CHECK - 4")
         # Description: Quadrat must be consecutive within primary keys ('projectid', 'siteid', 'sampledate', 'quadrat', 'stationno', 'estuaryname', 'transect')
         # Created Coder: Ayah Halabi  
         # Created Date: 11/16/2023
-        # Last Edited Date: 
+        # Last Edited Date: 02/05/2026
+        # Last Edited Coder: Duy
+        # NOTE (02/05/2026): Changed print statement to CHECK format for consistency
 
         groupby_cols = ['projectid', 'estuaryname', 'siteid', 'samplecollectiondate', 'stationno', 'transect']
         errs.append(
@@ -133,7 +141,7 @@ def trash(all_dfs):
                 error_message=f"quadrat values must be consecutive for each transect. Records are grouped by {', '.join(groupby_cols)}"
             )
         )
-        print("# END LOGIC CHECK - 4")
+        print("# END OF CHECK - 4")
 
 
 
@@ -156,12 +164,14 @@ def trash(all_dfs):
     ######################################################################################################################
 
     if not trashquadrattally.empty:
-        print("# LOGIC CHECK - 5")
+        print("# CHECK - 5")
         # Description: If resulttotal is empty, then debrisitem must be 'No Trash Present'. 
         # If debrisitem is not 'No Trash Present', then resulttotaltext is required, and its value must be 'M' or 'H'.
         # Created Coder: Duy Nguyen
         # Created Date: 11/22/2024
-        # Last Edited Date: 
+        # Last Edited Date: 02/05/2026
+        # Last Edited Coder: Duy
+        # NOTE (02/05/2026): Changed print statement to CHECK format for consistency 
 
         errs.append(
             checkData(
@@ -178,13 +188,15 @@ def trash(all_dfs):
             )
         )
 
-        print("# END LOGIC CHECK - 5")
+        print("# END OF CHECK - 5")
 
-        print("# LOGIC CHECK - 6")
+        print("# CHECK - 6")
         # Description: If debriscategory is 'Plastic', then item must be in lu_trashplastic.
         # Created Coder: Duy Nguyen
         # Created Date: 11/22/2024
-        # Last Edited Date: 
+        # Last Edited Date: 02/05/2026
+        # Last Edited Coder: Duy
+        # NOTE (02/05/2026): Changed print statement to CHECK format for consistency
 
         errs.append(
             checkData(
@@ -198,13 +210,15 @@ def trash(all_dfs):
                 error_message="If debriscategory is 'Plastic', debrisitem must be in lu_trashplastic."
             )
         )
-        print("# END LOGIC CHECK - 6")
+        print("# END OF CHECK - 6")
 
-        print("# LOGIC CHECK - 7")
+        print("# CHECK - 7")
         # Description: If debriscategory is 'Non-Plastic', then item must be in lu_trashnonplastic.
         # Created Coder: Duy Nguyen
         # Created Date: 11/22/2024
-        # Last Edited Date: 
+        # Last Edited Date: 02/05/2026
+        # Last Edited Coder: Duy
+        # NOTE (02/05/2026): Changed print statement to CHECK format for consistency
 
         errs.append(
             checkData(
@@ -218,7 +232,7 @@ def trash(all_dfs):
                 error_message="If debriscategory is 'Non-Plastic', debrisitem must be in lu_trashnonplastic."
             )
         )
-        print("# END LOGIC CHECK - 7")
+        print("# END OF CHECK - 7")
 
 
     ######################################################################################################################
@@ -228,12 +242,14 @@ def trash(all_dfs):
     ######################################################################################################################
 
     if not trashtimesearchtally.empty:
-        print("# LOGIC CHECK - 8")
+        print("# CHECK - 8")
         # Description: If resulttotal is empty, then debrisitem must be 'No Trash Present'. 
         # If debrisitem is not 'No Trash Present', then resulttotaltext is required, and its value must be 'M' or 'H'.
         # Created Coder: Duy Nguyen
         # Created Date: 11/22/2024
-        # Last Edited Date: 
+        # Last Edited Date: 02/05/2026
+        # Last Edited Coder: Duy
+        # NOTE (02/05/2026): Changed print statement to CHECK format for consistency 
 
         errs.append(
             checkData(
@@ -252,13 +268,15 @@ def trash(all_dfs):
 
 
 
-        print("# END LOGIC CHECK - 8")
+        print("# END OF CHECK - 8")
 
-        print("# LOGIC CHECK - 9")
+        print("# CHECK - 9")
         # Description: If debriscategory is 'Plastic', then item must be in lu_trashplastic.
         # Created Coder: Duy Nguyen
         # Created Date: 11/22/2024
-        # Last Edited Date: 
+        # Last Edited Date: 02/05/2026
+        # Last Edited Coder: Duy
+        # NOTE (02/05/2026): Changed print statement to CHECK format for consistency
 
         errs.append(
             checkData(
@@ -272,13 +290,15 @@ def trash(all_dfs):
                 error_message="If debriscategory is 'Plastic', debrisitem must be in lu_trashplastic."
             )
         )
-        print("# END LOGIC CHECK - 9")
+        print("# END OF CHECK - 9")
 
-        print("# LOGIC CHECK - 10")
+        print("# CHECK - 10")
         # Description: If debriscategory is 'Non-Plastic', then debrisitem must be in lu_trashnonplastic.
         # Created Coder: Duy Nguyen
         # Created Date: 11/22/2024
-        # Last Edited Date: 
+        # Last Edited Date: 02/05/2026
+        # Last Edited Coder: Duy
+        # NOTE (02/05/2026): Changed print statement to CHECK format for consistency
 
         errs.append(
             checkData(
@@ -292,7 +312,7 @@ def trash(all_dfs):
                 error_message="If debriscategory is 'Non-Plastic', debrisitem must be in lu_trashnonplastic."
             )
         )
-        print("# END LOGIC CHECK - 10")
+        print("# END OF CHECK - 10")
 
 
     return {'errors': errs, 'warnings': warnings}

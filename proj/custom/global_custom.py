@@ -277,7 +277,7 @@ def global_custom(all_dfs, datatype = ''):
                     # Created Coder: Duy
                     # Created Date: 11/3/23
                     # Last Edited Date: 1/30/26
-                    # Last Edited Coder: System
+                    # Last Edited Coder: Duy
                     # NOTE (11/3/23): Created the check. Need to QA and this check does not consider 1 mile buffer.
                     # NOTE (11/6/23): Fixed an error where sites in submitted file do not exist in the spatial_empa_sites table and cause null in geometry column after merging.
                     # NOTE (11/8/23): Duy adjusted the check, comments were left below

@@ -73,7 +73,7 @@ def benthicinfauna_lab(all_dfs):
     # Created Coder: Duy
     # Created Date: 2/22/24
     # Last Edited Date:  02/04/2026
-    # Last Edited Coder: System
+    # Last Edited Coder: Duy
     # NOTE (09/27/23): Duy created the check, QA'ed
     # NOTE (2/22/24): Make sure that samplecollectiondate have the same format, so later when we do astype(str), it doesn't randomly add 00:00:00 to the date
     # NOTE (02/04/2026): Updated to explicitly filter grabevent_details for sampletype = 'infauna'

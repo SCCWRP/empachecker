@@ -158,11 +158,13 @@ def feldspar(all_dfs):
     # ------------------------------------------------------------------------------------------------------------------ #
     ######################################################################################################################
     
-    print("# LOGIC CHECK - 5")
+    print("# CHECK - 5")
     # Description: The sum of total_veg_cover and total_unveg_cover must equal 100.
     # Created Coder: Duy Nguyen
     # Created Date: 11/22/2024
-    # Last Edited Date: 
+    # Last Edited Date: 02/05/2026
+    # Last Edited Coder: Duy
+    # NOTE (02/05/2026): Changed print statement to use "CHECK" format for consistency 
 
     errs.append(
         checkData(
@@ -187,7 +189,7 @@ def feldspar(all_dfs):
             error_message="The sum of total_veg_cover and total_unveg_cover must equal 100. If either is -88, the other must be 100. Rows where both are -88 are excluded from validation."
         )
     )
-    print("# END LOGIC CHECK - 5")
+    print("# END OF CHECK - 5")
 
     ######################################################################################################################
     # ------------------------------------------------------------------------------------------------------------------ #

@@ -29,37 +29,43 @@ def edna_field(all_dfs):
     
     # This data type should only have tbl_example
     edna_metadata = all_dfs['tbl_edna_metadata']
+    edna_metadata['tmp_row'] = edna_metadata.index
 
     # Alter this args dictionary as you add checks and use it for the checkData function
     # for errors that apply to multiple columns, separate them with commas
-    # args = {
-    #     "dataframe": edna_metadata,
-    #     "tablename": 'tbl_edna_metadata',
-    #     "badrows": [],
-    #     "badcolumn": "",
-    #     "error_type": "",
-    #     "is_core_error": False,
-    #     "error_message": ""
-    # }
+    args = {
+        "dataframe": pd.DataFrame({}),
+        "tablename": '',
+        "badrows": [],
+        "badcolumn": "",
+        "error_type": "",
+        "is_core_error": False,
+        "error_message": ""
+    }
 
-    # Example of appending an error (same logic applies for a warning)
-    # args.update({
-    #   "badrows": df[df.temperature != 'asdf'].index.tolist(),
-    #   "badcolumn": "temperature",
-    #   "error_type" : "Not asdf",
-    #   "error_message" : "This is a helpful useful message for the user"
-    # })
-    # errs = [*errs, checkData(**args)]
-
-    # Example of how to document a custom check
-    #print("# CHECK - ")
-    # Description:
-    # Created Coder:
-    # Created Date:
+    print("# CHECK - 1")
+    # Description: If filter_method is smith-root, then filter_storage must be S.R
+    # Created Coder: System
+    # Created Date: 02/05/2026
     # Last Edited Date: 
     # Last Edited Coder: 
-    # NOTE (Date):
-    #print("# END OF CHECK - ")
+    # NOTE (02/05/2026): Check created for filter_method and filter_storage validation
+    
+    args.update({
+        "dataframe": edna_metadata,
+        "tablename": 'tbl_edna_metadata',
+        "badrows": edna_metadata[
+            (edna_metadata['filter_method'].str.lower() == 'smith-root') &
+            (edna_metadata['filter_storage'].str.strip() != 'S.R')
+        ].tmp_row.tolist(),
+        "badcolumn": "filter_storage",
+        "error_type": "Logic Error",
+        "is_core_error": False,
+        "error_message": "If filter_method is 'smith-root', then filter_storage must be 'S.R'"
+    })
+    errs = [*errs, checkData(**args)]
+    
+    print("# END OF CHECK - 1")
 
     return {'errors': errs, 'warnings': warnings}
 

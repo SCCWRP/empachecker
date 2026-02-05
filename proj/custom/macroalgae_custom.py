@@ -528,7 +528,7 @@ def macroalgae(all_dfs):
     # Created Coder: System
     # Created Date: 02/04/2026
     # Last Edited Date: 02/04/2026
-    # Last Edited Coder: System
+    # Last Edited Coder: Duy
     # NOTE (02/04/2026): Created check for cover_type and live_dead relationship, case-insensitive
 
     badrows = transect_cover[
