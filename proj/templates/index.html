@@ -28,12 +28,11 @@
         <div class="card inner-container" id="login-inner-container">
           <div class="card-header">
             {{projectname}} Checker
+            {% if maintenance_notice and maintenance_notice.enabled %}
             <span class="text-danger">
-              (Maintenance Notice: The Checker will be undergoing maintenance 
-              from 4PM 02/04/2026 until 9AM 02/05/2026. 
-              Please refrain from submitting data during this time to avoid any unexpected issues. 
-              We apologize for any inconvenience and appreciate your understanding.)
+              (Maintenance Notice: {{ maintenance_notice.message }})
             </span>
+            {% endif %}
           </div>          
           {% if global_login_form %}
           <div class="card-body">

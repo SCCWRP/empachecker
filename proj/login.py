@@ -22,7 +22,7 @@ def index():
             # Here we are essentially renaming keys of dictionary
             login_info[str(k).replace('login_','').capitalize()] = session.get('login_info').get(k)
 
-        return render_template('index.html', login_info = login_info)
+        return render_template('index.html', login_info = login_info, maintenance_notice = current_app.config.get('MAINTENANCE_NOTICE'))
 
     session['submissionid'] = int(time.time())
     session['submission_dir'] = os.path.join(os.getcwd(), "files", str(session['submissionid']))
@@ -56,7 +56,7 @@ def index():
         """
     )
     
-    return render_template('index.html', projectname = current_app.project_name, dtypes = current_app.datasets, global_login_form = current_app.global_login_form, login_info = False )
+    return render_template('index.html', projectname = current_app.project_name, dtypes = current_app.datasets, global_login_form = current_app.global_login_form, login_info = False, maintenance_notice = current_app.config.get('MAINTENANCE_NOTICE') )
 
 
 @homepage.route('/login_values')
