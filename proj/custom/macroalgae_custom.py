@@ -532,8 +532,8 @@ def macroalgae(all_dfs):
     # NOTE (02/04/2026): Created check for cover_type and live_dead relationship, case-insensitive
 
     badrows = transect_cover[
-        ((transect_cover['covertype'].str.lower() == 'sav') & (transect_cover['live_dead'].str.lower() != 'live')) |
-        ((transect_cover['covertype'].str.lower() == 'thatch/wrack') & (transect_cover['live_dead'].str.lower() != 'dead'))
+        ((transect_cover['covertype'].fillna('').str.lower() == 'sav') & (transect_cover['live_dead'].fillna('').str.lower() != 'live')) |
+        ((transect_cover['covertype'].fillna('').str.lower() == 'thatch/wrack') & (transect_cover['live_dead'].fillna('').str.lower() != 'dead'))
     ]['tmp_row'].tolist()
 
     args.update({

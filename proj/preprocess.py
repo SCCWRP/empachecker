@@ -42,16 +42,16 @@ def strip_whitespace(all_dfs: dict):
 
 def fix_case(all_dfs: dict):
     for table_name in all_dfs.keys():
-        table_df = all_dfs[f'{table_name}'] 
+        table_df = all_dfs[f'{table_name}']
     #Among all the varchar cols, only get the ones tied to the lookup list -- modified to only find lu_lists that are not of numeric types
         lookup_sql = f"""
             SELECT
-                kcu.column_name, 
+                kcu.column_name,
                 ccu.table_name AS foreign_table_name,
                 ccu.column_name AS foreign_column_name,
-                isc.data_type AS column_data_type 
-            FROM 
-                information_schema.table_constraints AS tc 
+                isc.data_type AS column_data_type
+            FROM
+                information_schema.table_constraints AS tc
                 JOIN information_schema.key_column_usage AS kcu
                 ON tc.constraint_name = kcu.constraint_name
                 AND tc.table_schema = kcu.table_schema
@@ -61,50 +61,95 @@ def fix_case(all_dfs: dict):
                 JOIN information_schema.columns as isc
                 ON isc.column_name = ccu.column_name
                 AND isc.table_name = ccu.table_name
-            WHERE tc.constraint_type = 'FOREIGN KEY' 
+            WHERE tc.constraint_type = 'FOREIGN KEY'
             AND tc.table_name='{table_name}'
             AND ccu.table_name LIKE 'lu_%%'
             AND isc.data_type NOT IN ('integer', 'smallint', 'numeric');
         """
         lu_info = pd.read_sql(lookup_sql, g.eng)
-           
+
         # The keys of this dictionary are the column's names in the dataframe, values are their lookup values
         foreignkeys_luvalues = dict(
             zip(
                 lu_info.column_name,
                 [
-                    pd.read_sql(f"SELECT {lu_col} FROM {lu_table}",  g.eng)[f'{lu_col}'].to_list() 
-                    for lu_col,lu_table 
-                    in zip (lu_info.foreign_column_name, lu_info.foreign_table_name) 
+                    pd.read_sql(f"SELECT {lu_col} FROM {lu_table}",  g.eng)[f'{lu_col}'].to_list()
+                    for lu_col,lu_table
+                    in zip (lu_info.foreign_column_name, lu_info.foreign_table_name)
                 ]
-            ) 
+            )
         )
         # Get their actual values in the dataframe
         foreignkeys_rawvalues = {
             x : [
-                item 
+                item
                 for item in set(table_df[x])
                 if str(item).lower() in list(map(str.lower,foreignkeys_luvalues[x])) # bug: 'lower' for 'str' objects doesn't apply to 'int' object
-            ]  
+            ]
             for x in lu_info.column_name
         }
-        # Remove the empty lists in the dictionary's values. 
+        # Remove the empty lists in the dictionary's values.
         # Empty lists indicate there are values that are not in the lu list for a certain column
         # This will be taken care of by core check.
         foreignkeys_rawvalues = {x:y for x,y in foreignkeys_rawvalues.items() if len(y)> 0}
-        
+
         # Now we need to make a dictionary to fix the case, something like {col: {wrongvalue:correctvalue} }
         # this is good indentation, looks good and easy to read - Robert
         fix_case  = {
             col : {
-                  item : new_item 
-                  for item in foreignkeys_rawvalues[col] 
-                  for new_item in foreignkeys_luvalues[col] 
+                  item : new_item
+                  for item in foreignkeys_rawvalues[col]
+                  for new_item in foreignkeys_luvalues[col]
                   if str(item).lower() == new_item.lower()
-            } 
+            }
             for col in foreignkeys_rawvalues.keys()
         }
-        table_df = table_df.replace(fix_case)                
+        table_df = table_df.replace(fix_case)
+
+        # Special case for 'tide' column - can have multiple comma-separated values
+        # NOTE (02/05/2026): Added special handling for tide column with comma-separated values
+        if 'tide' in table_df.columns:
+            lu_tide = pd.read_sql("SELECT tide FROM lu_tide", g.eng)['tide'].tolist()
+            lu_tide_lower_map = {v.lower(): v for v in lu_tide}
+
+            def fix_tide_case(value):
+                if pd.isna(value) or str(value).strip() == '':
+                    return value
+                # Split by comma, fix case for each value, rejoin
+                parts = [p.strip() for p in str(value).split(',')]
+                fixed_parts = []
+                for part in parts:
+                    part_lower = part.lower()
+                    if part_lower in lu_tide_lower_map:
+                        fixed_parts.append(lu_tide_lower_map[part_lower])
+                    else:
+                        fixed_parts.append(part)
+                return ','.join(fixed_parts)
+
+            table_df['tide'] = table_df['tide'].apply(fix_tide_case)
+
+        # Special case for 'substrate' column - can have multiple comma-separated values
+        # NOTE (02/05/2026): Added special handling for substrate column with comma-separated values
+        if 'substrate' in table_df.columns:
+            lu_substrate = pd.read_sql("SELECT substrate FROM lu_substrate", g.eng)['substrate'].tolist()
+            lu_substrate_lower_map = {v.lower(): v for v in lu_substrate}
+
+            def fix_substrate_case(value):
+                if pd.isna(value) or str(value).strip() == '':
+                    return value
+                # Split by comma, fix case for each value, rejoin
+                parts = [p.strip() for p in str(value).split(',')]
+                fixed_parts = []
+                for part in parts:
+                    part_lower = part.lower()
+                    if part_lower in lu_substrate_lower_map:
+                        fixed_parts.append(lu_substrate_lower_map[part_lower])
+                    else:
+                        fixed_parts.append(part)
+                return ','.join(fixed_parts)
+
+            table_df['substrate'] = table_df['substrate'].apply(fix_substrate_case)
+
         all_dfs[f'{table_name}'] = table_df
     return all_dfs
 

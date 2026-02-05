@@ -367,9 +367,12 @@ def crabtrap(all_dfs):
     # NOTE (9/7/2023): assigned invert tmp row to be crabinvert tmp_row rather than crabinvert.index - Robert
     # NOTE (02/05/2026): Renumbered from check 10 to check 11
     
+    crabinvert['samplecollectiondate'] = pd.to_datetime(crabinvert['samplecollectiondate'])
+    crabmeta['samplecollectiondate'] = pd.to_datetime(crabmeta['samplecollectiondate'])
+
     merged = pd.merge(
         crabinvert.assign(invert_tmp_row = crabinvert.tmp_row),
-        crabmeta, 
+        crabmeta,
         how='left',
         suffixes=('_abundance', '_meta'),
         on = ['siteid','estuaryname','traptype','samplecollectiondate', 'traplocation','stationno','replicate', 'projectid']
@@ -378,9 +381,9 @@ def crabtrap(all_dfs):
     args.update({
         "dataframe": crabinvert,
         "tablename": 'tbl_crabfishinvert_abundance',
-        
+
         "badrows":  merged[
-            (merged['catch'].str.lower() == 'no') & ( merged['abundance'] > 0 )  
+            (merged['catch'].str.lower() == 'no') & ( merged['abundance'] > 0 )
         ].invert_tmp_row.tolist(),
         
         "badcolumn": "abundance",

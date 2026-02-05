@@ -11,6 +11,7 @@ from pathlib import Path
 import json
 from dateutil.relativedelta import relativedelta
 import re
+from datetime import datetime
 
 
 from openpyxl import load_workbook
@@ -708,26 +709,82 @@ def grab_translator():
 def get_test_data():
     dtype = request.args.get('dtype')
     clean = str(request.args.get('clean')).lower() == 'true'
-    get_all = str(request.args.get('get')).lower() == 'all'
+    get_all = str(request.args.get('get', 'all')).lower() == 'all'
 
-    print("dtype:", dtype)
-
-    dataset = current_app.datasets.get(dtype)
     eng = g.eng
+    today_date = datetime.now().strftime('%Y-%m-%d')
+
+    # If no dtype provided, create a zip file with all datasets
+    if dtype is None:
+        print("No dtype provided, creating zip with all datasets")
+        try:
+            zip_buffer = BytesIO()
+
+            with ZipFile(zip_buffer, 'w') as zip_file:
+                for dataset_name, dataset in current_app.datasets.items():
+                    # Skip logger_raw and toxicity datasets
+                    if 'logger_raw' in dataset_name.lower() or 'toxicity' in dataset_name.lower():
+                        print(f"Skipping dataset: {dataset_name}")
+                        continue
+
+                    print(f"Processing dataset: {dataset_name}")
+
+                    # Create Excel file for this dataset
+                    excel_buffer = BytesIO()
+
+                    # Pick a random site first, if not retrieving all data
+                    if not get_all:
+                        siteid_df = pd.read_sql(
+                            f"SELECT DISTINCT siteid FROM {[x for x in dataset.get('tables') if x != 'tbl_protocol_metadata'][0]} LIMIT 1",
+                            eng
+                        )
+                        siteid = siteid_df.iloc[0, 0] if not siteid_df.empty else None
+                    else:
+                        siteid = None
+
+                    with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+                        for tbl in dataset.get('tables'):
+                            print(f"  Processing table: {tbl}")
+                            if tbl == 'tbl_protocol_metadata':
+                                df = pd.read_sql(f'SELECT * FROM {tbl} LIMIT 1', eng)
+                                # Populate notes column with today's date
+                                if 'notes' in df.columns:
+                                    df['notes'] = f'all-points-confirmed-{today_date}'
+                            else:
+                                if get_all or siteid is None:
+                                    df = pd.read_sql(f"SELECT * FROM {tbl}", eng)
+                                else:
+                                    df = pd.read_sql(f"SELECT * FROM {tbl} WHERE siteid = '{siteid}'", eng)
+
+                            df.to_excel(writer, sheet_name=tbl, index=False)
+
+                    # Add the Excel file to the zip
+                    excel_buffer.seek(0)
+                    zip_file.writestr(f'{dataset_name}_test.xlsx', excel_buffer.read())
+
+            zip_buffer.seek(0)
+            return send_file(zip_buffer, download_name='all_test_data.zip', mimetype='application/zip')
+        except Exception as e:
+            print(f"Error: {e}")
+            return f"Error creating zip file: {str(e)}"
+
+    # Original code for single dataset
+    print("dtype:", dtype)
+    dataset = current_app.datasets.get(dtype)
 
     if dataset is None:
         return f"Datatype {dtype} not found in datasets"
 
     # if any(['logger' in dtype]):
     #     return "We won't do it for loggers or trash"
-    
+
     try:
         data = BytesIO()
-        
+
         # Pick a random site first, if not retrieving all data
         if not get_all:
             siteid_df = pd.read_sql(
-                f"SELECT DISTINCT siteid FROM {[x for x in dataset.get('tables') if x != 'tbl_protocol_metadata'][0]} LIMIT 1", 
+                f"SELECT DISTINCT siteid FROM {[x for x in dataset.get('tables') if x != 'tbl_protocol_metadata'][0]} LIMIT 1",
                 eng
             )
             siteid = siteid_df.iloc[0, 0] if not siteid_df.empty else None
@@ -739,6 +796,9 @@ def get_test_data():
                 print(tbl)
                 if tbl == 'tbl_protocol_metadata':
                     df = pd.read_sql(f'SELECT * FROM {tbl} LIMIT 1', eng)
+                    # Populate notes column with today's date
+                    if 'notes' in df.columns:
+                        df['notes'] = f'all-points-confirmed-{today_date}'
                 else:
                     if get_all or siteid is None:
                         df = pd.read_sql(f"SELECT * FROM {tbl}", eng)

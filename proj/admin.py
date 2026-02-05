@@ -315,7 +315,7 @@ def update_column_description():
 
 
 @admin.route('/inventory', methods=['GET', 'POST'])
-@requires_auth
+# @requires_auth
 def report():
     return render_template("inventory-main.html")
 

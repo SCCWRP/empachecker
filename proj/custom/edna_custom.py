@@ -55,8 +55,8 @@ def edna_field(all_dfs):
         "dataframe": edna_metadata,
         "tablename": 'tbl_edna_metadata',
         "badrows": edna_metadata[
-            (edna_metadata['filter_method'].str.lower() == 'smith-root') &
-            (edna_metadata['filter_storage'].str.strip() != 'S.R')
+            (edna_metadata['filter_method'].fillna('').str.lower() == 'smith-root') &
+            (edna_metadata['filter_storage'].fillna('').str.strip() != 'S.R')
         ].tmp_row.tolist(),
         "badcolumn": "filter_storage",
         "error_type": "Logic Error",
