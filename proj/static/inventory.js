@@ -1,4 +1,4 @@
-// Define the SOPs - ordered list for table columns
+// Define the SOPs - ordered list for table columns (SOP 2-15 only)
 const sopColumns = [
     { name: "Field Grab", code: "sopfield", description: "Field Grab" },
     { name: "SOP 2", code: "sop2", description: "SOP 2: Discrete environmental monitoring - point water quality measurements" },
@@ -27,6 +27,10 @@ sopColumns.forEach(sop => {
 let inventoryData = {};
 let flatData = []; // Flat array for easier filtering/display
 
+// SOP 1 data
+let sop1Data = [];
+let sop1FilteredData = [];
+
 // Function to fetch inventory data from the backend
 async function fetchInventoryData() {
     try {
@@ -42,16 +46,19 @@ async function fetchInventoryData() {
     }
 }
 
-// Transform nested data into flat array structure
+// Transform nested data into flat array structure (SOP 2-15 only)
 function transformToFlatData(data) {
     const flat = [];
     const generalData = data.general.data;
-    
+
     // Get all unique site IDs across all SOPs
     const allSites = new Set();
     const allYears = new Set();
-    
+
     Object.keys(generalData).forEach(sopCode => {
+        // Skip SOP 1 - it's in a separate table now
+        if (sopCode === 'sop1') return;
+
         Object.keys(generalData[sopCode]).forEach(siteId => {
             allSites.add(siteId);
             Object.keys(generalData[sopCode][siteId]).forEach(year => {
@@ -59,12 +66,12 @@ function transformToFlatData(data) {
             });
         });
     });
-    
+
     // Create flat rows: one row per siteId + year + season combination
     const seasons = ['Spring', 'Fall'];
     const sortedSites = Array.from(allSites).sort();
     const sortedYears = Array.from(allYears).sort();
-    
+
     sortedSites.forEach(siteId => {
         sortedYears.forEach(year => {
             seasons.forEach(season => {
@@ -74,7 +81,7 @@ function transformToFlatData(data) {
                     season,
                     sops: {}
                 };
-                
+
                 // Populate each SOP column
                 sopColumns.forEach(sop => {
                     const sopData = generalData[sop.code];
@@ -84,12 +91,12 @@ function transformToFlatData(data) {
                         row.sops[sop.code] = 'Not Assigned';
                     }
                 });
-                
+
                 flat.push(row);
             });
         });
     });
-    
+
     return flat;
 }
 
@@ -198,7 +205,7 @@ function createYearCheckboxes() {
         radio.name = 'yearSelect';
         radio.id = `year-${year}`;
         radio.value = year;
-        radio.checked = (year === currentYear); // Default to current year only
+        radio.checked = (year === 2025); // Default to 2025
         radio.addEventListener('change', filterAndRenderTable);
         
         const label = document.createElement('label');
@@ -331,20 +338,93 @@ function showCellInfoModal(sopName, siteID, year, season, cellValue) {
     document.getElementById('modalSiteId').innerText = siteID;
     document.getElementById('modalSeason').innerText = season;
     document.getElementById('modalYear').innerText = year;
-    
-    // Call to Flask route to fetch additional data
-    fetch(`/empachecker/get-sample-data?sop=${encodeURIComponent(sopName)}&siteid=${encodeURIComponent(siteID)}&year=${encodeURIComponent(year)}&season=${encodeURIComponent(season)}`)
-        .then(response => response.json())
-        .then(data => {
-            // Populate the modal with additional data from Flask
-            document.getElementById('modalSampleCollectionDate').innerText = data.samplecollectiondate || 'N/A';
-            document.getElementById('modalCreatedDate').innerText = data.created_date || 'N/A';
-        })
-        .catch(error => {
-            console.error('Error fetching sample data:', error);
-            document.getElementById('modalSampleCollectionDate').innerText = 'Error fetching data';
-            document.getElementById('modalCreatedDate').innerText = 'Error fetching data';
-        });
+
+    // Check if this is SOP 1 (logger data)
+    const isSop1 = sopName.includes('SOP 1');
+
+    if (isSop1) {
+        // Hide the Sample Collection Date and Submitted Date rows for SOP 1
+        document.getElementById('modalSampleCollectionDateRow').style.display = 'none';
+        document.getElementById('modalCreatedDateRow').style.display = 'none';
+
+        // For SOP 1, fetch and display raw_ column details
+        fetch(`/empachecker/get-sop1-details?siteid=${encodeURIComponent(siteID)}&year=${encodeURIComponent(year)}&season=${encodeURIComponent(season)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.raw_data) {
+                    // Build a table to display raw_ columns
+                    let tableHtml = '<div style="margin-top: 15px;"><strong>Raw Data Parameters:</strong><br><table class="table table-sm table-bordered" style="margin-top: 10px;"><thead><tr><th>Parameter</th><th>Data Available</th></tr></thead><tbody>';
+
+                    for (const [param, value] of Object.entries(data.raw_data)) {
+                        const displayValue = value === 'y' ? '✓ Yes' : '✗ No';
+                        const rowClass = value === 'y' ? 'table-success' : '';
+                        tableHtml += `<tr class="${rowClass}"><td>${param}</td><td>${displayValue}</td></tr>`;
+                    }
+
+                    tableHtml += '</tbody></table></div>';
+
+                    // Add the raw data table to the modal body
+                    const modalBody = document.querySelector('#infoModal .modal-body');
+                    // Remove any existing raw data table
+                    const existingTable = modalBody.querySelector('.sop1-raw-data');
+                    if (existingTable) {
+                        existingTable.remove();
+                    }
+                    // Add the new table
+                    const tableDiv = document.createElement('div');
+                    tableDiv.className = 'sop1-raw-data';
+                    tableDiv.innerHTML = tableHtml;
+                    modalBody.appendChild(tableDiv);
+                } else {
+                    // Show error in modal body
+                    const modalBody = document.querySelector('#infoModal .modal-body');
+                    const existingTable = modalBody.querySelector('.sop1-raw-data');
+                    if (existingTable) {
+                        existingTable.remove();
+                    }
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'sop1-raw-data alert alert-warning';
+                    errorDiv.innerText = 'No data found';
+                    modalBody.appendChild(errorDiv);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching SOP 1 details:', error);
+                const modalBody = document.querySelector('#infoModal .modal-body');
+                const existingTable = modalBody.querySelector('.sop1-raw-data');
+                if (existingTable) {
+                    existingTable.remove();
+                }
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'sop1-raw-data alert alert-danger';
+                errorDiv.innerText = 'Error fetching data';
+                modalBody.appendChild(errorDiv);
+            });
+    } else {
+        // Show the Sample Collection Date and Submitted Date rows for other SOPs
+        document.getElementById('modalSampleCollectionDateRow').style.display = 'block';
+        document.getElementById('modalCreatedDateRow').style.display = 'block';
+
+        // Remove any SOP 1 raw data table if it exists
+        const existingTable = document.querySelector('#infoModal .modal-body .sop1-raw-data');
+        if (existingTable) {
+            existingTable.remove();
+        }
+
+        // For other SOPs, fetch sample data as before
+        fetch(`/empachecker/get-sample-data?sop=${encodeURIComponent(sopName)}&siteid=${encodeURIComponent(siteID)}&year=${encodeURIComponent(year)}&season=${encodeURIComponent(season)}`)
+            .then(response => response.json())
+            .then(data => {
+                // Populate the modal with additional data from Flask
+                document.getElementById('modalSampleCollectionDate').innerText = data.samplecollectiondate || 'N/A';
+                document.getElementById('modalCreatedDate').innerText = data.created_date || 'N/A';
+            })
+            .catch(error => {
+                console.error('Error fetching sample data:', error);
+                document.getElementById('modalSampleCollectionDate').innerText = 'Error fetching data';
+                document.getElementById('modalCreatedDate').innerText = 'Error fetching data';
+            });
+    }
 
     // Show the modal
     const modal = new bootstrap.Modal(document.getElementById('infoModal'));
@@ -437,32 +517,262 @@ function downloadInventoryData(year) {
     window.open(`/empachecker/download-inventory-data?year=${year}`, '_blank');
 }
 
+// ============================================
+// SOP 1 Table Functions
+// ============================================
+
+// Fetch SOP 1 data from backend
+async function fetchSop1Data() {
+    try {
+        const response = await fetch('/empachecker/get-sop1-table-data');
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error fetching SOP 1 data:', error);
+        return null;
+    }
+}
+
+// Create SOP 1 table headers
+function createSop1TableHeaders() {
+    const headerRow = document.getElementById('sop1TableHeader');
+    const filterRow = document.getElementById('sop1FilterRow');
+    headerRow.innerHTML = '';
+    filterRow.innerHTML = '';
+
+    const headers = [
+        'Region', 'Site ID', 'Year', 'Month',
+        'Chlorophyll', 'Conductivity', 'Depth', 'DO', 'DO %',
+        'Temperature', 'ORP', 'pH', 'Pressure', 'Q-Value', 'Salinity', 'Turbidity'
+    ];
+
+    // Map headers to column names in data
+    const headerToColumn = {
+        'Region': 'region',
+        'Site ID': 'siteid',
+        'Year': 'year',
+        'Month': 'month',
+        'Chlorophyll': 'raw_chlorophyll',
+        'Conductivity': 'raw_conductivity',
+        'Depth': 'raw_depth',
+        'DO': 'raw_do',
+        'DO %': 'raw_do_pct',
+        'Temperature': 'raw_h2otemp',
+        'ORP': 'raw_orp',
+        'pH': 'raw_ph',
+        'Pressure': 'raw_pressure',
+        'Q-Value': 'raw_qvalue',
+        'Salinity': 'raw_salinity',
+        'Turbidity': 'raw_turbidity'
+    };
+
+    headers.forEach((header, index) => {
+        const th = document.createElement('th');
+        th.innerText = header;
+        headerRow.appendChild(th);
+
+        // Filter row - add inputs for all columns
+        const filterTh = document.createElement('th');
+        filterTh.style.padding = '4px';
+
+        const filterInput = document.createElement('input');
+        filterInput.type = 'text';
+        filterInput.className = 'form-control form-control-sm sop1-column-filter';
+        filterInput.dataset.column = headerToColumn[header];
+        filterInput.placeholder = 'Filter...';
+        filterInput.addEventListener('input', filterAndRenderSop1Table);
+        filterTh.appendChild(filterInput);
+
+        filterRow.appendChild(filterTh);
+    });
+}
+
+// Create year radio buttons for SOP 1
+function createSop1YearCheckboxes(years) {
+    const container = document.getElementById('sop1YearCheckboxContainer');
+    container.innerHTML = '';
+
+    years.forEach(year => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'form-check form-check-inline';
+
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.className = 'form-check-input sop1-year-radio';
+        radio.name = 'sop1YearSelect';
+        radio.id = `sop1-year-${year}`;
+        radio.value = year;
+        radio.checked = (year === 2025); // Default to 2025
+        radio.addEventListener('change', filterAndRenderSop1Table);
+
+        const label = document.createElement('label');
+        label.className = 'form-check-label';
+        label.htmlFor = `sop1-year-${year}`;
+        label.innerText = year;
+
+        wrapper.appendChild(radio);
+        wrapper.appendChild(label);
+        container.appendChild(wrapper);
+    });
+}
+
+// Get selected year for SOP 1
+function getSop1SelectedYear() {
+    const selectedRadio = document.querySelector('.sop1-year-radio:checked');
+    return selectedRadio ? selectedRadio.value : null;
+}
+
+// Get SOP 1 site filter
+function getSop1SiteFilter() {
+    const input = document.getElementById('sop1SiteFilter');
+    return input ? input.value.toLowerCase().trim() : '';
+}
+
+// Get SOP 1 column filters
+function getSop1ColumnFilters() {
+    const filters = {};
+    document.querySelectorAll('.sop1-column-filter').forEach(input => {
+        const column = input.dataset.column;
+        const value = input.value.toLowerCase().trim();
+        if (value) {
+            filters[column] = value;
+        }
+    });
+    return filters;
+}
+
+// Filter and render SOP 1 table
+function filterAndRenderSop1Table() {
+    const siteFilter = getSop1SiteFilter();
+    const siteFilters = siteFilter ? siteFilter.split(',').map(s => s.trim()).filter(s => s) : [];
+    const columnFilters = getSop1ColumnFilters();
+
+    // Filter data
+    let filteredData = sop1Data.filter(row => {
+        // Site filter (from top input)
+        if (siteFilters.length > 0) {
+            const matches = siteFilters.some(filter =>
+                row.siteid.toLowerCase().includes(filter)
+            );
+            if (!matches) return false;
+        }
+
+        // Column filters (from table header row)
+        for (const [column, filterValue] of Object.entries(columnFilters)) {
+            let rowValue = '';
+
+            // Get the value from the row based on column name
+            if (row[column] !== null && row[column] !== undefined) {
+                rowValue = row[column].toString().toLowerCase();
+            } else {
+                // For null/undefined values, use 'n' for filtering
+                rowValue = 'n';
+            }
+
+            if (!rowValue.includes(filterValue)) return false;
+        }
+
+        return true;
+    });
+
+    sop1FilteredData = filteredData;
+    renderSop1Table(filteredData);
+}
+
+// Render SOP 1 table
+function renderSop1Table(data) {
+    const tbody = document.getElementById('sop1TableBody');
+    tbody.innerHTML = '';
+
+    data.forEach(row => {
+        const tr = document.createElement('tr');
+
+        // Create cells in order
+        const columns = [
+            'region', 'siteid', 'year', 'month',
+            'raw_chlorophyll', 'raw_conductivity', 'raw_depth',
+            'raw_do', 'raw_do_pct', 'raw_h2otemp', 'raw_orp',
+            'raw_ph', 'raw_pressure', 'raw_qvalue', 'raw_salinity', 'raw_turbidity'
+        ];
+
+        const rawColumns = [
+            'raw_chlorophyll', 'raw_conductivity', 'raw_depth',
+            'raw_do', 'raw_do_pct', 'raw_h2otemp', 'raw_orp',
+            'raw_ph', 'raw_pressure', 'raw_qvalue', 'raw_salinity', 'raw_turbidity'
+        ];
+
+        columns.forEach(col => {
+            const cell = document.createElement('td');
+
+            // For raw_ columns, display 'n' for null/empty values
+            if (rawColumns.includes(col)) {
+                const cellValue = (row[col] !== null && row[col] !== undefined && row[col] !== '') ? row[col] : 'n';
+                cell.innerText = cellValue;
+
+                // Add green color for 'y' values
+                if (cellValue === 'y') {
+                    cell.classList.add('green-cell');
+                }
+            } else {
+                // For other columns, display the value or empty string
+                cell.innerText = row[col] !== null ? row[col] : '';
+            }
+
+            tr.appendChild(cell);
+        });
+
+        tbody.appendChild(tr);
+    });
+}
+
 // Initialize page
 document.addEventListener('DOMContentLoaded', async () => {
     showLoader();
 
-    const data = await fetchInventoryData();
+    // Fetch both SOP 1 and SOP 2-15 data in parallel
+    const [inventoryResponse, sop1Response] = await Promise.all([
+        fetchInventoryData(),
+        fetchSop1Data()
+    ]);
 
-    if (data) {
+    // Initialize SOP 2-15 table
+    if (inventoryResponse) {
         // Store the data
-        inventoryData = data;
-        
+        inventoryData = inventoryResponse;
+
         // Transform to flat structure
-        flatData = transformToFlatData(data);
-        
+        flatData = transformToFlatData(inventoryResponse);
+
         // Create table headers
         createTableHeaders();
-        
+
         // Create year checkboxes
         createYearCheckboxes();
-        
+
         // Initial render
         filterAndRenderTable();
-        
+
         // Set up event listeners
         document.getElementById('siteFilter').addEventListener('input', filterAndRenderTable);
         document.getElementById('downloadBtn').addEventListener('click', () => downloadInventoryData());
     }
-    
+
+    // Initialize SOP 1 table
+    if (sop1Response && sop1Response.data) {
+        sop1Data = sop1Response.data;
+
+        // Create SOP 1 table headers
+        createSop1TableHeaders();
+
+        // Initial render (display all years)
+        filterAndRenderSop1Table();
+
+        // Set up event listeners
+        document.getElementById('sop1SiteFilter').addEventListener('input', filterAndRenderSop1Table);
+    }
+
     hideLoader();
 });

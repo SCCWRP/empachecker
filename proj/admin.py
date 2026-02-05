@@ -400,7 +400,46 @@ def get_inventory_data():
                 inventory_data['logger']['data'][parameter][siteid][year] = {}
 
             inventory_data['logger']['data'][parameter][siteid][year][month] = data_exists
-            
+
+    # Process SOP 1 (logger) data to match general SOP structure
+    # Group by siteid, year, season and check if any raw_ column has 'y'
+    raw_columns = [col for col in logger_df.columns if col.startswith('raw_')]
+
+    # Define season based on month
+    def get_season(month):
+        month = int(month)
+        if month in [3, 4, 5, 6]:
+            return 'Spring'
+        elif month in [7, 8, 9, 10, 11, 12, 1, 2]:
+            return 'Fall'
+        return None
+
+    # Add season column
+    logger_df['season'] = logger_df['month'].apply(get_season)
+
+    # Group by siteid, year, season and check if any raw_ column has 'y'
+    sop1_grouped = logger_df.groupby(['siteid', 'year', 'season']).apply(
+        lambda x: 'Data Available' if any(x[col].eq('y').any() for col in raw_columns) else 'Not Submitted'
+    ).reset_index(name='data_exists')
+
+    # Add SOP 1 to general data structure
+    if 'sop1' not in inventory_data['general']['data']:
+        inventory_data['general']['data']['sop1'] = {}
+
+    for _, row in sop1_grouped.iterrows():
+        siteid = row['siteid']
+        year = str(row['year'])
+        season = row['season']
+        data_exists = row['data_exists']
+
+        if siteid not in inventory_data['general']['data']['sop1']:
+            inventory_data['general']['data']['sop1'][siteid] = {}
+
+        if year not in inventory_data['general']['data']['sop1'][siteid]:
+            inventory_data['general']['data']['sop1'][siteid][year] = {}
+
+        inventory_data['general']['data']['sop1'][siteid][year][season] = data_exists
+
     return jsonify(inventory_data)
 
 @admin.route('/download-inventory-data', methods=['GET'])
@@ -680,6 +719,131 @@ def get_logger_graph_data():
     return jsonify(graph_data)
 
 
+
+
+@admin.route('/get-sop1-details', methods=['GET'])
+def get_sop1_details():
+    """Get SOP 1 (logger) raw_ column details for a specific site, year, and season"""
+
+    siteid = request.args.get('siteid')
+    year = request.args.get('year')
+    season = request.args.get('season')
+
+    if not all([siteid, year, season]):
+        return jsonify({'error': 'Missing required parameters'}), 400
+
+    # Define season month ranges
+    def get_month_range(season):
+        if season == 'Spring':
+            return [3, 4, 5, 6]
+        elif season == 'Fall':
+            return [7, 8, 9, 10, 11, 12, 1, 2]
+        return []
+
+    months = get_month_range(season)
+    if not months:
+        return jsonify({'error': 'Invalid season'}), 400
+
+    eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
+
+    # Query to get raw_ column values for the specified siteid, year, and season
+    query = text("""
+        SELECT
+            raw_chlorophyll,
+            raw_conductivity,
+            raw_depth,
+            raw_do,
+            raw_do_pct,
+            raw_h2otemp,
+            raw_orp,
+            raw_ph,
+            raw_pressure,
+            raw_qvalue,
+            raw_salinity,
+            raw_turbidity
+        FROM mvw_qa_raw_logger_combined_final
+        WHERE siteid = :siteid
+            AND year = :year
+            AND month = ANY(:months)
+        LIMIT 1
+    """)
+
+    try:
+        with eng.connect() as conn:
+            result = conn.execute(query, {
+                'siteid': siteid,
+                'year': int(year),
+                'months': months
+            }).fetchone()
+
+        if result:
+            # Convert row to dictionary
+            raw_data = {
+                'Chlorophyll': result['raw_chlorophyll'],
+                'Conductivity': result['raw_conductivity'],
+                'Depth': result['raw_depth'],
+                'Dissolved Oxygen': result['raw_do'],
+                'DO Percent': result['raw_do_pct'],
+                'Temperature': result['raw_h2otemp'],
+                'ORP': result['raw_orp'],
+                'pH': result['raw_ph'],
+                'Pressure': result['raw_pressure'],
+                'Q-Value': result['raw_qvalue'],
+                'Salinity': result['raw_salinity'],
+                'Turbidity': result['raw_turbidity']
+            }
+            return jsonify({'raw_data': raw_data})
+        else:
+            return jsonify({'error': 'No data found'}), 404
+
+    except Exception as e:
+        print(f"Error fetching SOP 1 details: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@admin.route('/get-sop1-table-data', methods=['GET'])
+def get_sop1_table_data():
+    """Get all SOP 1 raw logger data for the table display"""
+    eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
+
+    query = """
+        SELECT
+            region,
+            siteid,
+            year,
+            month,
+            raw_chlorophyll,
+            raw_conductivity,
+            raw_depth,
+            raw_do,
+            raw_do_pct,
+            raw_h2otemp,
+            raw_orp,
+            raw_ph,
+            raw_pressure,
+            raw_qvalue,
+            raw_salinity,
+            raw_turbidity
+        FROM mvw_qa_raw_logger_combined_final
+        ORDER BY region, siteid, year, month
+    """
+
+    try:
+        df = pd.read_sql(query, eng)
+
+        # Convert to list of dictionaries
+        data = df.to_dict('records')
+
+        # Get unique years for filter
+        years = sorted(df['year'].unique().tolist())
+
+        return jsonify({
+            'data': data,
+            'years': years
+        })
+    except Exception as e:
+        print(f"Error fetching SOP 1 table data: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 @admin.route('/get-sample-data', methods=['GET'])

@@ -49,30 +49,37 @@
         .table-container {
             max-height: 70vh;
             overflow-y: auto;
-            overflow-x: hidden;
+            overflow-x: auto;
         }
-        #filterRow th {
+        #filterRow th, #sop1FilterRow th {
             background-color: #e7f1ff;
             position: sticky;
             top: 24px;
             z-index: 9;
         }
-        #filterRow input, #filterRow select {
+        #filterRow input, #filterRow select, #sop1FilterRow input, #sop1FilterRow select {
             font-size: 0.65rem;
             padding: 2px;
             min-width: 40px;
             width: 100%;
+        }
+        /* SOP 1 specific table styling */
+        #sop1Table {
+            table-layout: auto;
+            min-width: 1400px;
+        }
+        #sop1Table td, #sop1Table th {
+            font-size: 0.65rem;
+            padding: 0.2rem;
         }
     </style>
 </head>
 
 <body>
     <header class="container-fluid mt-4 lightning-header">
-        <h2 class="mb-4">EMPA Data Inventory</h2>
-        <p class="text-muted">The General SOPs (2-15) inventory check is updated in real-time.</p>
-        <p class="text-muted">Click on 'Data Available' cells to check details.</p>
+        <h2 class="mb-4">EMPA Data Availability</h2>
     </header>
-    
+
 
     <div id="loader" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999;">
         <div class="spinner-border text-primary" role="status">
@@ -81,42 +88,92 @@
     </div>
 
     <main class="container-fluid">
-        <!-- Filters Section -->
-        <div class="row mb-3">
-            <div class="col-md-4">
-                <label for="siteFilter" class="form-label">Filter by Site ID</label>
-                <input type="text" id="siteFilter" class="form-control" placeholder="Enter Site ID(s), comma-separated">
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Select Year</label>
-                <div id="yearCheckboxContainer" class="d-flex flex-wrap gap-2"></div>
-            </div>
-            <div class="col-md-4 d-flex align-items-end">
-                <button id="downloadBtn" class="btn btn-primary me-2">Download Inventory Data as Excel</button>
-            </div>
-        </div>
+        <!-- Tabs Navigation -->
+        <ul class="nav nav-tabs mb-3" id="inventoryTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="sop2-15-tab" data-bs-toggle="tab" data-bs-target="#sop2-15-content" type="button" role="tab" aria-controls="sop2-15-content" aria-selected="true">
+                    SOP 2-15
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="sop1-tab" data-bs-toggle="tab" data-bs-target="#sop1-content" type="button" role="tab" aria-controls="sop1-content" aria-selected="false">
+                    SOP 1
+                </button>
+            </li>
+        </ul>
 
-        <!-- Legend -->
-        <div class="mb-3">
-            <span class="text-muted me-3">Info:</span>
-            <span class="text-success me-3">Data Available: Can be downloaded using the Advanced Query Tool on empa.sccwrp.org</span>
-            <span class="text-danger me-3">Not Submitted: Data are expected for this site, but not submitted yet</span>
-            <span class="text-muted">Not Assigned: Data are not expected for this site</span>
-        </div>
-        <div class="mb-3">
-            <span class="me-3">Months for Fall: 7,8,9,10,11,12,1 (following year), 2 (following year)</span>
-            <span>Months for Spring: 3,4,5,6</span>
-        </div>
+        <!-- Tabs Content -->
+        <div class="tab-content" id="inventoryTabsContent">
+            <!-- SOP 2-15 Tab -->
+            <div class="tab-pane fade show active" id="sop2-15-content" role="tabpanel" aria-labelledby="sop2-15-tab">
+                <p class="text-muted mb-3">The General SOPs (2-15) inventory check is updated in real-time. Click on 'Data Available' cells to check details.</p>
 
-        <!-- Inventory Table -->
-        <div class="table-container">
-            <table id="inventoryTable" class="table table-bordered table-hover inventory-table text-center">
-                <thead class="table-primary">
-                    <tr id="tableHeader"></tr>
-                    <tr id="filterRow"></tr>
-                </thead>
-                <tbody id="tableBody"></tbody>
-            </table>
+                <!-- SOP 2-15 Filters -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="siteFilter" class="form-label">Filter by Site ID</label>
+                        <input type="text" id="siteFilter" class="form-control" placeholder="Enter Site ID(s), comma-separated">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Select Year</label>
+                        <div id="yearCheckboxContainer" class="d-flex flex-wrap gap-2"></div>
+                    </div>
+                </div>
+
+                <!-- Legend -->
+                <div class="mb-3">
+                    <span class="text-muted me-3">Info:</span>
+                    <span class="text-success me-3">Data Available: Can be downloaded using the Advanced Query Tool on empa.sccwrp.org</span>
+                    <span class="text-danger me-3">Not Submitted: Data are expected for this site, but not submitted yet</span>
+                    <span class="text-muted">Not Assigned: Data are not expected for this site</span>
+                </div>
+                <div class="mb-3">
+                    <span class="me-3">Months for Fall: 7,8,9,10,11,12,1 (following year), 2 (following year)</span>
+                    <span>Months for Spring: 3,4,5,6</span>
+                </div>
+                <div class="mb-3">
+                    <button id="downloadBtn" class="btn btn-primary me-2">Download Inventory Table as Excel</button>
+                    <button class="btn btn-info" onclick="window.open('https://nexus.sccwrp.org/empadataquery', '_blank')">Download Raw Data</button>
+                </div>
+
+                <!-- SOP 2-15 Inventory Table -->
+                <div class="table-container">
+                    <table id="inventoryTable" class="table table-bordered table-hover inventory-table text-center">
+                        <thead class="table-primary">
+                            <tr id="tableHeader"></tr>
+                            <tr id="filterRow"></tr>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SOP 1 Tab -->
+            <div class="tab-pane fade" id="sop1-content" role="tabpanel" aria-labelledby="sop1-tab">
+                <p class="text-muted mb-3">Raw logger data from continuous environmental monitoring.</p>
+
+                <!-- SOP 1 Filters -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="sop1SiteFilter" class="form-label">Filter by Site ID</label>
+                        <input type="text" id="sop1SiteFilter" class="form-control" placeholder="Enter Site ID(s), comma-separated">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button id="sop1DownloadBtn" class="btn btn-primary me-2" onclick="window.open('https://erddap.sccwrp.org/erddap/index.html', '_blank')">Download Raw Data</button>
+                    </div>
+                </div>
+
+                <!-- SOP 1 Table -->
+                <div class="table-container">
+                    <table id="sop1Table" class="table table-bordered table-hover inventory-table text-center">
+                        <thead class="table-primary">
+                            <tr id="sop1TableHeader"></tr>
+                            <tr id="sop1FilterRow"></tr>
+                        </thead>
+                        <tbody id="sop1TableBody"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -134,8 +191,8 @@
                     <p><strong>Site ID:</strong> <span id="modalSiteId"></span></p>
                     <p><strong>Season:</strong> <span id="modalSeason"></span></p>
                     <p><strong>Year:</strong> <span id="modalYear"></span></p>
-                    <p><strong>Sample Collection Date:</strong> <span id="modalSampleCollectionDate">Loading...</span></p>
-                    <p><strong>Submitted Date:</strong> <span id="modalCreatedDate">Loading...</span></p>
+                    <p id="modalSampleCollectionDateRow"><strong>Sample Collection Date:</strong> <span id="modalSampleCollectionDate">Loading...</span></p>
+                    <p id="modalCreatedDateRow"><strong>Submitted Date:</strong> <span id="modalCreatedDate">Loading...</span></p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
