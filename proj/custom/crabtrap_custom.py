@@ -186,33 +186,32 @@ def crabtrap(all_dfs):
 
 
     print("# CHECK - 6")
-    # Description: If trapsuccess is no, then there should be no records in the crabfishinvert_abundance tab and crabbiomass_length (🛑 ERROR 🛑)
+    # Description: If trapsuccess is no, then abundance must be 0 or -88 (🛑 ERROR 🛑)
     # Created Coder: Caspian
     # Created Date: 09/27/2023
     # Last Edited Date: 02/05/2026
     # Last Edited Coder: Duy
     # NOTE (02/05/2026): Renumbered from check 14, uncommented and fixed
+    # NOTE (02/05/2026): Changed logic - if trapsuccess is no, abundance must be 0 or -88
 
+    # Check crabfishinvert_abundance
+    merged_invert = pd.merge(
+        crabinvert,
+        crabmeta[crabmeta_crabinvert_shared_pkey + ['trapsuccess']],
+        how='left',
+        on=crabmeta_crabinvert_shared_pkey
+    )
     args.update({
-        "dataframe": crabmeta,
-        "tablename": 'tbl_crabtrap_metadata',
-        "badrows": list(set(match(crabmeta, crabinvert, crabmeta_crabinvert_shared_pkey)) & set(crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'no')].tmp_row.to_list())),
-        "badcolumn": "trapsuccess",
+        "dataframe": crabinvert,
+        "tablename": 'tbl_crabfishinvert_abundance',
+        "badrows": merged_invert[
+            (merged_invert['trapsuccess'].fillna('').str.lower().str.strip() == 'no') &
+            (~merged_invert['abundance'].isin([-88, 0]))
+        ].tmp_row.tolist(),
+        "badcolumn": "abundance",
         "error_type": "Logic Error",
-        "error_message": "If trapsuccess is no, then there should be no records in the crabfishinvert_abundance"
+        "error_message": "If trapsuccess is no in crabtrap_metadata, then abundance must be -88 or 0"
     })
-
-    errs = [*errs, checkData(**args)]
-
-    args.update({
-        "dataframe": crabmeta,
-        "tablename": 'tbl_crabtrap_metadata',
-        "badrows": list(set(match(crabmeta, crabmass, crabmeta_crabmass_shared_pkey)) & set(crabmeta[(crabmeta['trapsuccess'].apply(lambda x: str(x).strip().lower()) == 'no')].tmp_row.to_list())),
-        "badcolumn": "trapsuccess",
-        "error_type": "Logic Error",
-        "error_message": "If trapsuccess is no, then there should be no records in the crabbiomass_length"
-    })
-
     errs = [*errs, checkData(**args)]
 
     print("# END OF CHECK - 6")

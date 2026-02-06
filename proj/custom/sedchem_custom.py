@@ -93,7 +93,7 @@ def sedchem_lab(all_dfs):
         "error_message": 
             "Each record in sedchem_labbatch_data must have a corresponding field record. You must submit the field data to the checker first. "+\
             "The Field template can be downloaded on "+\
-            "<a href='/checker/templater?datatype=grab_field' target='_blank'>Field Template</a>. "
+            "<a href='/empachecker/templater?datatype=grab_field' target='_blank'>Field Template</a>. "
             "Records are matched based on these columns: {}".format(','.join(sedlabbatch_grabeventdetails_shared_pkey))
     })
     errs = [*errs, checkData(**args)]

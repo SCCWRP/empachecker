@@ -415,20 +415,20 @@ def discretewq(all_dfs):
     print('END CHECK 12')
 
     print('START CHECK 13')
-    # Description:  Range for airtemp, with airtemp_units as C, must be between [0, 50] or -88
+    # Description:  Range for airtemp, with airtemp_units as C, must be between [0, 100] or -88
     # Created Coder: NA
     # Created Date: NA
     # Last Edited Date: 02/05/2026
     # Last Edited Coder: Duy
     # NOTE (09/05/2023): Ayah adjusted format so it follows the coding standard
-    # NOTE (02/05/2026): Updated range from [0, 100] to [0, 50]
+    # NOTE (02/05/2026): Updated range from [0, 100] to [0, 100]
     args.update({
         "dataframe": waterdata,
         "tablename": 'tbl_waterquality_data',
         "badrows": waterdata[
             (waterdata['airtemp'] != -88) &
             (waterdata['airtemp_units'].str.lower() == 'deg c') &
-            (~waterdata['airtemp'].between(0, 50))
+            (~waterdata['airtemp'].between(0, 100))
         ].tmp_row.tolist(),
         "badcolumn": "airtemp",
         "error_type": "Value Out of range",
@@ -438,7 +438,7 @@ def discretewq(all_dfs):
     print('END CHECK 13')
 
     print('BEGIN CHECK 14')
-    # Description:  Range for h2otemp, with h2otemp_units as C, must be between [0, 50] or -88
+    # Description:  Range for h2otemp, with h2otemp_units as C, must be between [0, 100] or -88
     # Created Coder: NA
     # Created Date: NA
     # Last Edited Date: 09/05/2023

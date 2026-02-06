@@ -32,6 +32,12 @@ def feldspar(all_dfs):
     felddata['tmp_row'] = felddata.index
     feldmeta['tmp_row'] = feldmeta.index
 
+    # Convert samplecollectiontimestamp to datetime to ensure matching types for merges
+    if 'samplecollectiontimestamp' in felddata.columns:
+        felddata['samplecollectiontimestamp'] = pd.to_datetime(felddata['samplecollectiontimestamp'])
+    if 'samplecollectiontimestamp' in feldmeta.columns:
+        feldmeta['samplecollectiontimestamp'] = pd.to_datetime(feldmeta['samplecollectiontimestamp'])
+
     felddata_pkey = get_primary_key('tbl_feldspar_data',g.eng)
     feldmeta_pkey = get_primary_key('tbl_feldspar_metadata',g.eng)
     felddata_feldmeta_shared_pkey = [x for x in felddata_pkey if x in feldmeta_pkey]
@@ -84,21 +90,29 @@ def feldspar(all_dfs):
     print("# END OF CHECK - 1")
 
     print("# CHECK - 2")
-    # Description: Each record in feldspar_data must have a corresponding record in feldspar_metadata when plug_extracted = yes
-    # Created Coder: Aria 
+    # Description: Each record in feldspar_data must have a corresponding record in feldspar_metadata
+    # Created Coder: Aria
     # Created Date: NA
-    # Last Edited Date: 2/15/2024
-    # Last Edited Coder: Caspian
+    # Last Edited Date: 02/06/2026
+    # Last Edited Coder: Duy
     # NOTE (9/28/2023): Check was changed so the code now matched the updated check
     # NOTE (10/05/2023): Aria revised the error message
     # NOTE (2/15/2024): Added var to flag if there are mismatched rows (missing_feld_data) to be used in check 3
-    
-    badrows = mismatch(felddata,feldmeta,felddata_feldmeta_shared_pkey)
+    # NOTE (02/06/2026): Replaced mismatch function with explicit merge to find records in felddata not in feldmeta
+
+    merged_check2 = pd.merge(
+        felddata,
+        feldmeta[felddata_feldmeta_shared_pkey],
+        how='left',
+        on=felddata_feldmeta_shared_pkey,
+        indicator=True
+    )
+    badrows = merged_check2[merged_check2['_merge'] == 'left_only'].tmp_row.tolist()
 
     args.update({
         "dataframe": felddata,
         "tablename": "tbl_feldspar_data",
-        "badrows": badrows, 
+        "badrows": badrows,
         "badcolumn": ','.join(felddata_feldmeta_shared_pkey),
         "error_type": "Logic Error",
         "error_message": "Each record in tbl_feldspar_data must have a corresponsing record in tbl_feldspar_metadata. Records are matched based on these columns: {}".format(

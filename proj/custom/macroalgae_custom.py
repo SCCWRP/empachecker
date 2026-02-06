@@ -291,9 +291,9 @@ def macroalgae(all_dfs):
     # Description: waterclarity_length_cm must be between 0 and 300, unless waterclarity_equipment is 'Not recorded', in which case waterclarity_length_cm must be -88 (🛑 ERROR 🛑)
     # Created Coder: Duy Nguyen
     # Created Date: 12/30/2024
-    # Last Edited Date: [Your Edit Date]
-    # Last Edited Coder: [Your Name]
-    # NOTE ([Your Edit Date]): Added exception for waterclarity_equipment = 'Not recorded'.
+    # Last Edited Date: 05/01/2025
+    # Last Edited Coder: Duy Nguyen
+    # NOTE (05/01/2025): Added exception for waterclarity_equipment = 'Not recorded'.
 
     args.update({
         "dataframe": site_metadata,
