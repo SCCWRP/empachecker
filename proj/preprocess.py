@@ -150,6 +150,28 @@ def fix_case(all_dfs: dict):
 
             table_df['substrate'] = table_df['substrate'].apply(fix_substrate_case)
 
+        # Special case for 'weather' column - can have multiple comma-separated values
+        # NOTE (02/12/2026): Added special handling for weather column with comma-separated values
+        if 'weather' in table_df.columns:
+            lu_weather = pd.read_sql("SELECT weather FROM lu_weather", g.eng)['weather'].tolist()
+            lu_weather_lower_map = {v.lower(): v for v in lu_weather}
+
+            def fix_weather_case(value):
+                if pd.isna(value) or str(value).strip() == '':
+                    return value
+                # Split by comma, fix case for each value, rejoin
+                parts = [p.strip() for p in str(value).split(',')]
+                fixed_parts = []
+                for part in parts:
+                    part_lower = part.lower()
+                    if part_lower in lu_weather_lower_map:
+                        fixed_parts.append(lu_weather_lower_map[part_lower])
+                    else:
+                        fixed_parts.append(part)
+                return ','.join(fixed_parts)
+
+            table_df['weather'] = table_df['weather'].apply(fix_weather_case)
+
         all_dfs[f'{table_name}'] = table_df
     return all_dfs
 

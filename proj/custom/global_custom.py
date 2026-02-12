@@ -504,6 +504,43 @@ def global_custom(all_dfs, datatype = ''):
             print("# END GLOBAL CUSTOM CHECK - 11")
 
 
+        if 'weather' in df.columns:
+            print("# GLOBAL CUSTOM CHECK - 12 Weather values must be from lookup list lu_weather")
+            # Description: If weather column exists, user can enter multiple values separated by commas. All values must exist in lu_weather table
+            # Created Coder: System
+            # Created Date: 02/12/2026
+            # Last Edited Date:
+            # Last Edited Coder:
+            # NOTE (02/12/2026): Created check for comma-separated weather values
+
+            lu_weather = pd.read_sql('SELECT weather FROM lu_weather', g.eng)
+            valid_weather_values = set(lu_weather['weather'].str.strip())
+
+            def check_weather_values(weather_value):
+                if pd.isna(weather_value) or str(weather_value).strip() == '':
+                    return False
+                # Split by comma and check each value
+                values = [v.strip() for v in str(weather_value).split(',')]
+                return not all(v in valid_weather_values for v in values if v != '')
+
+            args = {
+                "dataframe": df,
+                "tablename": table_name,
+                "badrows": df[df['weather'].apply(check_weather_values)].tmp_row.tolist(),
+                "badcolumn": "weather",
+                "error_type": "Value Error",
+                "is_core_error": False,
+                "error_message": f'''
+                    All weather values must match entries in lookup list
+                    <a href="/{lu_list_script_root}/scraper?action=help&layer=lu_weather" target="_blank">
+                        lu_weather
+                    </a>. You can enter multiple values separated by commas (e.g., "sunny,cloudy").
+                '''
+            }
+            errs = [*errs, checkData(**args)]
+            print("# END GLOBAL CUSTOM CHECK - 12")
+
+
     print("end global custom checks")
     return {'errors': errs, 'warnings': warnings}
 
