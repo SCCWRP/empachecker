@@ -1,4 +1,4 @@
-import os, time, re
+import os, time, re, json
 import pandas as pd
 import geopandas as gpd
 from bs4 import BeautifulSoup
@@ -1310,60 +1310,179 @@ def new_project_metadata_form():
     
     elif request.method == 'POST':
         try:
-            # Handle form submission
-            form_data = request.form.to_dict()
-            
-            # Create directory for project files if it doesn't exist
-            project_id = form_data.get('abbreviation', '').strip()
-            if not project_id:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Project abbreviation is required'
-                }), 400
-            
-            # Create directory structure: files/projects/{project_id}/sops/
-            project_dir = os.path.join(os.getcwd(), 'files', 'projects', project_id, 'sops')
-            os.makedirs(project_dir, exist_ok=True)
-            
-            # Handle SOP file uploads
-            uploaded_sops = []
-            for key in request.files:
-                if key.endswith('_file'):
-                    file = request.files[key]
+            form_data = request.form
+
+            # Validate email
+            email = form_data.get('email', '').strip()
+            if not email or not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
+                return jsonify({'status': 'error', 'message': 'A valid email address is required'}), 400
+
+            # Validate abbreviation
+            abbreviation = form_data.get('abbreviation', '').strip()
+            if not abbreviation:
+                return jsonify({'status': 'error', 'message': 'Project abbreviation is required'}), 400
+
+            # Create upload directory: export/{email}/
+            upload_dir = os.path.join(os.getcwd(), 'export', email)
+            os.makedirs(upload_dir, exist_ok=True)
+
+            # --- Collect agencies (dynamic fields) ---
+            agencies = []
+            i = 1
+            while True:
+                agency_name = form_data.get(f'agency_{i}_name', '').strip()
+                agency_role = form_data.get(f'agency_{i}_role', '').strip()
+                if not agency_name and not agency_role:
+                    break
+                if agency_name:
+                    agencies.append({'name': agency_name, 'role': agency_role})
+                i += 1
+
+            # --- Collect estuaries (multi-checkbox) ---
+            estuaries_list = request.form.getlist('estuary')
+            estuaries_str = ','.join(estuaries_list)
+
+            # --- Collect polygons (dynamic fields + shapefile uploads) ---
+            polygons = []
+            p = 1
+            while True:
+                poly_estuary = form_data.get(f'polygon_{p}_estuary', '').strip()
+                poly_siteid = form_data.get(f'polygon_{p}_siteid', '').strip()
+                if not poly_estuary and not poly_siteid:
+                    break
+
+                shapefile_path = None
+                shapefile_key = f'polygon_{p}_shapefile'
+                if shapefile_key in request.files:
+                    file = request.files[shapefile_key]
                     if file and file.filename:
-                        # Validate file type
-                        if not file.filename.lower().endswith('.pdf'):
-                            return jsonify({
-                                'status': 'error',
-                                'message': f'Invalid file type for {file.filename}. Only PDF files are allowed.'
-                            }), 400
-                        
-                        # Extract SOP identifier (e.g., 'sop1' from 'sop1_file')
-                        sop_id = key.replace('_file', '')
-                        
-                        # Create safe filename
-                        safe_filename = re.sub(r'[^\w\s-]', '', sop_id).strip()
+                        if not file.filename.lower().endswith('.zip'):
+                            return jsonify({'status': 'error', 'message': f'Invalid file type for {file.filename}. Only .zip files are allowed for shapefiles.'}), 400
                         timestamp = int(time.time())
-                        filename = f"{safe_filename}_{timestamp}.pdf"
-                        
-                        # Save file
-                        filepath = os.path.join(project_dir, filename)
+                        filename = f"polygon_{p}_{timestamp}.zip"
+                        filepath = os.path.join(upload_dir, filename)
                         file.save(filepath)
-                        
-                        uploaded_sops.append({
-                            'sop_id': sop_id,
-                            'purpose': form_data.get(f'{sop_id}_purpose', ''),
-                            'guidelines': form_data.get(f'{sop_id}_guidelines', ''),
-                            'filename': filename,
-                            'filepath': filepath
-                        })
-            
+                        shapefile_path = os.path.join('export', email, filename)
+
+                polygons.append({
+                    'estuary': poly_estuary,
+                    'siteid': poly_siteid,
+                    'shapefile_path': shapefile_path
+                })
+                p += 1
+
+            # --- Collect SOPs and their detail fields + file uploads ---
+            selected_sops = request.form.getlist('sop')
+            sop_records = []
+            for sop_id in selected_sops:
+                # Handle SOP PDF upload
+                sop_file_path = None
+                file_key = f'{sop_id}_file'
+                if file_key in request.files:
+                    file = request.files[file_key]
+                    if file and file.filename:
+                        if not file.filename.lower().endswith('.pdf'):
+                            return jsonify({'status': 'error', 'message': f'Invalid file type for {file.filename}. Only PDF files are allowed.'}), 400
+                        timestamp = int(time.time())
+                        filename = f"{sop_id}_{timestamp}.pdf"
+                        filepath = os.path.join(upload_dir, filename)
+                        file.save(filepath)
+                        sop_file_path = os.path.join('export', email, filename)
+
+                sop_records.append({
+                    'sop_id': sop_id,
+                    'sop_file_path': sop_file_path,
+                    'data_purpose': form_data.get(f'{sop_id}_data_purpose', '').strip() or None,
+                    'specific_guidelines': form_data.get(f'{sop_id}_specific_guidelines', '').strip() or None,
+                    'dataset_start_date': form_data.get(f'{sop_id}_dataset_start_date', '').strip() or None,
+                    'dataset_end_date': form_data.get(f'{sop_id}_dataset_end_date', '').strip() or None,
+                    'west_bounding': form_data.get(f'{sop_id}_west_bounding', '').strip() or None,
+                    'east_bounding': form_data.get(f'{sop_id}_east_bounding', '').strip() or None,
+                    'north_bounding': form_data.get(f'{sop_id}_north_bounding', '').strip() or None,
+                    'south_bounding': form_data.get(f'{sop_id}_south_bounding', '').strip() or None,
+                    'coordinate_system': form_data.get(f'{sop_id}_coordinate_system', '').strip() or None,
+                    'location_accuracy': form_data.get(f'{sop_id}_location_accuracy', '').strip() or None,
+                    'legal_restrictions': form_data.get(f'{sop_id}_legal_restrictions', '').strip() or None,
+                    'data_gaps': form_data.get(f'{sop_id}_data_gaps', '').strip() or None,
+                })
+
+            # --- Database persistence ---
+            eng = g.eng
+
+            with eng.begin() as connection:
+                # Delete existing submission for this email (upsert behavior)
+                connection.execute(
+                    text("DELETE FROM project_metadata WHERE email = :email"),
+                    {'email': email}
+                )
+
+                # Insert into project_metadata
+                result = connection.execute(
+                    text("""
+                        INSERT INTO project_metadata 
+                            (email, contact_name, institution, phone, project_name, abbreviation, 
+                             main_goals, project_start, project_end, estuaries, agencies, polygons)
+                        VALUES 
+                            (:email, :contact_name, :institution, :phone, :project_name, :abbreviation,
+                             :main_goals, :project_start, :project_end, :estuaries, :agencies, :polygons)
+                        RETURNING id
+                    """),
+                    {
+                        'email': email,
+                        'contact_name': form_data.get('contactName', '').strip(),
+                        'institution': form_data.get('institution', '').strip(),
+                        'phone': form_data.get('phone', '').strip(),
+                        'project_name': form_data.get('projectName', '').strip(),
+                        'abbreviation': abbreviation,
+                        'main_goals': form_data.get('mainGoals', '').strip(),
+                        'project_start': form_data.get('projectStart', '').strip() or None,
+                        'project_end': form_data.get('projectEnd', '').strip() or None,
+                        'estuaries': estuaries_str,
+                        'agencies': json.dumps(agencies),
+                        'polygons': json.dumps(polygons),
+                    }
+                )
+                project_id = result.fetchone()[0]
+
+                # Insert SOP records
+                for sop in sop_records:
+                    connection.execute(
+                        text("""
+                            INSERT INTO project_sops
+                                (project_id, sop_id, sop_file_path, data_purpose, specific_guidelines,
+                                 dataset_start_date, dataset_end_date, west_bounding, east_bounding,
+                                 north_bounding, south_bounding, coordinate_system, location_accuracy,
+                                 legal_restrictions, data_gaps)
+                            VALUES
+                                (:project_id, :sop_id, :sop_file_path, :data_purpose, :specific_guidelines,
+                                 :dataset_start_date, :dataset_end_date, :west_bounding, :east_bounding,
+                                 :north_bounding, :south_bounding, :coordinate_system, :location_accuracy,
+                                 :legal_restrictions, :data_gaps)
+                        """),
+                        {
+                            'project_id': project_id,
+                            'sop_id': sop['sop_id'],
+                            'sop_file_path': sop['sop_file_path'],
+                            'data_purpose': sop['data_purpose'],
+                            'specific_guidelines': sop['specific_guidelines'],
+                            'dataset_start_date': sop['dataset_start_date'],
+                            'dataset_end_date': sop['dataset_end_date'],
+                            'west_bounding': sop['west_bounding'],
+                            'east_bounding': sop['east_bounding'],
+                            'north_bounding': sop['north_bounding'],
+                            'south_bounding': sop['south_bounding'],
+                            'coordinate_system': sop['coordinate_system'],
+                            'location_accuracy': sop['location_accuracy'],
+                            'legal_restrictions': sop['legal_restrictions'],
+                            'data_gaps': sop['data_gaps'],
+                        }
+                    )
+
             return jsonify({
                 'status': 'success',
-                'message': 'Form submitted successfully',
-                'data': form_data,
-                'uploaded_sops': uploaded_sops
+                'message': 'Project metadata submitted successfully'
             })
+
         except Exception as e:
             print(f"Error submitting project metadata form: {e}")
             import traceback
@@ -1372,6 +1491,162 @@ def new_project_metadata_form():
                 'status': 'error',
                 'message': str(e)
             }), 500
+
+
+@admin.route('/api/project-metadata-admin', methods=['POST'])
+def project_metadata_admin_api():
+    """API endpoint to fetch all submitted project metadata after password verification"""
+    try:
+        data = request.get_json()
+        password = data.get('password', '')
+
+        if password != os.environ.get('ADMIN_FUNCTION_PASSWORD'):
+            return jsonify({'status': 'error', 'message': 'Invalid password'}), 401
+
+        eng = g.eng
+        with eng.connect() as conn:
+            # Get all projects with SOP details
+            projects_result = conn.execute(text("""
+                SELECT 
+                    pm.*,
+                    COUNT(ps.id) as sop_count
+                FROM project_metadata pm
+                LEFT JOIN project_sops ps ON pm.id = ps.project_id
+                GROUP BY pm.id
+                ORDER BY pm.created_date DESC
+            """))
+            projects = []
+            for r in projects_result:
+                p = dict(r._mapping)
+                p['created_date'] = p['created_date'].strftime('%Y-%m-%d %H:%M') if p.get('created_date') else 'N/A'
+                p['updated_date'] = p['updated_date'].strftime('%Y-%m-%d %H:%M') if p.get('updated_date') else 'N/A'
+                p['project_start'] = str(p['project_start']) if p.get('project_start') else 'N/A'
+                p['project_end'] = str(p['project_end']) if p.get('project_end') else 'N/A'
+                p['agencies_list'] = json.loads(p['agencies']) if p.get('agencies') else []
+                p['polygons_list'] = json.loads(p['polygons']) if p.get('polygons') else []
+                p['estuaries_list'] = p['estuaries'].split(',') if p.get('estuaries') else []
+                projects.append(p)
+
+            # Get all SOPs grouped by project
+            sops_result = conn.execute(text("""
+                SELECT * FROM project_sops ORDER BY project_id, sop_id
+            """))
+            sops_by_project = {}
+            for r in sops_result:
+                s = dict(r._mapping)
+                s['dataset_start_date'] = str(s['dataset_start_date']) if s.get('dataset_start_date') else None
+                s['dataset_end_date'] = str(s['dataset_end_date']) if s.get('dataset_end_date') else None
+                s['west_bounding'] = float(s['west_bounding']) if s.get('west_bounding') is not None else None
+                s['east_bounding'] = float(s['east_bounding']) if s.get('east_bounding') is not None else None
+                s['north_bounding'] = float(s['north_bounding']) if s.get('north_bounding') is not None else None
+                s['south_bounding'] = float(s['south_bounding']) if s.get('south_bounding') is not None else None
+                pid = s['project_id']
+                if pid not in sops_by_project:
+                    sops_by_project[pid] = []
+                sops_by_project[pid].append(s)
+
+            # Attach SOPs to projects
+            for p in projects:
+                p['sops'] = sops_by_project.get(p['id'], [])
+
+        return jsonify({'status': 'success', 'data': projects})
+    except Exception as e:
+        print(f"Error in project metadata admin API: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@admin.route('/project-metadata-list', methods=['GET'])
+def project_metadata_list():
+    """Admin view to list all submitted project metadata"""
+    try:
+        eng = g.eng
+        with eng.connect() as conn:
+            result = conn.execute(text("""
+                SELECT 
+                    pm.id,
+                    pm.email,
+                    pm.project_name,
+                    pm.abbreviation,
+                    pm.contact_name,
+                    pm.institution,
+                    pm.created_date,
+                    COUNT(ps.id) as sop_count
+                FROM project_metadata pm
+                LEFT JOIN project_sops ps ON pm.id = ps.project_id
+                GROUP BY pm.id, pm.email, pm.project_name, pm.abbreviation, 
+                         pm.contact_name, pm.institution, pm.created_date
+                ORDER BY pm.created_date DESC
+            """))
+            projects = [dict(r._mapping) for r in result]
+        return render_template('project_metadata_list.html', projects=projects)
+    except Exception as e:
+        print(f"Error loading project metadata list: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"Error: {str(e)}", 500
+
+
+@admin.route('/project-metadata/<int:project_id>', methods=['GET'])
+def project_metadata_detail(project_id):
+    """Admin view to see detail of a submitted project"""
+    try:
+        eng = g.eng
+        with eng.connect() as conn:
+            # Get project metadata
+            result = conn.execute(
+                text("SELECT * FROM project_metadata WHERE id = :pid"),
+                {'pid': project_id}
+            )
+            row = result.fetchone()
+            if not row:
+                return "Project not found", 404
+            project = dict(row._mapping)
+
+            # Parse JSON fields
+            project['agencies_list'] = json.loads(project['agencies']) if project.get('agencies') else []
+            project['polygons_list'] = json.loads(project['polygons']) if project.get('polygons') else []
+            project['estuaries_list'] = project['estuaries'].split(',') if project.get('estuaries') else []
+
+            # Get SOPs
+            sops_result = conn.execute(
+                text("SELECT * FROM project_sops WHERE project_id = :pid ORDER BY sop_id"),
+                {'pid': project_id}
+            )
+            sops = [dict(r._mapping) for r in sops_result]
+
+        return render_template('project_metadata_detail.html', project=project, sops=sops)
+    except Exception as e:
+        print(f"Error loading project metadata detail: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"Error: {str(e)}", 500
+
+
+@admin.route('/download-project-file', methods=['GET'])
+def download_project_file():
+    """Download an uploaded project file (SOP PDF or polygon shapefile)"""
+    try:
+        file_path = request.args.get('path', '')
+        if not file_path:
+            return "No file path provided", 400
+
+        # Security: ensure the path is within export/ directory
+        full_path = os.path.join(os.getcwd(), file_path)
+        abs_export = os.path.abspath(os.path.join(os.getcwd(), 'export'))
+        abs_file = os.path.abspath(full_path)
+
+        if not abs_file.startswith(abs_export):
+            return "Access denied", 403
+
+        if not os.path.exists(full_path):
+            return "File not found", 404
+
+        return send_file(full_path, as_attachment=True)
+    except Exception as e:
+        print(f"Error downloading project file: {e}")
+        return f"Error: {str(e)}", 500
 
 
 @admin.route('/api/get-estuaries', methods=['GET'])

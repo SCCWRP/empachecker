@@ -252,17 +252,182 @@
             box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
         }
         
+        .btn-admin-view {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 9000;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+        }
+        .btn-admin-view:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            color: white;
+        }
+        .admin-modal-overlay {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+        .admin-modal-box {
+            position: relative;
+            background: white;
+            margin: 8% auto;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .admin-modal-close {
+            position: absolute;
+            right: 15px; top: 10px;
+            font-size: 28px; font-weight: bold;
+            color: #aaa; cursor: pointer;
+        }
+        .admin-modal-close:hover { color: #000; }
+        .submissions-overlay {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background: rgba(245,245,245,0.98);
+            overflow-y: auto;
+        }
+        .submissions-container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 30px;
+        }
+        .submissions-close {
+            position: fixed;
+            right: 30px; top: 20px;
+            font-size: 32px; font-weight: bold;
+            color: #555; cursor: pointer;
+            z-index: 10001;
+            background: white;
+            border-radius: 50%;
+            width: 44px; height: 44px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .submissions-close:hover { color: #000; }
+        .submission-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        .submission-card h4 {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        .sub-detail { margin-bottom: 6px; }
+        .sub-label { font-weight: 600; color: #555; }
+        .sop-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            border-radius: 6px;
+            padding: 3px 10px;
+            font-size: 13px;
+            margin: 2px 4px 2px 0;
+        }
+        .agency-badge {
+            display: inline-block;
+            background: #764ba2;
+            color: white;
+            border-radius: 6px;
+            padding: 3px 10px;
+            font-size: 13px;
+            margin: 2px 4px 2px 0;
+        }
+        .estuary-badge {
+            display: inline-block;
+            background: #17a2b8;
+            color: white;
+            border-radius: 6px;
+            padding: 3px 10px;
+            font-size: 13px;
+            margin: 2px 4px 2px 0;
+        }
+        
     </style>
 </head>
 <body>
     <div class="container">
         <div class="form-container">
+            <button type="button" class="btn-admin-view" id="adminViewBtn">Admin</button>
             <div class="form-header">
                 <h1>New Project Metadata Form</h1>
                 <p class="text-muted" style="font-size: 1.15em;">Complete the form below to register a new project</p>
             </div>
+
+            <!-- Admin Password Modal -->
+            <div id="adminPasswordModal" class="admin-modal-overlay">
+                <div class="admin-modal-box">
+                    <span class="admin-modal-close" id="adminModalClose">&times;</span>
+                    <h4 style="color: #667eea; margin-bottom: 20px;">Admin Authentication</h4>
+                    <p class="text-muted">Enter the admin password to view all submissions.</p>
+                    <input type="password" class="form-control mb-3" id="adminPasswordInput" placeholder="Enter password">
+                    <div id="adminPasswordError" style="color: red; display: none; margin-bottom: 10px;">Invalid password</div>
+                    <button type="button" class="btn btn-primary w-100" id="adminPasswordSubmit">Submit</button>
+                </div>
+            </div>
+
+            <!-- Submissions Viewer Overlay -->
+            <div id="submissionsOverlay" class="submissions-overlay">
+                <span class="submissions-close" id="submissionsClose">&times;</span>
+                <div class="submissions-container">
+                    <h2 style="color: #333; font-weight: 600; margin-bottom: 25px; text-align: center;">All Project Metadata Submissions</h2>
+                    <div id="submissionsContent">
+                        <div class="text-center text-muted">Loading...</div>
+                    </div>
+                </div>
+            </div>
             
             <form id="projectMetadataForm" method="POST">
+                <!-- Main Contact Information -->
+                <div class="form-section">
+                    <h3 class="form-section-title">Main Contact Information</h3>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email Address *</label>
+                        <input type="email" class="form-control" id="email" name="email" 
+                               placeholder="you@example.com" required>
+                        <div id="emailError" style="color: red; display: none; margin-top: 5px;">Please enter a valid email address</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="contactName" class="form-label">Contact Name *</label>
+                        <input type="text" class="form-control" id="contactName" name="contactName" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="institution" class="form-label">Institution *</label>
+                        <input type="text" class="form-control" id="institution" name="institution" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Phone Number *</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" required>
+                    </div>
+                </div>
+
                 <!-- Basic Project Information -->
                 <div class="form-section">
                     <h3 class="form-section-title">Basic Project Information</h3>
@@ -303,32 +468,6 @@
                         <!-- Dynamic agency entries will be added here -->
                     </div>
                     <button type="button" class="btn btn-secondary" id="addAgencyBtn">+ Add Agency</button>
-                </div>
-                
-                <!-- Main Contact Information -->
-                <div class="form-section">
-                    <h3 class="form-section-title">Main Contact Information</h3>
-                    
-                    <div class="mb-3">
-                        <label for="contactName" class="form-label">Contact Name *</label>
-                        <input type="text" class="form-control" id="contactName" name="contactName" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="institution" class="form-label">Institution *</label>
-                        <input type="text" class="form-control" id="institution" name="institution" required>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="email" class="form-label">Email *</label>
-                            <input type="email" class="form-control" id="email" name="email" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="phone" class="form-label">Phone Number *</label>
-                            <input type="tel" class="form-control" id="phone" name="phone" required>
-                        </div>
-                    </div>
                 </div>
                 
                 <!-- Estuary/Location Information -->
@@ -826,7 +965,7 @@
                     <label class="form-label">Upload estuary and station boundaries as shapefiles (accepted format: .zip. You must include .shp, .shx, and .dbf files inside the zip. Without .shx or .dbf, a GIS software cannot open it.)</label>
                     <input type="file" class="form-control" name="polygon_${polygonCount}_shapefile" accept=".zip">
                     <small class="form-text text-muted">
-                        <a href="#" target="_blank">Download an example shapefile here</a>
+                        <a href="/empachecker/export?filename=shapefile_example.zip" target="_blank">Download an example shapefile here</a>
                     </small>
                 </div>
                 <button type="button" class="btn btn-sm btn-danger remove-polygon">Remove</button>
@@ -979,6 +1118,19 @@
                 }
             });
             
+            // Validate email format
+            const emailField = document.getElementById('email');
+            const emailError = document.getElementById('emailError');
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailField.value || !emailRegex.test(emailField.value.trim())) {
+                emailField.classList.add('field-error');
+                emailError.style.display = 'block';
+                hasErrors = true;
+                missingFields.push(emailField);
+            } else {
+                emailError.style.display = 'none';
+            }
+
             // Validate at least one estuary is selected
             const estuaryCheckboxes = document.querySelectorAll('input[name="estuary"]:checked');
             const estuaryError = document.getElementById('estuaryError');
@@ -1055,7 +1207,152 @@
                     e.target.classList.remove('field-error');
                 }
             });
+
+            // Hide email error message when user starts typing
+            document.getElementById('email').addEventListener('input', function() {
+                document.getElementById('emailError').style.display = 'none';
+            });
         });
+
+        // --- Admin View Submissions ---
+        const adminViewBtn = document.getElementById('adminViewBtn');
+        const adminModal = document.getElementById('adminPasswordModal');
+        const adminModalClose = document.getElementById('adminModalClose');
+        const adminPwInput = document.getElementById('adminPasswordInput');
+        const adminPwSubmit = document.getElementById('adminPasswordSubmit');
+        const adminPwError = document.getElementById('adminPasswordError');
+        const submissionsOverlay = document.getElementById('submissionsOverlay');
+        const submissionsClose = document.getElementById('submissionsClose');
+        const submissionsContent = document.getElementById('submissionsContent');
+
+        adminViewBtn.addEventListener('click', () => {
+            adminModal.style.display = 'block';
+            adminPwInput.value = '';
+            adminPwError.style.display = 'none';
+            setTimeout(() => adminPwInput.focus(), 100);
+        });
+
+        adminModalClose.addEventListener('click', () => { adminModal.style.display = 'none'; });
+        adminModal.addEventListener('click', (e) => { if (e.target === adminModal) adminModal.style.display = 'none'; });
+        submissionsClose.addEventListener('click', () => { submissionsOverlay.style.display = 'none'; });
+
+        adminPwInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') adminPwSubmit.click(); });
+
+        adminPwSubmit.addEventListener('click', async () => {
+            const password = adminPwInput.value.trim();
+            if (!password) { adminPwError.textContent = 'Please enter a password'; adminPwError.style.display = 'block'; return; }
+            
+            adminPwSubmit.disabled = true;
+            adminPwSubmit.textContent = 'Verifying...';
+            
+            try {
+                const response = await fetch('/empachecker/api/project-metadata-admin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: password })
+                });
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    adminModal.style.display = 'none';
+                    renderSubmissions(result.data);
+                    submissionsOverlay.style.display = 'block';
+                } else {
+                    adminPwError.textContent = result.message || 'Invalid password';
+                    adminPwError.style.display = 'block';
+                }
+            } catch (err) {
+                adminPwError.textContent = 'Error connecting to server';
+                adminPwError.style.display = 'block';
+            }
+            adminPwSubmit.disabled = false;
+            adminPwSubmit.textContent = 'Submit';
+        });
+
+        function renderSubmissions(projects) {
+            if (!projects || projects.length === 0) {
+                submissionsContent.innerHTML = '<div class="submission-card"><p class="text-muted text-center" style="font-size:1.2em;">No submissions yet.</p></div>';
+                return;
+            }
+            let html = '';
+            projects.forEach((p, idx) => {
+                // Agencies
+                let agenciesHtml = '';
+                if (p.agencies_list && p.agencies_list.length > 0) {
+                    p.agencies_list.forEach(a => { agenciesHtml += `<span class="agency-badge">${a.name} (${a.role})</span>`; });
+                } else {
+                    agenciesHtml = '<span class="text-muted">None</span>';
+                }
+
+                // Estuaries
+                let estuariesHtml = '';
+                if (p.estuaries_list && p.estuaries_list.length > 0) {
+                    p.estuaries_list.forEach(e => { if (e) estuariesHtml += `<span class="estuary-badge">${e}</span>`; });
+                } else {
+                    estuariesHtml = '<span class="text-muted">None</span>';
+                }
+
+                // SOPs
+                let sopsHtml = '';
+                if (p.sops && p.sops.length > 0) {
+                    p.sops.forEach(s => { sopsHtml += `<span class="sop-badge">${s.sop_id.toUpperCase()}</span>`; });
+                } else {
+                    sopsHtml = '<span class="text-muted">None</span>';
+                }
+
+                // SOP details
+                let sopDetailsHtml = '';
+                if (p.sops && p.sops.length > 0) {
+                    p.sops.forEach(s => {
+                        sopDetailsHtml += `
+                            <div style="background:#f8f9fa; border-radius:8px; padding:15px; margin-top:10px; border:1px solid #e0e0e0;">
+                                <strong style="color:#667eea;">${s.sop_id.toUpperCase()}</strong>
+                                ${s.sop_file_path ? `<br><span class="sub-label">File:</span> <a href="/empachecker/download-project-file?path=${encodeURIComponent(s.sop_file_path)}" style="color:#667eea;">Download PDF</a>` : ''}
+                                ${s.data_purpose ? `<br><span class="sub-label">Purpose:</span> ${s.data_purpose}` : ''}
+                                ${s.specific_guidelines ? `<br><span class="sub-label">Guidelines:</span> ${s.specific_guidelines}` : ''}
+                                ${s.dataset_start_date ? `<br><span class="sub-label">Dataset Period:</span> ${s.dataset_start_date} to ${s.dataset_end_date || 'N/A'}` : ''}
+                                ${(s.west_bounding !== null) ? `<br><span class="sub-label">Bounds:</span> W:${s.west_bounding} E:${s.east_bounding} N:${s.north_bounding} S:${s.south_bounding}` : ''}
+                                ${s.coordinate_system ? `<br><span class="sub-label">Coord System:</span> ${s.coordinate_system}` : ''}
+                                ${s.location_accuracy ? `<br><span class="sub-label">Location Accuracy:</span> ${s.location_accuracy}` : ''}
+                                ${s.legal_restrictions ? `<br><span class="sub-label">Legal Restrictions:</span> ${s.legal_restrictions}` : ''}
+                                ${s.data_gaps ? `<br><span class="sub-label">Data Gaps:</span> ${s.data_gaps}` : ''}
+                            </div>`;
+                    });
+                }
+
+                // Polygons
+                let polygonsHtml = '';
+                if (p.polygons_list && p.polygons_list.length > 0) {
+                    p.polygons_list.forEach((poly, pi) => {
+                        polygonsHtml += `<div style="margin-top:5px;"><span class="sub-label">Polygon ${pi+1}:</span> ${poly.estuary} (${poly.siteid})`;
+                        if (poly.shapefile_path) {
+                            polygonsHtml += ` — <a href="/empachecker/download-project-file?path=${encodeURIComponent(poly.shapefile_path)}" style="color:#667eea;">Download .zip</a>`;
+                        }
+                        polygonsHtml += '</div>';
+                    });
+                } else {
+                    polygonsHtml = '<span class="text-muted">None</span>';
+                }
+
+                html += `
+                    <div class="submission-card">
+                        <h4>${idx + 1}. ${p.project_name} <small style="font-size:0.6em; color:#999;">(${p.abbreviation})</small></h4>
+                        <div class="sub-detail"><span class="sub-label">Email:</span> ${p.email}</div>
+                        <div class="sub-detail"><span class="sub-label">Contact:</span> ${p.contact_name}</div>
+                        <div class="sub-detail"><span class="sub-label">Institution:</span> ${p.institution}</div>
+                        <div class="sub-detail"><span class="sub-label">Phone:</span> ${p.phone}</div>
+                        <div class="sub-detail"><span class="sub-label">Project Period:</span> ${p.project_start} to ${p.project_end}</div>
+                        <div class="sub-detail"><span class="sub-label">Goals:</span><br><div style="white-space:pre-wrap; margin-top:4px;">${p.main_goals}</div></div>
+                        <div class="sub-detail" style="margin-top:10px;"><span class="sub-label">Agencies:</span> ${agenciesHtml}</div>
+                        <div class="sub-detail"><span class="sub-label">Estuaries:</span> ${estuariesHtml}</div>
+                        <div class="sub-detail"><span class="sub-label">Polygons:</span> ${polygonsHtml}</div>
+                        <div class="sub-detail" style="margin-top:10px;"><span class="sub-label">SOPs:</span> ${sopsHtml}</div>
+                        ${sopDetailsHtml}
+                        <div class="sub-detail" style="margin-top:12px; color:#999; font-size:0.9em;">Submitted: ${p.created_date}</div>
+                    </div>`;
+            });
+            submissionsContent.innerHTML = html;
+        }
     </script>
 </body>
 </html>
