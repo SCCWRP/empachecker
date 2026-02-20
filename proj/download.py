@@ -82,6 +82,17 @@ def template_file():
             on=['siteid','estuaryname']
         )
 
+        if tablename == 'tbl_vegetativecover_data':
+            lu_plantspecies = read_sql(
+                "SELECT DISTINCT scientificname, rating FROM lu_plantspecies WHERE rating IS NOT NULL;",
+                eng
+            )
+            data = data.merge(
+                lu_plantspecies,
+                how='left',
+                on='scientificname'
+            )
+
         data.to_csv(datapath, index = False)
 
         return send_file( datapath, as_attachment = True, download_name = f'{tablename}.csv' )

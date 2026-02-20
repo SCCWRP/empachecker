@@ -74,10 +74,36 @@
             right: 10px;
             z-index: 1000;
             background: white;
-            padding: 15px;
+            padding: 10px;
             border-radius: 5px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            min-width: 250px;
+            min-width: 200px;
+            max-width: 240px;
+            font-size: 13px;
+        }
+
+        #controls .form-select {
+            font-size: 12px;
+            padding: 4px 8px;
+            height: auto;
+        }
+
+        #controls .form-label {
+            font-size: 12px;
+            margin-bottom: 2px;
+        }
+
+        #controls .btn {
+            font-size: 12px;
+            padding: 4px 8px;
+        }
+
+        #controls .mb-3 {
+            margin-bottom: 8px !important;
+        }
+
+        #controls small {
+            font-size: 11px;
         }
 
         .tab-content {
@@ -163,31 +189,32 @@
     <!-- Controls Panel for Estuary Tab -->
     <div id="controls" class="tab-content estuary-tab active minimized">
         <div class="panel-header">
-            <h5 id="estuaryHeader">Select an estuary <a href="#" id="sopLink" style="font-size: 12px; margin-left: 10px; display: none;">(SOP)</a></h5>
+            <h5 id="estuaryHeader">View an estuary <a href="#" id="sopLink" style="font-size: 12px; margin-left: 10px; display: none;">(SOP)</a></h5>
             <button class="toggle-btn" id="toggleControls" title="Expand">&#9660;</button>
         </div>
         <div class="panel-content">
             <div class="mb-3">
-                <label for="estuarySelect" class="form-label">View Estuary:</label>
-                <select id="estuarySelect" class="form-select">
-                    <option value="">-- All Estuaries --</option>
+                <label for="estuaryRegionSelect" class="form-label">Select Region:</label>
+                <select id="estuaryRegionSelect" class="form-select">
+                    <option value="">-- Select Region --</option>
+                    <option value="North">North</option>
+                    <option value="South">South</option>
+                    <option value="Central">Central</option>
+                    <option value="Baja">Baja</option>
                 </select>
             </div>
-            <button id="resetBtn" class="btn btn-secondary btn-sm w-100">Reset View</button>
-            <hr>
-            <div class="mb-2">
-                <label class="form-label fw-bold">Download Shapefile:</label>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="selectAllEstuaries">
-                    <label class="form-check-label" for="selectAllEstuaries"><em>Select All</em></label>
-                </div>
-                <div id="estuaryCheckboxes" style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 8px; margin-top: 5px;">
-                </div>
+            <div class="mb-3">
+                <label for="estuarySelect" class="form-label">Select Estuary:</label>
+                <select id="estuarySelect" class="form-select" disabled>
+                    <option value="">-- Select Region first --</option>
+                </select>
             </div>
-            <button id="downloadShapefileBtn" class="btn btn-success btn-sm w-100">
+            <button id="downloadShapefileBtn" class="btn btn-success btn-sm w-100" disabled>
                 Download Shapefile (ZIP)
             </button>
             <small class="text-muted d-block mt-1">If you would like to make changes, please download a shapefile and send it Jan Walker (janw@sccwrp.org)</small>
+            <hr>
+            <button id="resetBtn" class="btn btn-secondary btn-sm w-100">Reset View</button>
         </div>
     </div>
 

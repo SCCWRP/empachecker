@@ -1411,3 +1411,39 @@ def get_estuaries():
             'status': 'error',
             'message': str(e)
         }), 500
+
+
+@admin.route('/get-estuaries-by-region', methods=['GET'])
+def get_estuaries_by_region():
+    """API endpoint to fetch estuaries grouped by region"""
+    try:
+        eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
+
+        query = text("""
+            SELECT DISTINCT
+                s.region,
+                sa.estuaryname
+            FROM spatial_empa_all_stations sa
+            JOIN search s ON sa.siteid = s.siteid
+            WHERE s.region IS NOT NULL AND sa.estuaryname IS NOT NULL
+            ORDER BY s.region, sa.estuaryname
+        """)
+
+        with eng.connect() as conn:
+            result = conn.execute(query)
+            rows = [dict(r._mapping) for r in result]
+
+        # Group by region
+        region_estuaries = {}
+        for row in rows:
+            region = row['region']
+            estuary = row['estuaryname']
+            if region not in region_estuaries:
+                region_estuaries[region] = []
+            if estuary not in region_estuaries[region]:
+                region_estuaries[region].append(estuary)
+
+        return jsonify({'regions': region_estuaries})
+    except Exception as e:
+        print(f"Error fetching estuaries by region: {e}")
+        return jsonify({'error': str(e)}), 500

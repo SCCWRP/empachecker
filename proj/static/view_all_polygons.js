@@ -13,9 +13,9 @@ let currentTab = 'estuary-tab';
 function initMap() {
     map = L.map('map').setView([33.5, -117.8], 10); // Center on Southern California
 
-    // Add OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
+    // Add Esri World Imagery satellite basemap
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
         maxZoom: 19
     }).addTo(map);
 }
@@ -135,39 +135,53 @@ function addPolygonsToMap(polygonsData) {
     });
 }
 
-// Populate estuary dropdown and checkboxes
-function populateEstuaryControls(polygonsData) {
+// Region-to-estuary mapping fetched from backend
+let regionEstuaryMap = {};
+
+// Fetch estuaries grouped by region from backend
+async function fetchEstuariesByRegion() {
+    try {
+        const response = await fetch(`/${script_root}/get-estuaries-by-region`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch estuaries by region');
+        }
+        const data = await response.json();
+        regionEstuaryMap = data.regions || {};
+    } catch (error) {
+        console.error('Error fetching estuaries by region:', error);
+        regionEstuaryMap = {};
+    }
+}
+
+// Populate estuary dropdown based on selected region
+function populateEstuaryDropdown(region) {
     const estuarySelect = document.getElementById('estuarySelect');
-    const checkboxContainer = document.getElementById('estuaryCheckboxes');
+    const downloadBtn = document.getElementById('downloadShapefileBtn');
 
-    // Get unique estuary names from BOTH estuaries and stations
-    const estuariesFromBoundaries = new Set(polygonsData.estuaries.map(e => e.estuaryname));
-    const estuariesFromStations = new Set(polygonsData.stations.map(s => s.estuaryname));
+    estuarySelect.innerHTML = '';
+    downloadBtn.disabled = true;
 
-    // Combine both sets to get all unique estuary names
-    const allEstuaries = new Set([...estuariesFromBoundaries, ...estuariesFromStations]);
-    const estuaries = [...allEstuaries].sort();
+    if (!region || !regionEstuaryMap[region]) {
+        estuarySelect.innerHTML = '<option value="">-- Select Region first --</option>';
+        estuarySelect.disabled = true;
+        return;
+    }
 
-    // Clear existing options (keep the "All" option)
-    estuarySelect.innerHTML = '<option value="">-- All Estuaries --</option>';
-    checkboxContainer.innerHTML = '';
+    estuarySelect.disabled = false;
+    estuarySelect.innerHTML = '<option value="">-- Select Estuary --</option>';
 
+    const estuaries = regionEstuaryMap[region].sort();
     estuaries.forEach(estuary => {
-        // Add to dropdown
         const option = document.createElement('option');
         option.value = estuary;
         option.textContent = estuary;
         estuarySelect.appendChild(option);
-
-        // Add checkbox
-        const checkDiv = document.createElement('div');
-        checkDiv.className = 'form-check';
-        checkDiv.innerHTML = `
-            <input class="form-check-input estuary-checkbox" type="checkbox" value="${estuary}" id="chk_${estuary.replace(/\s+/g, '_')}">
-            <label class="form-check-label" for="chk_${estuary.replace(/\s+/g, '_')}">${estuary}</label>
-        `;
-        checkboxContainer.appendChild(checkDiv);
     });
+}
+
+// Populate estuary dropdown and checkboxes (kept for backward compat with map init)
+function populateEstuaryControls(polygonsData) {
+    // No-op: replaced by region/estuary cascading dropdown
 }
 
 // Zoom to selected estuaries (supports multiple selection)
@@ -208,12 +222,6 @@ function zoomToEstuaries(estuaryNames) {
     }
 }
 
-// Get selected estuaries from checkboxes
-function getCheckedEstuaries() {
-    const checkboxes = document.querySelectorAll('.estuary-checkbox:checked');
-    return Array.from(checkboxes).map(cb => cb.value);
-}
-
 // Show all polygons
 function showAllPolygons() {
     // Add all estuary layers
@@ -243,45 +251,43 @@ function showAllPolygons() {
     }
 }
 
-// Event listeners
+// Event listeners for region/estuary cascading dropdowns
+document.getElementById('estuaryRegionSelect').addEventListener('change', (e) => {
+    const selectedRegion = e.target.value;
+    populateEstuaryDropdown(selectedRegion);
+    // Reset map to show all when region changes
+    showAllPolygons();
+});
+
 document.getElementById('estuarySelect').addEventListener('change', (e) => {
     const selectedEstuary = e.target.value;
+    const downloadBtn = document.getElementById('downloadShapefileBtn');
     if (selectedEstuary) {
         zoomToEstuaries([selectedEstuary]);
-        // Keep the panel open so user can see their selection
+        downloadBtn.disabled = false;
     } else {
         showAllPolygons();
+        downloadBtn.disabled = true;
     }
 });
 
 document.getElementById('resetBtn').addEventListener('click', () => {
+    document.getElementById('estuaryRegionSelect').value = '';
     document.getElementById('estuarySelect').value = '';
+    document.getElementById('estuarySelect').disabled = true;
+    document.getElementById('estuarySelect').innerHTML = '<option value="">-- Select Region first --</option>';
+    document.getElementById('downloadShapefileBtn').disabled = true;
     showAllPolygons();
 });
 
-// Select All checkbox
-document.getElementById('selectAllEstuaries').addEventListener('change', (e) => {
-    const checkboxes = document.querySelectorAll('.estuary-checkbox');
-    checkboxes.forEach(cb => cb.checked = e.target.checked);
-});
-
-// Update Select All when individual checkboxes change
-document.getElementById('estuaryCheckboxes').addEventListener('change', (e) => {
-    if (e.target.classList.contains('estuary-checkbox')) {
-        const allCheckboxes = document.querySelectorAll('.estuary-checkbox');
-        const checkedCheckboxes = document.querySelectorAll('.estuary-checkbox:checked');
-        document.getElementById('selectAllEstuaries').checked = allCheckboxes.length === checkedCheckboxes.length;
-    }
-});
-
 document.getElementById('downloadShapefileBtn').addEventListener('click', () => {
-    const checkedEstuaries = getCheckedEstuaries();
-    if (checkedEstuaries.length === 0) {
-        alert('Please select at least one estuary to download.');
+    const selectedEstuary = document.getElementById('estuarySelect').value;
+    if (!selectedEstuary) {
+        alert('Please select an estuary to download.');
         return;
     }
     let url = `/${script_root}/download-polygons-shapefile`;
-    url += `?estuaries=${encodeURIComponent(checkedEstuaries.join(','))}`;
+    url += `?estuaries=${encodeURIComponent(selectedEstuary)}`;
     window.location.href = url;
 });
 
@@ -832,9 +838,32 @@ document.getElementById('toggleControls').addEventListener('click', () => {
     togglePanel(document.getElementById('controls'), document.getElementById('toggleControls'));
 });
 
-// Make the estuary header clickable to toggle panel
+// Make the estuary header clickable to expand panel and open dropdown
 document.getElementById('estuaryHeader').addEventListener('click', () => {
-    togglePanel(document.getElementById('controls'), document.getElementById('toggleControls'));
+    const panel = document.getElementById('controls');
+    const wasMinimized = panel.classList.contains('minimized');
+    // Always expand if minimized
+    if (wasMinimized) {
+        togglePanel(panel, document.getElementById('toggleControls'));
+    }
+    // After expanding, open the appropriate dropdown
+    setTimeout(() => {
+        const regionSelect = document.getElementById('estuaryRegionSelect');
+        const estuarySelect = document.getElementById('estuarySelect');
+        try {
+            if (!regionSelect.value) {
+                regionSelect.showPicker();
+            } else if (!estuarySelect.disabled) {
+                estuarySelect.showPicker();
+            }
+        } catch(e) {
+            if (!regionSelect.value) {
+                regionSelect.focus();
+            } else if (!estuarySelect.disabled) {
+                estuarySelect.focus();
+            }
+        }
+    }, 50);
 });
 
 document.getElementById('toggleSopControls').addEventListener('click', () => {
@@ -845,12 +874,15 @@ document.getElementById('toggleSopControls').addEventListener('click', () => {
 document.addEventListener('DOMContentLoaded', async () => {
     initMap();
 
-    // Fetch and display polygon data
-    allPolygonsData = await fetchPolygonData();
+    // Fetch region-estuary mapping and polygon data in parallel
+    const [polygonsData] = await Promise.all([
+        fetchPolygonData(),
+        fetchEstuariesByRegion()
+    ]);
+    allPolygonsData = polygonsData;
 
     if (allPolygonsData.estuaries.length > 0 || allPolygonsData.stations.length > 0) {
         addPolygonsToMap(allPolygonsData);
-        populateEstuaryControls(allPolygonsData);
         showAllPolygons();
     } else {
         alert('No station data available.');
