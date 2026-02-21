@@ -250,6 +250,54 @@
         .field-error {
             border: 2px solid #dc3545 !important;
             box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+            background-color: #fff5f5 !important;
+        }
+        
+        .field-error-msg {
+            color: #dc3545;
+            font-size: 0.95em;
+            margin-top: 4px;
+            display: none;
+        }
+        
+        .field-error-msg.visible {
+            display: block;
+        }
+        
+        .section-error {
+            border: 2px solid #dc3545 !important;
+            background-color: #fff5f5 !important;
+        }
+        
+        .required-star {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .validation-summary {
+            background: #fff5f5;
+            border: 1px solid #dc3545;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .validation-summary h6 {
+            color: #dc3545;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .validation-summary ul {
+            margin-bottom: 0;
+            padding-left: 20px;
+        }
+        
+        .validation-summary li {
+            color: #721c24;
+            font-size: 0.95em;
+            margin-bottom: 2px;
         }
         
         .btn-admin-view {
@@ -394,6 +442,11 @@
                 <span class="submissions-close" id="submissionsClose">&times;</span>
                 <div class="submissions-container">
                     <h2 style="color: #333; font-weight: 600; margin-bottom: 25px; text-align: center;">All Project Metadata Submissions</h2>
+                    <div id="sortControls" style="display:none; text-align:right; margin-bottom:15px;">
+                        <button type="button" id="sortDateBtn" class="btn btn-sm btn-outline-secondary">
+                            Submitted Date &#9660;
+                        </button>
+                    </div>
                     <div id="submissionsContent">
                         <div class="text-center text-muted">Loading...</div>
                     </div>
@@ -401,30 +454,39 @@
             </div>
             
             <form id="projectMetadataForm" method="POST">
+                <!-- Validation Summary -->
+                <div id="validationSummary" class="validation-summary">
+                    <h6>&#9888; Please fix the following errors:</h6>
+                    <ul id="validationList"></ul>
+                </div>
+                
                 <!-- Main Contact Information -->
                 <div class="form-section">
                     <h3 class="form-section-title">Main Contact Information</h3>
                     
                     <div class="mb-3">
-                        <label for="email" class="form-label">Email Address *</label>
+                        <label for="email" class="form-label">Email Address <span class="required-star">*</span></label>
                         <input type="email" class="form-control" id="email" name="email" 
                                placeholder="you@example.com" required>
                         <div id="emailError" style="color: red; display: none; margin-top: 5px;">Please enter a valid email address</div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="contactName" class="form-label">Contact Name *</label>
+                        <label for="contactName" class="form-label">Contact Name <span class="required-star">*</span></label>
                         <input type="text" class="form-control" id="contactName" name="contactName" required>
+                        <div class="field-error-msg" id="contactNameError">Contact name is required</div>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="institution" class="form-label">Institution *</label>
+                        <label for="institution" class="form-label">Institution <span class="required-star">*</span></label>
                         <input type="text" class="form-control" id="institution" name="institution" required>
+                        <div class="field-error-msg" id="institutionError">Institution is required</div>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="phone" class="form-label">Phone Number *</label>
+                        <label for="phone" class="form-label">Phone Number <span class="required-star">*</span></label>
                         <input type="tel" class="form-control" id="phone" name="phone" required>
+                        <div class="field-error-msg" id="phoneError">Phone number is required</div>
                     </div>
                 </div>
 
@@ -433,26 +495,30 @@
                     <h3 class="form-section-title">Basic Project Information</h3>
                     
                     <div class="mb-3">
-                        <label for="projectName" class="form-label">Project Name *</label>
+                        <label for="projectName" class="form-label">Project Name <span class="required-star">*</span></label>
                         <input type="text" class="form-control" id="projectName" name="projectName" required>
+                        <div class="field-error-msg" id="projectNameError">Project name is required</div>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="abbreviation" class="form-label">Abbreviation (Project ID) *</label>
+                        <label for="abbreviation" class="form-label">Abbreviation (Project ID) <span class="required-star">*</span></label>
                         <input type="text" class="form-control" id="abbreviation" name="abbreviation" 
                                placeholder="e.g., EMPA, SMB" required>
+                        <div class="field-error-msg" id="abbreviationError">Project abbreviation is required</div>
                         <small class="form-text text-muted">This will be used as the project identifier</small>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="mainGoals" class="form-label">Main Goals/Objectives *</label>
+                        <label for="mainGoals" class="form-label">Main Goals/Objectives <span class="required-star">*</span></label>
                         <textarea class="form-control" id="mainGoals" name="mainGoals" rows="4" required></textarea>
+                        <div class="field-error-msg" id="mainGoalsError">Main goals/objectives is required</div>
                     </div>
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="projectStart" class="form-label">Project Start Date *</label>
+                            <label for="projectStart" class="form-label">Project Start Date <span class="required-star">*</span></label>
                             <input type="date" class="form-control" id="projectStart" name="projectStart" required>
+                            <div class="field-error-msg" id="projectStartError">Project start date is required</div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="projectEnd" class="form-label">Project End Date</label>
@@ -475,7 +541,7 @@
                     <h3 class="form-section-title">Estuary/Location Information</h3>
                     
                     <div class="mb-3">
-                        <label class="form-label">Select Estuaries Where Project is Taking Place *</label>
+                        <label class="form-label">Select Estuaries Where Project is Taking Place <span class="required-star">*</span></label>
                         <div id="estuaryCheckboxContainer" class="estuary-checkbox-container">
                             <div class="text-center text-muted">Loading estuaries...</div>
                         </div>
@@ -514,7 +580,7 @@
                 <!-- SOP Selection -->
                 <div class="form-section">
                     <h3 class="form-section-title">Standard Operating Procedures (SOPs)</h3>
-                    <p class="text-muted" style="font-size: 1.1em;">Select all SOPs you will be following to collect/submit data: *</p>
+                    <p class="text-muted" style="font-size: 1.1em;">Select all SOPs you will be following to collect/submit data: <span class="required-star">*</span></p>
                     <div id="sopError" style="color: red; display: none; margin-bottom: 15px; font-size: 1.1em;">Please select at least one SOP</div>
                     
                     <div class="sop-checkbox">
@@ -960,6 +1026,7 @@
                 <div class="mb-3">
                     <label class="form-label">Site ID</label>
                     <input type="text" class="form-control" name="polygon_${polygonCount}_siteid" placeholder="Enter site ID">
+                    <small class="form-text text-muted">Defined as Region (NC, CC, SC) - Site Abbreviation (XXXX). Example: Newport Bay, SC-NEW</small>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Upload estuary and station boundaries as shapefiles (accepted format: .zip. You must include .shp, .shx, and .dbf files inside the zip. Without .shx or .dbf, a GIS software cannot open it.)</label>
@@ -984,47 +1051,47 @@
                 <hr class="my-4">
                 <h6 class="text-primary mb-3">Data Submission Information</h6>
                 <label class="form-label">
-                    Why is the data being collected?
+                    Why is the data being collected? <span class="required-star">*</span>
                     <button type="button" class="sample-btn" onclick="showSampleModal('dataPurpose')">View example response</button>
                 </label>
                 <small class="form-text text-muted d-block mb-2">How will it get used in the scheme of the project, or how could it be used by future researchers?</small>
-                <textarea class="form-control mb-3" name="${sopId}_data_purpose" rows="3" required></textarea>
+                <textarea class="form-control mb-3 sop-required" name="${sopId}_data_purpose" rows="3" data-label="Why is the data being collected (${sopId.toUpperCase()})"></textarea>
                 
                 <div class="mb-3">
-                    <label class="form-label">Specific guidelines on how this dataset should be used/published that we should be aware of:</label>
-                    <textarea class="form-control" name="${sopId}_specific_guidelines" rows="3" required></textarea>
+                    <label class="form-label">Specific guidelines on how this dataset should be used/published that we should be aware of: <span class="required-star">*</span></label>
+                    <textarea class="form-control sop-required" name="${sopId}_specific_guidelines" rows="3" data-label="Specific guidelines (${sopId.toUpperCase()})"></textarea>
                 </div>
                 
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">Dataset Start Date</label>
-                        <input type="date" class="form-control" name="${sopId}_dataset_start_date" required>
+                        <label class="form-label">Dataset Start Date <span class="required-star">*</span></label>
+                        <input type="date" class="form-control sop-required" name="${sopId}_dataset_start_date" data-label="Dataset Start Date (${sopId.toUpperCase()})">
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Dataset End Date</label>
-                        <input type="date" class="form-control" name="${sopId}_dataset_end_date" required>
+                        <input type="date" class="form-control" name="${sopId}_dataset_end_date">
                     </div>
                 </div>
                 
-                <label class="form-label">Geographic Bounding Coordinates</label>
+                <label class="form-label">Geographic Bounding Coordinates <span class="required-star">*</span></label>
                 <div class="row">
                     <div class="col-md-6 mb-2">
-                        <input type="number" step="any" class="form-control" name="${sopId}_west_bounding" placeholder="West Longitude (-180 to 180)" required>
+                        <input type="number" step="any" class="form-control sop-required" name="${sopId}_west_bounding" placeholder="West Longitude (-180 to 180)" data-label="West Bounding (${sopId.toUpperCase()})">
                     </div>
                     <div class="col-md-6 mb-2">
-                        <input type="number" step="any" class="form-control" name="${sopId}_east_bounding" placeholder="East Longitude (-180 to 180)" required>
+                        <input type="number" step="any" class="form-control sop-required" name="${sopId}_east_bounding" placeholder="East Longitude (-180 to 180)" data-label="East Bounding (${sopId.toUpperCase()})">
                     </div>
                     <div class="col-md-6 mb-2">
-                        <input type="number" step="any" class="form-control" name="${sopId}_north_bounding" placeholder="North Latitude (-90 to 90)" required>
+                        <input type="number" step="any" class="form-control sop-required" name="${sopId}_north_bounding" placeholder="North Latitude (-90 to 90)" data-label="North Bounding (${sopId.toUpperCase()})">
                     </div>
                     <div class="col-md-6 mb-2">
-                        <input type="number" step="any" class="form-control" name="${sopId}_south_bounding" placeholder="South Latitude (-90 to 90)" required>
+                        <input type="number" step="any" class="form-control sop-required" name="${sopId}_south_bounding" placeholder="South Latitude (-90 to 90)" data-label="South Bounding (${sopId.toUpperCase()})">
                     </div>
                 </div>
                 
                 <div class="mb-3">
-                    <label class="form-label">Coordinate System</label>
-                    <select class="form-select" name="${sopId}_coordinate_system" required>
+                    <label class="form-label">Coordinate System <span class="required-star">*</span></label>
+                    <select class="form-select sop-required" name="${sopId}_coordinate_system" data-label="Coordinate System (${sopId.toUpperCase()})">
                         <option value="">Select...</option>
                         <option value="WGS84">WGS 84 (EPSG:4326)</option>
                         <option value="NAD83">NAD 83 (EPSG:4269)</option>
@@ -1036,29 +1103,29 @@
                 
                 <div class="mb-3">
                     <label class="form-label">
-                        Location Accuracy
+                        Location Accuracy <span class="required-star">*</span>
                         <button type="button" class="sample-btn" onclick="showSampleModal('locationAccuracy')">View example response</button>
                     </label>
                     <small class="form-text text-muted d-block mb-2">How are missing or unreported latitude/longitude values represented, and how accurate are the recorded locations overall?</small>
-                    <input type="text" class="form-control" name="${sopId}_location_accuracy" placeholder="e.g., ±5 meters" required>
+                    <input type="text" class="form-control sop-required" name="${sopId}_location_accuracy" placeholder="e.g., ±5 meters" data-label="Location Accuracy (${sopId.toUpperCase()})">
                 </div>
                 
                 <div class="mb-3">
                     <label class="form-label">
-                        Legal Restrictions
+                        Legal Restrictions <span class="required-star">*</span>
                         <button type="button" class="sample-btn" onclick="showSampleModal('legalRestrictions')">View example response</button>
                     </label>
                     <small class="form-text text-muted d-block mb-2">Are there any warranties or legal liabilities related to the use and distribution of these data?</small>
-                    <textarea class="form-control" name="${sopId}_legal_restrictions" rows="2" required></textarea>
+                    <textarea class="form-control sop-required" name="${sopId}_legal_restrictions" rows="2" data-label="Legal Restrictions (${sopId.toUpperCase()})"></textarea>
                 </div>
                 
                 <div class="mb-3">
                     <label class="form-label">
-                        Data Gaps
+                        Data Gaps <span class="required-star">*</span>
                         <button type="button" class="sample-btn" onclick="showSampleModal('dataGaps')">View example response</button>
                     </label>
                     <small class="form-text text-muted d-block mb-2">What factors contribute to missing data or inconsistencies in sampling effort across sites and time?</small>
-                    <textarea class="form-control" name="${sopId}_data_gaps" rows="2" required></textarea>
+                    <textarea class="form-control sop-required" name="${sopId}_data_gaps" rows="2" data-label="Data Gaps (${sopId.toUpperCase()})"></textarea>
                 </div>
             `;
         }
@@ -1094,52 +1161,77 @@
             document.querySelectorAll('.field-error').forEach(el => {
                 el.classList.remove('field-error');
             });
+            document.querySelectorAll('.field-error-msg.visible').forEach(el => {
+                el.classList.remove('visible');
+            });
+            document.querySelectorAll('.section-error').forEach(el => {
+                el.classList.remove('section-error');
+            });
             
             let hasErrors = false;
-            const missingFields = [];
+            const errorMessages = [];
+            let firstErrorElement = null;
             
-            // Validate all required input fields, textareas, and selects
-            const requiredFields = this.querySelectorAll('input[required], textarea[required], select[required]');
-            requiredFields.forEach(field => {
-                // Check if field is visible (not in a hidden SOP section)
-                const isVisible = field.offsetParent !== null;
-                
-                if (isVisible) {
-                    if (field.type === 'checkbox' || field.type === 'radio') {
-                        // Skip individual checkbox/radio validation (handled separately)
-                        return;
-                    }
-                    
-                    if (!field.value || field.value.trim() === '') {
-                        field.classList.add('field-error');
-                        hasErrors = true;
-                        missingFields.push(field);
-                    }
+            // Helper to mark a field as invalid
+            function markInvalid(field, errorMsgId, summaryText) {
+                field.classList.add('field-error');
+                if (errorMsgId) {
+                    const errDiv = document.getElementById(errorMsgId);
+                    if (errDiv) errDiv.classList.add('visible');
+                }
+                if (!firstErrorElement) firstErrorElement = field;
+                errorMessages.push(summaryText);
+                hasErrors = true;
+            }
+            
+            // --- Validate required text/date fields ---
+            const requiredFieldsMap = [
+                { id: 'email', errorId: 'emailError', label: 'Email Address' },
+                { id: 'contactName', errorId: 'contactNameError', label: 'Contact Name' },
+                { id: 'institution', errorId: 'institutionError', label: 'Institution' },
+                { id: 'phone', errorId: 'phoneError', label: 'Phone Number' },
+                { id: 'projectName', errorId: 'projectNameError', label: 'Project Name' },
+                { id: 'abbreviation', errorId: 'abbreviationError', label: 'Abbreviation' },
+                { id: 'mainGoals', errorId: 'mainGoalsError', label: 'Main Goals/Objectives' },
+                { id: 'projectStart', errorId: 'projectStartError', label: 'Project Start Date' },
+            ];
+            
+            requiredFieldsMap.forEach(({ id, errorId, label }) => {
+                const field = document.getElementById(id);
+                if (!field.value || field.value.trim() === '') {
+                    markInvalid(field, errorId, label + ' is required');
                 }
             });
             
-            // Validate email format
+            // Validate email format (even if not empty)
             const emailField = document.getElementById('email');
-            const emailError = document.getElementById('emailError');
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailField.value || !emailRegex.test(emailField.value.trim())) {
-                emailField.classList.add('field-error');
-                emailError.style.display = 'block';
-                hasErrors = true;
-                missingFields.push(emailField);
-            } else {
-                emailError.style.display = 'none';
+            if (emailField.value && emailField.value.trim() !== '') {
+                if (!emailRegex.test(emailField.value.trim())) {
+                    emailField.classList.add('field-error');
+                    const emailErr = document.getElementById('emailError');
+                    emailErr.textContent = 'Please enter a valid email address (e.g. name@example.com)';
+                    emailErr.style.display = 'block';
+                    if (!firstErrorElement) firstErrorElement = emailField;
+                    errorMessages.push('Email address format is invalid — must contain @');
+                    hasErrors = true;
+                }
             }
 
             // Validate at least one estuary is selected
             const estuaryCheckboxes = document.querySelectorAll('input[name="estuary"]:checked');
             const estuaryError = document.getElementById('estuaryError');
+            const estuaryContainer = document.getElementById('estuaryCheckboxContainer');
             
             if (estuaryCheckboxes.length === 0) {
                 estuaryError.style.display = 'block';
+                estuaryContainer.classList.add('section-error');
+                if (!firstErrorElement) firstErrorElement = estuaryContainer;
+                errorMessages.push('At least one estuary must be selected');
                 hasErrors = true;
             } else {
                 estuaryError.style.display = 'none';
+                estuaryContainer.classList.remove('section-error');
             }
             
             // Validate at least one SOP is selected
@@ -1148,26 +1240,50 @@
             
             if (sopCheckboxes.length === 0) {
                 sopError.style.display = 'block';
+                if (!firstErrorElement) firstErrorElement = sopError;
+                errorMessages.push('At least one SOP must be selected');
                 hasErrors = true;
             } else {
                 sopError.style.display = 'none';
             }
             
-            // If there are errors, show alert and scroll to first error
-            if (hasErrors) {
-                alert('One of the required fields is missing');
-                
-                // Scroll to first missing field or error message
-                if (estuaryCheckboxes.length === 0) {
-                    estuaryError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                } else if (sopCheckboxes.length === 0) {
-                    sopError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                } else if (missingFields.length > 0) {
-                    missingFields[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    missingFields[0].focus();
+            // Validate required SOP detail fields (only for checked/visible SOPs)
+            const sopRequiredFields = document.querySelectorAll('.sop-required');
+            sopRequiredFields.forEach(field => {
+                // Only validate if the field is visible (parent SOP section is shown)
+                if (field.offsetParent !== null) {
+                    const val = field.value ? field.value.trim() : '';
+                    if (!val) {
+                        field.classList.add('field-error');
+                        const label = field.getAttribute('data-label') || 'SOP field';
+                        if (!firstErrorElement) firstErrorElement = field;
+                        errorMessages.push(label + ' is required');
+                        hasErrors = true;
+                    }
                 }
+            });
+            
+            // Show or hide validation summary
+            const summaryDiv = document.getElementById('validationSummary');
+            const summaryList = document.getElementById('validationList');
+            
+            if (hasErrors) {
+                summaryList.innerHTML = errorMessages.map(msg => `<li>${msg}</li>`).join('');
+                summaryDiv.style.display = 'block';
+                
+                // Scroll to the validation summary at the top
+                summaryDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // Also focus the first error field after scroll
+                setTimeout(() => {
+                    if (firstErrorElement && firstErrorElement.focus) {
+                        firstErrorElement.focus();
+                    }
+                }, 500);
                 return;
             }
+            
+            summaryDiv.style.display = 'none';
             
             const formData = new FormData(this);
             
@@ -1182,6 +1298,10 @@
                 if (result.status === 'success') {
                     alert('Project metadata submitted successfully!');
                     this.reset();
+                    // Hide SOP detail sections after reset
+                    document.querySelectorAll('.sop-description').forEach(d => d.style.display = 'none');
+                    document.querySelectorAll('.data-submission-container').forEach(d => d.innerHTML = '');
+                    summaryDiv.style.display = 'none';
                 } else {
                     alert('Error submitting form: ' + result.message);
                 }
@@ -1195,16 +1315,32 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadEstuaries();
             
-            // Remove error highlighting when user interacts with field
+            // Remove error highlighting when user interacts with any field
             document.addEventListener('input', function(e) {
                 if (e.target.classList.contains('field-error')) {
                     e.target.classList.remove('field-error');
+                    // Also hide the inline error message if present
+                    const errorMsg = e.target.parentElement.querySelector('.field-error-msg');
+                    if (errorMsg) errorMsg.classList.remove('visible');
                 }
             });
             
             document.addEventListener('change', function(e) {
                 if (e.target.classList.contains('field-error')) {
                     e.target.classList.remove('field-error');
+                    const errorMsg = e.target.parentElement.querySelector('.field-error-msg');
+                    if (errorMsg) errorMsg.classList.remove('visible');
+                }
+                
+                // Clear estuary section error when a checkbox is checked
+                if (e.target.name === 'estuary' && e.target.checked) {
+                    document.getElementById('estuaryCheckboxContainer').classList.remove('section-error');
+                    document.getElementById('estuaryError').style.display = 'none';
+                }
+                
+                // Clear SOP error when a checkbox is checked
+                if (e.target.name === 'sop' && e.target.checked) {
+                    document.getElementById('sopError').style.display = 'none';
                 }
             });
 
@@ -1224,6 +1360,10 @@
         const submissionsOverlay = document.getElementById('submissionsOverlay');
         const submissionsClose = document.getElementById('submissionsClose');
         const submissionsContent = document.getElementById('submissionsContent');
+        const sortControls = document.getElementById('sortControls');
+        const sortDateBtn = document.getElementById('sortDateBtn');
+        let adminProjectsData = [];
+        let sortDateAsc = false; // false = newest first (DESC), true = oldest first (ASC)
 
         adminViewBtn.addEventListener('click', () => {
             adminModal.style.display = 'block';
@@ -1255,7 +1395,11 @@
 
                 if (result.status === 'success') {
                     adminModal.style.display = 'none';
-                    renderSubmissions(result.data);
+                    adminProjectsData = result.data;
+                    sortDateAsc = false;
+                    sortDateBtn.innerHTML = 'Submitted Date &#9660;';
+                    renderSubmissions(adminProjectsData);
+                    sortControls.style.display = adminProjectsData.length > 1 ? 'block' : 'none';
                     submissionsOverlay.style.display = 'block';
                 } else {
                     adminPwError.textContent = result.message || 'Invalid password';
@@ -1267,6 +1411,17 @@
             }
             adminPwSubmit.disabled = false;
             adminPwSubmit.textContent = 'Submit';
+        });
+
+        sortDateBtn.addEventListener('click', () => {
+            sortDateAsc = !sortDateAsc;
+            sortDateBtn.innerHTML = sortDateAsc ? 'Submitted Date &#9650;' : 'Submitted Date &#9660;';
+            const sorted = [...adminProjectsData].sort((a, b) => {
+                const da = new Date(a.created_date || '1970-01-01');
+                const db = new Date(b.created_date || '1970-01-01');
+                return sortDateAsc ? da - db : db - da;
+            });
+            renderSubmissions(sorted);
         });
 
         function renderSubmissions(projects) {
