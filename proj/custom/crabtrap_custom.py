@@ -437,28 +437,29 @@ def crabtrap(all_dfs):
 
     
     
-    print("# CHECK - 13")
-    # Description: Range for abundance must be between [0, 100] unless it is -88 (🛑 ERROR 🛑)
-    # Created Coder: Duy Nguyen
-    # Created Date: 10/04/2022
-    # Last Edited Date: 02/05/2026
-    # Last Edited Coder: Duy
-    # NOTE (8/29/23): Robert adjusts the format so it follows the coding standard. (I also added the & pd.notnull(x) part)
-    # NOTE (02/05/2026): Renumbered from check 12 to check 13
-    args.update({
-        "dataframe": crabinvert,
-        "tablename": 'tbl_crabfishinvert_abundance',
-        "badrows": crabinvert[
-            ((crabinvert['abundance'] < 0) | (crabinvert['abundance'] > 100)) & 
-            (crabinvert['abundance'] != -88) & 
-            pd.notnull(crabinvert['abundance'])    
-        ].tmp_row.tolist(),
-        "badcolumn": "abundance",
-        "error_type": "Value out of range",
-        "error_message": "Your abundance value must be between 0 to 100, unless it is a -88 indicating a missing value."
-    })
-    errs.append(checkData(**args))
-    print("# END OF CHECK - 13")
+    # print("# CHECK - 13")
+    # # Description: Range for abundance must be between [0, 100] unless it is -88 (🛑 ERROR 🛑)
+    # # Created Coder: Duy Nguyen
+    # # Created Date: 10/04/2022
+    # # Last Edited Date: 02/05/2026
+    # # Last Edited Coder: Duy
+    # # NOTE (8/29/23): Robert adjusts the format so it follows the coding standard. (I also added the & pd.notnull(x) part)
+    # # NOTE (02/05/2026): Renumbered from check 12 to check 13
+    # # NOTE (03/11/2026): Commented out as requested by Jan.
+    # args.update({
+    #     "dataframe": crabinvert,
+    #     "tablename": 'tbl_crabfishinvert_abundance',
+    #     "badrows": crabinvert[
+    #         ((crabinvert['abundance'] < 0) | (crabinvert['abundance'] > 100)) & 
+    #         (crabinvert['abundance'] != -88) & 
+    #         pd.notnull(crabinvert['abundance'])    
+    #     ].tmp_row.tolist(),
+    #     "badcolumn": "abundance",
+    #     "error_type": "Value out of range",
+    #     "error_message": "Your abundance value must be between 0 to 100, unless it is a -88 indicating a missing value."
+    # })
+    # errs.append(checkData(**args))
+    # print("# END OF CHECK - 13")
 
     print("# CHECK - 14")
     # Description: Replicate must be consecutive within a primary key  (🛑 ERROR 🛑)
