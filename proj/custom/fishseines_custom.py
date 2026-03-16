@@ -372,6 +372,142 @@ def fishseines(all_dfs):
 
 
 
+    print("# CHECK - 18")
+    # Description: Values in station_sav_scientificname must be in lu_plantspecies (scientificname). Values may be comma-separated (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 03/16/2026
+    # Last Edited Date: 03/16/2026
+    # Last Edited Coder: Duy Nguyen
+    if 'station_sav_scientificname' in fishmeta.columns:
+        lu_plantspecies = pd.read_sql("SELECT DISTINCT scientificname FROM lu_plantspecies", g.eng)
+        valid_plant_names = set(lu_plantspecies['scientificname'].str.strip())
+
+        def check_sav_scientificname(val):
+            if pd.isna(val) or str(val).strip() == '':
+                return False
+            names = [v.strip() for v in str(val).split(',') if v.strip()]
+            return not all(n in valid_plant_names for n in names)
+
+        args.update({
+            "dataframe": fishmeta,
+            "tablename": "tbl_fish_sample_metadata",
+            "badrows": fishmeta[fishmeta['station_sav_scientificname'].apply(check_sav_scientificname)].tmp_row.tolist(),
+            "badcolumn": "station_sav_scientificname",
+            "error_type": "Lookup List Error",
+            "error_message": (
+                f'Values in station_sav_scientificname must match scientific names in lookup list '
+                f'<a href="/{lu_list_script_root}/scraper?action=help&layer=lu_plantspecies" target="_blank">lu_plantspecies</a>. '
+                'Multiple values can be entered comma-separated.'
+            )
+        })
+        errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 18")
+
+
+
+    print("# CHECK - 19")
+    # Description: Values in station_algae_scientificname must be in lu_plantspecies (scientificname). Values may be comma-separated (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 03/16/2026
+    # Last Edited Date: 03/16/2026
+    # Last Edited Coder: Duy Nguyen
+    if 'station_algae_scientificname' in fishmeta.columns:
+        # lu_plantspecies already loaded above; if check 18 was skipped (column absent), load it now
+        if 'lu_plantspecies' not in dir():
+            lu_plantspecies = pd.read_sql("SELECT DISTINCT scientificname FROM lu_plantspecies", g.eng)
+            valid_plant_names = set(lu_plantspecies['scientificname'].str.strip())
+
+        def check_algae_scientificname(val):
+            if pd.isna(val) or str(val).strip() == '':
+                return False
+            names = [v.strip() for v in str(val).split(',') if v.strip()]
+            return not all(n in valid_plant_names for n in names)
+
+        args.update({
+            "dataframe": fishmeta,
+            "tablename": "tbl_fish_sample_metadata",
+            "badrows": fishmeta[fishmeta['station_algae_scientificname'].apply(check_algae_scientificname)].tmp_row.tolist(),
+            "badcolumn": "station_algae_scientificname",
+            "error_type": "Lookup List Error",
+            "error_message": (
+                f'Values in station_algae_scientificname must match scientific names in lookup list '
+                f'<a href="/{lu_list_script_root}/scraper?action=help&layer=lu_plantspecies" target="_blank">lu_plantspecies</a>. '
+                'Multiple values can be entered comma-separated.'
+            )
+        })
+        errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 19")
+
+
+
+    print("# CHECK - 20")
+    # Description: Values in net_sav_scientificname must be in lu_plantspecies (scientificname). Values may be comma-separated (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 03/16/2026
+    # Last Edited Date: 03/16/2026
+    # Last Edited Coder: Duy Nguyen
+    if 'net_sav_scientificname' in fishmeta.columns:
+        if 'valid_plant_names' not in dir():
+            lu_plantspecies = pd.read_sql("SELECT DISTINCT scientificname FROM lu_plantspecies", g.eng)
+            valid_plant_names = set(lu_plantspecies['scientificname'].str.strip())
+
+        def check_net_sav_scientificname(val):
+            if pd.isna(val) or str(val).strip() == '':
+                return False
+            names = [v.strip() for v in str(val).split(',') if v.strip()]
+            return not all(n in valid_plant_names for n in names)
+
+        args.update({
+            "dataframe": fishmeta,
+            "tablename": "tbl_fish_sample_metadata",
+            "badrows": fishmeta[fishmeta['net_sav_scientificname'].apply(check_net_sav_scientificname)].tmp_row.tolist(),
+            "badcolumn": "net_sav_scientificname",
+            "error_type": "Lookup List Error",
+            "error_message": (
+                f'Values in net_sav_scientificname must match scientific names in lookup list '
+                f'<a href="/{lu_list_script_root}/scraper?action=help&layer=lu_plantspecies" target="_blank">lu_plantspecies</a>. '
+                'Multiple values can be entered comma-separated.'
+            )
+        })
+        errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 20")
+
+
+
+    print("# CHECK - 21")
+    # Description: Values in net_algae_scientificname must be in lu_plantspecies (scientificname). Values may be comma-separated (🛑 ERROR 🛑)
+    # Created Coder: Duy Nguyen
+    # Created Date: 03/16/2026
+    # Last Edited Date: 03/16/2026
+    # Last Edited Coder: Duy Nguyen
+    if 'net_algae_scientificname' in fishmeta.columns:
+        if 'valid_plant_names' not in dir():
+            lu_plantspecies = pd.read_sql("SELECT DISTINCT scientificname FROM lu_plantspecies", g.eng)
+            valid_plant_names = set(lu_plantspecies['scientificname'].str.strip())
+
+        def check_net_algae_scientificname(val):
+            if pd.isna(val) or str(val).strip() == '':
+                return False
+            names = [v.strip() for v in str(val).split(',') if v.strip()]
+            return not all(n in valid_plant_names for n in names)
+
+        args.update({
+            "dataframe": fishmeta,
+            "tablename": "tbl_fish_sample_metadata",
+            "badrows": fishmeta[fishmeta['net_algae_scientificname'].apply(check_net_algae_scientificname)].tmp_row.tolist(),
+            "badcolumn": "net_algae_scientificname",
+            "error_type": "Lookup List Error",
+            "error_message": (
+                f'Values in net_algae_scientificname must match scientific names in lookup list '
+                f'<a href="/{lu_list_script_root}/scraper?action=help&layer=lu_plantspecies" target="_blank">lu_plantspecies</a>. '
+                'Multiple values can be entered comma-separated.'
+            )
+        })
+        errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 21")
+
+
+
 
     ######################################################################################################################################
     # ---------------------------------------------------------------------------------------------------------------------------------- #
