@@ -91,8 +91,8 @@ def grab_field(all_dfs):
             "is_core_error": False,
             "error_message": 
                 "If you indicate that you collect data for a datatype (for example: you input 'Yes' in nutrients column in grab_event), "+\
-                "then you should have the corresponding records for that datatype in the grabevent_details based on these columns {}, "+\
-                "and the value in sampletype column should match".format(','.join(grabevent_grabeventdet_shared_pkey))
+                "then you should have the corresponding records for that datatype in the grabevent_details based on the columns stated, "+\
+                "and the value in sampletype column should match"
         })
         errs = [*errs, checkData(**args)] 
     print("# END OF CHECK - 1")
@@ -306,80 +306,80 @@ def grab_field(all_dfs):
     warnings = [*warnings, checkData(**args)]
     print("# END OF CHECK - 6")
 
-    print("# CHECK - 7")
-    # Description: color should be 'Not recorded' in when matrix is water
-    # Created Coder: Ayah 
-    # Created Date: NA
-    # Last Edited Date: 09/25/2023
-    # Last Edited Coder: Aria Askaryar
-    # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
-    # NOTE (09/14/2023): Ayah made the lu list for all water matrix for the check
-    # NOTE (09/25/2023): Aria updated code changed "Not Recored" to "Not recorded" and updated error_message
+    # print("# CHECK - 7")
+    # # Description: color should be 'Not recorded' in when matrix is water
+    # # Created Coder: Ayah 
+    # # Created Date: NA
+    # # Last Edited Date: 09/25/2023
+    # # Last Edited Coder: Aria Askaryar
+    # # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
+    # # NOTE (09/14/2023): Ayah made the lu list for all water matrix for the check
+    # # NOTE (09/25/2023): Aria updated code changed "Not Recored" to "Not recorded" and updated error_message
 
-    args.update({
-        "dataframe":grabeventdet,
-        "tablename":'tbl_grabevent_details',
-        "badrows":grabeventdet[(grabeventdet['matrix'].isin(lu_matrix_filtered)) & 
-            (grabeventdet['color'] != 'Not recorded')
-            ].tmp_row.tolist(),
-        "badcolumn": "color",
-        "error_type": "empty value",
-        "is_core_error": False,
-        "error_message": "Color should be 'Not recorded' since matrix is water"
-    })
-    errs = [*errs, checkData(**args)]
+    # args.update({
+    #     "dataframe":grabeventdet,
+    #     "tablename":'tbl_grabevent_details',
+    #     "badrows":grabeventdet[(grabeventdet['matrix'].isin(lu_matrix_filtered)) & 
+    #         (grabeventdet['color'] != 'Not recorded')
+    #         ].tmp_row.tolist(),
+    #     "badcolumn": "color",
+    #     "error_type": "empty value",
+    #     "is_core_error": False,
+    #     "error_message": "Color should be 'Not recorded' since matrix is water"
+    # })
+    # errs = [*errs, checkData(**args)]
 
-    print("# END OF CHECK - 7")
+    # print("# END OF CHECK - 7")
 
 
-    print("# CHECK - 8")
-    # Description: odor should be 'Not recorded' when matrix is water
-    # Created Coder: Ayah 
-    # Created Date: NA
-    # Last Edited Date: 09/26/2023
-    # Last Edited Coder: Duy
-    # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
-    # NOTE (09/14/2023): Ayah made the lu list for all water matrix for the check
-    # NOTE (09/26/2023): This would give an error .isin([lu_matrix_filtered]) since lu_matrix_filtered is already a list. so Duy removed it.
-    args.update({
-        "dataframe":grabeventdet,
-        "tablename":'tbl_grabevent_details',
-        "badrows":grabeventdet[
-            (grabeventdet['matrix'].isin(lu_matrix_filtered)) & 
-            (grabeventdet['odor'] != 'Not recorded')
-        ].tmp_row.tolist(),
-        "badcolumn": "odor",
-        "error_type": "empty value",
-        "is_core_error": False,
-        "error_message": "Odor should be 'Not recorded' since matrix is water"
-    }) 
-    errs = [*errs, checkData(**args)]
+    # print("# CHECK - 8")
+    # # Description: odor should be 'Not recorded' when matrix is water
+    # # Created Coder: Ayah 
+    # # Created Date: NA
+    # # Last Edited Date: 09/26/2023
+    # # Last Edited Coder: Duy
+    # # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
+    # # NOTE (09/14/2023): Ayah made the lu list for all water matrix for the check
+    # # NOTE (09/26/2023): This would give an error .isin([lu_matrix_filtered]) since lu_matrix_filtered is already a list. so Duy removed it.
+    # args.update({
+    #     "dataframe":grabeventdet,
+    #     "tablename":'tbl_grabevent_details',
+    #     "badrows":grabeventdet[
+    #         (grabeventdet['matrix'].isin(lu_matrix_filtered)) & 
+    #         (grabeventdet['odor'] != 'Not recorded')
+    #     ].tmp_row.tolist(),
+    #     "badcolumn": "odor",
+    #     "error_type": "empty value",
+    #     "is_core_error": False,
+    #     "error_message": "Odor should be 'Not recorded' since matrix is water"
+    # }) 
+    # errs = [*errs, checkData(**args)]
 
-    print("# END OF CHECK - 8")
+    # print("# END OF CHECK - 8")
 
-    print("# CHECK - 9")
-    # Description: composition should not get filled in when matrix is water
-    # Created Coder: Ayah 
-    # Created Date: NA
-    # Last Edited Date: 09/14/2023
-    # Last Edited Coder: Ayah
-    # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
-    # NOTE (09/14/2023): Ayah made the lu list for all water matrix for the check
-    args.update({
-        "dataframe":grabeventdet,
-        "tablename":'tbl_grabevent_details',
-        "badrows":grabeventdet[
-            (grabeventdet['matrix'].isin(lu_matrix_filtered)) &
-            (grabeventdet['composition'] != 'Not recorded' ) 
-            ].tmp_row.tolist(),
-        "badcolumn": "composition",
-        "error_type": "empty value",
-        "is_core_error": False,
-        "error_message": "Composition should be 'Not recorded' since matrix is water"
-    })
-    errs = [*errs, checkData(**args)]
+    # print("# CHECK - 9")
+    # # Description: composition should not get filled in when matrix is water
+    # # Created Coder: Ayah 
+    # # Created Date: NA
+    # # Last Edited Date: 09/14/2023
+    # # Last Edited Coder: Ayah
+    # # NOTE (09/12/2023): Ayah adjusted the format so it follows the coding standard
+    # # NOTE (09/14/2023): Ayah made the lu list for all water matrix for the check
+    # args.update({
+    #     "dataframe":grabeventdet,
+    #     "tablename":'tbl_grabevent_details',
+    #     "badrows":grabeventdet[
+    #         (grabeventdet['matrix'].isin(lu_matrix_filtered)) &
+    #         (grabeventdet['composition'] != 'Not recorded' ) 
+    #         ].tmp_row.tolist(),
+    #     "badcolumn": "composition",
+    #     "error_type": "empty value",
+    #     "is_core_error": False,
+    #     "error_message": "Composition should be 'Not recorded' since matrix is water"
+    # })
+    # errs = [*errs, checkData(**args)]
 
-    print("# END OF CHECK - 9")
+    # print("# END OF CHECK - 9")
 
     print("# CHECK - 10a")
     # Description: If sampletype is "infauna" then a value for sieve_or_depth field must be pulled from lu_benthicsievesize. 
