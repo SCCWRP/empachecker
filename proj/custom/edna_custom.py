@@ -67,6 +67,31 @@ def edna_field(all_dfs):
     
     print("# END OF CHECK - 1")
 
+    print("# CHECK - 2")
+    # Description: poresize must be one of the accepted values: 0.2, 0.45, 1.2, 5
+    # Created Coder: System
+    # Created Date: 03/20/2026
+    # Last Edited Date: 
+    # Last Edited Coder: 
+    # NOTE (03/20/2026): Check created for poresize validation
+
+    valid_poresizes = [0.2, 0.45, 1.2, 5]
+
+    args.update({
+        "dataframe": edna_metadata,
+        "tablename": 'tbl_edna_metadata',
+        "badrows": edna_metadata[
+            ~edna_metadata['poresize'].isin(valid_poresizes)
+        ].tmp_row.tolist(),
+        "badcolumn": "poresize",
+        "error_type": "Value Error",
+        "is_core_error": False,
+        "error_message": "poresize must be one of the following values: 0.2, 0.45, 1.2, 5"
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 2")
+
     return {'errors': errs, 'warnings': warnings}
 
 def edna_lab(all_dfs):
