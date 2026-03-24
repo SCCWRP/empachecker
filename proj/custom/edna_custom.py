@@ -75,7 +75,7 @@ def edna_field(all_dfs):
     # Last Edited Coder: 
     # NOTE (03/20/2026): Check created for poresize validation
 
-    valid_poresizes = [0.2, 0.45, 1.2, 5]
+    valid_poresizes = [0.2, 0.45, 1.2, 5, -88]
 
     args.update({
         "dataframe": edna_metadata,
