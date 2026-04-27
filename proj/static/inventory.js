@@ -30,6 +30,8 @@ let flatData = []; // Flat array for easier filtering/display
 // SOP 1 data
 let sop1Data = [];
 let sop1FilteredData = [];
+let sop1CurrentPage = 1;
+let sop1PageSize = 50;
 
 // Function to fetch inventory data from the backend
 async function fetchInventoryData() {
@@ -679,45 +681,48 @@ function filterAndRenderSop1Table() {
     });
 
     sop1FilteredData = filteredData;
+    sop1CurrentPage = 1;
     renderSop1Table(filteredData);
 }
 
-// Render SOP 1 table
+// Render SOP 1 table (paginated)
 function renderSop1Table(data) {
     const tbody = document.getElementById('sop1TableBody');
     tbody.innerHTML = '';
 
-    data.forEach(row => {
+    const columns = [
+        'region', 'siteid', 'year', 'month',
+        'raw_chlorophyll', 'raw_conductivity', 'raw_depth',
+        'raw_do', 'raw_do_pct', 'raw_h2otemp', 'raw_orp',
+        'raw_ph', 'raw_pressure', 'raw_qvalue', 'raw_salinity', 'raw_turbidity'
+    ];
+
+    const rawColumns = [
+        'raw_chlorophyll', 'raw_conductivity', 'raw_depth',
+        'raw_do', 'raw_do_pct', 'raw_h2otemp', 'raw_orp',
+        'raw_ph', 'raw_pressure', 'raw_qvalue', 'raw_salinity', 'raw_turbidity'
+    ];
+
+    const totalRows = data.length;
+    const totalPages = Math.max(1, Math.ceil(totalRows / sop1PageSize));
+    sop1CurrentPage = Math.min(sop1CurrentPage, totalPages);
+
+    const start = (sop1CurrentPage - 1) * sop1PageSize;
+    const pageData = data.slice(start, start + sop1PageSize);
+
+    pageData.forEach(row => {
         const tr = document.createElement('tr');
-
-        // Create cells in order
-        const columns = [
-            'region', 'siteid', 'year', 'month',
-            'raw_chlorophyll', 'raw_conductivity', 'raw_depth',
-            'raw_do', 'raw_do_pct', 'raw_h2otemp', 'raw_orp',
-            'raw_ph', 'raw_pressure', 'raw_qvalue', 'raw_salinity', 'raw_turbidity'
-        ];
-
-        const rawColumns = [
-            'raw_chlorophyll', 'raw_conductivity', 'raw_depth',
-            'raw_do', 'raw_do_pct', 'raw_h2otemp', 'raw_orp',
-            'raw_ph', 'raw_pressure', 'raw_qvalue', 'raw_salinity', 'raw_turbidity'
-        ];
 
         columns.forEach(col => {
             const cell = document.createElement('td');
 
-            // For raw_ columns, display 'n' for null/empty values
             if (rawColumns.includes(col)) {
                 const cellValue = (row[col] !== null && row[col] !== undefined && row[col] !== '') ? row[col] : 'n';
                 cell.innerText = cellValue;
-
-                // Add green color for 'y' values
                 if (cellValue === 'y') {
                     cell.classList.add('green-cell');
                 }
             } else {
-                // For other columns, display the value or empty string
                 cell.innerText = row[col] !== null ? row[col] : '';
             }
 
@@ -726,6 +731,82 @@ function renderSop1Table(data) {
 
         tbody.appendChild(tr);
     });
+
+    renderSop1Pagination(totalRows, totalPages);
+}
+
+// Render SOP 1 pagination controls
+function renderSop1Pagination(totalRows, totalPages) {
+    const info = document.getElementById('sop1PaginationInfo');
+    const ul = document.getElementById('sop1Pagination');
+
+    const start = totalRows === 0 ? 0 : (sop1CurrentPage - 1) * sop1PageSize + 1;
+    const end = Math.min(sop1CurrentPage * sop1PageSize, totalRows);
+    info.textContent = `${start}–${end} of ${totalRows} rows`;
+
+    ul.innerHTML = '';
+
+    // Previous button
+    const prevLi = document.createElement('li');
+    prevLi.className = `page-item${sop1CurrentPage === 1 ? ' disabled' : ''}`;
+    prevLi.innerHTML = `<button class="page-link" aria-label="Previous">&#8249;</button>`;
+    prevLi.querySelector('button').addEventListener('click', () => {
+        if (sop1CurrentPage > 1) {
+            sop1CurrentPage--;
+            renderSop1Table(sop1FilteredData);
+        }
+    });
+    ul.appendChild(prevLi);
+
+    // Page number buttons (show up to 7 pages around current)
+    const delta = 3;
+    const rangeStart = Math.max(1, sop1CurrentPage - delta);
+    const rangeEnd = Math.min(totalPages, sop1CurrentPage + delta);
+
+    if (rangeStart > 1) {
+        ul.appendChild(makePageItem(1));
+        if (rangeStart > 2) ul.appendChild(makeEllipsis());
+    }
+    for (let p = rangeStart; p <= rangeEnd; p++) {
+        ul.appendChild(makePageItem(p));
+    }
+    if (rangeEnd < totalPages) {
+        if (rangeEnd < totalPages - 1) ul.appendChild(makeEllipsis());
+        ul.appendChild(makePageItem(totalPages));
+    }
+
+    // Next button
+    const nextLi = document.createElement('li');
+    nextLi.className = `page-item${sop1CurrentPage === totalPages ? ' disabled' : ''}`;
+    nextLi.innerHTML = `<button class="page-link" aria-label="Next">&#8250;</button>`;
+    nextLi.querySelector('button').addEventListener('click', () => {
+        if (sop1CurrentPage < totalPages) {
+            sop1CurrentPage++;
+            renderSop1Table(sop1FilteredData);
+        }
+    });
+    ul.appendChild(nextLi);
+}
+
+function makePageItem(p) {
+    const li = document.createElement('li');
+    li.className = `page-item${p === sop1CurrentPage ? ' active' : ''}`;
+    const btn = document.createElement('button');
+    btn.className = 'page-link';
+    btn.textContent = p;
+    btn.addEventListener('click', () => {
+        sop1CurrentPage = p;
+        renderSop1Table(sop1FilteredData);
+    });
+    li.appendChild(btn);
+    return li;
+}
+
+function makeEllipsis() {
+    const li = document.createElement('li');
+    li.className = 'page-item disabled';
+    li.innerHTML = `<span class="page-link">…</span>`;
+    return li;
 }
 
 // Initialize page
@@ -772,6 +853,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Set up event listeners
         document.getElementById('sop1SiteFilter').addEventListener('input', filterAndRenderSop1Table);
+
+        // Page size selector
+        document.getElementById('sop1PageSize').addEventListener('change', function () {
+            sop1PageSize = parseInt(this.value, 10);
+            sop1CurrentPage = 1;
+            renderSop1Table(sop1FilteredData);
+        });
     }
 
     hideLoader();

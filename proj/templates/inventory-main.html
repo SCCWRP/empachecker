@@ -173,6 +173,25 @@
                         <tbody id="sop1TableBody"></tbody>
                     </table>
                 </div>
+
+                <!-- SOP 1 Pagination Controls -->
+                <div class="d-flex align-items-center justify-content-between mt-2 flex-wrap gap-2" id="sop1PaginationControls">
+                    <div class="d-flex align-items-center gap-2">
+                        <label for="sop1PageSize" class="form-label mb-0 small">Rows per page:</label>
+                        <select id="sop1PageSize" class="form-select form-select-sm" style="width:auto;">
+                            <option value="25">25</option>
+                            <option value="50" selected>50</option>
+                            <option value="100">100</option>
+                            <option value="200">200</option>
+                        </select>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span id="sop1PaginationInfo" class="small text-muted"></span>
+                        <nav aria-label="SOP 1 table pagination">
+                            <ul class="pagination pagination-sm mb-0" id="sop1Pagination"></ul>
+                        </nav>
+                    </div>
+                </div>
             </div>
         </div>
     </main>

@@ -331,7 +331,7 @@ def get_inventory_data():
 
     with eng.connect() as conn:
         # Query data for the Logger using Pandas
-        logger_query = "SELECT * FROM mvw_qa_raw_logger_combined_final"
+        logger_query = "SELECT * FROM mvw_logger_inventory"
         logger_df = pd.read_sql(logger_query, con=conn)
         logger_df['year'] = logger_df['year'].astype(int).astype(str)
 
@@ -649,7 +649,7 @@ def download_inventory_logger_data():
     eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
 
     # Query data for the General using Pandas
-    general_query = "SELECT * FROM mvw_qa_raw_logger_combined_final"
+    general_query = "SELECT * FROM mvw_logger_inventory"
     with eng.connect() as conn:
         general_df = pd.read_sql(general_query, con=conn)
 
@@ -761,7 +761,7 @@ def get_sop1_details():
             raw_qvalue,
             raw_salinity,
             raw_turbidity
-        FROM mvw_qa_raw_logger_combined_final
+        FROM mvw_logger_inventory
         WHERE siteid = :siteid
             AND year = :year
             AND month = ANY(:months)
@@ -824,7 +824,7 @@ def get_sop1_table_data():
             raw_qvalue,
             raw_salinity,
             raw_turbidity
-        FROM mvw_qa_raw_logger_combined_final
+        FROM mvw_logger_inventory
         ORDER BY region, siteid, year, month
     """
 
