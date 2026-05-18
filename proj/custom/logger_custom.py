@@ -46,48 +46,66 @@ def logger_meta(all_dfs):
 
     # CHECK - 2
     print("# CHECK - 2")
-    # Description: Ensure there are no overlapping samplecollectiontimestampstart and samplecollectiontimestampend times **only if** there is a match on projectid, siteid, estuaryname, stationno, sensortype, and sensorid in the database. (🛑 ERROR 🛑)
+    # Description: Ensure no overlapping samplecollectiontimestampstart and samplecollectiontimestampend
+    #              for the same (projectid, siteid, estuaryname, stationno, sensortype, sensorid).
+    #              Catches BOTH:
+    #                (a) overlaps within the current submission itself, AND
+    #                (b) overlaps between the current submission and existing database records.
     # Created Coder: Duy Nguyen
     # Created Date: 02/07/2025
-    # Last Edited Date: 02/07/2025
+    # Last Edited Date: 05/18/2026
     # Last Edited Coder: Duy Nguyen
-    # NOTE (02/07/2025): Optimized to check overlap **only if a match exists in the database**.
+    # NOTE (05/18/2026): Rewrote to catch intra-submission overlaps and to exclude self-matches
+    #                    when a row in the submission already exists in the database (re-submission).
     meta['sensorid'] = meta['sensorid'].astype('str')
 
-    # Load only relevant columns from database
+    key_cols = ['projectid', 'siteid', 'estuaryname', 'stationno', 'sensortype', 'sensorid']
+
+    # Load existing DB records for these keys
     meta_db = pd.read_sql(
-        "SELECT projectid, siteid, estuaryname, stationno, sensortype, sensorid, samplecollectiontimestampstart, samplecollectiontimestampend FROM tbl_wq_logger_metadata",
+        "SELECT projectid, siteid, estuaryname, stationno, sensortype, sensorid, "
+        "samplecollectiontimestampstart, samplecollectiontimestampend "
+        "FROM tbl_wq_logger_metadata",
         g.eng
     )
+    meta_db['sensorid'] = meta_db['sensorid'].astype('str')
 
-    # Keep only records in new data that have a **matching key** in the database
-    meta_matched = meta.merge(
-        meta_db[['projectid', 'siteid', 'estuaryname', 'stationno', 'sensortype', 'sensorid']],
-        on=['projectid', 'siteid', 'estuaryname', 'stationno', 'sensortype', 'sensorid'],
-        how='inner'
-    )
+    # ---------- Part A: intra-submission overlap (new vs new) ----------
+    intra = meta.merge(meta, on=key_cols, suffixes=('_a', '_b'), how='inner')
 
-    # Merge matched new data with database records for overlap check
-    meta_combined = meta_matched.merge(
-        meta_db,
-        on=['projectid', 'siteid', 'estuaryname', 'stationno', 'sensortype', 'sensorid'],
-        suffixes=('_new', '_db'),
-        how='inner'
-    )
-
-    # Identify overlapping rows
-    overlapping_rows = meta_combined[
-        (meta_combined['samplecollectiontimestampstart_new'] < meta_combined['samplecollectiontimestampend_db']) &  # New start is before existing end
-        (meta_combined['samplecollectiontimestampend_new'] > meta_combined['samplecollectiontimestampstart_db'])    # New end is after existing start
+    intra_overlaps = intra[
+        (intra['tmp_row_a'] != intra['tmp_row_b']) &
+        (intra['samplecollectiontimestampstart_a'] < intra['samplecollectiontimestampend_b']) &
+        (intra['samplecollectiontimestampend_a']   > intra['samplecollectiontimestampstart_b'])
     ]
 
-    # Extract bad row indices from new data only
-    badrows = meta.merge(
-        overlapping_rows[['projectid', 'siteid', 'estuaryname', 'stationno', 'sensortype', 'sensorid', 'samplecollectiontimestampstart_new', 'samplecollectiontimestampend_new']],
-        left_on=['projectid', 'siteid', 'estuaryname', 'stationno', 'sensortype', 'sensorid', 'samplecollectiontimestampstart', 'samplecollectiontimestampend'],
-        right_on=['projectid', 'siteid', 'estuaryname', 'stationno', 'sensortype', 'sensorid', 'samplecollectiontimestampstart_new', 'samplecollectiontimestampend_new'],
+    intra_bad = set(intra_overlaps['tmp_row_a'].tolist() + intra_overlaps['tmp_row_b'].tolist())
+
+    # ---------- Part B: new vs database overlap ----------
+    combined = meta.merge(meta_db, on=key_cols, suffixes=('_new', '_db'), how='inner')
+
+    # Exclude self-matches: if the same exact range is already in the DB (re-submission of an
+    # identical row), don't flag it as overlapping itself.
+    db_overlaps = combined[
+        (combined['samplecollectiontimestampstart_new'] < combined['samplecollectiontimestampend_db']) &
+        (combined['samplecollectiontimestampend_new']   > combined['samplecollectiontimestampstart_db']) &
+        ~(
+            (combined['samplecollectiontimestampstart_new'] == combined['samplecollectiontimestampstart_db']) &
+            (combined['samplecollectiontimestampend_new']   == combined['samplecollectiontimestampend_db'])
+        )
+    ]
+
+    db_bad_keys = db_overlaps[key_cols + ['samplecollectiontimestampstart_new', 'samplecollectiontimestampend_new']]
+
+    db_bad = meta.merge(
+        db_bad_keys,
+        left_on  = key_cols + ['samplecollectiontimestampstart', 'samplecollectiontimestampend'],
+        right_on = key_cols + ['samplecollectiontimestampstart_new', 'samplecollectiontimestampend_new'],
         how='inner'
     )['tmp_row'].tolist()
+
+    # ---------- Combine and report ----------
+    badrows = sorted(intra_bad.union(set(db_bad)))
 
     args.update({
         "dataframe": meta,
@@ -95,7 +113,7 @@ def logger_meta(all_dfs):
         "badrows": badrows,
         "badcolumn": "projectid,siteid,estuaryname,stationno,sensortype,sensorid,samplecollectiontimestampstart,samplecollectiontimestampend",
         "error_type": "Logic Error",
-        "error_message": "For the same projectid, siteid, estuaryname, stationno, sensortype, and sensorid, overlapping samplecollectiontimestampstart and samplecollectiontimestampend times are not allowed, including database records."
+        "error_message": "For the same projectid, siteid, estuaryname, stationno, sensortype, and sensorid, samplecollectiontimestampstart/end ranges must not overlap — neither within this submission nor against existing database records."
     })
     errs = [*errs, checkData(**args)]
     print("# END OF CHECK - 2")

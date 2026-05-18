@@ -383,193 +383,193 @@ def repopulate_dropdown():
     return jsonify(projectid=projectid, estuaryname=estuaryname, sensortype=sensortype)
 
 
-# @download.route('/getloggerdata', strict_slashes=False, methods = ['GET','POST'])
-# def get_logger_data():
+@download.route('/getloggerdata', strict_slashes=False, methods = ['GET','POST'])
+def get_logger_data():
     
-#     eng = g.eng
-#     payload = request.json
+    eng = g.eng
+    payload = request.json
 
-#     # Prevent SQL Injection
-#     for k,v in payload.items():
-#         if k != 'is_partitioned':
-#             payload[k] = re.sub(r'[#;]', '', v)
+    # Prevent SQL Injection
+    for k,v in payload.items():
+        if k != 'is_partitioned':
+            payload[k] = re.sub(r'[#;]', '', v)
     
-#     # Hardcoded for EMPA project
-#     base_table = 'tbl_wq_logger_raw'
-#     datetime_colname = 'samplecollectiontimestamp'
-#     is_partitioned = True
+    # Hardcoded for EMPA project
+    base_table = 'tbl_wq_logger_raw'
+    datetime_colname = 'samplecollectiontimestamp'
+    is_partitioned = True
 
-#     # Required Parameters
-#     start_date = pd.Timestamp(payload.get('start_time'))
-#     # Parse end_time and set time to 23:59:48
-#     end_time_str = payload.get('end_time')
-#     if end_time_str:
-#         end_date = pd.to_datetime(end_time_str).replace(hour=23, minute=59, second=48)
-#     else:
-#         end_date = None
-#     if any([start_date is None, end_date is None]):
-#         return jsonify(message="Start Date and End Date must be provided")
-#     print((end_date - start_date).days)
+    # Required Parameters
+    start_date = pd.Timestamp(payload.get('start_time'))
+    # Parse end_time and set time to 23:59:48
+    end_time_str = payload.get('end_time')
+    if end_time_str:
+        end_date = pd.to_datetime(end_time_str).replace(hour=23, minute=59, second=48)
+    else:
+        end_date = None
+    if any([start_date is None, end_date is None]):
+        return jsonify(message="Start Date and End Date must be provided")
+    print((end_date - start_date).days)
 
-#     if (end_date - start_date).days > 93: #3 months
-#         return jsonify(message="Date range cannot exceed 3 months")
+    if (end_date - start_date).days > 93: #3 months
+        return jsonify(message="Date range cannot exceed 3 months")
 
-#     # Optional Parameters
-#     projectid = payload.get('projectid')
-#     siteid = payload.get('siteid')
-#     estuaryname = payload.get('estuaryname')
-#     sensortype = payload.get('sensortype')
+    # Optional Parameters
+    projectid = payload.get('projectid')
+    siteid = payload.get('siteid')
+    estuaryname = payload.get('estuaryname')
+    sensortype = payload.get('sensortype')
     
-#     print("estuaryname", estuaryname)
+    print("estuaryname", estuaryname)
 
-#     def format_items(param):
-#         if param:
-#             return ", ".join([f"'{item.strip()}'" for item in param.split(',')])
-#         return ''
+    def format_items(param):
+        if param:
+            return ", ".join([f"'{item.strip()}'" for item in param.split(',')])
+        return ''
 
-#     # Format each parameter
-#     projectid = format_items(projectid)
-#     siteid = format_items(siteid)
-#     estuaryname = format_items(estuaryname)
-#     sensortype = format_items(sensortype)
+    # Format each parameter
+    projectid = format_items(projectid)
+    siteid = format_items(siteid)
+    estuaryname = format_items(estuaryname)
+    sensortype = format_items(sensortype)
 
-#     print(projectid, siteid, estuaryname, sensortype)
+    print(projectid, siteid, estuaryname, sensortype)
 
-#     sql = f"""
-#         SELECT 
-#             raw_dat.objectid,
-#             raw_dat.projectid,
-#             raw_dat.siteid,
-#             raw_dat.estuaryname,
-#             raw_dat.sensortype,
-#             raw_dat.stationno,
-#             raw_dat.sensorid,
-#             raw_dat.samplecollectiontimestamp,
-#             raw_dat.samplecollectiontimezone,
-#             raw_dat.wqnotes,
-#             raw_dat.sensorlocation,
-#             raw_dat.organization,
-#             raw_dat.raw_depth,
-#             raw_dat.raw_depth_unit,
-#             CASE WHEN raw_dat.raw_depth_qcflag_human IS NULL
-#                 THEN raw_dat.raw_depth_qcflag_robot 
-#                 ELSE raw_dat.raw_depth_qcflag_human 
-#             END AS raw_depth_qcflag_final,
-#             raw_dat.raw_pressure,
-#             raw_dat.raw_pressure_unit,
-#             CASE WHEN raw_dat.raw_pressure_qcflag_human IS NULL
-#                 THEN raw_dat.raw_pressure_qcflag_robot 
-#                 ELSE raw_dat.raw_pressure_qcflag_human 
-#             END AS raw_pressure_qcflag_final,
-#             raw_dat.raw_h2otemp,
-#             raw_dat.raw_h2otemp_unit,
-#             CASE WHEN raw_dat.raw_h2otemp_qcflag_human IS NULL
-#                 THEN raw_dat.raw_h2otemp_qcflag_robot 
-#                 ELSE raw_dat.raw_h2otemp_qcflag_human 
-#             END AS raw_h2otemp_qcflag_final,
-#             raw_dat.raw_ph,
-#             CASE WHEN raw_dat.raw_ph_qcflag_human IS NULL
-#                 THEN raw_dat.raw_ph_qcflag_robot 
-#                 ELSE raw_dat.raw_ph_qcflag_human 
-#             END AS raw_ph_qcflag_final,
-#             raw_dat.raw_conductivity,
-#             raw_dat.raw_conductivity_unit,
-#             CASE WHEN raw_dat.raw_conductivity_qcflag_human IS NULL
-#                 THEN raw_dat.raw_conductivity_qcflag_robot 
-#                 ELSE raw_dat.raw_conductivity_qcflag_human 
-#             END AS raw_conductivity_qcflag_final,
-#             raw_dat.raw_turbidity,
-#             raw_dat.raw_turbidity_unit,
-#             CASE WHEN raw_dat.raw_turbidity_qcflag_human IS NULL
-#                 THEN raw_dat.raw_turbidity_qcflag_robot 
-#                 ELSE raw_dat.raw_turbidity_qcflag_human 
-#             END AS raw_turbidity_qcflag_final,
-#             raw_dat.raw_do,
-#             raw_dat.raw_do_unit,
-#             CASE WHEN raw_dat.raw_do_qcflag_human IS NULL
-#                 THEN raw_dat.raw_do_qcflag_robot 
-#                 ELSE raw_dat.raw_do_qcflag_human 
-#             END AS raw_do_qcflag_final,
-#             raw_dat.raw_do_pct,
-#             CASE WHEN raw_dat.raw_do_pct_qcflag_human IS NULL
-#                 THEN raw_dat.raw_do_pct_qcflag_robot 
-#                 ELSE raw_dat.raw_do_pct_qcflag_human 
-#             END AS raw_do_pct_qcflag_final,
-#             raw_dat.raw_salinity,
-#             raw_dat.raw_salinity_unit,
-#             CASE WHEN raw_dat.raw_salinity_qcflag_human IS NULL
-#                 THEN raw_dat.raw_salinity_qcflag_robot 
-#                 ELSE raw_dat.raw_salinity_qcflag_human 
-#             END AS raw_salinity_qcflag_final,
-#             raw_dat.raw_chlorophyll,
-#             raw_dat.raw_chlorophyll_unit,
-#             CASE WHEN raw_dat.raw_chlorophyll_qcflag_human IS NULL 
-#                 THEN raw_dat.raw_chlorophyll_qcflag_robot 
-#                 ELSE raw_dat.raw_chlorophyll_qcflag_human 
-#             END AS raw_chlorophyll_qcflag_final,
-#             raw_dat.raw_orp,
-#             raw_dat.raw_orp_unit,
-#             CASE WHEN raw_dat.raw_orp_qcflag_human IS NULL
-#                 THEN raw_dat.raw_orp_qcflag_robot 
-#                 ELSE raw_dat.raw_orp_qcflag_human 
-#             END AS raw_orp_qcflag_final,
-#             raw_dat.raw_qvalue,
-#             CASE WHEN raw_dat.raw_qvalue_qcflag_human IS NULL 
-#                 THEN raw_dat.raw_qvalue_qcflag_robot 
-#                 ELSE raw_dat.raw_qvalue_qcflag_human 
-#             END AS raw_qvalue_qcflag_final,
-#             raw_dat.qaqc_comment
-#         FROM {base_table} raw_dat
-#         WHERE raw_dat.{datetime_colname} >= '{start_date}' 
-#         AND raw_dat.{datetime_colname} <= '{end_date}'
-#     """
+    sql = f"""
+        SELECT 
+            raw_dat.objectid,
+            raw_dat.projectid,
+            raw_dat.siteid,
+            raw_dat.estuaryname,
+            raw_dat.sensortype,
+            raw_dat.stationno,
+            raw_dat.sensorid,
+            raw_dat.samplecollectiontimestamp,
+            raw_dat.samplecollectiontimezone,
+            raw_dat.wqnotes,
+            raw_dat.sensorlocation,
+            raw_dat.organization,
+            raw_dat.raw_depth,
+            raw_dat.raw_depth_unit,
+            CASE WHEN raw_dat.raw_depth_qcflag_human IS NULL
+                THEN raw_dat.raw_depth_qcflag_robot 
+                ELSE raw_dat.raw_depth_qcflag_human 
+            END AS raw_depth_qcflag_final,
+            raw_dat.raw_pressure,
+            raw_dat.raw_pressure_unit,
+            CASE WHEN raw_dat.raw_pressure_qcflag_human IS NULL
+                THEN raw_dat.raw_pressure_qcflag_robot 
+                ELSE raw_dat.raw_pressure_qcflag_human 
+            END AS raw_pressure_qcflag_final,
+            raw_dat.raw_h2otemp,
+            raw_dat.raw_h2otemp_unit,
+            CASE WHEN raw_dat.raw_h2otemp_qcflag_human IS NULL
+                THEN raw_dat.raw_h2otemp_qcflag_robot 
+                ELSE raw_dat.raw_h2otemp_qcflag_human 
+            END AS raw_h2otemp_qcflag_final,
+            raw_dat.raw_ph,
+            CASE WHEN raw_dat.raw_ph_qcflag_human IS NULL
+                THEN raw_dat.raw_ph_qcflag_robot 
+                ELSE raw_dat.raw_ph_qcflag_human 
+            END AS raw_ph_qcflag_final,
+            raw_dat.raw_conductivity,
+            raw_dat.raw_conductivity_unit,
+            CASE WHEN raw_dat.raw_conductivity_qcflag_human IS NULL
+                THEN raw_dat.raw_conductivity_qcflag_robot 
+                ELSE raw_dat.raw_conductivity_qcflag_human 
+            END AS raw_conductivity_qcflag_final,
+            raw_dat.raw_turbidity,
+            raw_dat.raw_turbidity_unit,
+            CASE WHEN raw_dat.raw_turbidity_qcflag_human IS NULL
+                THEN raw_dat.raw_turbidity_qcflag_robot 
+                ELSE raw_dat.raw_turbidity_qcflag_human 
+            END AS raw_turbidity_qcflag_final,
+            raw_dat.raw_do,
+            raw_dat.raw_do_unit,
+            CASE WHEN raw_dat.raw_do_qcflag_human IS NULL
+                THEN raw_dat.raw_do_qcflag_robot 
+                ELSE raw_dat.raw_do_qcflag_human 
+            END AS raw_do_qcflag_final,
+            raw_dat.raw_do_pct,
+            CASE WHEN raw_dat.raw_do_pct_qcflag_human IS NULL
+                THEN raw_dat.raw_do_pct_qcflag_robot 
+                ELSE raw_dat.raw_do_pct_qcflag_human 
+            END AS raw_do_pct_qcflag_final,
+            raw_dat.raw_salinity,
+            raw_dat.raw_salinity_unit,
+            CASE WHEN raw_dat.raw_salinity_qcflag_human IS NULL
+                THEN raw_dat.raw_salinity_qcflag_robot 
+                ELSE raw_dat.raw_salinity_qcflag_human 
+            END AS raw_salinity_qcflag_final,
+            raw_dat.raw_chlorophyll,
+            raw_dat.raw_chlorophyll_unit,
+            CASE WHEN raw_dat.raw_chlorophyll_qcflag_human IS NULL 
+                THEN raw_dat.raw_chlorophyll_qcflag_robot 
+                ELSE raw_dat.raw_chlorophyll_qcflag_human 
+            END AS raw_chlorophyll_qcflag_final,
+            raw_dat.raw_orp,
+            raw_dat.raw_orp_unit,
+            CASE WHEN raw_dat.raw_orp_qcflag_human IS NULL
+                THEN raw_dat.raw_orp_qcflag_robot 
+                ELSE raw_dat.raw_orp_qcflag_human 
+            END AS raw_orp_qcflag_final,
+            raw_dat.raw_qvalue,
+            CASE WHEN raw_dat.raw_qvalue_qcflag_human IS NULL 
+                THEN raw_dat.raw_qvalue_qcflag_robot 
+                ELSE raw_dat.raw_qvalue_qcflag_human 
+            END AS raw_qvalue_qcflag_final,
+            raw_dat.qaqc_comment
+        FROM {base_table} raw_dat
+        WHERE raw_dat.{datetime_colname} >= '{start_date}' 
+        AND raw_dat.{datetime_colname} <= '{end_date}'
+    """
 
-#     conditions = []
+    conditions = []
 
-#     if projectid:
-#         conditions.append(f"raw_dat.projectid IN ({projectid})")
-#     if estuaryname:
-#         conditions.append(f"raw_dat.estuaryname IN ({estuaryname})")
-#     if sensortype:
-#         conditions.append(f"raw_dat.sensortype IN ({sensortype})")
+    if projectid:
+        conditions.append(f"raw_dat.projectid IN ({projectid})")
+    if estuaryname:
+        conditions.append(f"raw_dat.estuaryname IN ({estuaryname})")
+    if sensortype:
+        conditions.append(f"raw_dat.sensortype IN ({sensortype})")
 
-#     if conditions:
-#         sql += " AND " + " AND ".join(conditions)
+    if conditions:
+        sql += " AND " + " AND ".join(conditions)
 
     
-#     print("this is the sql")
-#     print(sql)
+    print("this is the sql")
+    print(sql)
     
-#     sessionid = int(time.time())
-#     # records = pd.read_sql(sql, eng).iloc[0,0]
-#     # df = pd.DataFrame(records)
-#     csv_path = f"/tmp/loggerdata_{sessionid}.csv"
+    sessionid = int(time.time())
+    # records = pd.read_sql(sql, eng).iloc[0,0]
+    # df = pd.DataFrame(records)
+    csv_path = f"/tmp/loggerdata_{sessionid}.csv"
     
-#     cmdlist = [
-#         'psql', 
-#         os.environ.get('DB_CONNECTION_STRING_READONLY'),
-#         '-c', 
-#         f"\COPY ({sql}) TO \'{csv_path}\' CSV HEADER"
-#     ]
+    cmdlist = [
+        'psql', 
+        os.environ.get('DB_CONNECTION_STRING_READONLY'),
+        '-c', 
+        f"\COPY ({sql}) TO \'{csv_path}\' CSV HEADER"
+    ]
 
-#     # time the query
-#     query_begin_time = time.time()
-#     proc = sp.run(cmdlist, stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines = True)
-#     if proc.returncode != 0:
-#         print(f"Error: {proc.stderr}")
-#     else:
-#         print("success")
-#     print(f"takes {time.time() - query_begin_time} seconds to run the query")
+    # time the query
+    query_begin_time = time.time()
+    proc = sp.run(cmdlist, stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines = True)
+    if proc.returncode != 0:
+        print(f"Error: {proc.stderr}")
+    else:
+        print("success")
+    print(f"takes {time.time() - query_begin_time} seconds to run the query")
     
-#     blob = open(csv_path, 'rb').read()
-#     os.remove(csv_path)
+    blob = open(csv_path, 'rb').read()
+    os.remove(csv_path)
 
-#     return send_file(
-#         BytesIO(blob), 
-#         download_name = 'logger.csv', 
-#         as_attachment = True, 
-#         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-#     )
+    return send_file(
+        BytesIO(blob), 
+        download_name = 'logger.csv', 
+        as_attachment = True, 
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
 
 @download.route('/grabevent_translator', methods = ['GET'])
 def grab_translator():
