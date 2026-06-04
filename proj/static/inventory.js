@@ -197,7 +197,7 @@ function createYearCheckboxes() {
     const maxYear = parseInt(inventoryData.general.maxYear);
     const currentYear = new Date().getFullYear();
     
-    for (let year = minYear; year <= maxYear; year++) {
+    for (let year = maxYear; year >= minYear; year--) {
         const wrapper = document.createElement('div');
         wrapper.className = 'form-check form-check-inline';
         
@@ -320,7 +320,7 @@ function renderTable(data) {
                 cell.style.cursor = 'pointer';
                 // Attach click listener to open modal
                 cell.addEventListener('click', () => {
-                    showCellInfoModal(sop.description, row.siteId, row.year, row.season, cellValue);
+                    showCellInfoModal(sop.code, sop.description, row.siteId, row.year, row.season, cellValue);
                 });
             } else if (cellValue.includes('Not Submitted')) {
                 cell.classList.add('red-cell');
@@ -334,7 +334,7 @@ function renderTable(data) {
 }
 
 // When a cell is clicked, show modal with details
-function showCellInfoModal(sopName, siteID, year, season, cellValue) {
+function showCellInfoModal(sopCode, sopName, siteID, year, season, cellValue) {
     // Update the modal with basic information
     document.getElementById('modalSop').innerText = sopName;
     document.getElementById('modalSiteId').innerText = siteID;
@@ -342,7 +342,7 @@ function showCellInfoModal(sopName, siteID, year, season, cellValue) {
     document.getElementById('modalYear').innerText = year;
 
     // Check if this is SOP 1 (logger data)
-    const isSop1 = sopName.includes('SOP 1');
+    const isSop1 = sopCode === 'sop1';
 
     if (isSop1) {
         // Hide the Sample Collection Date and Submitted Date rows for SOP 1
@@ -350,7 +350,7 @@ function showCellInfoModal(sopName, siteID, year, season, cellValue) {
         document.getElementById('modalCreatedDateRow').style.display = 'none';
 
         // For SOP 1, fetch and display raw_ column details
-        fetch(`/empachecker/get-sop1-details?siteid=${encodeURIComponent(siteID)}&year=${encodeURIComponent(year)}&season=${encodeURIComponent(season)}`)
+        fetch(`/empachecker/get-sop1-details?siteid=${encodeURIComponent(siteID)}&year=${encodeURIComponent(year)}&season=${encodeURIComponent(season)}&sop=${encodeURIComponent(sopCode)}`)
             .then(response => response.json())
             .then(data => {
                 if (data.raw_data) {
@@ -414,7 +414,7 @@ function showCellInfoModal(sopName, siteID, year, season, cellValue) {
         }
 
         // For other SOPs, fetch sample data as before
-        fetch(`/empachecker/get-sample-data?sop=${encodeURIComponent(sopName)}&siteid=${encodeURIComponent(siteID)}&year=${encodeURIComponent(year)}&season=${encodeURIComponent(season)}`)
+        fetch(`/empachecker/get-sample-data?sop=${encodeURIComponent(sopCode)}&siteid=${encodeURIComponent(siteID)}&year=${encodeURIComponent(year)}&season=${encodeURIComponent(season)}`)
             .then(response => response.json())
             .then(data => {
                 // Populate the modal with additional data from Flask
