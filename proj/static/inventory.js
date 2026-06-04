@@ -108,18 +108,18 @@ function createTableHeaders() {
     const filterRow = document.getElementById('filterRow');
     headerRow.innerHTML = '';
     filterRow.innerHTML = '';
-    
+
     // Fixed columns
     const fixedHeaders = ['Site ID', 'Year', 'Season'];
     fixedHeaders.forEach((header, index) => {
         const th = document.createElement('th');
         th.innerText = header;
         headerRow.appendChild(th);
-        
+
         // Filter cell
         const filterTh = document.createElement('th');
         filterTh.style.padding = '4px';
-        
+
         if (header === 'Season') {
             // Dropdown for Season filter
             const filterSelect = document.createElement('select');
@@ -138,17 +138,17 @@ function createTableHeaders() {
         }
         filterRow.appendChild(filterTh);
     });
-    
+
     // SOP columns
     sopColumns.forEach(sop => {
         const th = document.createElement('th');
         th.style.cursor = 'pointer';
-        
+
         // Create text span
         const textSpan = document.createElement('span');
         textSpan.innerText = sop.name;
         th.appendChild(textSpan);
-        
+
         // Create info icon with Bootstrap tooltip
         const infoIcon = document.createElement('span');
         infoIcon.innerHTML = ' &#9432;'; // Unicode info symbol
@@ -158,14 +158,14 @@ function createTableHeaders() {
         infoIcon.setAttribute('data-bs-placement', 'top');
         infoIcon.setAttribute('title', sop.description);
         th.appendChild(infoIcon);
-        
+
         // Also show alert on click for mobile/accessibility
         th.addEventListener('click', () => {
             alert(sop.description);
         });
-        
+
         headerRow.appendChild(th);
-        
+
         // Filter cell for SOP
         const filterTh = document.createElement('th');
         filterTh.style.padding = '4px';
@@ -182,7 +182,7 @@ function createTableHeaders() {
         filterTh.appendChild(filterSelect);
         filterRow.appendChild(filterTh);
     });
-    
+
     // Initialize Bootstrap tooltips
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
     tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
@@ -192,15 +192,15 @@ function createTableHeaders() {
 function createYearCheckboxes() {
     const container = document.getElementById('yearCheckboxContainer');
     container.innerHTML = '';
-    
+
     const minYear = parseInt(inventoryData.general.minYear);
     const maxYear = parseInt(inventoryData.general.maxYear);
     const currentYear = new Date().getFullYear();
-    
+
     for (let year = maxYear; year >= minYear; year--) {
         const wrapper = document.createElement('div');
         wrapper.className = 'form-check form-check-inline';
-        
+
         const radio = document.createElement('input');
         radio.type = 'radio';
         radio.className = 'form-check-input year-radio';
@@ -209,12 +209,12 @@ function createYearCheckboxes() {
         radio.value = year;
         radio.checked = (year === 2025); // Default to 2025
         radio.addEventListener('change', filterAndRenderTable);
-        
+
         const label = document.createElement('label');
         label.className = 'form-check-label';
         label.htmlFor = `year-${year}`;
         label.innerText = year;
-        
+
         wrapper.appendChild(radio);
         wrapper.appendChild(label);
         container.appendChild(wrapper);
@@ -252,22 +252,22 @@ function filterAndRenderTable() {
     const siteFilter = getSiteFilter();
     const siteFilters = siteFilter ? siteFilter.split(',').map(s => s.trim()).filter(s => s) : [];
     const columnFilters = getColumnFilters();
-    
+
     // Filter flat data
     let filteredData = flatData.filter(row => {
         // Year filter (from radio button)
         if (!selectedYears.includes(row.year)) {
             return false;
         }
-        
+
         // Site filter (from top filter input)
         if (siteFilters.length > 0) {
-            const matches = siteFilters.some(filter => 
+            const matches = siteFilters.some(filter =>
                 row.siteId.toLowerCase().includes(filter)
             );
             if (!matches) return false;
         }
-        
+
         // Column filters
         for (const [column, filterValue] of Object.entries(columnFilters)) {
             if (column === 'season') {
@@ -278,10 +278,10 @@ function filterAndRenderTable() {
                 if (!sopValue.includes(filterValue)) return false;
             }
         }
-        
+
         return true;
     });
-    
+
     renderTable(filteredData);
 }
 
@@ -289,31 +289,31 @@ function filterAndRenderTable() {
 function renderTable(data) {
     const tbody = document.getElementById('tableBody');
     tbody.innerHTML = '';
-    
+
     data.forEach(row => {
         const tr = document.createElement('tr');
-        
+
         // Site ID cell
         const siteCell = document.createElement('td');
         siteCell.innerText = row.siteId;
         tr.appendChild(siteCell);
-        
+
         // Year cell
         const yearCell = document.createElement('td');
         yearCell.innerText = row.year;
         tr.appendChild(yearCell);
-        
+
         // Season cell
         const seasonCell = document.createElement('td');
         seasonCell.innerText = row.season;
         tr.appendChild(seasonCell);
-        
+
         // SOP cells
         sopColumns.forEach(sop => {
             const cell = document.createElement('td');
             const cellValue = row.sops[sop.code] || 'Not Assigned';
             cell.innerText = cellValue;
-            
+
             // Add CSS classes based on value
             if (cellValue.includes('Data Available')) {
                 cell.classList.add('green-cell');
@@ -325,10 +325,10 @@ function renderTable(data) {
             } else if (cellValue.includes('Not Submitted')) {
                 cell.classList.add('red-cell');
             }
-            
+
             tr.appendChild(cell);
         });
-        
+
         tbody.appendChild(tr);
     });
 }
@@ -454,20 +454,20 @@ function showDownloadYearModal() {
     let modal = document.getElementById('downloadYearModal');
     const maxYear = inventoryData.general ? inventoryData.general.maxYear : new Date().getFullYear();
     const minYear = inventoryData.general ? inventoryData.general.minYear : 2021;
-    
+
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'downloadYearModal';
         modal.className = 'modal fade';
         modal.tabIndex = -1;
         modal.setAttribute('aria-hidden', 'true');
-        
+
         // Build year options dynamically
         let yearOptions = '';
         for (let y = parseInt(maxYear); y >= parseInt(minYear); y--) {
             yearOptions += `<option value="${y}"${y == maxYear ? ' selected' : ''}>${y}</option>`;
         }
-        
+
         modal.innerHTML = `
         <div class="modal-dialog">
             <div class="modal-content">
@@ -499,7 +499,7 @@ function showDownloadYearModal() {
     }
 
     // Add event listener for download button
-    document.getElementById('confirmDownloadYear').onclick = function() {
+    document.getElementById('confirmDownloadYear').onclick = function () {
         const year = document.getElementById('downloadYearSelect').value;
         downloadInventoryData(year);
         const bsModal = bootstrap.Modal.getOrCreateInstance(modal);
