@@ -1,4 +1,4 @@
-import os, time, re, json
+import os, time, re, json, random
 import pandas as pd
 import geopandas as gpd
 from bs4 import BeautifulSoup
@@ -13,6 +13,7 @@ import zipfile
 
 from .utils.db import metadata_summary
 from .utils.route_auth import requires_auth
+from .utils.mail import send_mail
 
 admin = Blueprint('admin', __name__)
 
@@ -1491,6 +1492,152 @@ def new_project_metadata_form():
                 'status': 'error',
                 'message': str(e)
             }), 500
+
+
+# How long (seconds) an emailed sign-in code stays valid
+EDIT_CODE_TTL = 10 * 60
+
+
+@admin.route('/api/edit-request-code', methods=['POST'])
+def edit_request_code():
+    """
+    Step 1 of edit sign-in: a user enters the email they originally submitted with.
+    If a project_metadata record exists for that email, we generate a 6-digit code,
+    stash it in the session, and email it to them.
+    """
+    try:
+        data = request.get_json() or {}
+        email = (data.get('email') or '').strip()
+
+        if not email or not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
+            return jsonify({'status': 'error', 'message': 'A valid email address is required'}), 400
+
+        # Confirm a submission exists for this email
+        eng = g.eng
+        with eng.connect() as conn:
+            exists = conn.execute(
+                text("SELECT 1 FROM project_metadata WHERE email = :email LIMIT 1"),
+                {'email': email}
+            ).fetchone()
+
+        if not exists:
+            return jsonify({'status': 'error', 'message': 'No project submission was found for this email address.'}), 404
+
+        # Generate a 6-digit code and stash it in the session
+        code = f"{random.randint(0, 999999):06d}"
+        session['edit_code'] = code
+        session['edit_code_email'] = email
+        session['edit_code_expiry'] = time.time() + EDIT_CODE_TTL
+        # A fresh code request invalidates any prior verified edit session
+        session.pop('edit_verified_email', None)
+
+        msgbody = (
+            f"Hello,\n\n"
+            f"Here is your verification code to edit your {current_app.project_name} project metadata submission:\n\n"
+            f"    {code}\n\n"
+            f"This code will expire in {EDIT_CODE_TTL // 60} minutes. "
+            f"If you did not request this, you can ignore this email.\n"
+        )
+
+        send_mail(
+            current_app.mail_from,
+            [email],
+            f"{current_app.project_name} - Project Metadata Edit Verification Code",
+            msgbody,
+            server=current_app.config['MAIL_SERVER']
+        )
+
+        return jsonify({'status': 'success', 'message': f'A verification code was sent to {email}.'})
+
+    except Exception as e:
+        print(f"Error requesting edit code: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'status': 'error', 'message': 'Unable to send verification code. Please try again.'}), 500
+
+
+@admin.route('/api/edit-verify-code', methods=['POST'])
+def edit_verify_code():
+    """
+    Step 2 of edit sign-in: the user submits the 6-digit code we emailed them.
+    On success we mark the session as verified for that email and return the
+    existing submission so the form can be pre-filled for editing.
+    """
+    try:
+        data = request.get_json() or {}
+        email = (data.get('email') or '').strip()
+        code = (data.get('code') or '').strip()
+
+        stored_code = session.get('edit_code')
+        stored_email = session.get('edit_code_email')
+        expiry = session.get('edit_code_expiry', 0)
+
+        if not stored_code or not stored_email:
+            return jsonify({'status': 'error', 'message': 'No code was requested. Please request a new code.'}), 400
+
+        if time.time() > expiry:
+            session.pop('edit_code', None)
+            session.pop('edit_code_email', None)
+            session.pop('edit_code_expiry', None)
+            return jsonify({'status': 'error', 'message': 'This code has expired. Please request a new one.'}), 400
+
+        if email != stored_email or code != stored_code:
+            return jsonify({'status': 'error', 'message': 'Invalid verification code.'}), 401
+
+        # Verified — mark the session and clear the one-time code
+        session['edit_verified_email'] = email
+        session.pop('edit_code', None)
+        session.pop('edit_code_email', None)
+        session.pop('edit_code_expiry', None)
+
+        # Fetch the existing record so the front end can pre-fill the form
+        eng = g.eng
+        with eng.connect() as conn:
+            row = conn.execute(
+                text("SELECT * FROM project_metadata WHERE email = :email"),
+                {'email': email}
+            ).fetchone()
+
+            if not row:
+                return jsonify({'status': 'error', 'message': 'No project submission was found for this email address.'}), 404
+
+            project = dict(row._mapping)
+            project['project_start'] = str(project['project_start']) if project.get('project_start') else ''
+            project['project_end'] = str(project['project_end']) if project.get('project_end') else ''
+            project['agencies_list'] = json.loads(project['agencies']) if project.get('agencies') else []
+            project['polygons_list'] = json.loads(project['polygons']) if project.get('polygons') else []
+            project['estuaries_list'] = project['estuaries'].split(',') if project.get('estuaries') else []
+
+            sops_result = conn.execute(
+                text("SELECT * FROM project_sops WHERE project_id = :pid ORDER BY sop_id"),
+                {'pid': project['id']}
+            )
+            sops = []
+            for r in sops_result:
+                s = dict(r._mapping)
+                s['dataset_start_date'] = str(s['dataset_start_date']) if s.get('dataset_start_date') else ''
+                s['dataset_end_date'] = str(s['dataset_end_date']) if s.get('dataset_end_date') else ''
+                s['west_bounding'] = float(s['west_bounding']) if s.get('west_bounding') is not None else None
+                s['east_bounding'] = float(s['east_bounding']) if s.get('east_bounding') is not None else None
+                s['north_bounding'] = float(s['north_bounding']) if s.get('north_bounding') is not None else None
+                s['south_bounding'] = float(s['south_bounding']) if s.get('south_bounding') is not None else None
+                sops.append(s)
+            project['sops'] = sops
+
+        # Drop raw JSON strings we don't need on the client
+        project.pop('agencies', None)
+        project.pop('polygons', None)
+        for key in ('created_date', 'updated_date'):
+            if project.get(key) is not None:
+                project[key] = str(project[key])
+
+        return jsonify({'status': 'success', 'data': project})
+
+    except Exception as e:
+        print(f"Error verifying edit code: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'status': 'error', 'message': 'Unable to verify code. Please try again.'}), 500
 
 
 @admin.route('/api/project-metadata-admin', methods=['POST'])
