@@ -3,6 +3,7 @@ export/*
 logs
 .vscode
 testing/
+AGENTS.md
 
 # ignore custom folder and datasets.json config files
 proj/config/datasets.json

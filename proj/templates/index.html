@@ -112,23 +112,24 @@
                     <label for="login_email">Enter your email address:</label>
                     <input id="login_email" type="email" name="login_email" class="form-control" placeholder="name@example.com">
                   </div> -->
+                  <div class="login-form-fields-scroll">
                   {% for field in dtypes[dtype]['login_fields'] %}
                   <div class="login-form-element-container login-{{field.fieldtype}}-container form-group">
                     <label for="login_{{field.fieldname}}">{%if field.label %}{{field.label}}{% else %} {{field.fieldname}} {% endif %}:</label>
                     {% if field.fieldtype == 'input' %}
-                    <input 
-                      id="{{dtype}}-{{field.fieldname}}-{{field.fieldtype}}" 
-                      type="{% if field.fieldname == 'email' %}email{% else %}text{% endif %}" 
-                      name="login_{{field.fieldname}}" 
-                      class="form-control login-form-element" 
+                    <input
+                      id="{{dtype}}-{{field.fieldname}}-{{field.fieldtype}}"
+                      type="{% if field.fieldname == 'email' %}email{% else %}text{% endif %}"
+                      name="login_{{field.fieldname}}"
+                      class="form-control login-form-element"
                       placeholder="{% if field.fieldname == 'email' %}name@example.com{% else %}{% endif %}"
                       {% if field.fieldname != 'email' %}{% if field.defaultvalue %}value="{{field.defaultvalue}}"{% endif %}{% endif %}
                     >
                     {% else %}
-                    <!--There should only be two kinds of form elements - selects and inputs--> 
-                    <select 
+                    <!--There should only be two kinds of form elements - selects and inputs-->
+                    <select
                       id="{{dtype}}-{{field.fieldname}}-{{field.fieldtype}}"
-                      name="login_{{field.fieldname}}" 
+                      name="login_{{field.fieldname}}"
                       class="form-control {% if not field.static_options %}dynamic-select-item{% endif %} {{dtype}}-select-item {% if field.independent == 'True' %} independent-select-item {% else %} sequential-select-item {% endif %} login-form-element"
                       data-dtype="{{dtype}}"
                       data-index="{%if field.independent == 'True' %}-1{% else %}{{field.sequencenum}}{% endif %}"
@@ -144,8 +145,9 @@
                   </select>
                     {% endif %}
 
-                  </div>  
+                  </div>
                   {% endfor %}
+                  </div>
 
                   <br>
                   <div class="form-check-container">
