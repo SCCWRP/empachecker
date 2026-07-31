@@ -22,6 +22,40 @@
 
     <div class="container" id="main-outer-container">
 
+      {% macro render_login_field(field, dtype) %}
+      <div class="login-form-element-container login-{{field.fieldtype}}-container form-group">
+        <label for="login_{{field.fieldname}}">{%if field.label %}{{field.label}}{% else %} {{field.fieldname}} {% endif %}:</label>
+        {% if field.fieldtype == 'input' %}
+        <input
+          id="{{dtype}}-{{field.fieldname}}-{{field.fieldtype}}"
+          type="{% if field.fieldname == 'email' %}email{% else %}text{% endif %}"
+          name="login_{{field.fieldname}}"
+          class="form-control login-form-element"
+          placeholder="{% if field.fieldname == 'email' %}name@example.com{% else %}{% endif %}"
+          {% if field.fieldname != 'email' %}{% if field.defaultvalue %}value="{{field.defaultvalue}}"{% endif %}{% endif %}
+        >
+        {% else %}
+        <!--There should only be two kinds of form elements - selects and inputs-->
+        <select
+          id="{{dtype}}-{{field.fieldname}}-{{field.fieldtype}}"
+          name="login_{{field.fieldname}}"
+          class="form-control {% if not field.static_options %}dynamic-select-item{% endif %} {{dtype}}-select-item {% if field.independent == 'True' %} independent-select-item {% else %} sequential-select-item {% endif %} login-form-element"
+          data-dtype="{{dtype}}"
+          data-index="{%if field.independent == 'True' %}-1{% else %}{{field.sequencenum}}{% endif %}"
+          {% if field.options_from_table %} data-option-table="{{field.options_from_table}}"{% endif %}
+          {% if field.options_display_field %} data-option-display-field="{{field.options_display_field}}"{% endif %}
+          {% if field.options_values_field %} data-option-values-field="{{field.options_values_field}}"{% endif %}
+        >
+        {% if field.static_options %}
+        {% for opt in field.static_options %}
+          <option value="{{opt.value}}">{{opt.label}}</option>
+        {% endfor %}
+        {%endif%}
+        </select>
+        {% endif %}
+      </div>
+      {% endmacro %}
+
       <!--login screen-->
       {% if not login_info %}
       <div class="container" id="login-outer-container">
@@ -112,44 +146,19 @@
                     <label for="login_email">Enter your email address:</label>
                     <input id="login_email" type="email" name="login_email" class="form-control" placeholder="name@example.com">
                   </div> -->
-                  <div class="login-form-fields-scroll">
-                  {% for field in dtypes[dtype]['login_fields'] %}
-                  <div class="login-form-element-container login-{{field.fieldtype}}-container form-group">
-                    <label for="login_{{field.fieldname}}">{%if field.label %}{{field.label}}{% else %} {{field.fieldname}} {% endif %}:</label>
-                    {% if field.fieldtype == 'input' %}
-                    <input
-                      id="{{dtype}}-{{field.fieldname}}-{{field.fieldtype}}"
-                      type="{% if field.fieldname == 'email' %}email{% else %}text{% endif %}"
-                      name="login_{{field.fieldname}}"
-                      class="form-control login-form-element"
-                      placeholder="{% if field.fieldname == 'email' %}name@example.com{% else %}{% endif %}"
-                      {% if field.fieldname != 'email' %}{% if field.defaultvalue %}value="{{field.defaultvalue}}"{% endif %}{% endif %}
-                    >
-                    {% else %}
-                    <!--There should only be two kinds of form elements - selects and inputs-->
-                    <select
-                      id="{{dtype}}-{{field.fieldname}}-{{field.fieldtype}}"
-                      name="login_{{field.fieldname}}"
-                      class="form-control {% if not field.static_options %}dynamic-select-item{% endif %} {{dtype}}-select-item {% if field.independent == 'True' %} independent-select-item {% else %} sequential-select-item {% endif %} login-form-element"
-                      data-dtype="{{dtype}}"
-                      data-index="{%if field.independent == 'True' %}-1{% else %}{{field.sequencenum}}{% endif %}"
-                      {% if field.options_from_table %} data-option-table="{{field.options_from_table}}"{% endif %}
-                      {% if field.options_display_field %} data-option-display-field="{{field.options_display_field}}"{% endif %}
-                      {% if field.options_values_field %} data-option-values-field="{{field.options_values_field}}"{% endif %}
-                    >
-                    {% if field.static_options %}
-                    {% for opt in field.static_options %}
-                      <option value="{{opt.value}}">{{opt.label}}</option>
-                    {% endfor %}
-                    {%endif%}
-                  </select>
-                    {% endif %}
-
-                  </div>
+                  <div class="login-form-sticky-top">
+                  {% for field in dtypes[dtype]['login_fields'] if field.fieldname in ('agency', 'email') %}
+                  {{ render_login_field(field, dtype) }}
                   {% endfor %}
                   </div>
 
-                  <br>
+                  <div class="login-form-fields-scroll">
+                  {% for field in dtypes[dtype]['login_fields'] if field.fieldname not in ('agency', 'email') %}
+                  {{ render_login_field(field, dtype) }}
+                  {% endfor %}
+                  </div>
+
+                  <div class="login-form-sticky-bottom">
                   <div class="form-check-container">
                     <div class="form-check-label-container">
                         I want to:
@@ -161,7 +170,7 @@
                                 Submit data
                             </label>
                         </div>
-            
+
                         <div class="form-check-item">
                             <input class="form-check-input" type="radio" name="check-or-submit" id="check-or-submit-option2" value="no-submit">
                             <label class="form-check-label" for="check-or-submit-option2">
@@ -171,9 +180,9 @@
                     </div>
                 </div>
 
-                
                   <div class="login-input-container form form-group" id="login-form-submit-btn-container">
                     <button class="btn btn-secondary" type="submit">Sign in</button>
+                  </div>
                   </div>
                 </form>
               </div>
@@ -479,10 +488,35 @@
               <div id="data-visual-report-body" class="data-visual-report-body-outer-container container submission-info-tab-body">
                 
                 <div id="logger-chart-outer-container">
-                  <div id="logger-visual-button-container"></div>
+                  <div class="logger-control-row">
+                    <span class="logger-control-label">Parameter:</span>
+                    <div id="logger-visual-button-container"></div>
+                  </div>
+                  <br>
+                  <div class="logger-control-row">
+                    <span class="logger-control-label">Tool:</span>
+                    <div id="logger-mode-button-container">
+                      <button class="btn btn-outline-secondary logger-mode-button active" data-mode="zoom">Zoom (drag to select a range)</button>
+                      <button class="btn btn-outline-secondary logger-mode-button" data-mode="trim">Trim (drag to exclude a range)</button>
+                      <button class="btn btn-outline-secondary logger-mode-button" data-mode="assign">Assign QC Code (drag to apply)</button>
+                      <select id="qc-code-select" class="form-control hidden">
+                        <option value="0">0 - Good</option>
+                        <option value="-2">-2 - Missing</option>
+                        <option value="-4">-4 - Below Range</option>
+                        <option value="-5">-5 - Above Range</option>
+                      </select>
+                    </div>
+                  </div>
                   <br>
                   <div id="reset-plot-button-container">
-                    <button id="reset-plot-button" class="btn btn-info">Reset plot</button>
+                    <button id="reset-plot-button" class="btn btn-info">Reset Zoom</button>
+                  </div>
+                  <br>
+                  <div id="logger-qc-legend">
+                    <span class="logger-qc-legend-item"><span class="logger-qc-swatch" style="background-color:#2c7bb6"></span>Good (0)</span>
+                    <span class="logger-qc-legend-item"><span class="logger-qc-swatch" style="background-color:#999999"></span>Missing (-2)</span>
+                    <span class="logger-qc-legend-item"><span class="logger-qc-swatch" style="background-color:#fdae61"></span>Below Range (-4)</span>
+                    <span class="logger-qc-legend-item"><span class="logger-qc-swatch" style="background-color:#d7191c"></span>Above Range (-5)</span>
                   </div>
                   <br>
                   <div id="logger-chart-container">
@@ -493,6 +527,11 @@
               </div>
 
 
+            </div>
+
+            <!--Logger raw submissions must visit the Logger Data Visual tab before they are allowed to see the Final Submit button-->
+            <div class="container form-container hidden" id="visit-logger-visual-notice">
+              <p><strong>You must visit the Logger Data Visual tab before you can submit.</strong></p>
             </div>
 
             <!--for successful submissions (final submit)-->

@@ -16,6 +16,7 @@ from .utils.generic import save_errors, correct_row_offset
 from .utils.excel import mark_workbook
 from .utils.exceptions import default_exception_handler
 from .utils.reformat import parse_raw_logger_data
+from .utils.loggervars import logger_plot_columns
 from .custom import *
 
 
@@ -469,25 +470,7 @@ def main():
     if match_dataset == 'logger_raw':
         jsondata = all_dfs['tbl_wq_logger_raw']
         jsondata['samplecollectiontimestamp'] = jsondata['samplecollectiontimestamp'].apply(lambda t: pd.Timestamp(t).strftime("%Y-%m-%d %H:%M:%S") if pd.notnull(t) else '')
-        plotcols = [
-            'samplecollectiontimestamp',
-            'samplecollectiontimezone',
-            'raw_do',
-            'raw_do_unit',
-            'raw_do_pct',
-            'raw_h2otemp',
-            'raw_h2otemp_unit',
-            'raw_conductivity',
-            'raw_conductivity_unit',
-            'raw_turbidity',
-            'raw_turbidity_unit',
-            'raw_salinity',
-            'raw_salinity_unit',
-            'raw_chlorophyll',
-            'raw_chlorophyll_unit',
-            'raw_pressure',
-            'raw_pressure_unit'
-        ]
+        plotcols = logger_plot_columns(jsondata.columns)
 
         # for param in [p for p in plotcols if not ('unit' in p) or ('samplecollect' in p)]:
         #     # Create a line plot with a larger figure size
@@ -511,6 +494,51 @@ def main():
 
     print("DONE with upload routine, returning JSON to browser")
     return jsonify(**returnvals)
+
+
+@upload.route('/logger/edit', methods = ['POST'])
+def logger_edit():
+    # Lets a logger_raw submitter trim (exclude) a time range or assign/override a qcflag_human
+    # value for a time range, directly from the Logger Data Visual tab, without re-uploading the file.
+
+    assert session.get('excel_path') is not None, "No excel_path in session - session may have expired"
+    assert session.get('datatype') == 'logger_raw', "Logger edits are only supported for the logger_raw datatype"
+
+    payload = request.get_json(force = True)
+    action = payload.get('action')
+    # samplecollectiontimestamp is timezone-naive, so drop any tz info the incoming timestamps might carry
+    # to avoid "Invalid comparison between dtype=datetime64[ns] and Timestamp"
+    start = pd.Timestamp(payload.get('start')).tz_localize(None)
+    end = pd.Timestamp(payload.get('end')).tz_localize(None)
+
+    excel_path = session['excel_path']
+    sheet_name = 'tbl_wq_logger_raw'
+
+    df = pd.read_excel(excel_path, sheet_name = sheet_name, skiprows = current_app.excel_offset, na_values = [''])
+    df.columns = [c.lower() if isinstance(c, str) else c for c in df.columns]
+    df['samplecollectiontimestamp'] = pd.to_datetime(df['samplecollectiontimestamp'])
+
+    mask = (df['samplecollectiontimestamp'] >= start) & (df['samplecollectiontimestamp'] <= end)
+
+    if action == 'trim':
+        df = df[~mask]
+    elif action == 'assign':
+        param = payload.get('param')
+        col = f'raw_{param}_qcflag_human'
+        assert col in df.columns, f"{col} is not a column in {sheet_name}"
+        df.loc[mask, col] = int(payload.get('qc_code'))
+    else:
+        return jsonify(user_error_msg = f"Unrecognized logger edit action: {action}")
+
+    # write back to the same working file so this edit is reflected at Final Submit time
+    with pd.ExcelWriter(excel_path) as writer:
+        df.to_excel(writer, sheet_name = sheet_name, startrow = current_app.excel_offset, index = False)
+
+    plotdata = df.copy()
+    plotdata['samplecollectiontimestamp'] = plotdata['samplecollectiontimestamp'].apply(
+        lambda t: pd.Timestamp(t).strftime("%Y-%m-%d %H:%M:%S") if pd.notnull(t) else ''
+    )
+    return jsonify(logger_data = plotdata[logger_plot_columns(plotdata.columns)].fillna('').to_dict('records'))
 
 
 @upload.route('/map/<submissionid>/<datatype>')

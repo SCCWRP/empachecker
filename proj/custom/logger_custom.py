@@ -439,10 +439,13 @@ def logger_raw(all_dfs):
     with pd.ExcelWriter(session.get('excel_path')) as writer:
         logger[orderedcols].to_excel(writer, sheet_name = 'tbl_wq_logger_raw', index = False)
 
- 
+    # logger was reassigned (sort_values, merges) so it is no longer the same object as all_dfs['tbl_wq_logger_raw']
+    # write it back so downstream code (e.g. the Logger Data Visual tab) sees the sorted data and the qcflag_robot columns
+    all_dfs['tbl_wq_logger_raw'] = logger
+
     # Need to add not null checks for the measurement columns
     print("...End Other data checks.")
-    
+
     return {'errors': errs, 'warnings': warnings}
 
 

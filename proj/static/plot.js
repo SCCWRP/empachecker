@@ -550,11 +550,32 @@ class CanvasPathPlot extends Plot {
 
 
 
+// Colors for the automated/human qcflag values computed in logger_custom.py (0 good, -2 missing, -4 below range, -5 above range)
+const QC_FLAG_COLORS = {
+    '0': '#2c7bb6',
+    '-2': '#999999',
+    '-4': '#fdae61',
+    '-5': '#d7191c'
+};
+const QC_FLAG_DEFAULT_COLOR = '#2c7bb6';
+
+function qcFlagColor(flagValue) {
+    if (flagValue === undefined || flagValue === null || flagValue === '') return QC_FLAG_DEFAULT_COLOR;
+    return QC_FLAG_COLORS[String(flagValue)] || QC_FLAG_DEFAULT_COLOR;
+}
+
+// human override (qcflag_human) takes precedence over the automated one (qcflag_robot) for coloring, since it reflects the submitter's own review
+function qcFlagForPoint(d, yVal) {
+    const human = d[`${yVal}_qcflag_human`];
+    if (human !== undefined && human !== null && human !== '') return human;
+    return d[`${yVal}_qcflag_robot`];
+}
+
 // The idea is for this function to craete a plot on an HTML5 canvas rather than SVG for performance reasons, and handling larger sets of data
 function createPlot(
-    data, xVal, yVal, canvasId = 'canvas', canvasWidth = 960, canvasHeight = 500, margins = { top: 20, right: 20, bottom: 30, left: 50 }, yAxisLabel = null, xAxisLabel = null
+    data, xVal, yVal, canvasId = 'canvas', canvasWidth = 960, canvasHeight = 500, margins = { top: 20, right: 20, bottom: 30, left: 50 }, yAxisLabel = null, xAxisLabel = null, onDataUpdate = null
 ) {
-    
+
     const width = canvasWidth - margins.left - margins.right,
         height = canvasHeight - margins.top - margins.bottom;
 
@@ -571,21 +592,27 @@ function createPlot(
     const x = d3.scaleTime().range([0, width]);
     const y = d3.scaleLinear().range([height, 0]);
 
-    const line = d3.line()
-        .x(d => x(new Date(d[xVal])))
-        .y(d => y(d[yVal]))
-        .context(context);
-
     x.domain(d3.extent(data, d => new Date(d[xVal])));
     y.domain([0, d3.max(data, d => d[yVal])]);
 
     context.translate(margins.left, margins.top);
 
-    context.beginPath();
-    line(data);
+    // Draw the line one segment at a time, colored by qcflag, so flagged data is visible at a glance
     context.lineWidth = 1.5;
-    context.strokeStyle = 'steelblue';
-    context.stroke();
+    for (let i = 1; i < data.length; i++) {
+        const prev = data[i - 1];
+        const curr = data[i];
+        const flags = [qcFlagForPoint(prev, yVal), qcFlagForPoint(curr, yVal)]
+            .filter(f => f !== undefined && f !== null && f !== '')
+            .map(Number);
+        // color the segment by whichever endpoint's flag is worse (more negative), so a single bad point is never masked by its good neighbor
+        const segmentFlag = flags.length ? d3.min(flags) : undefined;
+        context.strokeStyle = qcFlagColor(segmentFlag);
+        context.beginPath();
+        context.moveTo(x(new Date(prev[xVal])), y(prev[yVal]));
+        context.lineTo(x(new Date(curr[xVal])), y(curr[yVal]));
+        context.stroke();
+    }
 
     // Draw x-axis manually
     context.beginPath();
@@ -637,26 +664,32 @@ function createPlot(
         context.fillText(yTickFormat(tick), - (margins.left / 5), yPos + 3); // 10 is the distance from the tick to the label, 3 is vertical adjustment
     });
 
-    // text label for the x axis
+    // axis title font size scales with the plot instead of a fixed 30px, so it doesn't dwarf small charts or overlap the tick labels
+    const axisLabelFontSize = Math.max(11, Math.round(Math.min(width, height) * 0.05));
+    context.font = `${axisLabelFontSize}px Arial`;
+
+    // text label for the x axis - anchored to the bottom of the canvas so it sits below the rotated tick date labels
     xAxisLabel = xAxisLabel ?? xVal;
-    context.font = "30px Arial";
     context.textAlign = 'center';
-    context.fillText(xAxisLabel, width / 2, height + (margins.bottom * 0.7) + 10); // increased distance to avoid overlap with x-axis labels
+    context.textBaseline = 'bottom';
+    context.fillText(xAxisLabel, width / 2, height + margins.bottom - 5);
 
     // text label for the y axis
     yAxisLabel = yAxisLabel ?? yVal;
     context.save();
     context.rotate(-Math.PI / 2);
     context.textAlign = 'center';
-    context.fillText(yAxisLabel, -height / 2, -margins.left / 2);
+    context.textBaseline = 'top';
+    context.fillText(yAxisLabel, -height / 2, -margins.left + 2);
     context.restore();
 
     brushHandler({
         data: data,
         canvasID : canvasId,
         canvasWidth : canvasWidth,
-        canvasHeight : canvasHeight
-    }) 
+        canvasHeight : canvasHeight,
+        onDataUpdate : onDataUpdate
+    })
 }
 
 // GPT provided code for a 1D X Axis brush
@@ -680,9 +713,10 @@ const brushHandler = function (
             bottom: 0.25,
             left: 0.10
         },
-        xVal = 'samplecollectiontimestamp'
+        xVal = 'samplecollectiontimestamp',
+        onDataUpdate = null
     } = {}
-) 
+)
 {
 
     const canvas = document.querySelector(`#${canvasID}`);
@@ -717,6 +751,7 @@ const brushHandler = function (
     let brushing = false;
     let brushStartX = 0;
     let brushEndX = 0;
+    let brushSnapshot = null;
 
     canvas.removeEventListener('mousedown', mouseDown);
     canvas.addEventListener('mousedown', mouseDown);
@@ -732,16 +767,24 @@ const brushHandler = function (
         brushStartX = event.clientX - canvas.getBoundingClientRect().left - margins.left;
         brushEndX = brushStartX;
         startDate = x.invert(brushStartX);
-        
+        // getImageData/putImageData ignore the context's translate() and work in raw canvas pixels,
+        // so this snapshots the whole chart as currently drawn, before any selection box is painted on it
+        brushSnapshot = context.getImageData(0, 0, canvas.width, canvas.height);
     }
 
     function mouseMove(event) {
         if (!brushing) return;
         brushEndX = event.clientX - canvas.getBoundingClientRect().left - margins.left;
         endDate = x.invert(brushEndX);
-        // draw the brush
-        context.fillStyle = 'rgba(0, 0, 100, 0.01)';
+        // restore the clean chart first, otherwise repainting a semi-transparent box on every mousemove
+        // (without clearing the previous one) stacks up and the selection darkens/discolors as you drag
+        context.putImageData(brushSnapshot, 0, 0);
+        // plain, neutral selection box - a light fill with a solid border
+        context.fillStyle = 'rgba(0, 0, 0, 0.08)';
         context.fillRect(brushStartX, 0, brushEndX - brushStartX, canvasHeight);
+        context.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+        context.lineWidth = 1;
+        context.strokeRect(brushStartX, 0, brushEndX - brushStartX, canvasHeight);
     }
     
     function mouseUp(event) {
@@ -754,17 +797,44 @@ const brushHandler = function (
         startpx = d3.min([brushStartX, brushEndX])
         endpx = d3.max([brushStartX, brushEndX])
 
+        // ignore accidental clicks/tiny drags
+        if (Math.abs(endpx - startpx) < 3) return;
+
         startDate = x.invert(startpx);
         endDate = x.invert(endpx);
-        
+
+        const mode = document.querySelector('.logger-mode-button.active')?.dataset.mode || 'zoom';
+        const activeButton = document.querySelector('.logger-visual-tab-button.active');
+        const paramInfo = getParam();
+
+        if (mode === 'trim') {
+            if (!confirm(`Exclude all logger data between ${startDate.toLocaleString()} and ${endDate.toLocaleString()} from this submission? This cannot be undone.`)) return;
+            submitLoggerEdit({
+                action: 'trim',
+                start: toNaiveTimestampString(startDate),
+                end: toNaiveTimestampString(endDate)
+            }, onDataUpdate);
+            return;
+        }
+
+        if (mode === 'assign') {
+            const qcCode = document.getElementById('qc-code-select').value;
+            submitLoggerEdit({
+                action: 'assign',
+                param: activeButton.dataset.parameter,
+                qc_code: qcCode,
+                start: toNaiveTimestampString(startDate),
+                end: toNaiveTimestampString(endDate)
+            }, onDataUpdate);
+            return;
+        }
+
+        // default/zoom mode - filter the view down to the brushed range
         filteredData = data.filter(item => {
             return ( (new Date(item[xVal]) > startDate) & (new Date(item[xVal]) < endDate ) ) ;
         })
 
-        const paramInfo = getParam();
-        createPlot(filteredData, xVal, paramInfo.paramName, canvasID, canvasWidth, canvasHeight, margins, yAxisLabel = paramInfo.paramLabel);
-
-        // here you might want to update your graph based on the brush extents
+        createPlot(filteredData, xVal, paramInfo.paramName, canvasID, canvasWidth, canvasHeight, margins, yAxisLabel = paramInfo.paramLabel, xAxisLabel = null, onDataUpdate);
     }
 
     // function updatePlot(data, xVal, yVal, canvasId, canvasWidth, canvasHeight, margins) {
@@ -794,5 +864,36 @@ function getParam(){
     return {
         paramName: `raw_${activeButton.dataset.parameter}`,
         paramLabel: activeButton.dataset.parameterLabel
+    }
+}
+
+// The chart's dates are parsed (new Date(str)) from timezone-naive "YYYY-MM-DD HH:MM:SS" strings, so the
+// browser reads them as local time. toISOString() would convert to UTC and shift the value - instead,
+// rebuild the same naive string from the local getters so it lines up with the server's naive timestamps.
+function toNaiveTimestampString(date) {
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
+// Sends a trim (exclude rows) or assign (override qcflag_human) edit to the server, which rewrites
+// the submitter's working excel file so the edit is reflected at Final Submit time.
+async function submitLoggerEdit(payload, onDataUpdate) {
+    try {
+        const response = await fetch(`/${script_root}/logger/edit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+
+        if (result.user_error_msg) {
+            alert(result.user_error_msg);
+            return;
+        }
+
+        if (onDataUpdate) onDataUpdate(result.logger_data);
+    } catch (e) {
+        console.error(e);
+        alert('Something went wrong while saving your edit. Please try again.');
     }
 }

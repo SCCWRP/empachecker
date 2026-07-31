@@ -99,8 +99,30 @@
         //show the final submit buttin
         if (Object.keys(result).includes("errs")) {
             if (result['errs'].length == 0){
-                document.querySelector("#final-submit-button-container").classList.remove("hidden");
-                addFinalSubmitListener()
+                // Attach the submit handler exactly once - addFinalSubmitListener adds a fresh
+                // listener every call, so calling it again on every tab switch would submit multiple times
+                addFinalSubmitListener();
+
+                if (result.match_dataset === 'logger_raw') {
+                    // Logger raw submitters must be looking at the Logger Data Visual tab to see/use
+                    // the Final Submit button - it hides again as soon as they switch to any other tab
+                    const showFinalSubmit = () => {
+                        document.getElementById('visit-logger-visual-notice').classList.add('hidden');
+                        document.querySelector("#final-submit-button-container").classList.remove("hidden");
+                    };
+                    const hideFinalSubmit = () => {
+                        document.getElementById('visit-logger-visual-notice').classList.remove('hidden');
+                        document.querySelector("#final-submit-button-container").classList.add("hidden");
+                    };
+
+                    hideFinalSubmit();
+                    document.getElementById('data-visual-report-header').addEventListener('click', showFinalSubmit);
+                    ['submission-info-header', 'errors-report-header', 'warnings-report-header'].forEach(id => {
+                        document.getElementById(id).addEventListener('click', hideFinalSubmit);
+                    });
+                } else {
+                    document.querySelector("#final-submit-button-container").classList.remove("hidden");
+                }
                 if (result.warnings?.length > 0) {
                     // Cover the case where there are no errors but there are warnings
                     // Giving the user a final warning/final chance to check their warnings
@@ -171,7 +193,7 @@
                 btnHTML = `
                     <button 
                         id="${param.paramName}-tab-button" 
-                        class="btn btn-primary logger-visual-tab-button ${i === 0 ? 'active' : ''}"
+                        class="btn btn-outline-secondary logger-visual-tab-button ${i === 0 ? 'active' : ''}"
                         data-parameter="${param.paramName}"
                         data-parameter-label="${param.paramLabel}${units}"
                         data-bs-toggle="button"
@@ -203,6 +225,11 @@
             // Add the event listeners as far as when to reset the plot
             window.addEventListener('resize', resetPlot)
             document.getElementById('reset-plot-button').addEventListener('click', resetPlot)
+
+            // The initial resetPlot() call above runs while this tab is still hidden (display:none),
+            // so the height calculation (which measures the chart's on-screen position) sees a zeroed-out
+            // bounding rect and ends up oversized. Re-measure/redraw once the tab is actually visible.
+            document.getElementById('data-visual-report-header').addEventListener('click', resetPlot)
 
             Array.from(document.getElementsByClassName('logger-visual-tab-button')).forEach((btn, i, allButtons) => {
                 btn.addEventListener('click', () => {
@@ -236,22 +263,49 @@
                 let yVal = `raw_${activeButton.dataset.parameter}`;
                 let plotWidth = document.querySelector('.submission-report-outer-container').getBoundingClientRect().width * 0.9;
                 let plotHeight = plotWidth * 0.75;
+
+                // cap the chart height so the whole tab (mode buttons, legend, chart, Final Submit below it)
+                // fits in the viewport without scrolling - account for whatever's actually above the chart
+                // (parameter buttons, mode buttons, legend) plus room below for the Final Submit button
+                const chartTop = document.getElementById('logger-chart-container').getBoundingClientRect().top;
+                const bottomBuffer = 100;
+                const maxPlotHeight = window.innerHeight - chartTop - bottomBuffer;
+                if (plotHeight > maxPlotHeight) {
+                    plotHeight = Math.max(maxPlotHeight, 150);
+                }
+
                 createPlot(
-                    loggerdata, 
+                    loggerdata,
                     xAxisParameter, //xAxisParameter defined outside the function
                     yVal,
                     canvasId = chartID, //chartID defined outside the function
-                    canvasWidth = plotWidth, 
-                    canvasHeight = plotHeight, 
+                    canvasWidth = plotWidth,
+                    canvasHeight = plotHeight,
                     margins = {
-                        top: plotHeight * 0.05, 
-                        right: plotWidth * 0.02, 
-                        bottom: plotHeight * 0.25, 
+                        top: plotHeight * 0.05,
+                        right: plotWidth * 0.02,
+                        bottom: plotHeight * 0.25,
                         left: plotWidth * 0.10
                     },
-                    yAxisLabel = activeButton.dataset.parameterLabel
+                    yAxisLabel = activeButton.dataset.parameterLabel,
+                    xAxisLabel = null,
+                    onDataUpdate = (updatedData) => {
+                        // server is the source of truth after a trim/assign edit - swap in its response and redraw
+                        loggerdata = updatedData;
+                        resetPlot();
+                    }
                 );
             }
+
+            // Zoom is the existing drag-to-filter behavior; Trim excludes the selected range from the
+            // submission; Assign QC Code overrides qcflag_human for the selected range on the active parameter
+            Array.from(document.getElementsByClassName('logger-mode-button')).forEach((btn, i, allButtons) => {
+                btn.addEventListener('click', () => {
+                    allButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.getElementById('qc-code-select').classList.toggle('hidden', btn.dataset.mode !== 'assign');
+                })
+            })
 
             function replaceCanvas({canvasID = chartID} = {}){
                 // Get the old canvas

@@ -74,4 +74,18 @@ SUPPORTED_SENSORTYPES = [
     'troll','tidbit','minidot','ctd', 'hydrolab'
 ]
 
+# Parameters shown as buttons/plots on the Logger Data Visual tab (must match LOGGER_DATA_VISUAL_PARAMS in globals.js)
+LOGGER_PLOT_PARAMS = ['do', 'do_pct', 'h2otemp', 'turbidity', 'salinity', 'pressure', 'chlorophyll']
+
+
+def logger_plot_columns(columns):
+    """Columns (that actually exist in `columns`) needed to render/edit the Logger Data Visual tab."""
+    cols = ['samplecollectiontimestamp', 'samplecollectiontimezone']
+    for param in LOGGER_PLOT_PARAMS:
+        for suffix in ('', '_unit', '_qcflag_robot', '_qcflag_human'):
+            col = f'raw_{param}{suffix}'
+            if col in columns:
+                cols.append(col)
+    return cols
+
 
