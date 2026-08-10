@@ -207,7 +207,7 @@ function createYearCheckboxes() {
         radio.name = 'yearSelect';
         radio.id = `year-${year}`;
         radio.value = year;
-        radio.checked = (year === 2025); // Default to 2025
+        radio.checked = (year === 2026); // Default to 2026
         radio.addEventListener('change', filterAndRenderTable);
 
         const label = document.createElement('label');
@@ -607,7 +607,7 @@ function createSop1YearCheckboxes(years) {
         radio.name = 'sop1YearSelect';
         radio.id = `sop1-year-${year}`;
         radio.value = year;
-        radio.checked = (year === 2025); // Default to 2025
+        radio.checked = (year === 2026); // Default to 2026
         radio.addEventListener('change', filterAndRenderSop1Table);
 
         const label = document.createElement('label');

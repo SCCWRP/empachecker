@@ -339,10 +339,10 @@ def get_inventory_data():
         # Query data for the General using Pandas
         general_query = \
             """
-                SELECT 
+                SELECT
                     *
                 FROM
-                    vw_data_inventory
+                    admin_data_inventory
             """
         general_df = pd.read_sql(general_query, con=conn)
         general_df['year'] = general_df['year'].astype(int).astype(str)
@@ -449,10 +449,10 @@ def download_inventory_data():
 
     # Query data for the General using Pandas
     general_query = """
-        SELECT 
+        SELECT
             sop,region,siteid,year,season,data_exists,months_with_data
         FROM
-            vw_data_inventory 
+            admin_data_inventory
         ORDER BY
             sop,
             region,
@@ -573,10 +573,10 @@ def download_inventory_data_grouped_site():
 
     # Query data for the General using Pandas
     general_query = """
-        SELECT 
-            * 
+        SELECT
+            *
         FROM
-            vw_data_inventory
+            admin_data_inventory
     """
     with eng.connect() as conn:
         general_df = pd.read_sql(general_query, con=conn)
