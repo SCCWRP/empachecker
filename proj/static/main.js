@@ -172,6 +172,8 @@
             // prep the data
             // basically by only storing the data in a variable
             let loggerdata = result.logger_data
+            // valid min/max range per parameter, keyed by paramName (e.g. 'h2otemp', 'pressure') - used to draw a reference range on the chart
+            let loggerParamRanges = result.logger_param_ranges || {}
 
             // reset inner HTML for the button container before adding buttons
             document.getElementById('logger-visual-button-container').innerHTML = '';
@@ -226,6 +228,15 @@
             window.addEventListener('resize', resetPlot)
             document.getElementById('reset-plot-button').addEventListener('click', resetPlot)
 
+            document.getElementById('reset-logger-changes-button').addEventListener('click', () => {
+                if (!confirm('Undo all Trim edits made in this session and restore the originally uploaded data? This cannot be undone.')) return;
+                resetLoggerChanges((updatedData, updatedRanges) => {
+                    loggerdata = updatedData;
+                    if (updatedRanges) loggerParamRanges = updatedRanges;
+                    resetPlot();
+                });
+            })
+
             // The initial resetPlot() call above runs while this tab is still hidden (display:none),
             // so the height calculation (which measures the chart's on-screen position) sees a zeroed-out
             // bounding rect and ends up oversized. Re-measure/redraw once the tab is actually visible.
@@ -274,6 +285,9 @@
                     plotHeight = Math.max(maxPlotHeight, 150);
                 }
 
+                const activeParamRange = loggerParamRanges[activeButton.dataset.parameter] || null;
+                document.getElementById('logger-range-legend-item').classList.toggle('hidden', !activeParamRange);
+
                 createPlot(
                     loggerdata,
                     xAxisParameter, //xAxisParameter defined outside the function
@@ -289,21 +303,21 @@
                     },
                     yAxisLabel = activeButton.dataset.parameterLabel,
                     xAxisLabel = null,
-                    onDataUpdate = (updatedData) => {
+                    onDataUpdate = (updatedData, updatedRanges) => {
                         // server is the source of truth after a trim/assign edit - swap in its response and redraw
                         loggerdata = updatedData;
+                        if (updatedRanges) loggerParamRanges = updatedRanges;
                         resetPlot();
-                    }
+                    },
+                    paramRange = activeParamRange
                 );
             }
 
-            // Zoom is the existing drag-to-filter behavior; Trim excludes the selected range from the
-            // submission; Assign QC Code overrides qcflag_human for the selected range on the active parameter
+            // Zoom is the existing drag-to-filter behavior; Trim excludes the selected range from the submission
             Array.from(document.getElementsByClassName('logger-mode-button')).forEach((btn, i, allButtons) => {
                 btn.addEventListener('click', () => {
                     allButtons.forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
-                    document.getElementById('qc-code-select').classList.toggle('hidden', btn.dataset.mode !== 'assign');
                 })
             })
 

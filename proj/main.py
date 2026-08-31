@@ -2,6 +2,7 @@ from flask import render_template, request, jsonify, current_app, Blueprint, ses
 from werkzeug.utils import secure_filename
 from gc import collect
 import os
+import shutil
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -16,7 +17,7 @@ from .utils.generic import save_errors, correct_row_offset
 from .utils.excel import mark_workbook
 from .utils.exceptions import default_exception_handler
 from .utils.reformat import parse_raw_logger_data
-from .utils.loggervars import logger_plot_columns
+from .utils.loggervars import logger_plot_columns, get_logger_param_ranges
 from .custom import *
 
 
@@ -489,6 +490,16 @@ def main():
         #     plt.close()
 
         returnvals['logger_data'] = jsondata[plotcols].fillna('').to_dict('records')
+        returnvals['logger_param_ranges'] = get_logger_param_ranges(jsondata, g.eng)
+
+        # Preserve a pristine snapshot of the working file, before any Trim edits can happen, so the
+        # Logger Data Visual tab's "Reset Changes" button can restore this state without a full re-upload.
+        original_snapshot_path = os.path.join(
+            session['submission_dir'],
+            f"{filename.rsplit('.', 1)[0]}-original-working.{filename.rsplit('.', 1)[-1]}"
+        )
+        shutil.copy(excel_path, original_snapshot_path)
+        session['logger_original_excel_path'] = original_snapshot_path
 
     #print(returnvals)
 
@@ -498,8 +509,8 @@ def main():
 
 @upload.route('/logger/edit', methods = ['POST'])
 def logger_edit():
-    # Lets a logger_raw submitter trim (exclude) a time range or assign/override a qcflag_human
-    # value for a time range, directly from the Logger Data Visual tab, without re-uploading the file.
+    # Lets a logger_raw submitter trim (exclude) a time range directly from the
+    # Logger Data Visual tab, without re-uploading the file.
 
     assert session.get('excel_path') is not None, "No excel_path in session - session may have expired"
     assert session.get('datatype') == 'logger_raw', "Logger edits are only supported for the logger_raw datatype"
@@ -522,11 +533,6 @@ def logger_edit():
 
     if action == 'trim':
         df = df[~mask]
-    elif action == 'assign':
-        param = payload.get('param')
-        col = f'raw_{param}_qcflag_human'
-        assert col in df.columns, f"{col} is not a column in {sheet_name}"
-        df.loc[mask, col] = int(payload.get('qc_code'))
     else:
         return jsonify(user_error_msg = f"Unrecognized logger edit action: {action}")
 
@@ -538,7 +544,38 @@ def logger_edit():
     plotdata['samplecollectiontimestamp'] = plotdata['samplecollectiontimestamp'].apply(
         lambda t: pd.Timestamp(t).strftime("%Y-%m-%d %H:%M:%S") if pd.notnull(t) else ''
     )
-    return jsonify(logger_data = plotdata[logger_plot_columns(plotdata.columns)].fillna('').to_dict('records'))
+    return jsonify(
+        logger_data = plotdata[logger_plot_columns(plotdata.columns)].fillna('').to_dict('records'),
+        logger_param_ranges = get_logger_param_ranges(plotdata, g.eng)
+    )
+
+
+@upload.route('/logger/reset', methods = ['POST'])
+def logger_reset():
+    # Undoes all Trim edits made from the Logger Data Visual tab by restoring the pristine snapshot
+    # taken right after upload (before any edits were possible) back over the working excel file.
+
+    assert session.get('excel_path') is not None, "No excel_path in session - session may have expired"
+    assert session.get('datatype') == 'logger_raw', "Logger reset is only supported for the logger_raw datatype"
+
+    original_snapshot_path = session.get('logger_original_excel_path')
+    assert original_snapshot_path is not None, "No original snapshot available to reset to - session may have expired"
+
+    excel_path = session['excel_path']
+    sheet_name = 'tbl_wq_logger_raw'
+
+    shutil.copy(original_snapshot_path, excel_path)
+
+    plotdata = pd.read_excel(excel_path, sheet_name = sheet_name, skiprows = current_app.excel_offset, na_values = [''])
+    plotdata.columns = [c.lower() if isinstance(c, str) else c for c in plotdata.columns]
+    plotdata['samplecollectiontimestamp'] = plotdata['samplecollectiontimestamp'].apply(
+        lambda t: pd.Timestamp(t).strftime("%Y-%m-%d %H:%M:%S") if pd.notnull(t) else ''
+    )
+
+    return jsonify(
+        logger_data = plotdata[logger_plot_columns(plotdata.columns)].fillna('').to_dict('records'),
+        logger_param_ranges = get_logger_param_ranges(plotdata, g.eng)
+    )
 
 
 @upload.route('/map/<submissionid>/<datatype>')

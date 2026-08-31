@@ -829,13 +829,16 @@ document.getElementById('resetSopBtn').addEventListener('click', () => {
 function togglePanel(panel, button) {
     panel.classList.toggle('minimized');
     const isMinimized = panel.classList.contains('minimized');
-    button.innerHTML = isMinimized ? '&#9660;' : '&#9650;'; // Down arrow / Up arrow
-    button.title = isMinimized ? 'Expand' : 'Minimize';
+    if (button) {
+        button.innerHTML = isMinimized ? '&#9660;' : '&#9650;'; // Down arrow / Up arrow
+        button.title = isMinimized ? 'Expand' : 'Minimize';
+    }
 }
 
-// Toggle button event listeners
-document.getElementById('toggleControls').addEventListener('click', () => {
-    togglePanel(document.getElementById('controls'), document.getElementById('toggleControls'));
+// Open this map in a new browser tab
+document.getElementById('viewMapNewTabBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    window.open(window.location.href, '_blank');
 });
 
 // Make the estuary header clickable to expand panel and open dropdown
@@ -844,7 +847,7 @@ document.getElementById('estuaryHeader').addEventListener('click', () => {
     const wasMinimized = panel.classList.contains('minimized');
     // Always expand if minimized
     if (wasMinimized) {
-        togglePanel(panel, document.getElementById('toggleControls'));
+        togglePanel(panel);
     }
     // After expanding, open the appropriate dropdown
     setTimeout(() => {

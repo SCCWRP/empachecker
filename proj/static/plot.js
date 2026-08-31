@@ -573,7 +573,7 @@ function qcFlagForPoint(d, yVal) {
 
 // The idea is for this function to craete a plot on an HTML5 canvas rather than SVG for performance reasons, and handling larger sets of data
 function createPlot(
-    data, xVal, yVal, canvasId = 'canvas', canvasWidth = 960, canvasHeight = 500, margins = { top: 20, right: 20, bottom: 30, left: 50 }, yAxisLabel = null, xAxisLabel = null, onDataUpdate = null
+    data, xVal, yVal, canvasId = 'canvas', canvasWidth = 960, canvasHeight = 500, margins = { top: 20, right: 20, bottom: 30, left: 50 }, yAxisLabel = null, xAxisLabel = null, onDataUpdate = null, paramRange = null
 ) {
 
     const width = canvasWidth - margins.left - margins.right,
@@ -593,9 +593,50 @@ function createPlot(
     const y = d3.scaleLinear().range([height, 0]);
 
     x.domain(d3.extent(data, d => new Date(d[xVal])));
-    y.domain([0, d3.max(data, d => d[yVal])]);
+
+    // Widen the y-domain to fit the valid range too, so the reference line(s) are never drawn off-chart
+    let yMin = 0;
+    let yMax = d3.max(data, d => d[yVal]);
+    if (paramRange) {
+        if (paramRange.min !== null && paramRange.min !== undefined) yMin = Math.min(yMin, paramRange.min);
+        if (paramRange.max !== null && paramRange.max !== undefined) yMax = Math.max(yMax, paramRange.max);
+    }
+    y.domain([yMin, yMax]);
 
     context.translate(margins.left, margins.top);
+
+    // Shade the valid range band and draw dashed min/max reference lines, underneath the data line, for context
+    if (paramRange && (paramRange.min !== null && paramRange.min !== undefined) && (paramRange.max !== null && paramRange.max !== undefined)) {
+        const rangeTop = y(paramRange.max);
+        const rangeBottom = y(paramRange.min);
+
+        context.save();
+        context.fillStyle = 'rgba(44, 123, 182, 0.07)';
+        context.fillRect(0, rangeTop, width, rangeBottom - rangeTop);
+        context.restore();
+
+        context.save();
+        context.setLineDash([6, 4]);
+        context.strokeStyle = 'rgba(44, 123, 182, 0.6)';
+        context.lineWidth = 1;
+        [rangeTop, rangeBottom].forEach(yPos => {
+            context.beginPath();
+            context.moveTo(0, yPos);
+            context.lineTo(width, yPos);
+            context.stroke();
+        });
+        context.restore();
+
+        context.save();
+        context.fillStyle = 'rgba(44, 123, 182, 0.8)';
+        context.font = '11px Arial';
+        context.textBaseline = 'bottom';
+        context.textAlign = 'right';
+        context.fillText(`Max: ${paramRange.max}`, width, rangeTop - 2);
+        context.textBaseline = 'top';
+        context.fillText(`Min: ${paramRange.min}`, width, rangeBottom + 2);
+        context.restore();
+    }
 
     // Draw the line one segment at a time, colored by qcflag, so flagged data is visible at a glance
     context.lineWidth = 1.5;
@@ -688,7 +729,8 @@ function createPlot(
         canvasID : canvasId,
         canvasWidth : canvasWidth,
         canvasHeight : canvasHeight,
-        onDataUpdate : onDataUpdate
+        onDataUpdate : onDataUpdate,
+        paramRange : paramRange
     })
 }
 
@@ -714,7 +756,8 @@ const brushHandler = function (
             left: 0.10
         },
         xVal = 'samplecollectiontimestamp',
-        onDataUpdate = null
+        onDataUpdate = null,
+        paramRange = null
     } = {}
 )
 {
@@ -804,7 +847,6 @@ const brushHandler = function (
         endDate = x.invert(endpx);
 
         const mode = document.querySelector('.logger-mode-button.active')?.dataset.mode || 'zoom';
-        const activeButton = document.querySelector('.logger-visual-tab-button.active');
         const paramInfo = getParam();
 
         if (mode === 'trim') {
@@ -817,24 +859,12 @@ const brushHandler = function (
             return;
         }
 
-        if (mode === 'assign') {
-            const qcCode = document.getElementById('qc-code-select').value;
-            submitLoggerEdit({
-                action: 'assign',
-                param: activeButton.dataset.parameter,
-                qc_code: qcCode,
-                start: toNaiveTimestampString(startDate),
-                end: toNaiveTimestampString(endDate)
-            }, onDataUpdate);
-            return;
-        }
-
         // default/zoom mode - filter the view down to the brushed range
         filteredData = data.filter(item => {
             return ( (new Date(item[xVal]) > startDate) & (new Date(item[xVal]) < endDate ) ) ;
         })
 
-        createPlot(filteredData, xVal, paramInfo.paramName, canvasID, canvasWidth, canvasHeight, margins, yAxisLabel = paramInfo.paramLabel, xAxisLabel = null, onDataUpdate);
+        createPlot(filteredData, xVal, paramInfo.paramName, canvasID, canvasWidth, canvasHeight, margins, yAxisLabel = paramInfo.paramLabel, xAxisLabel = null, onDataUpdate, paramRange);
     }
 
     // function updatePlot(data, xVal, yVal, canvasId, canvasWidth, canvasHeight, margins) {
@@ -875,9 +905,11 @@ function toNaiveTimestampString(date) {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
-// Sends a trim (exclude rows) or assign (override qcflag_human) edit to the server, which rewrites
-// the submitter's working excel file so the edit is reflected at Final Submit time.
+// Sends a trim (exclude rows) edit to the server, which rewrites the submitter's working excel
+// file so the edit is reflected at Final Submit time.
 async function submitLoggerEdit(payload, onDataUpdate) {
+    const spinner = document.getElementById('logger-edit-spinner');
+    if (spinner) spinner.style.display = 'block';
     try {
         const response = await fetch(`/${script_root}/logger/edit`, {
             method: 'POST',
@@ -891,9 +923,35 @@ async function submitLoggerEdit(payload, onDataUpdate) {
             return;
         }
 
-        if (onDataUpdate) onDataUpdate(result.logger_data);
+        if (onDataUpdate) onDataUpdate(result.logger_data, result.logger_param_ranges);
     } catch (e) {
         console.error(e);
         alert('Something went wrong while saving your edit. Please try again.');
+    } finally {
+        if (spinner) spinner.style.display = 'none';
+    }
+}
+
+// Undoes all Trim edits by restoring the pristine snapshot the server took right after upload.
+async function resetLoggerChanges(onDataUpdate) {
+    const spinner = document.getElementById('logger-edit-spinner');
+    if (spinner) spinner.style.display = 'block';
+    try {
+        const response = await fetch(`/${script_root}/logger/reset`, {
+            method: 'POST'
+        });
+        const result = await response.json();
+
+        if (result.user_error_msg) {
+            alert(result.user_error_msg);
+            return;
+        }
+
+        if (onDataUpdate) onDataUpdate(result.logger_data, result.logger_param_ranges);
+    } catch (e) {
+        console.error(e);
+        alert('Something went wrong while resetting your changes. Please try again.');
+    } finally {
+        if (spinner) spinner.style.display = 'none';
     }
 }

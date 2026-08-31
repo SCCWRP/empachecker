@@ -498,18 +498,12 @@
                     <div id="logger-mode-button-container">
                       <button class="btn btn-outline-secondary logger-mode-button active" data-mode="zoom">Zoom (drag to select a range)</button>
                       <button class="btn btn-outline-secondary logger-mode-button" data-mode="trim">Trim (drag to exclude a range)</button>
-                      <button class="btn btn-outline-secondary logger-mode-button" data-mode="assign">Assign QC Code (drag to apply)</button>
-                      <select id="qc-code-select" class="form-control hidden">
-                        <option value="0">0 - Good</option>
-                        <option value="-2">-2 - Missing</option>
-                        <option value="-4">-4 - Below Range</option>
-                        <option value="-5">-5 - Above Range</option>
-                      </select>
                     </div>
                   </div>
                   <br>
                   <div id="reset-plot-button-container">
                     <button id="reset-plot-button" class="btn btn-info">Reset Zoom</button>
+                    <button id="reset-logger-changes-button" class="btn btn-outline-danger">Reset Changes</button>
                   </div>
                   <br>
                   <div id="logger-qc-legend">
@@ -517,9 +511,15 @@
                     <span class="logger-qc-legend-item"><span class="logger-qc-swatch" style="background-color:#999999"></span>Missing (-2)</span>
                     <span class="logger-qc-legend-item"><span class="logger-qc-swatch" style="background-color:#fdae61"></span>Below Range (-4)</span>
                     <span class="logger-qc-legend-item"><span class="logger-qc-swatch" style="background-color:#d7191c"></span>Above Range (-5)</span>
+                    <span id="logger-range-legend-item" class="logger-qc-legend-item hidden"><span class="logger-qc-swatch logger-qc-swatch-range"></span>Valid Range</span>
                   </div>
                   <br>
-                  <div id="logger-chart-container">
+                  <div id="logger-chart-container" style="position: relative;">
+                    <div id="logger-edit-spinner" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999;">
+                      <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                      </div>
+                    </div>
                     <canvas id="logger-canvas"></canvas>
                   </div>
                 </div>

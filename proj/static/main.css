@@ -213,9 +213,9 @@ span.table-not-matched {
 
 .logger-visual-tab-button.active,
 .logger-mode-button.active {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-    color: #fff;
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+    color: #fff !important;
 }
 
 #qc-code-select {
@@ -241,6 +241,14 @@ span.table-not-matched {
     height: 12px;
     border-radius: 2px;
     margin-right: 5px;
+}
+
+.logger-qc-swatch-range {
+    width: 12px;
+    height: 0;
+    border-radius: 0;
+    border-top: 2px dashed rgba(44, 123, 182, 0.6);
+    background-color: transparent;
 }
 
 .login-info-container {

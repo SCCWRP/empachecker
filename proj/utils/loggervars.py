@@ -1,3 +1,6 @@
+import pandas as pd
+from sqlalchemy.exc import ProgrammingError
+
 # This should probably come from the database somehow, but for now, its ok lets just leave it as it is
 TEMPLATE_COLUMNS = [
     'projectid',
@@ -89,3 +92,42 @@ def logger_plot_columns(columns):
     return cols
 
 
+def get_logger_param_ranges(df, eng):
+    """
+    Valid min/max range (from the lu_{param}_unit lookup tables - the same ones the automated
+    QA/QC flagging in logger_custom.py uses to compute the -4/-5 qcflags) for each plotted parameter,
+    so the Logger Data Visual chart can draw a reference range for whichever unit the data is actually in.
+    """
+    ranges = {}
+    for param in LOGGER_PLOT_PARAMS:
+        col = f'raw_{param}'
+        unit_col = f'{col}_unit'
+        if col not in df.columns or unit_col not in df.columns:
+            continue
+
+        units_present = [u for u in df[unit_col].dropna().unique().tolist() if u != '']
+        if not units_present:
+            continue
+
+        lu_table = 'lu_temperature_unit' if param == 'h2otemp' else f'lu_{param}_unit'
+        try:
+            lu_list = pd.read_sql(f"SELECT unit, min, max FROM {lu_table}", eng)
+        except ProgrammingError:
+            continue
+
+        # most submissions use a single consistent unit for a given parameter - take the first one with a match
+        for unit in units_present:
+            match = lu_list[lu_list['unit'] == unit]
+            if match.empty:
+                continue
+            row = match.iloc[0]
+            if pd.isnull(row['min']) and pd.isnull(row['max']):
+                continue
+            ranges[param] = {
+                'unit': str(unit),
+                'min': None if pd.isnull(row['min']) else float(row['min']),
+                'max': None if pd.isnull(row['max']) else float(row['max'])
+            }
+            break
+
+    return ranges

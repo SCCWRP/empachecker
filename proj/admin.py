@@ -1301,6 +1301,53 @@ def download_polygons_shapefile():
         return jsonify({'error': str(e)}), 500
 
 
+def _download_table_shapefile(table_name):
+    """Query a spatial table in full and return it as a single-layer shapefile zip"""
+    eng = create_engine(os.environ.get('DB_CONNECTION_STRING_READONLY'))
+    gdf = gpd.read_postgis(f"SELECT * FROM {table_name}", eng, geom_col='geometry')
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        shp_path = os.path.join(tmpdir, f'{table_name}.shp')
+        gdf.to_file(shp_path)
+
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for filename in os.listdir(tmpdir):
+                zipf.write(os.path.join(tmpdir, filename), filename)
+        zip_buffer.seek(0)
+
+        return send_file(
+            zip_buffer,
+            mimetype='application/zip',
+            as_attachment=True,
+            download_name=f'{table_name}.zip'
+        )
+
+
+@admin.route('/download-sites-shapefile', methods=['GET'])
+def download_sites_shapefile():
+    """Download spatial_empa_all_sites table as a shapefile zip"""
+    try:
+        return _download_table_shapefile('spatial_empa_all_sites')
+    except Exception as e:
+        print(f"Error downloading sites shapefile: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin.route('/download-stations-shapefile', methods=['GET'])
+def download_stations_shapefile():
+    """Download spatial_empa_all_stations table as a shapefile zip"""
+    try:
+        return _download_table_shapefile('spatial_empa_all_stations')
+    except Exception as e:
+        print(f"Error downloading stations shapefile: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 @admin.route('/new-project-metadata-form', methods=['GET', 'POST'])
 def new_project_metadata_form():
     """New Project Metadata Form"""
