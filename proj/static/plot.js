@@ -638,9 +638,17 @@ function createPlot(
         context.restore();
     }
 
+    // A jump well beyond the logger's usual interval is a gap (e.g. a trimmed range), so leave it empty instead of bridging it
+    const intervals = [];
+    for (let i = 1; i < data.length; i++) {
+        intervals.push(new Date(data[i][xVal]) - new Date(data[i - 1][xVal]));
+    }
+    const maxInterval = intervals.length ? d3.median(intervals) * 1.5 : Infinity;
+
     // Draw the line one segment at a time, colored by qcflag, so flagged data is visible at a glance
     context.lineWidth = 1.5;
     for (let i = 1; i < data.length; i++) {
+        if (intervals[i - 1] > maxInterval) continue;
         const prev = data[i - 1];
         const curr = data[i];
         const flags = [qcFlagForPoint(prev, yVal), qcFlagForPoint(curr, yVal)]
