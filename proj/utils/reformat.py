@@ -123,19 +123,29 @@ def read_ctd(ctd_path):
 
 def read_troll(troll_path):
     print("inside read troll")
+    # WinSitu exports the same layout as either a text/csv file or an excel file
+    is_excel = str(troll_path).lower().endswith(('.xlsx', '.xls'))
+
     # read csv header, get values for reading in as dataframe later
-    with open(troll_path,  encoding='utf-8') as troll_file:
-        troll_reader = csv.reader(troll_file)
-        print("troll reader")
-        for i, row in enumerate(troll_reader):
-            if 'Serial Number' in row:
-                serial_index = row.index('Serial Number')
-                troll_serial_num = row[serial_index + 1] # text search for serial number
-            elif len(row) > 0 and 'Time Zone:' in row[0]: # 'Time Zone:' indicates data is about to start
-                timezone = row[0].split(": ")[1]
-                header_index = i + 4  # data begins 4 rows below 'Time Zone:' line, adjust for 0 indexing
-                break
-    troll_data = pd.read_csv(troll_path, header = header_index, usecols = [0,2,3,4], skip_blank_lines=False)
+    if is_excel:
+        troll_rows = pd.read_excel(troll_path, header = None, dtype = object) \
+            .apply(lambda r: ['' if pd.isnull(v) else str(v) for v in r], axis = 1).tolist()
+    else:
+        with open(troll_path,  encoding='utf-8') as troll_file:
+            troll_rows = list(csv.reader(troll_file))
+    print("troll reader")
+    for i, row in enumerate(troll_rows):
+        if 'Serial Number' in row:
+            serial_index = row.index('Serial Number')
+            troll_serial_num = row[serial_index + 1] # text search for serial number
+        elif len(row) > 0 and 'Time Zone:' in row[0]: # 'Time Zone:' indicates data is about to start
+            timezone = row[0].split(": ")[1]
+            header_index = i + 4  # data begins 4 rows below 'Time Zone:' line, adjust for 0 indexing
+            break
+    if is_excel:
+        troll_data = pd.read_excel(troll_path, header = header_index, usecols = [0,2,3,4])
+    else:
+        troll_data = pd.read_csv(troll_path, header = header_index, usecols = [0,2,3,4], skip_blank_lines=False)
     # if file has double empty line at end of file, pandas reads one as a row, so drop it
     if pd.isnull(troll_data.iloc[-1]).all():
         troll_data.drop(troll_data.tail(1).index, inplace=True)
@@ -153,22 +163,11 @@ def read_troll(troll_path):
         'raw_h2otemp': 'Temperature'
     }
 
-    raw_columns = list(template_to_raw_map.keys())
-    troll_data[raw_columns] = troll_data[raw_columns].apply(
-        lambda x: troll_data[troll_data.columns[troll_data.columns.str.startswith(template_to_raw_map[x.name])][0]]
-    )
-
-    unit_columns = [
-        column for column in TEMPLATE_COLUMNS \
-        if "unit" in column and column[:-5] in template_to_raw_map
-    ]
-    
-    troll_data[unit_columns] = troll_data[raw_columns].apply(
-        lambda x: re.search(
-            r"(?<=\().+?(?=\))", # get all characters within parentheses, excluding parentheses
-            troll_data.columns[troll_data.columns.str.startswith(template_to_raw_map[x.name])][0]
-        )[0]
-    )
+    for raw_column, raw_prefix in template_to_raw_map.items():
+        source_column = troll_data.columns[troll_data.columns.str.startswith(raw_prefix)][0]
+        troll_data[raw_column] = troll_data[source_column]
+        # unit is all characters within parentheses in the source header, excluding parentheses
+        troll_data[f'{raw_column}_unit'] = re.search(r"(?<=\().+?(?=\))", source_column)[0]
     troll_data['raw_h2otemp_unit'] = troll_data['raw_h2otemp_unit'].apply(
         lambda x: f'deg {x}' if x in ['C', 'F'] else x
     )
