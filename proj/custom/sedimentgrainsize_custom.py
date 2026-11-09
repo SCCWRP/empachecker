@@ -5,6 +5,28 @@ import pandas as pd
 from .functions import checkData, checkLogic, mismatch,get_primary_key, check_consecutiveness
 
 
+def grainsize_value_range_badrows(df, value_col='value'):
+    """Return tmp_row values where value is outside 0 to 100 and is not -88. NaN is skipped."""
+    vals = pd.to_numeric(df[value_col], errors='coerce')
+    bad = vals.notna() & ~vals.between(0, 100) & (vals != -88)
+    return df.loc[bad, 'tmp_row'].tolist()
+
+
+def grainsize_sample_total_badrows(df, group_cols, value_col='value'):
+    """Return tmp_row values of every row in a sample whose total (excluding -88) is outside 99 to 101.
+    Samples where every value is -88 or NaN are skipped."""
+    tmp = pd.DataFrame({'tmp_row': df['tmp_row']})
+    for c in group_cols:
+        tmp[c] = df[c]
+    vals = pd.to_numeric(df[value_col], errors='coerce')
+    tmp['_valid'] = vals.notna() & (vals != -88)
+    tmp['_val'] = vals.where(tmp['_valid'])
+    grp = tmp.groupby(group_cols, dropna=False)
+    total = grp['_val'].transform('sum').round(6)
+    has_valid = grp['_valid'].transform('any')
+    bad = has_valid & ~total.between(99, 101)
+    return tmp.loc[bad, 'tmp_row'].tolist()
+
 
 
 def sedimentgrainsize_lab(all_dfs):
@@ -288,6 +310,43 @@ def sedimentgrainsize_lab(all_dfs):
 
     # Adding the check result to the list of errors
     errs = [*errs, checkData(**args)]
+
+
+    print("# CHECK - 10")
+    # Description: value is a percent and must be between 0 and 100 inclusive, or -88 if missing
+    # Created Coder: Duy Nguyen
+    # Created Date: 11/09/2026
+    # Last Edited Date: 
+    # NOTE (11/09/2026): created check
+    args.update({
+        "dataframe": sed_data,
+        "tablename": "tbl_sedgrainsize_data",
+        "badrows": grainsize_value_range_badrows(sed_data),
+        "badcolumn": "value",
+        "error_type": "Value Error",
+        "error_message": "value must be between 0 and 100 (percent). Use -88 if the value is missing."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 10")
+
+    print("# CHECK - 11")
+    # Description: The values of each sample must add up to between 99 and 101 percent, -88 values not counted
+    # Created Coder: Duy Nguyen
+    # Created Date: 11/09/2026
+    # Last Edited Date: 
+    # NOTE (11/09/2026): created check. A sample is grouped by the primary key without phi and wentworth_class
+    sample_group_cols = [c for c in sed_data_pkey if c not in ('phi', 'wentworth_class')]
+    args.update({
+        "dataframe": sed_data,
+        "tablename": "tbl_sedgrainsize_data",
+        "badrows": grainsize_sample_total_badrows(sed_data, sample_group_cols),
+        "badcolumn": "value",
+        "error_type": "Value Error",
+        "error_message": "The values for each sample must add up to between 99 and 101 percent (-88 values are not counted). "
+            f"Samples are grouped by {','.join(sample_group_cols)}."
+    })
+    errs = [*errs, checkData(**args)]
+    print("# END OF CHECK - 11")
 
 
     ######################################################################################################################
