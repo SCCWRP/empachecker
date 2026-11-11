@@ -7,7 +7,7 @@ from fakes import FakeStore
 from proj import logger_review as lr
 from test_api import A, B, make_app
 
-SENT = "If this email is allowed, a code was sent."
+SENT = "A sign-in code was sent to your email."
 URL = "/logger-review/api/"
 
 
@@ -60,11 +60,14 @@ def test_listed_email_gets_code_and_signs_in(client, mails):
     assert client.get(URL + "submissions").status_code == 200
 
 
-def test_unlisted_email_same_response_and_nothing_sent(client, mails):
+def test_unlisted_email_is_clearly_refused_and_nothing_sent(client, mails):
     listed = ask(make_app(FakeStore([], {})).test_client(), B)
     n = len(mails)
     unlisted = ask(client, "someone@example.org")
-    assert (unlisted.status_code, unlisted.get_json()) == (listed.status_code, listed.get_json())
+    assert listed.status_code == 200
+    assert unlisted.status_code == 403
+    assert unlisted.get_json()["error"]["code"] == "email_not_authorized"
+    assert "not authorized" in unlisted.get_json()["error"]["message"]
     assert len(mails) == n          # nothing sent for the unlisted address
     assert verify(client, "someone@example.org", "123456").status_code == 401
     assert not lr._codes or all(v["email"] != "someone@example.org" for v in lr._codes.values())
@@ -143,8 +146,8 @@ def test_one_code_per_email_per_minute(client, mails, monkeypatch):
     r = ask(client, A)
     assert r.status_code == 429 and len(mails) == 1
     assert ask(client, B).status_code == 200              # another email is not limited
-    # the same limit applies to unlisted emails, so the limit does not reveal the list
-    assert ask(client, "x@example.org").status_code == 200 and ask(client, "x@example.org").status_code == 429
+    # Approval is checked before code-send throttling; unauthorized emails always get a clear refusal.
+    assert ask(client, "x@example.org").status_code == 403 and ask(client, "x@example.org").status_code == 403
     real = time.time
     monkeypatch.setattr(lr.time, "time", lambda: real() + 61)
     assert ask(client, A).status_code == 200 and len(mails) == 3
@@ -185,7 +188,7 @@ def test_logout_ends_the_session(client, mails):
 
 def test_page_shows_sign_in_then_review(client, mails):
     page = client.get("/logger-review")
-    assert page.status_code == 200 and b"Send code" in page.data and b"Sign in" in page.data
+    assert page.status_code == 200 and b"Sign In" in page.data and b"Verify code" in page.data
     ask(client, A)
     verify(client, A, code_of(mails))
     page = client.get("/logger-review")
@@ -194,3 +197,14 @@ def test_page_shows_sign_in_then_review(client, mails):
     assert 'src="/static/logger_review/plotly.min.js"' in html and 'src="/static/logger_review/qc_tests.js"' in html
     assert client.get("/static/logger_review/plotly.min.js").status_code == 200
     assert client.get("/static/logger_review/qc_tests.js").status_code == 200
+
+
+def test_sign_in_page_flow():
+    import shutil
+    import subprocess
+    from conftest import ROOT
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node not installed")
+    res = subprocess.run([node, str(ROOT / "tests/logger_review/signin_test.js")], capture_output=True, text=True)
+    assert res.returncode == 0, res.stdout + res.stderr

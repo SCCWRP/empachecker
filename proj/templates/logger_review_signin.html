@@ -17,6 +17,7 @@
   input { width:100%; height:40px; padding:6px 12px; border:1px solid var(--border); border-radius:8px; color:var(--ink); font:inherit; font-size:1rem; }
   input:focus { outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(26,115,232,.2); }
   form { display:grid; gap:16px; }
+  [hidden] { display:none !important; }
   .actions { display:flex; justify-content:flex-end; }
   button { min-height:40px; padding:8px 24px; border:0; border-radius:20px; background:var(--blue); color:#fff; font:500 .875rem "Google Sans", "Roboto", sans-serif; cursor:pointer; box-shadow:0 1px 2px rgba(60,64,67,.3); }
   button:hover { background:var(--blue-dark); }
@@ -30,11 +31,11 @@
   <h1>EMPA logger review</h1>
   <form id="email-form">
     <label for="email">Email <input id="email" type="email" autocomplete="email" required></label>
-    <div class="actions"><button id="send" type="submit">Send code</button></div>
+    <div class="actions"><button id="send" type="submit">Sign In</button></div>
   </form>
   <form id="code-form" hidden>
     <label for="code">Code <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></label>
-    <div class="actions"><button id="verify" type="submit">Sign in</button></div>
+    <div class="actions"><button id="verify" type="submit">Verify code</button></div>
   </form>
   <p id="message" class="message" role="status" hidden></p>
 </main>
@@ -52,7 +53,7 @@ async function post(path, body) {
   return data;
 }
 $('email-form').onsubmit = async e => {
-  e.preventDefault(); $('send').disabled = true; say('');
+  e.preventDefault(); $('send').disabled = true; $('code-form').hidden = true; $('code').value = ''; say('');
   try {
     const data = await post('request-code', {email:$('email').value});
     say(data.message); $('code-form').hidden = false; $('code').focus();

@@ -35,7 +35,7 @@ RESEND_SECONDS = 60           # one new code per email per this many seconds
 SESSION_SECONDS = 12 * 60 * 60
 DEFAULT_ROW_LIMIT = 100000
 MAX_PAGE = 1000
-SENT_MESSAGE = "If this email is allowed, a code was sent."
+SENT_MESSAGE = "A sign-in code was sent to your email."
 MULTI_SENSOR_MESSAGE = "This submission has more than one sensor and cannot be finalized here yet."
 STATUS_LABEL = {"not_reviewed": "Not reviewed", "draft": "Draft", "needs_another_qa": "Needs another QA",
                 "finalized": "Finalized", "rejected": "Rejected"}
@@ -124,6 +124,8 @@ def request_code():
     email = clean_email(json_body().get("email"))
     if not EMAIL.match(email):
         raise ApiError(400, "invalid_email", "Enter a valid email address.")
+    if email not in ALLOWED_EMAILS:
+        raise ApiError(403, "email_not_authorized", "This email is not authorized to use logger review.")
     now = time.time()
     with _lock:
         for k in [k for k, t in _last_request.items() if now - t > RESEND_SECONDS]:
@@ -131,8 +133,6 @@ def request_code():
         if email in _last_request:
             raise ApiError(429, "too_soon", "Wait a minute before asking for another code.")
         _last_request[email] = now
-        if email not in ALLOWED_EMAILS:
-            return jsonify({"message": SENT_MESSAGE})
         code = f"{secrets.randbelow(1000000):06d}"
         nonce = secrets.token_hex(16)
         _codes.pop(_latest.get(email), None)

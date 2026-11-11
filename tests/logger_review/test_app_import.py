@@ -22,7 +22,7 @@ need = {'/logger-review', '/logger-review/api/request-code', '/logger-review/api
 assert need <= rules, need - rules
 c = proj.app.test_client()
 page = c.get('/logger-review')
-assert page.status_code == 200 and b'Send code' in page.data, page.status_code
+assert page.status_code == 200 and b'Sign In' in page.data, page.status_code
 assert c.get('/logger-review/api/submissions').status_code == 401
 assert c.get('/static/logger_review/plotly.min.js').status_code == 200
 print('app import ok')

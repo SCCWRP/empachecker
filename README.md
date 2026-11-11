@@ -54,7 +54,8 @@ The logger review tool is part of this checker at `/empachecker/logger-review`.
 are `proj/templates/logger_review*.html`, assets are in `proj/static/logger_review/`,
 and SQL, QC, threshold conversion and removal code live in `proj/logger_review_lib/`.
 It reuses the checker database engine, mail settings and signed session. Duy and Jan
-sign in using a single-use emailed code. Codes last 10 minutes, permit five attempts
+start with Email and Sign In. Approved emails receive a single-use code and then see
+the code field; unauthorized emails receive a clear error. Codes last 10 minutes, permit five attempts
 and run in the existing single uWSGI process. Sessions last 12 hours.
 
 Review decisions and periods are saved in `sde.tbl_wq_logger_review` and
