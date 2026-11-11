@@ -40,6 +40,34 @@ const ok = (name) => { passed++; console.log('ok', name); };
   assert(html.includes('/plotly.min.js') && !html.includes('cdn.jsdelivr') && !html.includes('zoom-reset'));
   ok('page has no localStorage, locally, CDN plotly');
 
+  // A slow list request must explain the wait and prevent an empty selection.
+  let finishList;
+  const pendingList = new Promise(resolve => { finishList=resolve; });
+  const pendingRoutes=makeRoutes({});
+  const loadingApp=boot((method,url,body)=>url.includes('/submissions?')?pendingList:pendingRoutes(method,url,body));
+  assert.equal(loadingApp.ids.submission.disabled,true);
+  assert.equal(loadingApp.ids['submission-loading'].hidden,false);
+  assert.equal(loadingApp.ids.submission.attrs['aria-busy'],'true');
+  assert.equal(loadingApp.ids.submission.options.length,0);
+  finishList(pendingRoutes('GET','/logger-review/api/submissions?limit=1000&offset=0'));
+  await sleep(50);
+  assert.equal(loadingApp.ids.submission.options.length,3);
+  assert.equal(loadingApp.ids.submission.disabled,false);
+  assert.equal(loadingApp.ids['submission-loading'].hidden,true);
+  assert.equal(loadingApp.ids.submission.attrs['aria-busy'],'false');
+  const failedList=boot(()=>({status:503,json:{error:{message:'Submissions could not be loaded.'}}}));
+  await sleep(20);
+  assert.equal(failedList.ids['submission-loading'].hidden,true);
+  assert.equal(failedList.ids.submission.disabled,true);
+  assert.equal(failedList.ids['app-message'].textContent,'Submissions could not be loaded.');
+  assert.equal(failedList.calls.length,1);
+  const emptyList=boot(()=>({status:200,json:{items:[],total:0}}));
+  await sleep(20);
+  assert.equal(emptyList.ids['submission-loading'].hidden,true);
+  assert.equal(emptyList.ids.submission.disabled,true);
+  assert.equal(emptyList.ids['app-message'].textContent,'No submissions available.');
+  ok('submission list loading, success, empty and error states');
+
   // load list and first submission
   let state = { statuses: { '1770672364': 'finalized' }, labels: { '1770672364': 'Finalized' } };
   let app = boot(makeRoutes(state)); await sleep(50);

@@ -22,6 +22,10 @@
   .workspace { position:relative; display:grid; grid-template-columns:320px minmax(0, 1fr) 280px; gap:10px; min-height:0; }
   .card { min-height:0; min-width:0; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card); box-shadow:0 1px 2px rgba(60,64,67,.08),0 1px 3px 1px rgba(60,64,67,.05); }
   .controls { display:flex; flex-direction:column; gap:16px; overflow-y:auto; }
+  .submission-loading { display:flex; align-items:center; gap:10px; color:var(--ink); }
+  .loading-spinner { width:20px; height:20px; flex:none; border:3px solid var(--border); border-top-color:var(--blue); border-radius:50%; animation:loading-spin .8s linear infinite; }
+  @keyframes loading-spin { to { transform:rotate(360deg); } }
+  @media (prefers-reduced-motion:reduce) { .loading-spinner { animation:none; } }
   .selector-label,.parameter-picker,.field-group { display:flex; flex-direction:column; gap:6px; min-width:0; }
   .parameter-picker { position:relative; }
   .parameter-trigger { display:block; width:100%; height:38px; min-height:38px; padding:7px 32px 7px 8px; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; border:1px solid var(--border); border-radius:8px; background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235f6368' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center; color:var(--ink); font:1rem "Roboto",system-ui,sans-serif; font-weight:400; box-shadow:none; }
@@ -160,7 +164,8 @@
   <div id="workspace" class="workspace" data-drawer="">
     <aside id="controls" class="card controls" data-section="data" aria-label="Submission controls">
       <div class="account"><span id="reviewer-email" class="account-email"></span><button id="sign-out" class="text-button" type="button">Sign out</button></div>
-      <label class="selector-label" for="submission">Submission ID <select id="submission"></select></label>
+      <label class="selector-label" for="submission">Submission ID <select id="submission" disabled aria-busy="true"></select></label>
+      <div id="submission-loading" class="submission-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Loading submissions.</span></div>
       <div id="parameter-picker" class="parameter-picker">
         <label id="parameter-label" for="parameter-toggle">Parameter</label>
         <button id="parameter-toggle" class="parameter-trigger" type="button" aria-expanded="false" aria-controls="parameter-options">Choose parameters</button>
@@ -609,17 +614,27 @@ async function selectSubmission() {
   }
   showSubmission();
 }
+function setSubmissionListLoading(loading) {
+  $('submission-loading').hidden=!loading;
+  $('submission').setAttribute('aria-busy',String(loading));
+  $('submission').disabled=loading||!$('submission').options.length;
+}
 async function loadSubmissionList() {
   const items=[];
+  setSubmissionListLoading(true);
   try {
     for (let offset=0;;offset+=1000) {
       const data=await api('GET','/submissions?limit=1000&offset='+offset);
       items.push(...data.items);
       if (items.length>=data.total||!data.items.length) break;
     }
-  } catch (err) { message('app-message',err.message,true); }
-  populate($('submission'),items.map(s=>[s.submissionId,s.submissionId+' ('+s.statusLabel+')']));
-  for (const s of items) submissionStatus[s.submissionId]=s.status;
+    populate($('submission'),items.map(s=>[s.submissionId,s.submissionId+' ('+s.statusLabel+')']));
+    for (const s of items) submissionStatus[s.submissionId]=s.status;
+  } catch (err) {
+    message('app-message',err.message,true);
+    return;
+  } finally { setSubmissionListLoading(false); }
+  if (!items.length) { message('app-message','No submissions available.'); return; }
   await selectSubmission();
 }
 function buildEditor(id) {
