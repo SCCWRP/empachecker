@@ -55,7 +55,7 @@ are `proj/templates/logger_review*.html`, assets are in `proj/static/logger_revi
 and SQL, QC, threshold conversion and removal code live in `proj/logger_review_lib/`.
 It reuses the checker database engine, mail settings and signed session. Duy and Jan
 start with Email and Sign In. Approved emails receive a single-use code and then see
-the code field; unauthorized emails receive a clear error. Codes last 10 minutes, permit five attempts
+only the code form and confirmation; unauthorized emails receive a clear error at the email step. Codes last 10 minutes, permit five attempts
 and run in the existing single uWSGI process. Sessions last 12 hours.
 
 Review decisions and periods are saved in `sde.tbl_wq_logger_review` and

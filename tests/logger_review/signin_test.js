@@ -6,7 +6,7 @@ function boot(response) {
   ids['code-form'].hidden=/<form id="code-form" hidden>/.test(html);
   const state={sent:[],reloads:0};
   const context=vm.createContext({document:{getElementById:id=>ids[id]},location:{reload(){state.reloads++;}},
-    fetch:async(url,options)=>{state.sent.push({url,body:JSON.parse(options.body)});return response;}});
+    fetch:async(url,options)=>{state.sent.push({url,body:JSON.parse(options.body)});return typeof response==='function'?response(url):response;}});
   const code=html.match(/<script>([\s\S]*?)<\/script>/)[1].replace('{{ base|tojson }}',JSON.stringify('/empachecker/logger-review'));
   vm.runInContext(code,context);
   return {ids,state,submit:()=>ids['email-form'].onsubmit({preventDefault(){}})};
@@ -18,9 +18,11 @@ function boot(response) {
   const pending=new Promise(r=>{resolve=r;});
   const app=boot(pending);
   assert.equal(app.ids['code-form'].hidden,true);
+  assert.equal(app.ids['email-form'].hidden,false);
   app.ids.email.value='duyn@sccwrp.org';
   const waiting=app.submit();
   assert.equal(app.ids.send.disabled,true);
+  assert.equal(app.ids['email-form'].hidden,false);
   assert.equal(app.ids['code-form'].hidden,true);
   resolve({ok:true,json:async()=>({message:'A sign-in code was sent to your email.'})});
   await waiting;
@@ -30,6 +32,7 @@ function boot(response) {
   allowed.ids.email.value='duyn@sccwrp.org';
   await allowed.submit();
   assert.equal(allowed.ids['code-form'].hidden,false);
+  assert.equal(allowed.ids['email-form'].hidden,true);
   assert.equal(allowed.ids.send.disabled,false);
   assert.equal(allowed.state.sent[0].body.email,'duyn@sccwrp.org');
   assert.equal(allowed.state.sent[0].url,'/empachecker/logger-review/api/request-code');
@@ -39,9 +42,21 @@ function boot(response) {
     denied.ids.email.value='someone@example.org';
     await denied.submit();
     assert.equal(denied.ids['code-form'].hidden,true);
+    assert.equal(denied.ids['email-form'].hidden,false);
     assert.equal(denied.ids.message.textContent,message);
     assert.equal(denied.ids.message.hidden,false);
     assert.equal(denied.ids.send.disabled,false);
   }
+  const badCode=boot(url=>url.endsWith('/request-code')
+    ? {ok:true,json:async()=>({message:'A sign-in code was sent to your email.'})}
+    : {ok:false,json:async()=>({error:{message:'That code is not valid. Request a new one.'}})});
+  badCode.ids.email.value='duyn@sccwrp.org';
+  await badCode.submit();
+  badCode.ids.code.value='000000';
+  await badCode.ids['code-form'].onsubmit({preventDefault(){}});
+  assert.equal(badCode.ids['email-form'].hidden,true);
+  assert.equal(badCode.ids['code-form'].hidden,false);
+  assert.equal(badCode.ids.verify.disabled,false);
+  assert.equal(badCode.ids.message.textContent,'That code is not valid. Request a new one.');
   console.log('sign-in page tests passed');
 })().catch(e=>{console.error(e);process.exit(1);});

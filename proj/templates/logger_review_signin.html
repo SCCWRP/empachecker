@@ -53,10 +53,10 @@ async function post(path, body) {
   return data;
 }
 $('email-form').onsubmit = async e => {
-  e.preventDefault(); $('send').disabled = true; $('code-form').hidden = true; $('code').value = ''; say('');
+  e.preventDefault(); $('email-form').hidden = false; $('send').disabled = true; $('code-form').hidden = true; $('code').value = ''; say('');
   try {
     const data = await post('request-code', {email:$('email').value});
-    say(data.message); $('code-form').hidden = false; $('code').focus();
+    say(data.message); $('email-form').hidden = true; $('code-form').hidden = false; $('code').focus();
   } catch (err) { say(err.message, true); }
   $('send').disabled = false;
 };
