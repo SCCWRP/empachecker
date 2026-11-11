@@ -1,0 +1,259 @@
+{
+ "parameters": {
+  "h2otemp": {
+   "sheet_name": "Temperature",
+   "unit": "deg C",
+   "aliases": [
+    "temperature",
+    "water_temperature",
+    "sea_temperature"
+   ],
+   "range": {
+    "fail_min": 0,
+    "suspect_min": 5,
+    "suspect_max": 25,
+    "fail_max": 30
+   },
+   "spike": {
+    "suspect": 0.25,
+    "fail": 0.5
+   },
+   "roc": {
+    "suspect_sd": 2,
+    "fail_sd": 3,
+    "min_step": 0.125
+   },
+   "flatline": {
+    "suspect_n": 3,
+    "fail_n": 5,
+    "tol": 0
+   }
+  },
+  "conductivity": {
+   "sheet_name": "Conductivity",
+   "unit": "mS/cm",
+   "range": {
+    "fail_min": 0,
+    "suspect_min": 10,
+    "suspect_max": 45,
+    "fail_max": 50
+   },
+   "spike": {
+    "suspect": 0.5,
+    "fail": 1
+   },
+   "roc": {
+    "suspect_sd": 2,
+    "fail_sd": 3,
+    "min_step": 0.25
+   },
+   "flatline": {
+    "suspect_n": 3,
+    "fail_n": 5,
+    "tol": 0
+   }
+  },
+  "salinity": {
+   "sheet_name": "Salinity",
+   "unit": "ppt",
+   "range": {
+    "fail_min": 10,
+    "suspect_min": 20,
+    "suspect_max": 35,
+    "fail_max": 36
+   },
+   "spike": {
+    "suspect": 0.075,
+    "fail": 0.1
+   },
+   "roc": {
+    "suspect_sd": 2,
+    "fail_sd": 3,
+    "min_step": 0.0375
+   },
+   "flatline": {
+    "suspect_n": 3,
+    "fail_n": 5,
+    "tol": 0
+   }
+  },
+  "do": {
+   "sheet_name": "DO",
+   "unit": "mg/L",
+   "aliases": [
+    "dissolved_oxygen"
+   ],
+   "range": {
+    "fail_min": 0,
+    "suspect_min": 1,
+    "suspect_max": 15,
+    "fail_max": 20
+   },
+   "spike": {
+    "suspect": 0.5,
+    "fail": 1
+   },
+   "roc": {
+    "suspect_sd": 2,
+    "fail_sd": 3,
+    "min_step": 0.25
+   },
+   "flatline": {
+    "suspect_n": 3,
+    "fail_n": 5,
+    "tol": 0
+   },
+   "notes": "Hypoxia threshold commonly 3 mg/L"
+  },
+  "do_pct": {
+   "sheet_name": "DO%",
+   "unit": "%",
+   "aliases": [
+    "do_percent",
+    "dosat"
+   ],
+   "range": {
+    "fail_min": 0,
+    "suspect_min": 10,
+    "suspect_max": 150,
+    "fail_max": 200
+   },
+   "spike": {
+    "suspect": 5,
+    "fail": 10
+   },
+   "roc": {
+    "suspect_sd": 2,
+    "fail_sd": 3,
+    "min_step": 2.5
+   },
+   "flatline": {
+    "suspect_n": 3,
+    "fail_n": 5,
+    "tol": 0
+   }
+  },
+  "depth": {
+   "sheet_name": "Depth",
+   "unit": "m",
+   "range": {
+    "fail_min": 0,
+    "suspect_min": 0.1,
+    "suspect_max": 5,
+    "fail_max": 6
+   },
+   "spike": {
+    "suspect": 0.1,
+    "fail": 0.2
+   },
+   "roc": {
+    "suspect_sd": 2,
+    "fail_sd": 3,
+    "min_step": 0.05
+   },
+   "flatline": {
+    "suspect_n": 3,
+    "fail_n": 5,
+    "tol": 0
+   }
+  },
+  "pressure": {
+   "sheet_name": "Pressure",
+   "unit": "cm H2O",
+   "range": {
+    "fail_min": 1040,
+    "suspect_min": 1050,
+    "suspect_max": 1500,
+    "fail_max": 1600
+   },
+   "spike": {
+    "suspect": 10,
+    "fail": 20
+   },
+   "roc": {
+    "suspect_sd": 2,
+    "fail_sd": 3,
+    "min_step": 5.0
+   },
+   "flatline": {
+    "suspect_n": 3,
+    "fail_n": 5,
+    "tol": 0
+   }
+  },
+  "atmospheric_pressure": {
+   "sheet_name": "Atmospheric Pressure",
+   "unit": "cm H2O**",
+   "aliases": [
+    "atm_pressure",
+    "baro"
+   ],
+   "range": {
+    "fail_min": 960,
+    "suspect_min": 980,
+    "suspect_max": 1030,
+    "fail_max": 1050
+   },
+   "spike": {
+    "suspect": 10,
+    "fail": 20
+   },
+   "roc": {
+    "suspect_sd": 2,
+    "fail_sd": 3,
+    "min_step": 5.0
+   },
+   "flatline": {
+    "suspect_n": 3,
+    "fail_n": 5,
+    "tol": 0
+   },
+   "notes": "units unclear in the sheet (cm H2O**), 960-1050 looks like hPa"
+  },
+  "qvalue": {
+   "sheet_name": "Q-value",
+   "unit": "-",
+   "aliases": [
+    "q-value",
+    "q_value"
+   ],
+   "range": {
+    "fail_min": 0.85,
+    "suspect_min": 0.9,
+    "suspect_max": null,
+    "fail_max": null
+   },
+   "spike": null,
+   "roc": null,
+   "flatline": null
+  },
+  "ph": {
+   "range": null,
+   "spike": null,
+   "roc": null,
+   "flatline": null,
+   "notes": "no thresholds in the preliminary sheet"
+  },
+  "turbidity": {
+   "range": null,
+   "spike": null,
+   "roc": null,
+   "flatline": null,
+   "notes": "no thresholds in the preliminary sheet"
+  },
+  "chlorophyll": {
+   "range": null,
+   "spike": null,
+   "roc": null,
+   "flatline": null,
+   "notes": "no thresholds in the preliminary sheet"
+  },
+  "orp": {
+   "range": null,
+   "spike": null,
+   "roc": null,
+   "flatline": null,
+   "notes": "no thresholds in the preliminary sheet"
+  }
+ }
+}

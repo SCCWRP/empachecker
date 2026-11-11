@@ -1,0 +1,849 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EMPA Logger Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="{{ static_base }}/plotly.min.js"></script>
+<style>
+  :root { --blue:#1a73e8; --blue-dark:#1765cc; --red:#d93025; --green:#1e8e3e; --ink:#202124; --ink-light:#5f6368; --border:#dadce0; --bg:#f8f9fa; --card:#fff; }
+  * { box-sizing:border-box; }
+  html, body { height:100%; }
+  body { margin:0; height:100dvh; padding:10px; overflow:hidden; background:var(--bg); color:var(--ink); font:1rem/1.4 "Roboto", system-ui, sans-serif; }
+  main { height:100%; display:grid; grid-template-rows:minmax(0, 1fr); gap:0; position:relative; }
+  h1,h2,button { font-family:"Google Sans",system-ui,sans-serif; }
+  h1 { margin:0; font-size:1.4rem; font-weight:500; }
+  h2 { margin:0; font-size:1.2rem; font-weight:500; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .header-actions { display:flex; gap:6px; }
+  .workspace { position:relative; display:grid; grid-template-columns:320px minmax(0, 1fr) 280px; gap:10px; min-height:0; }
+  .card { min-height:0; min-width:0; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card); box-shadow:0 1px 2px rgba(60,64,67,.08),0 1px 3px 1px rgba(60,64,67,.05); }
+  .controls { display:flex; flex-direction:column; gap:16px; overflow-y:auto; }
+  .selector-label,.parameter-picker,.field-group { display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .parameter-picker { position:relative; }
+  .parameter-trigger { display:block; width:100%; height:38px; min-height:38px; padding:7px 32px 7px 8px; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; border:1px solid var(--border); border-radius:8px; background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235f6368' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center; color:var(--ink); font:1rem "Roboto",system-ui,sans-serif; font-weight:400; box-shadow:none; }
+  .parameter-trigger:hover:not(:disabled) { background-color:#fff; box-shadow:none; }
+  .parameter-trigger:focus-visible { outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(26,115,232,.18); }
+  .parameter-options { position:absolute; z-index:35; left:0; right:0; top:calc(100% + 4px); padding:6px; background:#fff; border:1px solid var(--border); border-radius:8px; box-shadow:0 4px 12px rgba(60,64,67,.2); }
+  .parameter-option { display:flex; flex-direction:row; align-items:center; gap:8px; padding:8px; cursor:pointer; color:var(--ink); }
+  .parameter-option input { width:18px; height:18px; flex:none; padding:0; accent-color:var(--blue); }
+  .group-label { color:var(--ink-light); font-size:.875rem; line-height:1.3; font-weight:500; }
+  .test-picker,.test-options { display:flex; flex-direction:column; min-width:0; }
+  .test-picker { gap:16px; }
+  .test-options { gap:0; }
+  .test-options .parameter-option { min-height:32px; padding:5px 0; gap:8px; align-items:flex-start; }
+  .round-check { appearance:none; -webkit-appearance:none; display:grid; place-content:center; width:18px; height:18px; flex:none; margin:2px 0 0; padding:0; border:2px solid var(--ink-light); border-radius:50%; background:#fff; cursor:pointer; }
+  .round-check::before { content:""; width:8px; height:8px; border-radius:50%; background:var(--blue); transform:scale(0); }
+  .round-check:checked { border-color:var(--blue); }
+  .round-check:checked::before { transform:scale(1); }
+  .round-check:focus-visible { outline:3px solid var(--blue); outline-offset:2px; box-shadow:none; }
+  .threshold-wrap { display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .threshold-panel { min-width:0; margin-top:6px; }
+  .test-picker[hidden] { display:none; }
+  .plot-empty { align-self:start; margin:8px 0 0; }
+  label { display:flex; flex-direction:column; gap:4px; color:var(--ink-light); font-size:.875rem; line-height:1.3; font-weight:500; }
+  select,input,textarea { width:100%; max-width:100%; min-width:0; border:1px solid var(--border); border-radius:8px; background:#fff; color:var(--ink); padding:7px 8px; font:1rem "Roboto",system-ui,sans-serif; }
+  select,input { height:38px; }
+  textarea { resize:none; flex:1; min-height:60px; line-height:1.4; }
+  select:focus,input:focus,textarea:focus { outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(26,115,232,.18); }
+  input.edited { background:#e8f0fe; border-color:var(--blue); }
+  button { min-height:38px; border:0; border-radius:20px; padding:7px 12px; background:var(--blue); color:#fff; font-size:.875rem; font-weight:500; line-height:1.25; cursor:pointer; box-shadow:0 1px 2px rgba(60,64,67,.3),0 1px 3px 1px rgba(60,64,67,.15); }
+  button:hover:not(:disabled) { background:var(--blue-dark); box-shadow:0 1px 3px rgba(60,64,67,.3),0 4px 8px 3px rgba(60,64,67,.15); }
+  button:focus-visible { outline:3px solid var(--blue); outline-offset:3px; }
+  button:disabled { opacity:.45; cursor:default; }
+  .control-tabs { display:none; gap:6px; }
+  .control-tabs button { flex:1; }
+  .data-fields,.threshold-fields,.editor { display:grid; gap:10px; }
+  .threshold-table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:.875rem; line-height:1.2; }
+  .threshold-table th,.threshold-table td { padding:3px 2px; text-align:left; }
+  .threshold-table thead th { font-weight:500; color:var(--ink-light); }
+  .threshold-table th:first-child { width:42%; }
+  .threshold-table tbody th { font-weight:500; }
+  .threshold-table input { height:34px; padding:4px 6px; font-variant-numeric:tabular-nums; }
+  .threshold-table .test-start th,.threshold-table .test-start td { border-top:1px solid var(--border); }
+  fieldset { min-width:0; padding:0; margin:0; border:0; }
+  .actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:6px; }
+  .plot-card { display:grid; grid-template-rows:auto auto auto minmax(0,1fr); padding:8px; }
+  .plot-instruction { margin:0; padding:4px 4px 0; color:var(--ink-light); font-size:14px; line-height:1.3; font-weight:400; }
+  .plot-instruction .header-label { font-weight:500; }
+  .plot-area { position:relative; min-width:0; min-height:0; }
+  .snackbar { position:absolute; z-index:5; top:8px; left:50%; transform:translateX(-50%); max-width:calc(100% - 24px); padding:10px 16px; border-radius:4px; background:#323232; color:#fff; font-size:.875rem; line-height:1.3; box-shadow:0 3px 5px -1px rgba(0,0,0,.2),0 6px 10px rgba(0,0,0,.14); pointer-events:none; }
+  .plot-header { min-width:0; padding:8px 4px 0; overflow-wrap:anywhere; }
+  .plot-title { color:var(--ink); font-size:16px; font-weight:400; line-height:1.4; }
+  .plot-title .header-label { font-weight:500; }
+  #plot { min-width:0; min-height:0; width:100%; height:100%; }
+  .review { display:flex; flex-direction:column; gap:10px; overflow-y:auto; }
+  .notes-field { flex:1; min-height:0; }
+  .switch-row { flex-direction:row; align-items:center; justify-content:space-between; gap:8px; min-height:32px; color:var(--ink); font-size:1rem; font-weight:400; cursor:pointer; }
+  .switch { appearance:none; -webkit-appearance:none; position:relative; flex:none; width:36px; height:20px; margin:0; padding:0; border:0; border-radius:10px; background:#9aa0a6; cursor:pointer; transition:background .15s; }
+  .switch::before { content:""; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(60,64,67,.4); transition:transform .15s; }
+  .switch:checked { background:var(--blue); }
+  .switch:checked::before { transform:translateX(16px); }
+  .switch:focus-visible { outline:3px solid var(--blue); outline-offset:2px; box-shadow:none; }
+  .period-list-block { display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .period-block,.period-fields { display:flex; flex-direction:column; gap:8px; min-width:0; }
+  .period-line { margin:0; min-height:1.3em; color:var(--ink); font-size:.875rem; line-height:1.3; font-weight:400; }
+  .period-line .period-label { font-weight:500; }
+  .period-buttons { display:flex; flex-wrap:wrap; gap:6px; }
+  .period-picks { display:flex; flex-direction:column; gap:6px; }
+  .period-picks button { width:100%; }
+  .period-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+  .period-list li { display:flex; align-items:center; justify-content:space-between; gap:8px; color:var(--ink); font-size:.875rem; line-height:1.3; }
+  .period-list li span { min-width:0; overflow-wrap:anywhere; }
+  .period-list li button { flex:none; }
+  .account { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; }
+  .account-email { min-width:0; overflow-wrap:anywhere; color:var(--ink); font-size:.875rem; }
+  .text-button { flex:none; width:auto; min-height:0; padding:2px 4px; border:0; border-radius:4px; background:none; box-shadow:none; color:var(--blue); font-size:.875rem; }
+  .text-button:hover { background:none; text-decoration:underline; }
+  .review-actions { display:flex; flex-direction:column; gap:8px; }
+  .review-actions button { width:100%; }
+  .message { margin:0; border-radius:8px; padding:8px; background:#e8f0fe; font-size:.875rem; line-height:1.35; overflow-wrap:anywhere; }
+  .message.error { background:#fce8e6; color:var(--red); }
+  #app-message { position:absolute; z-index:40; top:48px; left:calc(50% - min(300px, 45%)); width:min(600px, 90%); }
+  .instructions { position:absolute; z-index:30; top:48px; left:0; right:0; background:#e8f0fe; }
+  .instructions ul { padding-left:20px; margin:8px 0 0; }
+  .instructions li+li { margin-top:6px; }
+  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+  .drawer-button { display:none; }
+  [hidden] { display:none !important; }
+  @media (min-width:901px) and (max-width:1150px) { .workspace { grid-template-columns:280px minmax(0,1fr) 250px; } .card { padding:10px; } button { padding:7px 9px; } }
+  @media (max-height:650px) {
+    body { padding:6px; }
+    main,.workspace { gap:6px; }
+    .card { padding:8px; }
+    .data-fields,.threshold-fields,.editor { gap:6px; }
+    .control-tabs { display:flex; }
+    .controls[data-section="data"] .threshold-fields,.controls[data-section="thresholds"] .data-fields { display:none; }
+    label { gap:3px; line-height:1.2; }
+    select,input { height:32px; padding:4px 6px; }
+    .parameter-trigger { height:32px; min-height:32px; padding:4px 28px 4px 6px; }
+    button { min-height:32px; padding:5px 8px; }
+    .threshold-table th,.threshold-table td { padding:0 2px; }
+    .threshold-table input { height:28px; padding:2px 4px; }
+    .review { gap:6px; }
+    .review-actions { gap:6px; }
+    .message { padding:5px 6px; }
+    h2 { font-size:1.1rem; }
+    .instructions { font-size:.875rem; line-height:1.25; }
+  }
+  @media (max-width:900px) {
+    body { padding:8px; }
+    h1 { font-size:1.125rem; }
+    .workspace { grid-template-columns:minmax(0,1fr); }
+    .drawer-button { display:block; }
+    .controls,.review { display:none; position:absolute; z-index:20; top:0; bottom:0; width:min(300px,100%); }
+    .controls { left:0; }
+    .review { right:0; }
+    .workspace[data-drawer="controls"] .controls,.workspace[data-drawer="review"] .review { display:flex; }
+    .header-actions button { padding-left:9px; padding-right:9px; }
+  }
+  @media (max-width:900px) and (max-height:650px) { body { padding:4px; } }
+</style>
+</head>
+<body>
+<main>
+
+  <section id="instructions" class="card instructions" hidden aria-labelledby="instructions-title">
+    <h2 id="instructions-title">Instructions</h2>
+    <ul>
+      <li>Choose a Submission ID, then check parameters in the Parameter dropdown. Selected parameters overlap on one time plot. Each colored line has a matching independent raw-unit y axis.</li>
+      <li>Drag to zoom. Double-click restores the plot. All four QC tests are shown together. Circles mark suspect readings and crosses mark failed readings, colored by test.</li>
+      <li>Check a parameter under Show tests for to show its test markers and its editable threshold table. All test limits are editable in the table. Values use the selected parameter units, except SD and repeat counts where labeled. Changing a limit updates all plotted flags immediately. Reset thresholds restores the calibration defaults from thresholds_main.yaml.</li>
+      <li>Review notes, periods, thresholds and status are saved for each submission as you work. Finalize writes the submission to the final data table. Finalize but need another QA holds it until a different reviewer finalizes. Reject submission keeps it out of the final table.</li>
+      <li>Editing a finalized, rejected or needs another QA review returns it to Draft and removes its rows from the final table.</li>
+    </ul>
+  </section>
+  <p id="app-message" class="message" role="status" hidden></p>
+  <div id="workspace" class="workspace" data-drawer="">
+    <aside id="controls" class="card controls" data-section="data" aria-label="Submission controls">
+      <div class="account"><span id="reviewer-email" class="account-email"></span><button id="sign-out" class="text-button" type="button">Sign out</button></div>
+      <label class="selector-label" for="submission">Submission ID <select id="submission"></select></label>
+      <div id="parameter-picker" class="parameter-picker">
+        <label id="parameter-label" for="parameter-toggle">Parameter</label>
+        <button id="parameter-toggle" class="parameter-trigger" type="button" aria-expanded="false" aria-controls="parameter-options">Choose parameters</button>
+        <div id="parameter-options" class="parameter-options" role="group" aria-labelledby="parameter-label" hidden></div>
+      </div>
+      <div id="test-picker" class="test-picker" hidden>
+        <div class="field-group">
+          <span id="test-label" class="group-label">Show tests for</span>
+          <div id="test-options" class="test-options" role="radiogroup" aria-labelledby="test-label"></div>
+        </div>
+        <div id="threshold-wrap" class="threshold-wrap" hidden>
+          <span id="threshold-title" class="group-label">Threshold table</span>
+          <div id="threshold-panel" class="threshold-panel"></div>
+        </div>
+      </div>
+      <div id="qc-controls" hidden>
+        <button id="instructions-toggle" type="button" aria-expanded="false" aria-controls="instructions">Instructions</button>
+      </div>
+    </aside>
+    <section class="card plot-card" aria-label="Logger measurements">
+      <div class="actions">
+        <button class="drawer-button" id="controls-toggle" type="button" aria-expanded="false" aria-controls="controls">Controls</button>
+        <button class="drawer-button" id="review-toggle" type="button" aria-expanded="false" aria-controls="review">Review</button>
+      </div>
+      <p id="plot-instruction" class="plot-instruction"><span class="header-label">Instruction:</span> Click and drag to zoom. Double-click to reset zoom.</p>
+      <div id="plot-header" class="plot-header">
+        <div id="plot-title" class="plot-title"></div>
+      </div>
+      <div class="plot-area">
+        <div id="plot"></div>
+        <div id="plot-popup" class="snackbar" role="status" hidden></div>
+      </div>
+      <p id="plot-empty" class="message plot-empty" role="status" hidden>Choose at least one parameter to see the plot.</p>
+    </section>
+    <aside id="review" class="card review" aria-labelledby="review-title">
+      <h2 id="review-title">Review Panel</h2>
+      <label class="switch-row" for="remove-fails"><span>Remove failing points</span><input id="remove-fails" class="switch" type="checkbox" role="switch"></label>
+      <div class="period-block">
+        <span id="periods-label" class="group-label">Periods</span>
+        <div class="period-picks" role="group" aria-labelledby="periods-label">
+          <button id="remove-period" type="button" aria-pressed="false">Remove a period</button>
+          <button id="keep-period" type="button" aria-pressed="false">Mark a period as good</button>
+        </div>
+        <div id="period-fields" class="period-fields" hidden>
+          <p class="period-line"><span id="period-start-label" class="period-label"></span> <span id="period-start-text"></span></p>
+          <p class="period-line"><span id="period-end-label" class="period-label"></span> <span id="period-end-text"></span></p>
+          <div class="period-buttons">
+            <button id="period-confirm" type="button" hidden>Remove points</button>
+            <button id="period-undo" type="button" hidden>Undo</button>
+          </div>
+        </div>
+      </div>
+      <div id="removed-block" class="period-list-block" hidden>
+        <span id="removed-heading" class="group-label">Removed</span>
+        <ul id="period-list" class="period-list" aria-labelledby="removed-heading"></ul>
+      </div>
+      <div id="kept-block" class="period-list-block" hidden>
+        <span id="kept-heading" class="group-label">Marked as good</span>
+        <ul id="keep-list" class="period-list" aria-labelledby="kept-heading"></ul>
+      </div>
+      <label class="notes-field" for="notes">Notes<textarea id="notes"></textarea></label>
+      <div class="review-actions">
+        <button id="finalize" type="button">Finalize</button>
+        <button id="finalize-qa" type="button">Finalize but need another QA</button>
+        <button id="reject" type="button">Reject submission</button>
+      </div>
+      <p id="review-message" class="message" role="status" hidden></p>
+    </aside>
+  </div>
+</main>
+<script src="{{ static_base }}/qc_tests.js"></script>
+<script>
+var LR_BASE = "";
+var LR_EMAIL = "";
+const D = {submissions:{}};
+const API = LR_BASE + '/logger-review/api';
+const $ = id => document.getElementById(id);
+const clone = value => JSON.parse(JSON.stringify(value));
+const TESTS = {range:'Range', spike:'Spike', roc:'Rate of change', flatline:'Flatline'};
+const PARAMETER_COLORS={h2otemp:'#1f77b4',depth:'#e3812c',pressure:'#2a8c64',conductivity:'#8064a2',salinity:'#008c95',do:'#b64d7e',do_pct:'#936b20',atmospheric_pressure:'#697d32',qvalue:'#57758c',ph:'#a05b42',turbidity:'#606fba',chlorophyll:'#37866b',orp:'#b65d77'};
+const FIELDS = {
+  range:[['fail_min','Fail minimum'],['suspect_min','Suspect minimum'],['suspect_max','Suspect maximum'],['fail_max','Fail maximum']],
+  spike:[['suspect','Suspect'],['fail','Fail']],
+  roc:[['suspect_sd','Suspect (SD)'],['fail_sd','Fail (SD)'],['min_step','Minimum jump']],
+  flatline:[['suspect_n','Suspect repeats'],['fail_n','Fail repeats']]
+};
+const thresholds = {}, reviewCache = {}, selections = {}, testChoice = {};
+let parameterChecks=[];
+let loadedSubmission = null;
+const BLANK = {id:'',meta:{},row_count:0,start:null,end:null,series:{}};
+const currentSubmission = () => D.submissions[$('submission').value] || BLANK;
+const seriesById = id => currentSubmission().series[id];
+const seriesKey = id => $('submission').value + '|' + id;
+const availableParameters = () => [...new Set(Object.values(currentSubmission().series).map(s=>s.parameter))];
+const selectedParameters = () => selections[$('submission').value] || [];
+const parameterEntry = parameter => Object.entries(currentSubmission().series).find(([,s])=>s.parameter===parameter);
+const chosenParameter = () => { const c=testChoice[$('submission').value]; return c&&selectedParameters().includes(c)?c:''; };
+const testsEnabled = parameter => chosenParameter()===parameter;
+const plottedEntries = () => selectedParameters().map(parameterEntry).filter(Boolean);
+function thresholdsFor(id) {
+  const key=seriesKey(id); return thresholds[key]||(thresholds[key]=clone(currentSubmission().series[id].defaults));
+}
+const STATUS_LABELS = {not_reviewed:'Not reviewed', draft:'Draft', needs_another_qa:'Needs another QA', finalized:'Finalized', rejected:'Rejected'};
+const emptyReview = () => ({notes:'', removeFails:false, removedPeriods:[], keptPeriods:[], status:'draft', exists:false, decidedAt:null, updatedAt:null});
+const submissionStatus = {};
+const NOTES_DELAY = 600;
+const fullStamp = v => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v||'') ? v+':00' : (v||'');
+const validStamp = v => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(fullStamp(v));
+const PERIODS = {
+  remove:{on:'remove-period',pick:'Remove a period',confirm:'Remove points',verb:'Cutting',block:'removed-block',list:'period-list',prop:'removedPeriods',popup:'Drag across the plot to choose the period to remove'},
+  keep:{on:'keep-period',pick:'Mark a period as good',confirm:'Mark as good',verb:'Marking',block:'kept-block',list:'keep-list',prop:'keptPeriods',popup:'Drag across the plot to choose the period to mark as good'}
+};
+const periodUi = {};
+const periodState = kind => {
+  const ui=periodUi[$('submission').value] || (periodUi[$('submission').value] = {});
+  return ui[kind] || (ui[kind] = {on:false,start:'',end:''});
+};
+const cleanPeriods = list => Array.isArray(list)?list.filter(p=>p&&validStamp(p.start)&&validStamp(p.end)).map(p=>({start:fullStamp(p.start),end:fullStamp(p.end)})):[];
+function message(id,text,error=false) {
+  const box=$(id); box.textContent=text; box.hidden=!text; box.classList.toggle('error',error);
+}
+function readReview(id) {
+  return reviewCache[id] || (reviewCache[id] = emptyReview());
+}
+const MULTI_MESSAGE='This submission has more than one sensor and cannot be finalized here yet.';
+const isMultiSensor = id => !!(D.submissions[id]&&D.submissions[id].meta&&D.submissions[id].meta.more>0);
+function reviewStatus(review) {
+  const text=reviewStatusText(review);
+  return loadedSubmission&&isMultiSensor(loadedSubmission)?(text?text+' ':'')+MULTI_MESSAGE:text;
+}
+function reviewStatusText(review) {
+  if (review._error) return 'Not saved. ' + review._error;
+  if (review._inflight>0) return 'Saving.';
+  if (!review.exists && !review.updatedAt) return '';
+  if (review.status==='draft') return 'Draft saved.';
+  const date=new Date(review.decidedAt||Date.now()).toLocaleString('en-US',{timeZone:'America/Los_Angeles'});
+  if (review.status==='rejected') return 'Rejected. ' + date + ' PT';
+  return (review.status==='needs_another_qa'?'Finalized. Needs another QA. ':'Finalized. ') + date + ' PT';
+}
+function fromServer(r) {
+  return {notes:r.notes||'', removeFails:r.removeFails===true, removedPeriods:cleanPeriods(r.removedPeriods), keptPeriods:cleanPeriods(r.keptPeriods),
+    status:r.status, exists:!!r.exists, decidedAt:r.decidedAt||null, updatedAt:r.updatedDate||null, thresholds:r.thresholds||null};
+}
+async function api(method, url, body) {
+  let res;
+  try {
+    res = await fetch(API+url, {method, headers:body===undefined?{}:{'Content-Type':'application/json'}, body:body===undefined?undefined:JSON.stringify(body)});
+  } catch (err) { throw new Error('The server could not be reached.'); }
+  let data=null;
+  try { data = await res.json(); } catch (err) { data=null; }
+  if (res.status===401) { const e=new Error('Your sign-in ended. Reload the page to sign in again.'); e.status=401; throw e; }
+  if (!res.ok) { const e=new Error((data&&data.error&&data.error.message)||('Request failed ('+res.status+').')); e.status=res.status; throw e; }
+  return data;
+}
+function setStatusLabel(id,status) {
+  submissionStatus[id]=status;
+  const option=[...$('submission').options].find(o=>o.value===id);
+  if (option) option.text=id+' ('+(STATUS_LABELS[status]||status)+')';
+}
+function collectThresholds(id) {
+  const sub=D.submissions[id], out={};
+  if (!sub) return out;
+  for (const key of Object.keys(sub.series)) out[key]=clone(thresholds[id+'|'+key]||sub.series[key].defaults);
+  return out;
+}
+function restoreThresholds(id,saved) {
+  const sub=D.submissions[id];
+  if (!sub||!saved) return;
+  for (const [key,block] of Object.entries(saved)) {
+    const series=sub.series[key]; if (!series) continue;
+    const merged=clone(series.defaults);
+    for (const test of Object.keys(TESTS)) merged[test]=Object.assign({},merged[test]||{},block[test]||{});
+    thresholds[id+'|'+key]=merged;
+  }
+}
+const saveQueue = {}, saveTimers = {};
+function sendDraft(id) {
+  const review=readReview(id);
+  review._inflight=(review._inflight||0)+1; delete review._error;
+  if (loadedSubmission===id) message('review-message',reviewStatus(review));
+  const run=()=>{
+    const body={notes:review.notes,removeFails:review.removeFails,removedPeriods:review.removedPeriods,keptPeriods:review.keptPeriods,thresholds:collectThresholds(id)};
+    return api('PUT','/submissions/'+id+'/review',body).then(data=>{
+      review.exists=true; review.updatedAt=data.review.updatedDate||null;
+      if (!saveTimers[id]) { review.status=data.review.status; review.decidedAt=null; }
+      setStatusLabel(id,'draft');
+      delete review._error;
+      return true;
+    },err=>{ review._error=err.message; return false; });
+  };
+  const next=(saveQueue[id]||Promise.resolve()).then(run).then(ok=>{
+    review._inflight--;
+    if (loadedSubmission===id) message('review-message',reviewStatus(review),!!review._error);
+    return ok;
+  });
+  saveQueue[id]=next;
+  return next;
+}
+function flushSave(id) {
+  if (saveTimers[id]) { clearTimeout(saveTimers[id]); delete saveTimers[id]; return sendDraft(id); }
+  return saveQueue[id]||Promise.resolve(true);
+}
+function scheduleSave(id,delay) {
+  const review=readReview(id);
+  review.status='draft'; review.decidedAt=null;
+  if (saveTimers[id]) { clearTimeout(saveTimers[id]); delete saveTimers[id]; }
+  if (!delay) return sendDraft(id);
+  saveTimers[id]=setTimeout(()=>{delete saveTimers[id]; sendDraft(id);},delay);
+  return null;
+}
+function saveNotes() {
+  if (!loadedSubmission) return;
+  const review=readReview(loadedSubmission);
+  review.notes=$('notes').value;
+  scheduleSave(loadedSubmission,NOTES_DELAY);
+}
+function saveThresholds(immediate) {
+  if (!loadedSubmission) return;
+  scheduleSave(loadedSubmission,immediate?0:NOTES_DELAY);
+}
+function saveRemoval(change) {
+  if (!loadedSubmission) return;
+  const review=readReview(loadedSubmission);
+  review.removedPeriods=review.removedPeriods||[];review.keptPeriods=review.keptPeriods||[];
+  change(review);
+  scheduleSave(loadedSubmission,0);
+}
+function stampText(v) {
+  const p=dayParts(v),t=/T(\d{2}):(\d{2})(?::(\d{2}))?/.exec(v);
+  if (!p||!t) return v;
+  return MONTHS[p.m]+' '+p.d+', '+p.y+' '+t[1]+':'+t[2]+(t[3]&&t[3]!=='00'?':'+t[3]:'');
+}
+function periodValid(kind) {
+  const ps=periodState(kind),a=fullStamp(ps.start),b=fullStamp(ps.end);
+  return validStamp(a)&&validStamp(b)&&a<=b;
+}
+function clearSelection(kind) { const ps=periodState(kind); ps.start=''; ps.end=''; }
+let selectionRev=0;
+const activeKind = () => Object.keys(PERIODS).find(k=>periodState(k).on);
+function normalizeStamp(value) {
+  if (typeof value!=='string') return null;
+  const v=value.trim().replace(' ','T');
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)?v+':00':(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(v)?v:null);
+}
+function allStamps() {
+  return [...new Set(Object.values(currentSubmission().series).flatMap(series=>series.timestamps))].sort();
+}
+function handlePlotDoubleClick() {
+  enqueue(()=>{
+    const update={};
+    for(const [axis,range] of Object.entries(plotDefaults))if(range)update[axis+'.range']=range.slice();
+    return plotDiv?Plotly.relayout(plotDiv,update):undefined;
+  });
+}
+function handlePlotSelected(event) {
+  selectionRev++;
+  const kind=activeKind(),range=event&&event.range&&event.range.x;
+  if (kind&&Array.isArray(range)&&range.length===2) {
+    const a=normalizeStamp(range[0]),b=normalizeStamp(range[1]);
+    if (a&&b) {
+      const [low,high]=a<=b?[a,b]:[b,a],stamps=allStamps();
+      const start=stamps.find(t=>t>=low),end=stamps.filter(t=>t<=high).pop();
+      if (start&&end&&start<=end) {
+        const ps=periodState(kind); ps.start=start; ps.end=end; renderPeriods(kind);
+      }
+    }
+  }
+  draw();
+}
+function renderPopup() {
+  const kind=activeKind(),show=!!kind&&!periodValid(kind),box=$('plot-popup');
+  box.textContent=show?PERIODS[kind].popup:''; box.hidden=!show;
+}
+function renderPreview() {
+  const kind=activeKind(),fields=$('period-fields');
+  fields.hidden=!kind;
+  if (!kind) return;
+  const ps=periodState(kind),complete=periodValid(kind);
+  const verb=PERIODS[kind].verb;
+  $('period-start-label').textContent='Start '+verb+':'; $('period-end-label').textContent='End '+verb+':';
+  $('period-start-text').textContent=ps.start?stampText(ps.start):''; $('period-end-text').textContent=ps.end?stampText(ps.end):'';
+  $('period-confirm').textContent=PERIODS[kind].confirm;
+  $('period-confirm').hidden=!complete;
+  $('period-undo').hidden=!complete;
+}
+function renderPeriods(kind) {
+  const cfg=PERIODS[kind],id=$('submission').value,review=readReview(id),ps=periodState(kind);
+  $(cfg.on).textContent=ps.on?'Cancel':cfg.pick;
+  $(cfg.on).setAttribute('aria-pressed',String(ps.on));
+  $(cfg.on).hidden=!ps.on&&!!activeKind();
+  const entries=review[cfg.prop];
+  $(cfg.block).hidden=!entries.length;
+  const list=$(cfg.list); list.replaceChildren();
+  for (const [index,period] of entries.entries()) {
+    const item=document.createElement('li'),text=document.createElement('span');
+    text.textContent=stampText(period.start)+' to '+stampText(period.end);
+    const restore=document.createElement('button'); restore.type='button'; restore.textContent='Restore';
+    restore.setAttribute('aria-label','Restore '+text.textContent);
+    restore.onclick=()=>{saveRemoval(r=>{r[cfg.prop].splice(index,1);});renderRemoval();draw();};
+    item.appendChild(text); item.appendChild(restore); list.appendChild(item);
+  }
+  renderPreview(); renderPopup();
+}
+function renderRemoval() {
+  $('remove-fails').checked=!!readReview($('submission').value).removeFails;
+  renderPeriods('remove'); renderPeriods('keep'); renderPopup();
+}
+async function finalize(status) {
+  const id=loadedSubmission;
+  if (!id) return;
+  const review=readReview(id);
+  if (status==='rejected'&&!review.notes.trim()) { message('review-message','Add a note before rejecting.',true); $('notes').focus(); return; }
+  setReviewBusy(true);
+  try {
+    await flushSave(id);
+    if (!review.exists&&!review._error) await sendDraft(id);
+    if (review._error) { message('review-message',reviewStatus(review),true); return; }
+    const data=await api('POST','/submissions/'+id+'/decision',{decision:status});
+    Object.assign(review,fromServer(data.review)); delete review._error;
+    setStatusLabel(id,review.status);
+    if (loadedSubmission===id) message('review-message',reviewStatus(review));
+  } catch (err) {
+    if (loadedSubmission===id) message('review-message',err.message,true);
+  } finally { setReviewBusy(false); }
+}
+function setReviewBusy(busy) {
+  for (const b of ['finalize','finalize-qa','reject']) $(b).disabled=busy||!loadedSubmission||isMultiSensor(loadedSubmission);
+}
+function populate(select,items,preferred) {
+  select.innerHTML='';
+  for (const [value,label] of items) select.add(new Option(label,value));
+  if (items.some(([value])=>value===preferred)) select.value=preferred;
+}
+function closeParameterOptions(focus=false) {
+  $('parameter-options').hidden=true;
+  $('parameter-toggle').setAttribute('aria-expanded','false');
+  if (focus) $('parameter-toggle').focus();
+}
+function openParameterOptions(focus=false) {
+  $('parameter-options').hidden=false;
+  $('parameter-toggle').setAttribute('aria-expanded','true');
+  if (focus&&parameterChecks.length) parameterChecks[0].focus();
+}
+function parameterSummary() {
+  const selected=selectedParameters(), labels=selected.map(p=>parameterEntry(p)[1].label);
+  $('parameter-toggle').textContent=labels.length===0?'Choose parameters':labels.length<3?labels.join(', '):labels.length+' parameters';
+  $('parameter-toggle').setAttribute('aria-label','Parameter, '+labels.length+' selected'+(labels.length?': '+labels.join(', '):''));
+  $('parameter-toggle').title=labels.join(', ');
+}
+function buildParameterOptions() {
+  const box=$('parameter-options'); box.innerHTML=''; parameterChecks=[];
+  for (const parameter of availableParameters()) {
+    const s=parameterEntry(parameter)[1];
+    const label=document.createElement('label'); label.className='parameter-option';
+    const check=document.createElement('input'); check.type='checkbox'; check.value=parameter;
+    check.checked=selectedParameters().includes(parameter);
+    check.onchange=()=>{
+      selections[$('submission').value]=parameterChecks.filter(c=>c.checked).map(c=>c.value);
+      parameterSummary(); syncTests();
+    };
+    const text=document.createElement('span'); text.textContent=s.label+' ('+s.unit+')';
+    label.appendChild(check); label.appendChild(text); box.appendChild(label); parameterChecks.push(check);
+  }
+  parameterSummary();
+}
+function renderTabs() {
+  const chosen=chosenParameter(),panel=$('threshold-panel');
+  $('threshold-wrap').hidden=!chosen;
+  panel.replaceChildren();
+  if (chosen) panel.appendChild(buildEditor(parameterEntry(chosen)[0]));
+}
+function buildTestOptions() {
+  const box=$('test-options'); box.replaceChildren();
+  const chosen=chosenParameter();
+  const items=[['','None']].concat(selectedParameters().map(parameter=>{const series=parameterEntry(parameter)[1];return [parameter,series.label+' ('+series.unit+')'];}));
+  for (const [parameter,name] of items) {
+    const label=document.createElement('label'); label.className='parameter-option';
+    const radio=document.createElement('input'); radio.type='radio'; radio.className='round-check'; radio.name='test-choice'; radio.value=parameter; radio.checked=parameter===chosen;
+    const text=document.createElement('span'); text.textContent=name;
+    label.appendChild(radio); label.appendChild(text);
+    radio.onchange=()=>{ if (!radio.checked) return; testChoice[$('submission').value]=parameter; renderTabs(); draw(); };
+    box.appendChild(label);
+  }
+}
+function syncTests() {
+  $('test-picker').hidden=!selectedParameters().length;
+  if (testChoice[$('submission').value]&&!chosenParameter()) testChoice[$('submission').value]='';
+  buildTestOptions(); renderTabs(); draw();
+}
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function dayParts(iso) {
+  const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(iso||'');
+  return m?{y:Number(m[1]),m:Number(m[2])-1,d:Number(m[3])}:null;
+}
+function headerDate(iso) {
+  const p=dayParts(iso);
+  return p?MONTHS[p.m]+' '+p.d+', '+p.y:'';
+}
+function renderHeader() {
+  const sub=currentSubmission(),m=sub.meta||{};
+  const has=v=>v!==null&&v!==undefined&&String(v).trim()!=='';
+  const type=has(m.sensor_type)?String(m.sensor_type).replace(/^[a-z]/,c=>c.toUpperCase()):'';
+  const pieces=[['Estuary',m.estuary_name],['Station',m.station],['Sensor Type',type],['SensorID',m.sensor_id],
+    ['Start Date',headerDate(sub.start)],['End Date',headerDate(sub.end)]].filter(([,value])=>has(value));
+  const nodes=[];
+  for (const [index,[label,value]] of pieces.entries()) {
+    const last=index===pieces.length-1;
+    const name=document.createElement('span'); name.className='header-label'; name.textContent=label+': ';
+    const val=document.createElement('span');
+    val.textContent=String(value)+(last?(m.more>0?', +'+m.more+' more':''):', ');
+    nodes.push(name,val);
+  }
+  $('plot-title').replaceChildren(...nodes);
+}
+function showSubmission() {
+  for (const ui of Object.values(periodUi)) for (const state of Object.values(ui)) {state.on=false;state.start='';state.end='';}
+  message('app-message',''); message('review-message','');closeParameterOptions();
+  const id=$('submission').value, available=availableParameters();
+  if (!Object.prototype.hasOwnProperty.call(selections,id)) selections[id]=available.slice();
+  selections[id]=selections[id].filter(p=>available.includes(p));
+  loadedSubmission=D.submissions[id]?id:null;
+  const review=readReview(id); $('notes').value=review.notes;
+  message('review-message',reviewStatus(review),!!review._error);
+  setReviewBusy(false);
+  renderHeader(); renderRemoval(); buildParameterOptions(); syncTests();
+}
+let loadToken=0;
+async function selectSubmission() {
+  const id=$('submission').value, token=++loadToken;
+  if (!id) return;
+  if (!D.submissions[id]) {
+    message('app-message','Loading submission '+id+'.');
+    try {
+      const data=await api('GET','/submissions/'+id);
+      if (token!==loadToken) return;
+      D.submissions[id]=data.submission;
+      reviewCache[id]=fromServer(data.review);
+      restoreThresholds(id,reviewCache[id].thresholds);
+      setStatusLabel(id,data.review.exists?data.review.status:'not_reviewed');
+    } catch (err) {
+      if (token!==loadToken) return;
+      showSubmission();
+      message('app-message',err.message,true);
+      return;
+    }
+  }
+  showSubmission();
+}
+async function loadSubmissionList() {
+  const items=[];
+  try {
+    for (let offset=0;;offset+=1000) {
+      const data=await api('GET','/submissions?limit=1000&offset='+offset);
+      items.push(...data.items);
+      if (items.length>=data.total||!data.items.length) break;
+    }
+  } catch (err) { message('app-message',err.message,true); }
+  populate($('submission'),items.map(s=>[s.submissionId,s.submissionId+' ('+s.statusLabel+')']));
+  for (const s of items) submissionStatus[s.submissionId]=s.status;
+  await selectSubmission();
+}
+function buildEditor(id) {
+  const series=seriesById(id);
+  const editor=document.createElement('div'); editor.className='editor';
+  const table=document.createElement('table'); table.className='threshold-table'; table.setAttribute('aria-label',series.label+' QC thresholds');
+  const head=document.createElement('thead'); head.innerHTML='<tr><th scope="col">Test</th><th scope="col">Suspect</th><th scope="col">Fail</th></tr>';
+  const body=document.createElement('tbody'); buildFields(id,body);
+  table.appendChild(head); table.appendChild(body);
+  const actions=document.createElement('div'); actions.className='actions';
+  const reset=document.createElement('button'); reset.type='button'; reset.textContent='Reset thresholds';
+  reset.onclick=()=>{thresholds[seriesKey(id)]=clone(seriesById(id).defaults);buildFields(id,body);draw();saveThresholds(true);};
+  actions.appendChild(reset); editor.appendChild(table); editor.appendChild(actions);
+  return editor;
+}
+function applied(id) { return thresholdsFor(id); }
+function buildFields(id,box) {
+  const current=seriesById(id), defaults=current.defaults;
+  const draft=applied(id);
+  box.innerHTML='';
+  const rows=[
+    ['range','Range min','suspect_min','fail_min'],
+    ['range','Range max','suspect_max','fail_max'],
+    ['spike','Spike','suspect','fail'],
+    ['roc','Rate of change (SD)','suspect_sd','fail_sd'],
+    ['roc','Minimum jump','min_step',null],
+    ['flatline','Flatline (repeats)','suspect_n','fail_n']
+  ];
+  let previous=null;
+  for (const [test,label,suspect,fail] of rows) {
+    const row=document.createElement('tr'); row.dataset.test=test;
+    if (previous!==test) row.className='test-start'; previous=test;
+    const heading=document.createElement('th'); heading.scope='row'; heading.textContent=label; row.appendChild(heading);
+    for (const [index,name] of [suspect,fail].entries()) {
+      if (!name) continue;
+      const cell=document.createElement('td'); if (!fail) cell.colSpan=2;
+      const input=document.createElement('input'); input.type='number'; input.step='any'; input.value=draft[test][name]??'';
+      input.dataset.test=test; input.dataset.field=name;
+      const unit=name.includes('_sd')?'SD':test==='flatline'?'repeats':current.unit;
+      input.setAttribute('aria-label',current.label+' '+label+' '+(fail?(index===0?'suspect':'fail'):'')+' ('+unit+')');
+      const mark=()=>input.classList.toggle('edited',(draft[test][name]??null)!==(defaults[test][name]??null));
+      mark();
+      input.oninput=()=>{
+        const value=input.value===''?null:Number(input.value);
+        if (input.validity?.badInput || (value!==null&&!Number.isFinite(value))) {
+          input.setAttribute('aria-invalid','true'); return;
+        }
+        input.setAttribute('aria-invalid','false');
+        draft[test][name]=value; mark(); message('app-message',''); draw(); saveThresholds(false);
+      };
+      cell.appendChild(input); row.appendChild(cell);
+    }
+    box.appendChild(row);
+  }
+}
+function plotSpec(entries) {
+  const n=entries.length;
+  const layout={
+    font:{family:'Roboto, system-ui, sans-serif',color:'#202124',size:12},
+    margin:{l:AXIS_SLOT*Math.ceil(n/2),r:n>1?AXIS_SLOT*Math.floor(n/2):12,t:20,b:140},
+    paper_bgcolor:'#fff',plot_bgcolor:'#fff',hovermode:'closest',dragmode:activeKind()?'select':'zoom',selections:[],selectionrevision:selectionRev,
+    legend:{orientation:'h',x:.5,xanchor:'center',y:-.22,yanchor:'top',borderwidth:0,groupclick:'togglegroup',itemwidth:40,font:{size:14}},
+    uirevision:$('submission').value,autosize:true
+  };
+  const traces=[];
+  const legendId=(entries.find(([,s])=>testsEnabled(s.parameter))||[])[0];
+  const zones=[...new Set(entries.flatMap(([,s])=>s.zones))];
+  const timeTitle=zones.length===1?'Logger time ('+zones[0]+')':'Logger local time';
+  const stamps=entries.flatMap(([,s])=>s.timestamps).filter(Boolean);
+  const defaults={xaxis:stamps.length?[stamps.reduce((a,b)=>b<a?b:a),stamps.reduce((a,b)=>b>a?b:a)]:null};
+  const review=readReview($('submission').value);
+  if (activeKind()) layout.selectdirection='h';
+  layout.shapes=[];
+  for (const [kind,line,fill] of [['remove','#d93025','rgba(217,48,37,.12)'],['keep','#188038','rgba(24,128,56,.14)']]) {
+    const ps=periodState(kind);
+    const from=ps.on&&validStamp(ps.start)?fullStamp(ps.start):null,to=ps.on&&validStamp(ps.end)?fullStamp(ps.end):null;
+    if (from&&to&&from<=to) layout.shapes.push({type:'rect',xref:'x',yref:'paper',x0:from,x1:to,y0:0,y1:1,fillcolor:fill,line:{width:0},layer:'below'});
+    for (const at of [from,to]) if (at) layout.shapes.push({type:'line',xref:'x',yref:'paper',x0:at,x1:at,y0:0,y1:1,line:{color:line,width:1.5}});
+  }
+  layout.xaxis={type:'date',anchor:'y',domain:[0,1],showgrid:false,zeroline:false,automargin:true,title:timeTitle,uirevision:$('submission').value};
+  if (defaults.xaxis) {layout.xaxis.range=defaults.xaxis.slice();layout.xaxis.autorange=false;}
+  const inside=(list,t)=>list.some(p=>t>=p.start&&t<=p.end);
+  const computed=entries.map(([id,s])=>{
+    const flags=QC.run({...s,x:Float64Array.from(s.x,v=>v===null?NaN:v)},thresholdsFor(id));flags.any=QC.worst(flags);
+    const kept=s.timestamps.map(t=>inside(review.keptPeriods,t));
+    const removed=Array.from(s.timestamps,(t,i)=>inside(review.removedPeriods,t)||(review.removeFails&&flags.any[i]===4&&!kept[i]));
+    const values={};
+    s.timestamps.forEach((t,i)=>{if(!removed[i]&&s.x[i]!==null&&s.x[i]!==undefined)values[t]=s.x[i];});
+    return {flags,kept,removed,values};
+  });
+  const hoverText=(t,zone)=>[stampText(t)+(zone?' '+zone:'')].concat(entries.flatMap(([,e],k)=>
+    Object.prototype.hasOwnProperty.call(computed[k].values,t)?[e.label+': '+computed[k].values[t]+' '+e.unit]:[])).join('<br>');
+  for (const [row,[id,s]] of entries.entries()) {
+    const suffix=row===0?'':String(row+1),yAxis='y'+suffix,color=PARAMETER_COLORS[s.parameter]||'#57758c';
+    const side=row%2===0?'left':'right';
+    layout['yaxis'+suffix]={anchor:row?'free':'x',domain:[0,1],side,
+      title:{text:s.label+' ('+s.unit+')',font:{color},standoff:8},tickfont:{color,size:12},tickcolor:color,linecolor:color,showline:true,
+      gridcolor:'#edf0f2',showgrid:row===0,zeroline:false,automargin:false,uirevision:seriesKey(id)};
+    // Fixed pixel slots: positive shift moves an axis right, negative moves it left (Plotly 2.35 `shift`).
+    if(row){const k=Math.floor(row/2);Object.assign(layout['yaxis'+suffix],{overlaying:'y',position:side==='left'?0:1,shift:side==='left'?-AXIS_SLOT*k:AXIS_SLOT*k});}
+    const finite=s.x.filter(v=>v!==null&&Number.isFinite(v));
+    if (finite.length) {
+      const lo=finite.reduce((a,b)=>b<a?b:a),hi=finite.reduce((a,b)=>b>a?b:a),span=hi-lo;
+      const pad=span>0?span*.05:(Math.abs(hi)>0?Math.abs(hi)*.05:1);
+      defaults['yaxis'+suffix]=[lo-pad,hi+pad];
+      layout['yaxis'+suffix].range=defaults['yaxis'+suffix].slice();layout['yaxis'+suffix].autorange=false;
+    }
+    const {flags,kept,removed}=computed[row];
+    const texts=s.timestamps.map((t,i)=>hoverText(t,s.zones[i]));
+    const hover='%{text}<extra></extra>';
+    const common={xaxis:'x',yaxis:yAxis,showlegend:row===0,meta:{parameter:s.parameter,seriesId:id}};
+    traces.push({...common,showlegend:true,x:s.timestamps,y:s.x.map((v,i)=>removed[i]?null:v),mode:'lines',name:s.label,legendgroup:'parameter-'+s.parameter,legendrank:row,uid:id+'|readings',line:{color,width:1.5},text:texts,hovertemplate:hover});
+    for (const [test,label,color] of [['range','Range','#7b3fbf'],['spike','Spike','#e08a00'],['roc','Rate of change','#c4161c'],['flatline','Flatline','#1b8a5a']]) {
+      for (const [code,severity,symbol,size] of [[3,'suspect','circle',7],[4,'fail','x',9]]) {
+        const indices=Array.from(flags[test],(_,i)=>i).filter(i=>flags[test][i]===code&&!removed[i]&&!kept[i]);
+        traces.push({...common,showlegend:id===legendId,visible:testsEnabled(s.parameter),x:indices.map(i=>s.timestamps[i]),y:indices.map(i=>s.x[i]),mode:'markers',cliponaxis:false,name:label+' '+severity,legendgroup:test+'-'+severity,legendrank:100+Object.keys(TESTS).indexOf(test)*2+(code===4?1:0),uid:id+'|'+test+'|'+code,
+          marker:{color,size,symbol,opacity:code===3?.75:1},selected:{marker:{opacity:code===3?.75:1}},unselected:{marker:{opacity:code===3?.75:1}},text:indices.map(i=>texts[i]),hovertemplate:hover});
+      }
+    }
+  }
+  return {traces,layout,defaults};
+}
+const AXIS_SLOT = 92;
+const PLOT_CONFIG={responsive:true,displayModeBar:false,displaylogo:false,doubleClick:false};
+let drawChain=Promise.resolve(),drawSeq=0,lastSig=null,lastSub=null,plotDiv=null,plotDefaults={};
+function enqueue(task) {
+  const run=drawChain.then(task);
+  drawChain=run.then(()=>{
+    if (($('app-message').textContent||'').startsWith('Plot failed')) message('app-message','');
+  },err=>{
+    console.error(err);
+    message('app-message','Plot failed: '+((err&&err.message)||err),true);
+  });
+  return drawChain;
+}
+function teardownPlot() {
+  if (plotDiv) { try { Plotly.purge(plotDiv); } catch (e) {} }
+  plotDiv=null;lastSig=null;lastSub=null;
+  $('plot').replaceChildren();
+}
+function renderPlot() {
+  const entries=plottedEntries(),sub=$('submission').value;
+  if (!entries.length) { teardownPlot(); return; }
+  const sig=sub+'|'+entries.map(([id])=>id).join(',');
+  const {traces,layout,defaults}=plotSpec(entries);
+  if (sig===lastSig&&plotDiv) {
+    plotDefaults=defaults;
+    return Promise.resolve(Plotly.react(plotDiv,traces,layout,PLOT_CONFIG)).catch(e=>{lastSig=null;lastSub=null;throw e;});
+  }
+  const old=sub===lastSub&&plotDiv?plotDiv.layout?.xaxis:null;
+  const before=plotDefaults.xaxis;
+  if (old&&old.range&&before&&(old.range[0]!==before[0]||old.range[1]!==before[1])) {layout.xaxis.range=old.range.slice();layout.xaxis.autorange=false;}
+  plotDefaults=defaults;
+  teardownPlot();
+  const child=document.createElement('div');
+  child.style.width='100%';child.style.height='100%';
+  $('plot').appendChild(child);
+  plotDiv=child;
+  return Promise.resolve(Plotly.newPlot(child,traces,layout,PLOT_CONFIG)).then(()=>{
+    if (typeof child.on==='function') {child.on('plotly_selected',handlePlotSelected);child.on('plotly_doubleclick',handlePlotDoubleClick);}
+    lastSig=sig;lastSub=sub;
+  });
+}
+function draw() {
+  const n=plottedEntries().length;
+  $('plot').hidden=!n;$('plot-empty').hidden=!!n;$('plot-instruction').hidden=!n||!!activeKind();
+  const seq=++drawSeq;
+  enqueue(()=>seq===drawSeq?renderPlot():undefined);
+}
+$('submission').onchange=selectSubmission;
+$('parameter-toggle').onclick=()=>{if($('parameter-options').hidden)openParameterOptions();else closeParameterOptions();};
+$('parameter-toggle').onkeydown=e=>{if(e.key==='ArrowDown'){e.preventDefault();openParameterOptions(true);}};
+$('parameter-options').onkeydown=e=>{
+  const i=parameterChecks.indexOf(e.target);
+  let next=null;
+  if(e.key==='ArrowDown')next=(i+1)%parameterChecks.length;
+  else if(e.key==='ArrowUp')next=(i-1+parameterChecks.length)%parameterChecks.length;
+  else if(e.key==='Home')next=0;
+  else if(e.key==='End')next=parameterChecks.length-1;
+  if(next!==null&&parameterChecks.length){e.preventDefault();parameterChecks[next].focus();}
+};
+for(const event of ['click','focusin']) document.addEventListener(event,e=>{
+  if(!$('parameter-options').hidden&&!$('parameter-picker').contains(e.target))closeParameterOptions();
+});
+$('notes').oninput=saveNotes;
+setReviewBusy(true);
+$('remove-fails').onchange=()=>{const on=$('remove-fails').checked;saveRemoval(r=>{r.removeFails=on;});draw();};
+for (const kind of Object.keys(PERIODS)) {
+  const cfg=PERIODS[kind];
+  $(cfg.on).onclick=()=>{
+    const on=!periodState(kind).on;
+    periodState(kind).on=on; clearSelection(kind);
+    if (on) for (const other of Object.keys(PERIODS)) if (other!==kind) {periodState(other).on=false;clearSelection(other);}
+    renderRemoval();draw();
+  };
+}
+$('period-undo').onclick=()=>{const kind=activeKind();if(!kind)return;clearSelection(kind);renderRemoval();draw();};
+$('period-confirm').onclick=()=>{
+  const kind=activeKind();
+  if (!kind||!periodValid(kind)) return;
+  const cfg=PERIODS[kind],ps=periodState(kind),period={start:fullStamp(ps.start),end:fullStamp(ps.end)};
+  saveRemoval(r=>{r[cfg.prop].push(period);});
+  clearSelection(kind); ps.on=false;
+  renderRemoval();draw();
+};
+$('finalize').onclick=()=>finalize('finalized');
+$('finalize-qa').onclick=()=>finalize('needs_another_qa');
+$('reject').onclick=()=>{
+  if (!$('notes').value.trim()) { message('review-message','Add a note before rejecting.',true); $('notes').focus(); return; }
+  finalize('rejected');
+};
+function setDrawer(drawer) {
+  $('workspace').dataset.drawer=drawer;
+  for (const name of ['controls','review']) $(name+'-toggle').setAttribute('aria-expanded',String(drawer===name));
+}
+for (const name of ['controls','review']) $(name+'-toggle').onclick=()=>setDrawer($('workspace').dataset.drawer===name?'':name);
+$('instructions-toggle').onclick=e=>{const open=$('instructions').hidden;$('instructions').hidden=!open;e.currentTarget.setAttribute('aria-expanded',String(open));};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('parameter-options').hidden){closeParameterOptions(true);return;}setDrawer('');$('instructions').hidden=true;$('instructions-toggle').setAttribute('aria-expanded','false');}});
+setReviewBusy(false);
+$('reviewer-email').textContent=LR_EMAIL;
+$('sign-out').onclick=()=>{
+  fetch(LR_BASE+'/logger-review/api/logout',{method:'POST'}).catch(()=>{}).then(()=>{if(typeof location!=='undefined')location.href=LR_BASE+'/logger-review';});
+};
+loadSubmissionList();
+</script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EMPA Logger Review Sign In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --blue:#1a73e8; --blue-dark:#1765cc; --red:#d93025; --ink:#202124; --ink-light:#5f6368; --border:#dadce0; --bg:#f8f9fa; --card:#fff; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px; background:var(--bg); color:var(--ink); font:1rem/1.4 "Roboto", system-ui, sans-serif; }
+  .card { width:100%; max-width:400px; display:grid; gap:16px; padding:24px; background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:0 1px 2px rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15); }
+  h1 { margin:0; font:500 1.4rem "Google Sans", "Roboto", sans-serif; }
+  label { display:grid; gap:4px; color:var(--ink-light); font-size:.875rem; }
+  input { width:100%; height:40px; padding:6px 12px; border:1px solid var(--border); border-radius:8px; color:var(--ink); font:inherit; font-size:1rem; }
+  input:focus { outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(26,115,232,.2); }
+  form { display:grid; gap:16px; }
+  .actions { display:flex; justify-content:flex-end; }
+  button { min-height:40px; padding:8px 24px; border:0; border-radius:20px; background:var(--blue); color:#fff; font:500 .875rem "Google Sans", "Roboto", sans-serif; cursor:pointer; box-shadow:0 1px 2px rgba(60,64,67,.3); }
+  button:hover { background:var(--blue-dark); }
+  button:disabled { opacity:.45; cursor:default; }
+  .message { margin:0; padding:8px 12px; border-radius:8px; background:#e8f0fe; font-size:.875rem; overflow-wrap:anywhere; }
+  .message.error { background:#fce8e6; color:var(--red); }
+</style>
+</head>
+<body>
+<main class="card">
+  <h1>EMPA logger review</h1>
+  <form id="email-form">
+    <label for="email">Email <input id="email" type="email" autocomplete="email" required></label>
+    <div class="actions"><button id="send" type="submit">Send code</button></div>
+  </form>
+  <form id="code-form" hidden>
+    <label for="code">Code <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></label>
+    <div class="actions"><button id="verify" type="submit">Sign in</button></div>
+  </form>
+  <p id="message" class="message" role="status" hidden></p>
+</main>
+<script>
+const BASE = {{ base|tojson }};
+const $ = id => document.getElementById(id);
+function say(text, error) { const m = $('message'); m.textContent = text; m.hidden = !text; m.classList.toggle('error', !!error); }
+async function post(path, body) {
+  let res;
+  try { res = await fetch(BASE + '/api/' + path, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}); }
+  catch (e) { throw new Error('The server could not be reached.'); }
+  let data = null;
+  try { data = await res.json(); } catch (e) { data = null; }
+  if (!res.ok) throw new Error((data && data.error && data.error.message) || 'Request failed.');
+  return data;
+}
+$('email-form').onsubmit = async e => {
+  e.preventDefault(); $('send').disabled = true; say('');
+  try {
+    const data = await post('request-code', {email:$('email').value});
+    say(data.message); $('code-form').hidden = false; $('code').focus();
+  } catch (err) { say(err.message, true); }
+  $('send').disabled = false;
+};
+$('code-form').onsubmit = async e => {
+  e.preventDefault(); $('verify').disabled = true; say('');
+  try {
+    await post('verify-code', {email:$('email').value, code:$('code').value});
+    location.reload();
+  } catch (err) { say(err.message, true); $('verify').disabled = false; }
+};
+</script>
+</body>
+</html>

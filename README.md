@@ -45,3 +45,35 @@ Contributors:
 - Robert Butler (robertb@sccwrp.org)
 - Duy Nguyen (duyn@sccwrp.org)
 - Zaib Quraishi (zaibq@sccwrp.org)
+
+
+## Logger expert review
+
+The logger review tool is part of this checker at `/empachecker/logger-review`.
+`proj/logger_review.py` registers its page, sign-in and review API. The templates
+are `proj/templates/logger_review*.html`, assets are in `proj/static/logger_review/`,
+and SQL, QC, threshold conversion and removal code live in `proj/logger_review_lib/`.
+It reuses the checker database engine, mail settings and signed session. Duy and Jan
+sign in using a single-use emailed code. Codes last 10 minutes, permit five attempts
+and run in the existing single uWSGI process. Sessions last 12 hours.
+
+Review decisions and periods are saved in `sde.tbl_wq_logger_review` and
+`sde.tbl_wq_logger_review_period`; finalized copies go in `sde.tbl_wq_logger_final`.
+Raw data are unchanged. The review tables, their audit triggers and
+`idx_tbl_wq_logger_raw_submissionid` must exist before use. The runtime role needs
+review/final table DML plus audit and identity-sequence privileges. Submissions with
+readings from 2023 onward appear in the list, including those without tracking rows.
+The current limit is 100,000 rows per submission. Multi-sensor submissions can be
+viewed and drafted, but decisions remain blocked.
+
+Tests are in `tests/logger_review/`. Run them with the existing checker image's
+dependencies and a test-only virtual environment with `pytest==8.3.5`; Node
+`22.14.0` runs the JavaScript QC and mock DOM checks. The real app import check
+requires `LOGGER_REVIEW_IMPORT_APP=1` and a throwaway source copy with dummy
+configuration. No live database or email is needed by these tests.
+
+Deploy through the existing `dev` checkout: commit and push `dev`, pull with
+`git pull --ff-only` in `/var/www/empa/checker` on nexus, then
+`sudo docker restart empachecker`. Its existing source mount serves the new files,
+so no separate image, container or nginx route is required. Retain the previous
+commit for rollback; revert the deployment commit, push, pull and restart.
