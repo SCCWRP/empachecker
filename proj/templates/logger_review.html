@@ -22,8 +22,9 @@
   .workspace { position:relative; display:grid; grid-template-columns:320px minmax(0, 1fr) 280px; gap:10px; min-height:0; }
   .card { min-height:0; min-width:0; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card); box-shadow:0 1px 2px rgba(60,64,67,.08),0 1px 3px 1px rgba(60,64,67,.05); }
   .controls { display:flex; flex-direction:column; gap:16px; overflow-y:auto; }
-  .submission-loading { display:flex; align-items:center; gap:10px; color:var(--ink); }
-  .loading-spinner { width:20px; height:20px; flex:none; border:3px solid var(--border); border-top-color:var(--blue); border-radius:50%; animation:loading-spin .8s linear infinite; }
+  .submission-loading { position:fixed; inset:0; z-index:1000; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; background:var(--bg); color:var(--ink); }
+  #review-page[aria-busy="true"] { visibility:hidden; }
+  .loading-spinner { width:44px; height:44px; flex:none; border:3px solid var(--border); border-top-color:var(--blue); border-radius:50%; animation:loading-spin .8s linear infinite; }
   @keyframes loading-spin { to { transform:rotate(360deg); } }
   @media (prefers-reduced-motion:reduce) { .loading-spinner { animation:none; } }
   .selector-label,.parameter-picker,.field-group { display:flex; flex-direction:column; gap:6px; min-width:0; }
@@ -148,7 +149,8 @@
 </style>
 </head>
 <body>
-<main>
+<div id="submission-loading" class="submission-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Loading submissions.</span></div>
+<main id="review-page" inert aria-busy="true">
 
   <section id="instructions" class="card instructions" hidden aria-labelledby="instructions-title">
     <h2 id="instructions-title">Instructions</h2>
@@ -165,7 +167,6 @@
     <aside id="controls" class="card controls" data-section="data" aria-label="Submission controls">
       <div class="account"><span id="reviewer-email" class="account-email"></span><button id="sign-out" class="text-button" type="button">Sign out</button></div>
       <label class="selector-label" for="submission">Submission ID <select id="submission" disabled aria-busy="true"></select></label>
-      <div id="submission-loading" class="submission-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Loading submissions.</span></div>
       <div id="parameter-picker" class="parameter-picker">
         <label id="parameter-label" for="parameter-toggle">Parameter</label>
         <button id="parameter-toggle" class="parameter-trigger" type="button" aria-expanded="false" aria-controls="parameter-options">Choose parameters</button>
@@ -616,6 +617,8 @@ async function selectSubmission() {
 }
 function setSubmissionListLoading(loading) {
   $('submission-loading').hidden=!loading;
+  $('review-page').inert=loading;
+  $('review-page').setAttribute('aria-busy',String(loading));
   $('submission').setAttribute('aria-busy',String(loading));
   $('submission').disabled=loading||!$('submission').options.length;
 }
@@ -630,12 +633,12 @@ async function loadSubmissionList() {
     }
     populate($('submission'),items.map(s=>[s.submissionId,s.submissionId+' ('+s.statusLabel+')']));
     for (const s of items) submissionStatus[s.submissionId]=s.status;
+    if (!items.length) { message('app-message','No submissions available.'); return; }
+    await selectSubmission();
   } catch (err) {
     message('app-message',err.message,true);
     return;
   } finally { setSubmissionListLoading(false); }
-  if (!items.length) { message('app-message','No submissions available.'); return; }
-  await selectSubmission();
 }
 function buildEditor(id) {
   const series=seriesById(id);

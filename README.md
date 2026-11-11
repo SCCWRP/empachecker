@@ -64,7 +64,8 @@ Raw data are unchanged. The review tables, their audit triggers and
 `idx_tbl_wq_logger_raw_submissionid` must exist before use. The runtime role needs
 review/final table DML plus audit and identity-sequence privileges. Submissions with
 readings from 2023 onward appear in the list, including those without tracking rows.
-The submission list shows a loading spinner and disables its selector until it is ready.
+A full-page loading overlay blocks interaction until the submission list and initial selected
+submission have loaded.
 Errors and empty results are shown explicitly. The current limit is 100,000 rows per submission. Multi-sensor submissions can be
 viewed and drafted, but decisions remain blocked.
 
