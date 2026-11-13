@@ -18,8 +18,7 @@
   input:focus { outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(26,115,232,.2); }
   form { display:grid; gap:16px; }
   [hidden] { display:none !important; }
-  .actions { display:flex; justify-content:flex-end; }
-  #email-form .actions { justify-content:center; }
+  .actions { display:flex; justify-content:center; }
   button { min-height:40px; padding:8px 24px; border:0; border-radius:20px; background:var(--blue); color:#fff; font:500 .875rem "Google Sans", "Roboto", sans-serif; cursor:pointer; box-shadow:0 1px 2px rgba(60,64,67,.3); }
   button:hover { background:var(--blue-dark); }
   button:disabled { opacity:.45; cursor:default; }
@@ -30,13 +29,10 @@
 <body>
 <main class="card">
   <h1>EMPA logger review</h1>
-  <form id="email-form">
+  <form id="signin-form">
     <label for="email">Email <input id="email" type="email" autocomplete="email" required></label>
-    <div class="actions"><button id="send" type="submit">Sign In</button></div>
-  </form>
-  <form id="code-form" hidden>
-    <label for="code">Code <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></label>
-    <div class="actions"><button id="verify" type="submit">Verify code</button></div>
+    <label for="password">Password <input id="password" type="password" autocomplete="current-password" required></label>
+    <div class="actions"><button id="signin" type="submit">Sign In</button></div>
   </form>
   <p id="message" class="message" role="status" hidden></p>
 </main>
@@ -53,20 +49,12 @@ async function post(path, body) {
   if (!res.ok) throw new Error((data && data.error && data.error.message) || 'Request failed.');
   return data;
 }
-$('email-form').onsubmit = async e => {
-  e.preventDefault(); $('email-form').hidden = false; $('send').disabled = true; $('code-form').hidden = true; $('code').value = ''; say('');
+$('signin-form').onsubmit = async e => {
+  e.preventDefault(); $('signin').disabled = true; say('');
   try {
-    const data = await post('request-code', {email:$('email').value});
-    say(data.message); $('email-form').hidden = true; $('code-form').hidden = false; $('code').focus();
-  } catch (err) { say(err.message, true); }
-  $('send').disabled = false;
-};
-$('code-form').onsubmit = async e => {
-  e.preventDefault(); $('verify').disabled = true; say('');
-  try {
-    await post('verify-code', {email:$('email').value, code:$('code').value});
+    await post('sign-in', {email:$('email').value, password:$('password').value});
     location.reload();
-  } catch (err) { say(err.message, true); $('verify').disabled = false; }
+  } catch (err) { say(err.message, true); $('password').value = ''; $('signin').disabled = false; }
 };
 </script>
 </body>

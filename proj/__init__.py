@@ -94,6 +94,9 @@ app.allowed_empty_sheets = CONFIG.get('ALLOWED_EMPTY_SHEETS')
 # Mail From
 app.mail_from =  CONFIG.get('MAIL_FROM')
 
+# Logger review shared password, stored only as a PBKDF2 hash (see proj/logger_review.py)
+app.config['LOGGER_REVIEW_PASSWORD_HASH'] = CONFIG.get('LOGGER_REVIEW_PASSWORD_HASH')
+
 
 app.datasets = CONFIG.get('DATASETS')
 

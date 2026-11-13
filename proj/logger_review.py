@@ -1,8 +1,8 @@
 """EMPA logger expert review tool at /logger-review.
 
 A reviewer opens a logger submission, checks the automatic QC flags, edits thresholds, removes or
-marks periods, and finalizes, asks for another QA, or rejects. Sign-in is an emailed code limited
-to an allowlist. Review writes touch only sde.tbl_wq_logger_review, sde.tbl_wq_logger_review_period
+marks periods, and finalizes, asks for another QA, or rejects. Sign-in is an allowlisted email plus
+a shared password whose PBKDF2 hash is LOGGER_REVIEW_PASSWORD_HASH in proj/config/config.json. Review writes touch only sde.tbl_wq_logger_review, sde.tbl_wq_logger_review_period
 and sde.tbl_wq_logger_final (see logger_review_lib/store.py). Raw data is never edited.
 """
 import hashlib
@@ -10,7 +10,6 @@ import hmac
 import json
 import os
 import re
-import secrets
 import threading
 import time
 from datetime import datetime, timezone
@@ -22,32 +21,25 @@ from .logger_review_lib import removal, validation
 from .logger_review_lib import series as sr
 from .logger_review_lib.store import ReviewTablesMissing, Store
 from .logger_review_lib.validation import ValidationError
-from .utils.mail import send_mail
 
 logger_review = Blueprint("logger_review", __name__)
 
 # Only these reviewers may sign in. Compared lowercased and trimmed.
 ALLOWED_EMAILS = ("duyn@sccwrp.org", "janw@sccwrp.org")
 
-CODE_TTL = 10 * 60            # seconds a code stays valid
-MAX_TRIES = 5                 # wrong codes before the code is void
-RESEND_SECONDS = 60           # one new code per email per this many seconds
+MAX_TRIES = 5                 # wrong passwords per email before a lockout
+LOCK_SECONDS = 15 * 60        # how long that lockout lasts
 SESSION_SECONDS = 12 * 60 * 60
 DEFAULT_ROW_LIMIT = 100000
 MAX_PAGE = 1000
-SENT_MESSAGE = "A sign-in code was sent to your email."
 MULTI_SENSOR_MESSAGE = "This submission has more than one sensor and cannot be finalized here yet."
 STATUS_LABEL = {"not_reviewed": "Not reviewed", "draft": "Draft", "needs_another_qa": "Needs another QA",
                 "finalized": "Finalized", "rejected": "Rejected"}
 EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
-# Code state that must survive a replayed cookie lives in this process (the app runs as one uwsgi
-# process). The session also holds the hashed code, the email and the expiry. Without the server side
-# record a copied cookie could reset the wrong-try count or reuse a code after sign-in.
+# Wrong-password counts live in this process (the app runs as one uwsgi process), not the cookie.
 _lock = threading.Lock()
-_codes = {}        # nonce -> {"email", "hash", "expires", "tries"}
-_latest = {}       # email -> nonce of its newest code
-_last_request = {}  # email -> time of its last code request
+_failures = {}     # email -> {"count", "until"}
 LIST_CACHE_SECONDS = 5 * 60
 _ids_lock = threading.Lock()
 _ids_cache = {"at": 0.0, "ids": []}   # submission ids in the review list, newest first (per worker process)
@@ -90,9 +82,16 @@ def clean_email(value):
     return value.strip().lower() if isinstance(value, str) else ""
 
 
-def code_hash(email, code):
-    secret = current_app.secret_key or ""
-    return hashlib.sha256(f"{secret}|{email}|{code}".encode()).hexdigest()
+def password_ok(password):
+    """Check against "pbkdf2_sha256$<iterations>$<salt hex>$<hash hex>" from config.json."""
+    stored = current_app.config.get("LOGGER_REVIEW_PASSWORD_HASH")
+    if not isinstance(stored, str) or stored.count("$") != 3:
+        raise ApiError(503, "password_not_configured", "Password sign-in is not set up on this server.")
+    algo, iterations, salt, digest = stored.split("$")
+    if algo != "pbkdf2_sha256":
+        raise ApiError(503, "password_not_configured", "Password sign-in is not set up on this server.")
+    got = hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), int(iterations)).hex()
+    return hmac.compare_digest(got, digest)
 
 
 def json_body():
@@ -112,69 +111,33 @@ def current_reviewer():
     return email
 
 
-def clear_code():
-    pending = session.pop("logger_review_code", None)
-    if isinstance(pending, dict):
-        with _lock:
-            _codes.pop(pending.get("nonce"), None)
-
-
-@logger_review.post("/logger-review/api/request-code")
-def request_code():
-    email = clean_email(json_body().get("email"))
+@logger_review.post("/logger-review/api/sign-in")
+def sign_in():
+    body = json_body()
+    email = clean_email(body.get("email"))
+    password = body.get("password") if isinstance(body.get("password"), str) else ""
     if not EMAIL.match(email):
         raise ApiError(400, "invalid_email", "Enter a valid email address.")
     if email not in ALLOWED_EMAILS:
         raise ApiError(403, "email_not_authorized", "This email is not authorized to use logger review.")
     now = time.time()
     with _lock:
-        for k in [k for k, t in _last_request.items() if now - t > RESEND_SECONDS]:
-            del _last_request[k]
-        if email in _last_request:
-            raise ApiError(429, "too_soon", "Wait a minute before asking for another code.")
-        _last_request[email] = now
-        code = f"{secrets.randbelow(1000000):06d}"
-        nonce = secrets.token_hex(16)
-        _codes.pop(_latest.get(email), None)
-        _latest[email] = nonce
-        _codes[nonce] = {"email": email, "hash": code_hash(email, code), "expires": now + CODE_TTL, "tries": 0}
-    session["logger_review_code"] = {"nonce": nonce, "email": email, "hash": _codes[nonce]["hash"],
-                                     "expires": now + CODE_TTL}
-    body = (f"Your EMPA logger review sign-in code is {code}\n\n"
-            f"It expires in {CODE_TTL // 60} minutes and works once.\n")
-    try:
-        send_mail(current_app.mail_from, [email], "EMPA logger review sign-in code", body,
-                  server=current_app.config["MAIL_SERVER"])
-    except Exception as exc:
-        current_app.logger.error("Logger review code email failed: %s", type(exc).__name__)
-        raise ApiError(500, "mail_failed", "The code could not be sent. Try again in a minute.") from None
-    return jsonify({"message": SENT_MESSAGE})
-
-
-@logger_review.post("/logger-review/api/verify-code")
-def verify_code():
-    body = json_body()
-    email = clean_email(body.get("email"))
-    code = str(body.get("code") or "").strip()
-    pending = session.get("logger_review_code")
-    bad = ApiError(401, "invalid_code", "That code is not valid. Request a new one.")
-    if not isinstance(pending, dict) or pending.get("email") != email or email not in ALLOWED_EMAILS:
-        raise bad
+        state = _failures.get(email)
+        if state and state["until"] > now:
+            raise ApiError(429, "locked", "Too many wrong passwords. Try again in 15 minutes.")
+    ok = password_ok(password)
     with _lock:
-        record = _codes.get(pending.get("nonce"))
-        if record is None or record["email"] != email or time.time() > record["expires"] \
-                or time.time() > pending.get("expires", 0):
-            _codes.pop(pending.get("nonce"), None)
-            ok = False
+        if not ok:
+            state = _failures.get(email)
+            if not state or state["until"]:
+                state = _failures[email] = {"count": 0, "until": 0}
+            state["count"] += 1
+            if state["count"] >= MAX_TRIES:
+                state["until"] = now + LOCK_SECONDS
         else:
-            record["tries"] += 1
-            ok = hmac.compare_digest(record["hash"], code_hash(email, code)) \
-                and hmac.compare_digest(record["hash"], str(pending.get("hash")))
-            if ok or record["tries"] >= MAX_TRIES:
-                _codes.pop(pending.get("nonce"), None)   # single use, and void after too many tries
+            _failures.pop(email, None)
     if not ok:
-        raise bad
-    session.pop("logger_review_code", None)
+        raise ApiError(401, "invalid_password", "That password is not correct.")
     session["logger_review_email"] = email
     session["logger_review_signed_at"] = time.time()
     warm_list_cache(current_app._get_current_object())
@@ -183,7 +146,6 @@ def verify_code():
 
 @logger_review.post("/logger-review/api/logout")
 def logout():
-    clear_code()
     for k in ("logger_review_email", "logger_review_signed_at"):
         session.pop(k, None)
     return jsonify({"ok": True})

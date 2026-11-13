@@ -16,7 +16,7 @@ def test_real_app_registers_routes_and_serves_sign_in():
     code = """
 import proj
 rules = {r.rule for r in proj.app.url_map.iter_rules()}
-need = {'/logger-review', '/logger-review/api/request-code', '/logger-review/api/verify-code', '/logger-review/api/logout',
+need = {'/logger-review', '/logger-review/api/sign-in', '/logger-review/api/logout',
         '/logger-review/api/submissions', '/logger-review/api/submissions/<sid>',
         '/logger-review/api/submissions/<sid>/review', '/logger-review/api/submissions/<sid>/decision'}
 assert need <= rules, need - rules
