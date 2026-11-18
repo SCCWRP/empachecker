@@ -208,7 +208,8 @@ const ok = (name) => { passed++; console.log('ok', name); };
   ok('hover shows only the timestamp and plotted values, removed readings omitted');
   // single choice test picker
   state = {}; app = boot(makeRoutes(state)); await sleep(50);
-  assert(!/role="tab"|role="tablist"|role="tabpanel"|test-tab/.test(html) && html.includes('role="radiogroup"'));
+  // the QC test picker is a single-choice radio group, not tabs (the page-level Expert/Unit Review tabs are separate)
+  assert(!/test-tab/.test(html) && /id="test-options"[^>]*role="radiogroup"/.test(html) && !/id="test-options"[^>]*role="tab/.test(html));
   const radios = () => app.ids['test-options'].children.map(l => l.children[0]);
   const labels = () => app.ids['test-options'].children.map(l => l.children[1].textContent);
   const choose = v => { const r = radios().find(x => x.value === v); radios().forEach(x => { x.checked = false; }); r.checked = true; r.onchange(); };
@@ -374,6 +375,57 @@ const ok = (name) => { passed++; console.log('ok', name); };
   app = boot((m, u) => ({ status: 401, json: { error: { message: 'Sign in to use the logger review.' } } })); await sleep(50);
   assert(app.ids['app-message'].textContent.includes('sign-in ended'));
   ok('sign out control and expired sign-in message');
+
+  // Unit Review tab: list, filter, save a unit, refresh
+  const unitItems = [
+    { id: 1, submissionId: '200', siteId: 'CC-PAJ', station: 1, sensorType: 'troll', sensorId: 'X1', parameter: 'depth', label: 'Depth', recordedUnit: 'm', mean: 10.7, usualMean: 0.94, ratio: 11.4, flagged: true, correctUnit: null },
+    { id: 2, submissionId: '200', siteId: 'CC-PAJ', station: 1, sensorType: 'troll', sensorId: 'X1', parameter: 'pressure', label: 'Pressure', recordedUnit: 'mbar', mean: 1069, usualMean: 95, ratio: 11.3, flagged: true, correctUnit: null },
+    { id: 3, submissionId: '150', siteId: 'SC-TJE', station: 2, sensorType: 'exo', sensorId: 'Y', parameter: 'do', label: 'Dissolved oxygen', recordedUnit: 'mg/L', mean: 0.08, usualMean: 7.3, ratio: 0.011, flagged: true, correctUnit: 'mg/L', reviewerEmail: 'janw@sccwrp.org', reviewedDate: '2026-11-10T18:00:00Z' },
+  ];
+  const unitState = { refreshes: 0 };
+  const unitRoutes = (method, url, body) => {
+    if (url === '/logger-review/api/unit-review' && method === 'GET') {
+      return { status: 200, json: { items: unitItems, options: { depth: ['m', 'ft', 'cm'], pressure: ['cmH2O', 'mbar', 'psi'], do: ['mg/L', 'percent'] }, factor: 10, lastChecked: '2026-11-17T18:00:00Z', refresh: { running: false } } };
+    }
+    const m = url.match(/^\/logger-review\/api\/unit-review\/(\d+)$/);
+    if (m && method === 'PUT') {
+      const item = unitItems.find(i => i.id === Number(m[1]));
+      Object.assign(item, { correctUnit: body.correctUnit, reviewerEmail: body.correctUnit ? 'duyn@sccwrp.org' : null, reviewedDate: body.correctUnit ? '2026-11-17T19:00:00Z' : null });
+      return { status: 200, json: { item: { ...item } } };
+    }
+    if (url === '/logger-review/api/unit-review/refresh' && method === 'POST') { unitState.refreshes++; return { status: 202, json: { started: true, refresh: { running: false, flagged: 3 } } }; }
+    return makeRoutes({})(method, url, body);
+  };
+  app = boot(unitRoutes); await sleep(50);
+  assert.equal(app.ids['unit-review'].hidden, true);
+  assert(!app.calls.some(c => c.url.includes('unit-review')), 'unit list loads only when the tab opens');
+  app.ids['tab-units'].onclick(); await sleep(20);
+  assert.equal(app.ids.workspace.hidden, true); assert.equal(app.ids['unit-review'].hidden, false);
+  assert.equal(app.ids['tab-units'].attrs['aria-selected'], 'true');
+  let rows = app.ids['unit-rows'].children;
+  assert.equal(rows.length, 2, 'To review shows only series without a unit');
+  assert.equal(rows[0].children[0].textContent, '200'); assert.equal(rows[1].children[0].textContent, '', 'submission id shown once per group');
+  assert.equal(rows[0].children[8].textContent, '11.4× higher');
+  const sel = rows[0].children[9].children[0];
+  assert.deepEqual(sel.options.map(o => o.value), ['', 'm', 'ft', 'cm']);
+  assert.equal(sel.options[1].text, 'm (as recorded)');
+  assert.equal(app.ids['unit-filter'].options[0].text, 'To review (2 series, 1 submissions)');
+  sel.value = 'ft'; sel.onchange(); await sleep(20);
+  const put = app.calls.find(c => c.method === 'PUT');
+  assert.equal(put.url, '/logger-review/api/unit-review/1'); assert.deepEqual(put.body, { correctUnit: 'ft' });
+  assert.equal(app.ids['unit-rows'].children.length, 1, 'saved series leaves the To review list');
+  assert(app.ids['unit-message'].textContent.includes('Saved ft for submission 200, Depth.'));
+  app.ids['unit-filter'].value = 'done'; app.ids['unit-filter'].onchange();
+  rows = app.ids['unit-rows'].children;
+  assert.equal(rows.length, 2);
+  assert(rows.some(r => r.children[10].textContent.startsWith('duyn@sccwrp.org, ')));
+  assert.equal(app.ids['unit-filter'].options[1].text, 'Reviewed (2)');
+  assert.equal(rows.find(r => r.children[4].textContent === 'Dissolved oxygen').children[8].textContent, '90.9× lower');
+  await app.ids['unit-refresh'].onclick(); await sleep(20);
+  assert.equal(unitState.refreshes, 1);
+  app.ids['tab-expert'].onclick();
+  assert.equal(app.ids.workspace.hidden, false); assert.equal(app.ids['unit-review'].hidden, true);
+  ok('unit review tab: lazy load, grouping, unit choices, save, filter, refresh, tab switch');
   console.log('page tests passed', passed);
   process.exit(0);
 })().catch(e => { console.error(e); process.exit(1); });

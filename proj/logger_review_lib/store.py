@@ -45,6 +45,27 @@ SQL_INSERT_PERIOD = (f"INSERT INTO {PERIOD} (submissionid, period_type, period_s
 SQL_DELETE_FINAL = f"DELETE FROM {FINAL} WHERE submissionid = :sid"
 WRITE_SQL = (SQL_UPSERT_REVIEW, SQL_DELETE_PERIODS, SQL_INSERT_PERIOD, SQL_DELETE_FINAL)
 
+# ---- unit review (sde.tbl_wq_logger_unit_review, one row per flagged sensor series)
+UNIT = "sde.tbl_wq_logger_unit_review"
+# A refresh inserts newly flagged series and updates the numbers of known ones. It never touches
+# correct_unit, reviewer_email or reviewed_date.
+SQL_UPSERT_UNIT_FLAG = f"""
+INSERT INTO {UNIT} (series_key, submissionid, siteid, stationno, sensortype, sensorid, parameter, recorded_unit,
+                    n_values, series_mean, usual_mean, ratio, flagged, last_checked_date, created_user, last_edited_user)
+VALUES (:key, :submissionid, :siteid, :stationno, :sensortype, :sensorid, :parameter, :unit,
+        :n, :mean, :usual_mean, :ratio, true, CAST(:checked_at AS timestamptz), :user, :user)
+ON CONFLICT (series_key) DO UPDATE SET
+    n_values = EXCLUDED.n_values, series_mean = EXCLUDED.series_mean, usual_mean = EXCLUDED.usual_mean,
+    ratio = EXCLUDED.ratio, flagged = true, last_checked_date = EXCLUDED.last_checked_date
+"""
+# Series that were flagged before but not in this refresh. Rows are kept, only the flag is cleared.
+SQL_UNFLAG_UNIT = (f"UPDATE {UNIT} SET flagged = false, last_checked_date = CAST(:checked_at AS timestamptz) "
+                   "WHERE flagged AND last_checked_date < CAST(:checked_at AS timestamptz)")
+SQL_SAVE_UNIT = (f"UPDATE {UNIT} SET correct_unit = :correct_unit, reviewer_email = :reviewer_email, "
+                 "reviewed_date = CAST(:reviewed_date AS timestamptz), last_edited_user = :user, last_edited_date = now() "
+                 "WHERE objectid = :objectid")
+UNIT_WRITE_SQL = (SQL_UPSERT_UNIT_FLAG, SQL_UNFLAG_UNIT, SQL_SAVE_UNIT)
+
 
 def final_insert_sql(columns):
     for c in columns:
@@ -190,6 +211,65 @@ class Store:
                 "reviewerEmail": r["reviewer_email"], "reviewedDate": _iso(r["reviewed_date"]),
                 "secondReviewerEmail": r["second_reviewer_email"], "secondReviewedDate": _iso(r["second_reviewed_date"]),
                 "finalizedDate": _iso(r["finalized_date"]), "updatedDate": _iso(r["last_edited_date"])}
+
+    # ---- unit review reads
+
+    def series_means(self):
+        """Mean of every sensor series in the raw table. Scans the whole raw table (about 3 minutes)."""
+        from .unit_review import series_means_sql
+        with self.engine.connect() as c:
+            return [dict(r) for r in c.execute(text(series_means_sql(RAW))).mappings()]
+
+    def unit_options(self):
+        """{parameter: [allowed units]} from the checker's unit lookup tables, without Not Recorded."""
+        from .unit_review import FIXED_UNITS, LOOKUPS
+        out = {p: [u] for p, u in FIXED_UNITS.items()}
+        with self.engine.connect() as c:
+            for p, table in LOOKUPS.items():
+                units = [r[0] for r in c.execute(text(f"SELECT unit FROM sde.{table} ORDER BY objectid"))]
+                out[p] = [u for u in units if u and u.strip().lower() != "not recorded"]
+        return out
+
+    def list_unit_reviews(self):
+        """Every series that is flagged now or already has a correct unit, by submission (newest first)."""
+        sql = text(f"""SELECT objectid, submissionid, siteid, stationno, sensortype, sensorid, parameter, recorded_unit,
+                              n_values, series_mean, usual_mean, ratio, flagged, last_checked_date,
+                              correct_unit, reviewer_email, reviewed_date
+                         FROM {UNIT} WHERE flagged OR correct_unit IS NOT NULL
+                        ORDER BY submissionid DESC, siteid, stationno, sensorid, parameter, recorded_unit""")
+        with _guard(), self.engine.connect() as c:
+            rows = [dict(r) for r in c.execute(sql).mappings()]
+        for r in rows:
+            for k in ("last_checked_date", "reviewed_date"):
+                r[k] = _iso(r[k])
+        return rows
+
+    def get_unit_review(self, objectid):
+        sql = text(f"SELECT objectid, parameter FROM {UNIT} WHERE objectid = :objectid")
+        with _guard(), self.engine.connect() as c:
+            r = c.execute(sql, {"objectid": objectid}).mappings().first()
+        return dict(r) if r else None
+
+    # ---- unit review writes
+
+    def save_unit_flags(self, flagged, checked_at, user):
+        """Upsert the flagged series and clear the flag on series no longer flagged, in one transaction."""
+        rows = [{"key": f["key"], "submissionid": f["submissionid"], "siteid": f.get("siteid"),
+                 "stationno": f.get("stationno"), "sensortype": f.get("sensortype"), "sensorid": f.get("sensorid"),
+                 "parameter": f["parameter"], "unit": f["unit"], "n": int(f["n"]), "mean": f["mean"],
+                 "usual_mean": f["usual_mean"], "ratio": f["ratio"], "checked_at": checked_at, "user": user}
+                for f in flagged]
+        with _guard(), self.engine.begin() as c:
+            for i in range(0, len(rows), CHUNK):
+                c.execute(text(SQL_UPSERT_UNIT_FLAG), rows[i:i + CHUNK])
+            c.execute(text(SQL_UNFLAG_UNIT), {"checked_at": checked_at})
+
+    def save_unit(self, objectid, correct_unit, user):
+        """Record (or clear, with None) the correct unit of one series."""
+        with _guard(), self.engine.begin() as c:
+            c.execute(text(SQL_SAVE_UNIT), {"objectid": objectid, "correct_unit": correct_unit,
+                                            "reviewer_email": user if correct_unit else None,
+                                            "reviewed_date": now() if correct_unit else None, "user": user})
 
     # ---- writes
 

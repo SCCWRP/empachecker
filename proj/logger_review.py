@@ -4,6 +4,10 @@ A reviewer opens a logger submission, checks the automatic QC flags, edits thres
 marks periods, and finalizes, asks for another QA, or rejects. Sign-in is an allowlisted email plus
 a shared password whose PBKDF2 hash is LOGGER_REVIEW_PASSWORD_HASH in proj/config/config.json. Review writes touch only sde.tbl_wq_logger_review, sde.tbl_wq_logger_review_period
 and sde.tbl_wq_logger_final (see logger_review_lib/store.py). Raw data is never edited.
+
+The Unit Review tab lists sensor series whose mean is 10x or more away from the usual mean for the
+same parameter and unit, and records the correct unit in sde.tbl_wq_logger_unit_review
+(see logger_review_lib/unit_review.py).
 """
 import hashlib
 import hmac
@@ -17,7 +21,7 @@ from pathlib import Path
 
 from flask import Blueprint, current_app, g, jsonify, redirect, render_template, request, session, url_for
 
-from .logger_review_lib import removal, validation
+from .logger_review_lib import removal, unit_review, validation
 from .logger_review_lib import series as sr
 from .logger_review_lib.store import ReviewTablesMissing, Store
 from .logger_review_lib.validation import ValidationError
@@ -332,15 +336,113 @@ def post_decision(sid):
         raw = load_rows(sid)
         try:
             cfg = sr.load_defaults()
+            sites = store().fetch_sites([r.get("siteid") for r in raw])
             gone = removal.removed_readings(raw, review["thresholds"], review["removeFails"],
-                                            review["removedPeriods"], review["keptPeriods"], cfg)
-            review["thresholds"] = removal.resolved_thresholds(raw, review["thresholds"], cfg)
+                                            review["removedPeriods"], review["keptPeriods"], cfg, sites)
+            review["thresholds"] = removal.resolved_thresholds(raw, review["thresholds"], cfg, sites)
         except sr.DataError as e:
             raise ApiError(422, "bad_data", str(e)) from None
         final_rows = removal.build_final_rows(raw, gone)
     store().save_decision(sid, review, user, fields, final_rows)
     return jsonify({"review": review_json(store().get_review(sid)),
                     "finalRows": len(final_rows) if final_rows is not None else 0})
+
+
+# ---- unit review API
+
+_unit_lock = threading.Lock()
+_unit_refresh = {"running": False, "startedAt": None, "finishedAt": None, "error": None, "flagged": None}
+
+
+def refresh_units(st, user):
+    """Rerun the unit check over the whole raw table and save the flagged series. About 3 minutes."""
+    checked_at = datetime.now(timezone.utc)
+    flagged = unit_review.flag_series(st.series_means())
+    st.save_unit_flags(flagged, checked_at, user)
+    return len(flagged)
+
+
+def start_unit_refresh(app, user):
+    with _unit_lock:
+        if _unit_refresh["running"]:
+            return False
+        _unit_refresh.update(running=True, startedAt=datetime.now(timezone.utc).isoformat(), error=None)
+
+    def run():
+        n, error = None, None
+        try:
+            test_store = app.config.get("LOGGER_REVIEW_STORE")
+            if test_store is not None:
+                n = refresh_units(test_store, user)
+            else:
+                from sqlalchemy import create_engine
+                eng = create_engine(os.environ["DB_CONNECTION_STRING"], pool_pre_ping=True)
+                try:
+                    n = refresh_units(Store(eng), user)
+                finally:
+                    eng.dispose()
+        except ReviewTablesMissing:
+            error = "The unit review table does not exist in the database yet."
+        except Exception as exc:
+            app.logger.error("Logger unit review refresh failed: %s", type(exc).__name__)
+            error = "The refresh failed. Try again later."
+        with _unit_lock:
+            _unit_refresh.update(running=False, finishedAt=datetime.now(timezone.utc).isoformat(), error=error, flagged=n)
+
+    if app.config.get("LOGGER_REVIEW_STORE") is not None and app.config.get("LOGGER_REVIEW_SYNC_REFRESH"):
+        run()
+    else:
+        threading.Thread(target=run, daemon=True).start()
+    return True
+
+
+def unit_json(r):
+    return {"id": r["objectid"], "submissionId": str(r["submissionid"]), "siteId": r.get("siteid"),
+            "station": r.get("stationno"), "sensorType": r.get("sensortype"), "sensorId": r.get("sensorid"),
+            "parameter": r["parameter"], "label": sr.LABELS.get(r["parameter"], r["parameter"]),
+            "recordedUnit": r["recorded_unit"], "values": r.get("n_values"),
+            "mean": r.get("series_mean"), "usualMean": r.get("usual_mean"), "ratio": r.get("ratio"),
+            "flagged": bool(r.get("flagged")), "lastChecked": r.get("last_checked_date"),
+            "correctUnit": r.get("correct_unit"), "reviewerEmail": r.get("reviewer_email"),
+            "reviewedDate": r.get("reviewed_date")}
+
+
+@logger_review.get("/logger-review/api/unit-review")
+def list_unit_review():
+    reviewer_or_401()
+    rows = store().list_unit_reviews()
+    with _unit_lock:
+        refresh = dict(_unit_refresh)
+    checked = [r["last_checked_date"] for r in rows if r.get("last_checked_date")]
+    return jsonify({"items": [unit_json(r) for r in rows], "options": store().unit_options(),
+                    "factor": unit_review.FACTOR, "lastChecked": max(checked) if checked else None, "refresh": refresh})
+
+
+@logger_review.post("/logger-review/api/unit-review/refresh")
+def post_unit_refresh():
+    user = reviewer_or_401()
+    started = start_unit_refresh(current_app._get_current_object(), user)
+    with _unit_lock:
+        refresh = dict(_unit_refresh)
+    return jsonify({"started": started, "refresh": refresh}), 202
+
+
+@logger_review.put("/logger-review/api/unit-review/<int:objectid>")
+def put_unit(objectid):
+    user = reviewer_or_401()
+    body = json_body()
+    unit = body.get("correctUnit")
+    if unit is not None and not isinstance(unit, str):
+        raise ValidationError("correctUnit must be a unit or null")
+    unit = (unit or "").strip() or None
+    row = store().get_unit_review(objectid)
+    if row is None:
+        raise ApiError(404, "not_found", "That series is not in the unit review list.")
+    if unit is not None and unit not in store().unit_options().get(row["parameter"], []):
+        raise ValidationError(f"{unit} is not an allowed unit for {row['parameter']}")
+    store().save_unit(objectid, unit, user)
+    saved = next((r for r in store().list_unit_reviews() if r["objectid"] == objectid), None)
+    return jsonify({"item": unit_json(saved) if saved else None})
 
 
 @logger_review.errorhandler(Exception)

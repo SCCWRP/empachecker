@@ -69,6 +69,13 @@ submission have loaded.
 Errors and empty results are shown explicitly. The current limit is 100,000 rows per submission. Multi-sensor submissions can be
 viewed and drafted, but decisions remain blocked.
 
+The Unit Review tab lists logger sensor series whose mean is 10x or more above or below the usual
+mean (the median of all series means for the same parameter and unit) and records the correct unit
+for each in `sde.tbl_wq_logger_unit_review`. Refresh list reruns the check over the whole raw table
+(about 3 minutes, in a background thread) and never overwrites recorded units. Allowed units come
+from the checker's `lu_*_unit` lookup tables. Raw data is unchanged. The table must exist before use
+(`database-admin/db/empa/logger-unit-review/create_unit_review_table.sql`).
+
 Tests are in `tests/logger_review/`. Run them with the existing checker image's
 dependencies and a test-only virtual environment with `pytest==8.3.5`; Node
 `22.14.0` runs the JavaScript QC and mock DOM checks. The real app import check

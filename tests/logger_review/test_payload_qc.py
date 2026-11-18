@@ -104,3 +104,28 @@ def _rows(sub):
     import json as j
     fx = j.loads((ROOT / "tests/logger_review/fixtures/submission_review_fixture.json").read_text())
     return [r for r in fx["rows"] if r["submissionid"] == int(sub["id"])]
+
+
+def test_south_temperature_uses_regional_range(rows_by_sid, fixture):
+    """2026-10-29: South sites get temperature suspect/fail max 30/35, other regions keep 25/30."""
+    rows = sr.normalize_rows(rows_by_sid[1729879198])
+    cfg = sr.load_defaults()
+    site = rows[0]["siteid"]
+    def temp_range(region):
+        sites = {site: dict(fixture["sites"][site], region=region)}
+        s = next(s for s in sr.build_series(rows, cfg, sites) if s.parameter == "h2otemp")
+        return s.defaults["range"]
+    assert temp_range("South") == {"fail_min": 0, "suspect_min": 5, "suspect_max": 30, "fail_max": 35}
+    for region in ("Central", "North", None):
+        assert temp_range(region) == {"fail_min": 0, "suspect_min": 5, "suspect_max": 25, "fail_max": 30}
+
+
+def test_finalize_removal_uses_regional_range(rows_by_sid, fixture):
+    """Finalize must resolve the same regional defaults the page showed."""
+    from proj.logger_review_lib import removal
+    rows = rows_by_sid[1729879198]
+    site = rows[0]["siteid"]
+    south = {site: dict(fixture["sites"][site], region="South")}
+    resolved = removal.resolved_thresholds(rows, None, sites=south)
+    temp = next(v for k, v in resolved.items() if "|h2otemp|" in k)
+    assert temp["range"]["fail_max"] == 35

@@ -33,7 +33,7 @@ def removal_flags(timestamps, any_flags, remove_fails, removed_periods, kept_per
     return out
 
 
-def removed_readings(raw_rows, thresholds, remove_fails, removed_periods, kept_periods, cfg=None):
+def removed_readings(raw_rows, thresholds, remove_fails, removed_periods, kept_periods, cfg=None, sites=None):
     """Set of (objectid, parameter) for every removed reading.
 
     thresholds: saved {series key: threshold block} or None. A series with no saved block uses
@@ -42,7 +42,7 @@ def removed_readings(raw_rows, thresholds, remove_fails, removed_periods, kept_p
     thresholds = thresholds or {}
     rows = sr.normalize_rows(raw_rows)
     removed = set()
-    for s in sr.build_series(rows, cfg):
+    for s in sr.build_series(rows, cfg, sites):
         th = thresholds.get(s.key) or s.defaults
         flags = sr.run_flags(s, th)
         stamps = [r["samplecollectiontimestamp"] for r in s.rows]
@@ -53,11 +53,11 @@ def removed_readings(raw_rows, thresholds, remove_fails, removed_periods, kept_p
     return removed
 
 
-def resolved_thresholds(raw_rows, saved, cfg=None):
+def resolved_thresholds(raw_rows, saved, cfg=None, sites=None):
     """Full threshold set used: the saved block per series, defaults where nothing was saved."""
     cfg = cfg if cfg is not None else sr.load_defaults()
     saved = saved or {}
-    return {s.key: saved.get(s.key) or s.defaults for s in sr.build_series(sr.normalize_rows(raw_rows), cfg)}
+    return {s.key: saved.get(s.key) or s.defaults for s in sr.build_series(sr.normalize_rows(raw_rows), cfg, sites)}
 
 
 def build_final_rows(raw_rows, removed):

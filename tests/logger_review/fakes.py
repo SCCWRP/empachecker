@@ -88,3 +88,60 @@ class FakeStore:
 def tracking_row(sid, ts, datatype="logger_raw"):
     return {"submissionid": sid, "datatype": datatype, "login_email": "x@example.org", "time_stamp": ts, "login_estuary": "E",
             "login_siteid": "S", "login_stationno": "1", "login_sensortype": "ctd", "login_sensorid": "A", "original_filename": "f.csv"}
+
+
+class FakeUnitStore(FakeStore):
+    """FakeStore plus the unit review table, kept in memory."""
+
+    OPTIONS = {"depth": ["m", "ft", "cm"], "pressure": ["cmH2O", "dbar", "mbar", "psi", "bar", "mmHg", "kPa"],
+               "do_pct": ["%"]}
+
+    def __init__(self, *a, means=None, **kw):
+        super().__init__(*a, **kw)
+        self.means = means or []
+        self.units = {}          # objectid -> row
+        self.next_id = 1
+
+    def series_means(self):
+        return copy.deepcopy(self.means)
+
+    def unit_options(self):
+        return copy.deepcopy(self.OPTIONS)
+
+    def list_unit_reviews(self):
+        self._need_tables()
+        rows = [copy.deepcopy(r) for r in self.units.values() if r["flagged"] or r["correct_unit"]]
+        return sorted(rows, key=lambda r: (-r["submissionid"], r["parameter"]))
+
+    def get_unit_review(self, objectid):
+        self._need_tables()
+        r = self.units.get(objectid)
+        return {"objectid": r["objectid"], "parameter": r["parameter"]} if r else None
+
+    def save_unit_flags(self, flagged, checked_at, user):
+        self._need_tables()
+        by_key = {r["series_key"]: r for r in self.units.values()}
+        stamp = checked_at.isoformat()
+        for f in flagged:
+            r = by_key.get(f["key"])
+            if r is None:
+                r = {"objectid": self.next_id, "series_key": f["key"], "correct_unit": None, "reviewer_email": None,
+                     "reviewed_date": None}
+                self.units[self.next_id] = r
+                self.next_id += 1
+            r.update({"submissionid": f["submissionid"], "siteid": f.get("siteid"), "stationno": f.get("stationno"),
+                      "sensortype": f.get("sensortype"), "sensorid": f.get("sensorid"), "parameter": f["parameter"],
+                      "recorded_unit": f["unit"], "n_values": f["n"], "series_mean": f["mean"],
+                      "usual_mean": f["usual_mean"], "ratio": f["ratio"], "flagged": True, "last_checked_date": stamp})
+        for r in self.units.values():
+            if r["flagged"] and r["last_checked_date"] < stamp:
+                r["flagged"], r["last_checked_date"] = False, stamp
+        self.writes.append(("unit_flags", len(flagged)))
+
+    def save_unit(self, objectid, correct_unit, user):
+        self._need_tables()
+        r = self.units[objectid]
+        r["correct_unit"] = correct_unit
+        r["reviewer_email"] = user if correct_unit else None
+        r["reviewed_date"] = "2026-11-17T12:00:00+00:00" if correct_unit else None
+        self.writes.append(("unit", objectid, correct_unit))

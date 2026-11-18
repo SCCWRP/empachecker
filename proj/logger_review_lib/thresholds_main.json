@@ -14,6 +14,14 @@
     "suspect_max": 25,
     "fail_max": 30
    },
+   "range_by_region": {
+    "South": {
+     "fail_min": 0,
+     "suspect_min": 5,
+     "suspect_max": 30,
+     "fail_max": 35
+    }
+   },
    "spike": {
     "suspect": 0.25,
     "fail": 0.5
@@ -34,9 +42,9 @@
    "unit": "mS/cm",
    "range": {
     "fail_min": 0,
-    "suspect_min": 10,
-    "suspect_max": 45,
-    "fail_max": 50
+    "suspect_min": 5,
+    "suspect_max": 50,
+    "fail_max": 55
    },
    "spike": {
     "suspect": 0.5,
@@ -86,8 +94,8 @@
    "range": {
     "fail_min": 0,
     "suspect_min": 1,
-    "suspect_max": 15,
-    "fail_max": 20
+    "suspect_max": 25,
+    "fail_max": 30
    },
    "spike": {
     "suspect": 0.5,

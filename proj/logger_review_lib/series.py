@@ -77,9 +77,15 @@ def raw_factor(p, unit, canonical):
     return None
 
 
-def thresholds_for_raw(p, unit, cfg):
-    """Default thresholds for a parameter converted into the raw unit, and whether the unit is known."""
+def thresholds_for_raw(p, unit, cfg, region=None):
+    """Default thresholds for a parameter converted into the raw unit, and whether the unit is known.
+
+    A parameter may carry range_by_region ({region: range block}); the site's region picks it,
+    otherwise the plain range applies (2026-10-29: South temperature only)."""
     b = copy.deepcopy(cfg.get(p, {}))
+    regional = (b.get("range_by_region") or {}).get(region)
+    if regional:
+        b["range"] = regional
     factor = raw_factor(p, unit, b.get("unit", ""))
     tests = {t: copy.deepcopy(b.get(t) or {}) for t in qh.TESTS}
     if factor is None:
@@ -125,13 +131,15 @@ def sensor_groups(rows):
     return groups
 
 
-def build_series(rows, cfg):
+def build_series(rows, cfg, sites=None):
     """Yield a Series for every sensor, parameter and unit that has at least one real value.
 
-    rows must already be normalized (see normalize_rows)."""
+    rows must already be normalized (see normalize_rows). sites: {siteid: {region, ...}}, used
+    for region specific default ranges."""
     groups = sensor_groups(rows)
     out = []
     for identity, group in groups.items():
+        region = ((sites or {}).get(identity[0]) or {}).get("region")
         for p in PARAMS:
             vals = [r.get("raw_" + p) for r in group]
             if not any(not is_missing(v) for v in vals):
@@ -148,7 +156,7 @@ def build_series(rows, cfg):
                 if not np.isfinite(x).any():
                     continue
                 interval = qh.series_interval(pd.DataFrame({"timestamp_utc": utc}), qh.Options())
-                th, supported = thresholds_for_raw(p, unit, cfg)
+                th, supported = thresholds_for_raw(p, unit, cfg, region)
                 info = qh.run_tests(utc, x, th, qh.Options(roc_include_current=False), interval)["_info"]
                 key = "|".join(map(str, (*identity, p, unit)))
                 out.append(Series(key, identity, p, unit, selected, utc, x, float(interval),
@@ -203,7 +211,7 @@ def build_submission(sid, rows, sites, cfg=None, with_flags=False):
     rows.sort(key=lambda r: (r["samplecollectiontimestamp"], r["objectid"]))
     sid = str(sid)
     series, expected = {}, {}
-    all_series = build_series(rows, cfg)
+    all_series = build_series(rows, cfg, sites)
     for s in all_series:
         series[s.key] = series_payload(s)
         if with_flags:
