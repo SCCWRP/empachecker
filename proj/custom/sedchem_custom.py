@@ -273,6 +273,92 @@ def sedchem_lab(all_dfs):
     errs = [*errs, checkData(**args)]
 
     print("# END OF CHECK - 7")
+
+
+    print("# CHECK - 8")
+    # Description: analytename, fractionname and units must match an entry in lu_sedchemanalytes (🛑 ERROR 🛑)
+    # Created Coder: Duy
+    # Created Date: 11/24/2026
+    # Last Edited Date:
+    # Last Edited Coder:
+    # NOTE (11/24/2026): lu_sedchemanalytes is keyed on (analytename, fractionname) since 11/24/2026, so the same
+    #   analyte can have more than one fraction (Organic Carbon Particulate and Total). The single column FK on
+    #   tbl_sedchem_data.analytename was dropped for that, so the core lookup list check no longer covers
+    #   analytename. This check covers it, plus the fraction and units that go with each analyte.
+    #   8a: analytename not in the lookup at all. 8b: analytename exists but fractionname/units do not match
+    #   any of its lookup entries (one error per analyte, listing the allowed combinations).
+    lu_analytes = pd.read_sql("SELECT analytename, fractionname, units FROM lu_sedchemanalytes", g.eng)
+    lu_analytes = lu_analytes.astype(str).apply(lambda col: col.str.strip())
+
+    def _norm(series):
+        return series.where(series.notna(), '').astype(str).str.strip()
+
+    combo = pd.DataFrame({
+        'analytename': _norm(seddata['analytename']),
+        'fractionname': _norm(seddata['fractionname']),
+        'units': _norm(seddata['units']),
+        'tmp_row': seddata['tmp_row'],
+    })
+    lu_link = (
+        f'<a href="/{lu_list_script_root}/scraper?action=help&layer=lu_sedchemanalytes" target="_blank">'
+        'lu_sedchemanalytes</a>'
+    )
+
+    # 8a
+    unknown_analyte = ~combo['analytename'].isin(lu_analytes['analytename'])
+    args.update({
+        "dataframe": seddata,
+        "tablename": "tbl_sedchem_data",
+        "badrows": combo[unknown_analyte].tmp_row.tolist(),
+        "badcolumn": "analytename",
+        "error_type": "Lookup List Fail",
+        "error_message": f"analytename did not match the lookup list {lu_link}"
+    })
+    errs = [*errs, checkData(**args)]
+
+    # 8b
+    known = combo[~unknown_analyte].merge(
+        lu_analytes, on=['analytename', 'fractionname', 'units'], how='left', indicator=True
+    )
+    bad_combo = known[known['_merge'] == 'left_only']
+    for analyte, rows in bad_combo.groupby('analytename'):
+        allowed = lu_analytes[lu_analytes['analytename'] == analyte]
+        allowed_txt = '; '.join(
+            f"fractionname '{r.fractionname}' with units '{r.units}'" for r in allowed.itertuples()
+        )
+        args.update({
+            "dataframe": seddata,
+            "tablename": "tbl_sedchem_data",
+            "badrows": rows.tmp_row.tolist(),
+            "badcolumn": "analytename,fractionname,units",
+            "error_type": "Lookup List Fail",
+            "error_message": f"For analytename '{analyte}', fractionname and units must be: {allowed_txt}. See {lu_link}"
+        })
+        errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 8")
+
+
+    print("# CHECK - 9")
+    # Description: results cannot be empty. Enter the value, or -88 if no result was recorded (🛑 ERROR 🛑)
+    # Created Coder: Duy
+    # Created Date: 11/24/2026
+    # Last Edited Date:
+    # Last Edited Coder:
+    # NOTE (11/24/2026): results is nullable in the database, and 3 rows were submitted blank (CC-ADLC, qualifier U).
+    #   -88 is the EMPA code for not recorded. Non-detects (qualifier U) still report a value.
+    blank_results = seddata['results'].isna() | (seddata['results'].astype(str).str.strip() == '')
+    args.update({
+        "dataframe": seddata,
+        "tablename": "tbl_sedchem_data",
+        "badrows": seddata[blank_results].tmp_row.tolist(),
+        "badcolumn": "results",
+        "error_type": "Empty Value Error",
+        "error_message": "results cannot be empty. Enter the reported value (non-detects with qualifier U still need a value), or -88 if no result was recorded."
+    })
+    errs = [*errs, checkData(**args)]
+
+    print("# END OF CHECK - 9")
        
 
     
