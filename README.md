@@ -58,6 +58,13 @@ start with Email and Sign In. Approved emails receive a single-use code and then
 only the code form and confirmation; unauthorized emails receive a clear error at the email step. Codes last 10 minutes, permit five attempts
 and run in the existing single uWSGI process. Sessions last 12 hours.
 
+Default QC thresholds are read from `sde.lu_wq_logger_qc_threshold` on every submission load
+(one row per parameter, region `All`; a named-region row such as South overrides the range only;
+a null limit means no limit). Change thresholds by updating that table, no deploy needed. While
+the table does not exist the tool falls back to `proj/logger_review_lib/thresholds_main.json`,
+which also serves the tests. Created by
+`database-admin/db/empa/logger-qc-threshold-lookup/create_threshold_lookup.sql`.
+
 Review decisions and periods are saved in `sde.tbl_wq_logger_review` and
 `sde.tbl_wq_logger_review_period`; finalized copies go in `sde.tbl_wq_logger_final`.
 Raw data are unchanged. The review tables, their audit triggers and

@@ -132,11 +132,11 @@ def roc_test(x, nsteps, suspect_dev, fail_dev, times, sampling_period,
 
 
 def flatline_test(x, multiplier, suspect_n=3, fail_n=5, tol=0.0):
-    """flatline_test.m lines 18-43. count = run length of repeats of the previous value (NaN
-    never equals NaN). count >= suspect_n*m and < fail_n*m marks ONLY the last 3 points
-    suspect (flag(i-2:i)); count >= fail_n*m marks the last 5 fail (flag(i-4:i)). Earlier
-    points of a long run keep the 1 they got earlier. First point stays 2. His code has
-    suspect_n=3, fail_n=5 hardcoded. With his demo m=3 the limits are 9 and 15 repeats.
+    """Based on flatline_test.m lines 18-43. count = run length of repeats of the previous value
+    (NaN never equals NaN). count >= suspect_n*m and < fail_n*m flags point i suspect;
+    count >= fail_n*m flags point i fail. Only point i is flagged, never earlier points
+    (QARTOD, Nicholas 2026-11-23; his MATLAB flagged flag(i-2:i) and flag(i-4:i)). Earlier
+    points of a run keep the 1 they got. First point stays 2.
     Added: tol > 0 counts |x[i]-x[i-1]| <= tol as a repeat (tol=0 is exact equality)."""
     x = np.asarray(x, float)
     m = multiplier
@@ -146,9 +146,9 @@ def flatline_test(x, multiplier, suspect_n=3, fail_n=5, tol=0.0):
         same = (x[i] == x[i - 1]) if tol <= 0 else (abs(x[i] - x[i - 1]) <= tol)
         count = count + 1 if same else 0
         if count >= m * suspect_n and count < m * fail_n:
-            flag[max(0, i - 2):i + 1] = SUSPECT
+            flag[i] = SUSPECT
         elif count >= m * fail_n:
-            flag[max(0, i - 4):i + 1] = FAIL
+            flag[i] = FAIL
         elif np.isnan(x[i]):
             flag[i] = MISSING
         else:

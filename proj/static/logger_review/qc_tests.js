@@ -75,8 +75,9 @@ const QC = (() => {
     for (let i = 1; i < n; i++) {
       const same = tol <= 0 ? x[i] === x[i - 1] : Math.abs(x[i] - x[i - 1]) <= tol;
       count = same ? count + 1 : 0;
-      if (count >= m * sn && count < m * fn) f.fill(SUS, Math.max(0, i - 2), i + 1);
-      else if (count >= m * fn) f.fill(FAIL, Math.max(0, i - 4), i + 1);
+      // Only point i is flagged, never earlier points (QARTOD, Nicholas 2026-11-23).
+      if (count >= m * sn && count < m * fn) f[i] = SUS;
+      else if (count >= m * fn) f[i] = FAIL;
       else if (Number.isNaN(x[i])) f[i] = MISS;
       else f[i] = PASS;
     }

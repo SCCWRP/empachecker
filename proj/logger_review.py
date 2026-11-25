@@ -185,6 +185,14 @@ def store():
     return cached if cached is not None else Store(g.eng)
 
 
+def default_thresholds():
+    """Default thresholds from sde.lu_wq_logger_qc_threshold, or the bundled JSON while the table is missing."""
+    rows = store().fetch_thresholds()
+    if rows is None:
+        current_app.logger.warning("sde.lu_wq_logger_qc_threshold missing; using thresholds_main.json")
+    return sr.load_defaults(rows)
+
+
 def reviewer_or_401():
     email = current_reviewer()
     if not email:
@@ -289,7 +297,7 @@ def get_submission(sid):
     rows = load_rows(sid)
     sites = store().fetch_sites([r.get("siteid") for r in rows])
     try:
-        data = sr.build_submission(sid, rows, sites)
+        data = sr.build_submission(sid, rows, sites, default_thresholds())
     except sr.DataError as e:
         raise ApiError(422, "bad_data", str(e)) from None
     return jsonify({"submission": data, "review": review_json(store().get_review(sid))})
@@ -335,7 +343,7 @@ def post_decision(sid):
             fields = {"status": "finalized", "reviewer_email": user, "reviewed_date": now, "finalized_date": now}
         raw = load_rows(sid)
         try:
-            cfg = sr.load_defaults()
+            cfg = default_thresholds()
             sites = store().fetch_sites([r.get("siteid") for r in raw])
             gone = removal.removed_readings(raw, review["thresholds"], review["removeFails"],
                                             review["removedPeriods"], review["keptPeriods"], cfg, sites)
@@ -479,7 +487,7 @@ def get_unit_submission(sid):
     rows = load_rows(sid)
     sites = store().fetch_sites([r.get("siteid") for r in rows])
     try:
-        data = sr.build_submission(sid, rows, sites)
+        data = sr.build_submission(sid, rows, sites, default_thresholds())
     except sr.DataError as e:
         raise ApiError(422, "bad_data", str(e)) from None
     items = [{**unit_json(r), "seriesKey": _series_key_for(r, data)} for r in unit_rows]

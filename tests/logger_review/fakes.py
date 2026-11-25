@@ -14,6 +14,7 @@ class FakeStore:
         self.reviews = {}                 # sid -> dict in the get_review shape
         self.final = {}                   # sid -> list of rows
         self.writes = []                  # log of write calls
+        self.thresholds = None            # lookup rows; None = table missing, JSON defaults
 
     def _need_tables(self):
         if self.missing_tables:
@@ -51,6 +52,9 @@ class FakeStore:
 
     def fetch_raw(self, sid, limit):
         return copy.deepcopy(self.raw.get(sid, [])[:limit])
+
+    def fetch_thresholds(self):
+        return copy.deepcopy(self.thresholds)
 
     def fetch_sites(self, siteids):
         return {s: self.sites[s] for s in siteids if s in self.sites}

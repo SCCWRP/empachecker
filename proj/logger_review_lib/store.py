@@ -16,6 +16,7 @@ RAW = "sde.tbl_wq_logger_raw"
 REVIEW = "sde.tbl_wq_logger_review"
 PERIOD = "sde.tbl_wq_logger_review_period"
 FINAL = "sde.tbl_wq_logger_final"
+THRESHOLD = "sde.lu_wq_logger_qc_threshold"   # default thresholds, read only by the app
 CHUNK = 2000
 MIN_DATA_DATE = "2023-01-01"   # only submissions with a reading on or after this date are reviewed
 COLUMN = re.compile(r"^[a-z_][a-z0-9_]*$")
@@ -176,6 +177,15 @@ class Store:
         sql = text(f"SELECT * FROM {RAW} WHERE submissionid = :sid ORDER BY samplecollectiontimestamp, objectid LIMIT :limit")
         with self.engine.connect() as c:
             return [dict(r) for r in c.execute(sql, {"sid": sid, "limit": limit}).mappings()]
+
+    def fetch_thresholds(self):
+        """Rows of the default threshold lookup, or None when the table does not exist yet."""
+        sql = text(f"SELECT * FROM {THRESHOLD} ORDER BY parameter, region")
+        try:
+            with _guard(), self.engine.connect() as c:
+                return [dict(r) for r in c.execute(sql).mappings()]
+        except ReviewTablesMissing:
+            return None
 
     def fetch_sites(self, siteids):
         siteids = sorted({s for s in siteids if s})

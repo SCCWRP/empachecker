@@ -32,8 +32,58 @@ class DataError(ValueError):
     """The raw rows cannot be turned into series (for example an unknown timezone)."""
 
 
-def load_defaults():
-    return qh.load_config(str(THRESHOLDS_FILE))["parameters"]
+def load_defaults(rows=None):
+    """Default thresholds per parameter.
+
+    rows: sde.lu_wq_logger_qc_threshold rows (Store.fetch_thresholds), the live source. Without
+    them the bundled thresholds_main.json is used (tests, and the app before the table exists)."""
+    if rows is None:
+        return qh.load_config(str(THRESHOLDS_FILE))["parameters"]
+    return defaults_from_rows(rows)
+
+
+def _num(v):
+    return None if v is None else float(v)
+
+
+def _block(r, cols):
+    """A test block from lookup columns, or None when every column is null."""
+    b = {k: _num(r.get(c)) for k, c in cols.items()}
+    return b if any(v is not None for v in b.values()) else None
+
+
+RANGE_COLS = {"fail_min": "range_fail_min", "suspect_min": "range_suspect_min",
+              "suspect_max": "range_suspect_max", "fail_max": "range_fail_max"}
+
+
+def defaults_from_rows(rows):
+    """Lookup rows -> the parameter dict thresholds_main.json holds.
+
+    Region 'All' rows give the full block; rows for a named region give range_by_region."""
+    out = {}
+    for r in rows:
+        if r["region"] != "All":
+            continue
+        p = {"sheet_name": r.get("parameter_name"), "unit": r.get("unit"),
+             "range": _block(r, RANGE_COLS),
+             "spike": _block(r, {"suspect": "spike_suspect", "fail": "spike_fail"}),
+             "roc": _block(r, {"suspect_sd": "roc_suspect_sd", "fail_sd": "roc_fail_sd",
+                               "min_step": "roc_min_step"}),
+             "flatline": _block(r, {"suspect_n": "flatline_suspect_n", "fail_n": "flatline_fail_n",
+                                    "tol": "flatline_tol"})}
+        if p["flatline"]:
+            for k in ("suspect_n", "fail_n"):
+                if p["flatline"][k] is not None:
+                    p["flatline"][k] = int(p["flatline"][k])
+        if r.get("notes"):
+            p["notes"] = r["notes"]
+        out[r["parameter"]] = p
+    for r in rows:
+        if r["region"] != "All" and r["parameter"] in out:
+            rng = _block(r, RANGE_COLS)
+            if rng:
+                out[r["parameter"]].setdefault("range_by_region", {})[r["region"]] = rng
+    return out
 
 
 def json_value(v):
