@@ -255,7 +255,7 @@ class Store:
         return rows
 
     def get_unit_review(self, objectid):
-        sql = text(f"SELECT objectid, parameter FROM {UNIT} WHERE objectid = :objectid")
+        sql = text(f"SELECT objectid, parameter, submissionid FROM {UNIT} WHERE objectid = :objectid")
         with _guard(), self.engine.connect() as c:
             r = c.execute(sql, {"objectid": objectid}).mappings().first()
         return dict(r) if r else None

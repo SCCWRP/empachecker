@@ -38,6 +38,7 @@ def make_app(store, **config):
     app.mail_from = "checker@example.org"
     app.config["MAIL_SERVER"] = "localhost"
     app.config["LOGGER_REVIEW_STORE"] = store
+    app.config["LOGGER_REVIEW_SUBMISSION_IDS"] = None   # every submission; test_review_limit covers the limit
     app.config.update(config)
     app.register_blueprint(lr.logger_review)
     return app

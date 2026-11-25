@@ -36,6 +36,11 @@ LOCK_SECONDS = 15 * 60        # how long that lockout lasts
 SESSION_SECONDS = 12 * 60 * 60
 DEFAULT_ROW_LIMIT = 100000
 MAX_PAGE = 1000
+# Only these submissions are open in the tool, for Jan and Nicholas's side by side test review
+# (Jan, 2026-11-24: "maybe we could add 5 submissions for us to review"). Single sensor, not yet
+# reviewed, North and South, CTD, minidot, EXO and troll. App config LOGGER_REVIEW_SUBMISSION_IDS
+# overrides this; None there opens every eligible submission again.
+REVIEW_SUBMISSION_IDS = (1786295104, 1791239881, 1787681209, 1794869184, 1794869080)
 MULTI_SENSOR_MESSAGE = "This submission has more than one sensor and cannot be finalized here yet."
 STATUS_LABEL = {"not_reviewed": "Not reviewed", "draft": "Draft", "needs_another_qa": "Needs another QA",
                 "finalized": "Finalized", "rejected": "Rejected"}
@@ -246,8 +251,19 @@ def warm_list_cache(app):
     threading.Thread(target=run, daemon=True).start()
 
 
+def review_ids():
+    """The submission ids open for review, or None when every eligible submission is open."""
+    ids = current_app.config.get("LOGGER_REVIEW_SUBMISSION_IDS", REVIEW_SUBMISSION_IDS)
+    return None if ids is None else {int(i) for i in ids}
+
+
+def is_open(sid):
+    ids = review_ids()
+    return ids is None or int(sid) in ids
+
+
 def require_submission(sid):
-    if not store().submission_exists(sid):
+    if not is_open(sid) or not store().submission_exists(sid):
         raise ApiError(404, "not_found", f"Submission {sid} was not found.")
 
 
@@ -276,7 +292,9 @@ def list_submissions():
         raise ValidationError("limit and offset must be integers") from None
     if not 1 <= limit <= MAX_PAGE or offset < 0:
         raise ValidationError(f"limit must be 1 to {MAX_PAGE} and offset 0 or more")
-    rows, total = store().list_submissions(status, limit, offset, eligible_ids())
+    ids = review_ids()
+    ids = eligible_ids() if ids is None else sorted(ids, reverse=True)
+    rows, total = store().list_submissions(status, limit, offset, ids)
     items = []
     for r in rows:
         items.append({"submissionId": str(r["submissionid"]), "datatype": r.get("datatype"),
@@ -418,7 +436,7 @@ def unit_json(r):
 @logger_review.get("/logger-review/api/unit-review")
 def list_unit_review():
     reviewer_or_401()
-    rows = store().list_unit_reviews()
+    rows = [r for r in store().list_unit_reviews() if is_open(r["submissionid"])]
     with _unit_lock:
         refresh = dict(_unit_refresh)
     checked = [r["last_checked_date"] for r in rows if r.get("last_checked_date")]
@@ -444,7 +462,7 @@ def put_unit(objectid):
         raise ValidationError("correctUnit must be a unit or null")
     unit = (unit or "").strip() or None
     row = store().get_unit_review(objectid)
-    if row is None:
+    if row is None or not is_open(row["submissionid"]):
         raise ApiError(404, "not_found", "That series is not in the unit review list.")
     if unit is not None and unit not in store().unit_options().get(row["parameter"], []):
         raise ValidationError(f"{unit} is not an allowed unit for {row['parameter']}")
@@ -474,7 +492,7 @@ def _series_key_for(item, payload):
 
 def submission_unit_rows(sid):
     rows = [r for r in store().list_unit_reviews() if str(r["submissionid"]) == str(sid)]
-    if not rows:
+    if not rows or not is_open(sid):
         raise ApiError(404, "not_found", "That submission is not in the unit review list.")
     return rows
 

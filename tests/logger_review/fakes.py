@@ -120,7 +120,7 @@ class FakeUnitStore(FakeStore):
     def get_unit_review(self, objectid):
         self._need_tables()
         r = self.units.get(objectid)
-        return {"objectid": r["objectid"], "parameter": r["parameter"]} if r else None
+        return {"objectid": r["objectid"], "parameter": r["parameter"], "submissionid": r["submissionid"]} if r else None
 
     def save_unit_flags(self, flagged, checked_at, user):
         self._need_tables()

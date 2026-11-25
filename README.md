@@ -58,6 +58,12 @@ start with Email and Sign In. Approved emails receive a single-use code and then
 only the code form and confirmation; unauthorized emails receive a clear error at the email step. Codes last 10 minutes, permit five attempts
 and run in the existing single uWSGI process. Sessions last 12 hours.
 
+For Jan and Nicholas's test review the tool opens only the 5 submissions in
+`REVIEW_SUBMISSION_IDS` (`proj/logger_review.py`): the list, review, decision and Unit Review
+endpoints treat any other id as not found. Set `LOGGER_REVIEW_SUBMISSION_IDS` to `null` in
+`proj/config/config.json` (or `REVIEW_SUBMISSION_IDS = None`) to open every eligible submission
+again.
+
 Default QC thresholds are read from `sde.lu_wq_logger_qc_threshold` on every submission load
 (one row per parameter, region `All`; a named-region row such as South overrides the range only;
 a null limit means no limit). Change thresholds by updating that table, no deploy needed. While
