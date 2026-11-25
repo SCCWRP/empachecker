@@ -271,6 +271,15 @@ class Store:
                                             "reviewer_email": user if correct_unit else None,
                                             "reviewed_date": now() if correct_unit else None, "user": user})
 
+    def save_units(self, updates, user):
+        """Record the correct unit of several series, [(objectid, unit)], in one transaction."""
+        rows = [{"objectid": oid, "correct_unit": unit, "reviewer_email": user if unit else None,
+                 "reviewed_date": now() if unit else None, "user": user} for oid, unit in updates]
+        if not rows:
+            return
+        with _guard(), self.engine.begin() as c:
+            c.execute(text(SQL_SAVE_UNIT), rows)
+
     # ---- writes
 
     def _write_review(self, c, sid, review, user, fields):

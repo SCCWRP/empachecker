@@ -137,6 +137,103 @@ def test_refresh_does_not_start_twice():
     assert c.post("/logger-review/api/unit-review/refresh").get_json()["started"] is False
 
 
+# ---- submission view and confirm
+
+def unit_client(raw, sites, sid, who=A):
+    """A store holding the fixture rows of sid, with every plotted series of the first sensor flagged."""
+    from proj.logger_review_lib import series as sr
+    rows = raw[sid]
+    payload = sr.build_submission(sid, rows, sites)
+    store = FakeUnitStore([], raw, sites)
+    first = rows[0]
+    for n, (key, s) in enumerate(list(payload["series"].items())[:2], start=1):
+        store.units[n] = {"objectid": n, "series_key": key, "submissionid": sid, "siteid": first["siteid"],
+                          "stationno": first["stationno"], "sensortype": first["sensortype"], "sensorid": first["sensorid"],
+                          "parameter": s["parameter"], "recorded_unit": s["unit"], "n_values": 5, "series_mean": 10.0,
+                          "usual_mean": 1.0, "ratio": 10.0, "flagged": True, "last_checked_date": "2026-11-17T00:00:00+00:00",
+                          "correct_unit": None, "reviewer_email": None, "reviewed_date": None}
+    store.OPTIONS = {p: [u, "other"] for p, u in {n["parameter"]: n["recorded_unit"] for n in store.units.values()}.items()}
+    app = make_app(store)
+    c = app.test_client()
+    if who:
+        with c.session_transaction() as s:
+            s["logger_review_email"] = who
+            s["logger_review_signed_at"] = time.time()
+    return c, store, payload
+
+
+SID = 1770678690
+
+
+def test_unit_submission_returns_payload_items_and_series_keys(rows_by_sid, fixture):
+    c, store, payload = unit_client(rows_by_sid, fixture["sites"], SID)
+    data = c.get(f"/logger-review/api/unit-review/submissions/{SID}").get_json()
+    assert data["submission"]["id"] == str(SID) and set(data["submission"]["series"]) == set(payload["series"])
+    assert len(data["items"]) == 2
+    for item in data["items"]:
+        assert item["seriesKey"] in data["submission"]["series"]
+        s = data["submission"]["series"][item["seriesKey"]]
+        assert (s["parameter"], s["unit"]) == (item["parameter"], item["recordedUnit"])
+
+
+def test_unit_submission_key_matches_when_station_types_differ(rows_by_sid, fixture):
+    c, store, _ = unit_client(rows_by_sid, fixture["sites"], SID)
+    for u in store.units.values():
+        u["stationno"] = float(u["stationno"]) if str(u["stationno"]).replace(".", "").isdigit() else u["stationno"]
+    items = c.get(f"/logger-review/api/unit-review/submissions/{SID}").get_json()["items"]
+    assert all(i["seriesKey"] for i in items)
+
+
+def test_unit_submission_unknown_is_404_and_signed_out_is_401(rows_by_sid, fixture):
+    c, store, _ = unit_client(rows_by_sid, fixture["sites"], SID)
+    assert c.get("/logger-review/api/unit-review/submissions/12345").status_code == 404
+    assert c.get("/logger-review/api/unit-review/submissions/abc").status_code == 400
+    out, _, _ = unit_client(rows_by_sid, fixture["sites"], SID, who=None)
+    assert out.get(f"/logger-review/api/unit-review/submissions/{SID}").status_code == 401
+    assert out.put(f"/logger-review/api/unit-review/submissions/{SID}/confirm", json={"units": {}}).status_code == 401
+
+
+def test_unit_submission_works_before_2023(rows_by_sid, fixture):
+    old = {SID: [{**r, "samplecollectiontimestamp": "2019" + str(r["samplecollectiontimestamp"])[4:]} for r in rows_by_sid[SID]]}
+    c, store, _ = unit_client(old, fixture["sites"], SID)
+    assert c.get(f"/logger-review/api/submissions/{SID}").status_code == 404      # Expert Review rule
+    r = c.get(f"/logger-review/api/unit-review/submissions/{SID}")
+    assert r.status_code == 200 and len(r.get_json()["items"]) == 2
+
+
+def test_confirm_saves_every_series_in_one_write(rows_by_sid, fixture):
+    c, store, _ = unit_client(rows_by_sid, fixture["sites"], SID)
+    units = {str(o): r["recorded_unit"] for o, r in store.units.items()}
+    units["1"] = "other"
+    r = c.put(f"/logger-review/api/unit-review/submissions/{SID}/confirm", json={"units": units})
+    assert r.status_code == 200
+    items = r.get_json()["items"]
+    assert [i["correctUnit"] for i in items] == [units[str(i["id"])] for i in items]
+    assert all(i["reviewerEmail"] == A and i["reviewedDate"] for i in items)
+    assert [w[0] for w in store.writes] == ["units"] and len(store.writes[0][1]) == 2
+    again = c.put(f"/logger-review/api/unit-review/submissions/{SID}/confirm", json={"units": {**units, "1": store.units[1]["recorded_unit"]}})
+    assert again.status_code == 200 and store.units[1]["correct_unit"] == store.units[1]["recorded_unit"]
+
+
+@pytest.mark.parametrize("mutate", [
+    lambda u: u.pop("1"), lambda u: u.update({"1": ""}), lambda u: u.update({"1": "furlongs"}),
+    lambda u: u.update({"1": 5}), lambda u: u.update({"999": "m"}), lambda u: u.clear()])
+def test_confirm_rejects_missing_or_invalid_units_without_writing(rows_by_sid, fixture, mutate):
+    c, store, _ = unit_client(rows_by_sid, fixture["sites"], SID)
+    units = {str(o): r["recorded_unit"] for o, r in store.units.items()}
+    mutate(units)
+    r = c.put(f"/logger-review/api/unit-review/submissions/{SID}/confirm", json={"units": units})
+    assert r.status_code == 400
+    assert store.writes == [] and all(u["correct_unit"] is None for u in store.units.values())
+
+
+def test_confirm_bad_body_and_unknown_submission(rows_by_sid, fixture):
+    c, store, _ = unit_client(rows_by_sid, fixture["sites"], SID)
+    assert c.put(f"/logger-review/api/unit-review/submissions/{SID}/confirm", json={"units": []}).status_code == 400
+    assert c.put("/logger-review/api/unit-review/submissions/12345/confirm", json={"units": {}}).status_code == 404
+    assert store.writes == []
+
+
 # ---- SQL
 
 UNIT_TABLE = "sde.tbl_wq_logger_unit_review"
@@ -158,6 +255,13 @@ def test_refresh_never_overwrites_recorded_units():
 
 def test_unit_save_is_scoped_to_one_row():
     assert st.SQL_SAVE_UNIT.strip().endswith("WHERE objectid = :objectid")
+
+
+def test_confirm_uses_the_scoped_save_statement():
+    import inspect
+    src = inspect.getsource(st.Store.save_units)
+    assert "SQL_SAVE_UNIT" in src and "SELECT" not in src and "DELETE" not in src
+    assert "WHERE objectid = :objectid" in st.SQL_SAVE_UNIT and st.SQL_SAVE_UNIT in st.UNIT_WRITE_SQL
 
 
 def test_series_means_sql_only_reads_raw():

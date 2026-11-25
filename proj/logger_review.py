@@ -445,6 +445,74 @@ def put_unit(objectid):
     return jsonify({"item": unit_json(saved) if saved else None})
 
 
+def _station_norm(v):
+    try:
+        return f"{float(v):g}"
+    except (TypeError, ValueError):
+        return str(v)
+
+
+def _series_key_for(item, payload):
+    """The payload series key of a unit review item, or None. Station numbers match as numbers."""
+    series = (payload or {}).get("series", {})
+    want = (str(item.get("siteid") or ""), _station_norm(item.get("stationno")), str(item.get("sensortype") or ""),
+            str(item.get("sensorid") or ""), item["parameter"], item["recorded_unit"])
+    for key in series:
+        parts = key.split("|")
+        if len(parts) == 6 and (parts[0], _station_norm(parts[1]), *parts[2:]) == want:
+            return key
+    return None
+
+
+def submission_unit_rows(sid):
+    rows = [r for r in store().list_unit_reviews() if str(r["submissionid"]) == str(sid)]
+    if not rows:
+        raise ApiError(404, "not_found", "That submission is not in the unit review list.")
+    return rows
+
+
+@logger_review.get("/logger-review/api/unit-review/submissions/<sid>")
+def get_unit_submission(sid):
+    reviewer_or_401()
+    sid = validation.submission_id(sid)
+    unit_rows = submission_unit_rows(sid)
+    rows = load_rows(sid)
+    sites = store().fetch_sites([r.get("siteid") for r in rows])
+    try:
+        data = sr.build_submission(sid, rows, sites)
+    except sr.DataError as e:
+        raise ApiError(422, "bad_data", str(e)) from None
+    items = [{**unit_json(r), "seriesKey": _series_key_for(r, data)} for r in unit_rows]
+    return jsonify({"submission": data, "items": items})
+
+
+@logger_review.put("/logger-review/api/unit-review/submissions/<sid>/confirm")
+def confirm_unit_submission(sid):
+    user = reviewer_or_401()
+    sid = validation.submission_id(sid)
+    body = json_body()
+    units = body.get("units")
+    if not isinstance(units, dict):
+        raise ValidationError("units must be an object of objectid to unit")
+    rows = submission_unit_rows(sid)
+    allowed = store().unit_options()
+    by_id = {str(r["objectid"]): r for r in rows}
+    if set(units) - set(by_id):
+        raise ValidationError("units has a series that is not in this submission")
+    updates = []
+    for oid, r in by_id.items():
+        unit = units.get(oid)
+        if not isinstance(unit, str) or not unit.strip():
+            raise ValidationError("Choose a unit for every parameter before confirming.")
+        unit = unit.strip()
+        if unit not in allowed.get(r["parameter"], []):
+            raise ValidationError(f"{unit} is not an allowed unit for {r['parameter']}")
+        updates.append((r["objectid"], unit))
+    store().save_units(updates, user)
+    fresh = [unit_json(r) for r in submission_unit_rows(sid)]
+    return jsonify({"items": fresh})
+
+
 @logger_review.errorhandler(Exception)
 def unexpected(exc):
     from werkzeug.exceptions import HTTPException

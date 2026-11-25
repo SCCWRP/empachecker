@@ -16,23 +16,9 @@
   main { height:100%; display:grid; grid-template-rows:auto minmax(0, 1fr); gap:8px; position:relative; }
   .tabs { display:flex; gap:6px; }
   .tabs button[aria-selected="true"] { background:var(--blue-dark); }
-  .unit-review { display:flex; flex-direction:column; gap:10px; min-height:0; }
-  .unit-toolbar { display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; }
-  .unit-toolbar h2 { margin-right:auto; align-self:center; }
-  .unit-toolbar label { flex-direction:row; align-items:center; gap:6px; }
-  .unit-toolbar select { width:auto; }
-  .unit-instructions ul { padding-left:20px; margin:8px 0 0; }
-  .unit-instructions li+li { margin-top:6px; }
-  .unit-table-wrap { flex:1; min-height:0; overflow:auto; border:1px solid var(--border); border-radius:8px; }
-  .unit-table { width:100%; border-collapse:collapse; font-size:.875rem; line-height:1.3; }
-  .unit-table th,.unit-table td { padding:6px 8px; text-align:left; border-bottom:1px solid var(--border); vertical-align:middle; }
-  .unit-table thead th { position:sticky; top:0; z-index:1; background:var(--bg); color:var(--ink-light); font-weight:500; white-space:nowrap; }
-  .unit-table td { white-space:nowrap; }
-  .unit-table td.num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
-  .unit-table tr.first-of-submission td { border-top:2px solid var(--border); }
-  .unit-table select { height:32px; padding:4px 6px; min-width:150px; }
-  .unit-table .off-high { color:var(--red); }
-  .unit-table .off-low { color:var(--blue-dark); }
+  .unit-list { display:flex; flex-direction:column; gap:12px; flex:1; min-height:0; }
+  .unit-series { display:flex; flex-direction:column; gap:6px; min-width:0; padding-bottom:12px; border-bottom:1px solid var(--border); }
+  .unit-name { font-size:1rem; font-weight:500; line-height:1.3; }
   h1,h2,button { font-family:"Google Sans",system-ui,sans-serif; }
   h1 { margin:0; font-size:1.4rem; font-weight:500; }
   h2 { margin:0; font-size:1.2rem; font-weight:500; }
@@ -98,7 +84,7 @@
   .plot-header { min-width:0; padding:8px 4px 0; overflow-wrap:anywhere; }
   .plot-title { color:var(--ink); font-size:16px; font-weight:400; line-height:1.4; }
   .plot-title .header-label { font-weight:500; }
-  #plot { min-width:0; min-height:0; width:100%; height:100%; }
+  #plot,#unit-plot { min-width:0; min-height:0; width:100%; height:100%; }
   .review { display:flex; flex-direction:column; gap:10px; overflow-y:auto; }
   .notes-field { flex:1; min-height:0; }
   .switch-row { flex-direction:row; align-items:center; justify-content:space-between; gap:8px; min-height:32px; color:var(--ink); font-size:1rem; font-weight:400; cursor:pointer; }
@@ -259,28 +245,43 @@
       <p id="review-message" class="message" role="status" hidden></p>
     </aside>
   </div>
-  <section id="unit-review" class="card unit-review" role="tabpanel" aria-labelledby="unit-title" hidden>
-    <div class="unit-toolbar">
-      <h2 id="unit-title">Unit Review</h2>
-      <label for="unit-filter">Show <select id="unit-filter"></select></label>
-      <button id="unit-instructions-toggle" type="button" aria-expanded="false" aria-controls="unit-instructions">Instructions</button>
-      <button id="unit-refresh" type="button">Refresh list</button>
-    </div>
-    <div id="unit-instructions" class="message unit-instructions" hidden>
-      <ul>
-        <li>A sensor series is one submission, sensor, parameter and recorded unit. It is listed when its mean is 10× or more above or below the usual mean, which is the median of all series means for the same parameter and unit.</li>
-        <li>Choose the correct unit for each listed series. Choosing the recorded unit means the unit is right. To clear an answer, pick Choose unit. Each choice saves right away. Raw data is not changed.</li>
-        <li>Refresh list reruns the check over all logger data, about 3 minutes. It adds new series and keeps every recorded answer.</li>
-      </ul>
-    </div>
-    <p id="unit-message" class="message" role="status" hidden></p>
-    <div class="unit-table-wrap">
-      <table class="unit-table">
-        <thead><tr><th scope="col">Submission</th><th scope="col">Site</th><th scope="col">Station</th><th scope="col">Sensor</th><th scope="col">Parameter</th><th scope="col">Recorded unit</th><th scope="col">Mean</th><th scope="col">Usual mean</th><th scope="col">Times off</th><th scope="col">Correct unit</th><th scope="col">Reviewed by</th></tr></thead>
-        <tbody id="unit-rows"></tbody>
-      </table>
-    </div>
+  <section id="unit-instructions" class="card instructions" hidden aria-labelledby="unit-instructions-title">
+    <h2 id="unit-instructions-title">Instructions</h2>
+    <ul>
+      <li>Choose a Submission ID. The plot shows only the parameters whose mean is 10 times or more above or below the usual mean for that parameter and unit.</li>
+      <li>For each parameter, choose the correct unit in the Unit Panel. Choosing the unit as recorded means the recorded unit is right.</li>
+      <li>Select Confirm units to save every parameter of the submission. Raw data is not changed. You can change a unit and confirm again.</li>
+    </ul>
   </section>
+  <div id="unit-workspace" class="workspace" data-drawer="" hidden>
+    <aside id="unit-controls" class="card controls" aria-label="Unit review controls">
+      <label class="selector-label" for="unit-submission">Submission ID <select id="unit-submission"></select></label>
+      <div>
+        <button id="unit-instructions-toggle" type="button" aria-expanded="false" aria-controls="unit-instructions">Instructions</button>
+      </div>
+    </aside>
+    <section class="card plot-card" aria-label="Flagged logger measurements">
+      <div class="actions">
+        <button class="drawer-button" id="unit-controls-toggle" type="button" aria-expanded="false" aria-controls="unit-controls">Controls</button>
+        <button class="drawer-button" id="unit-panel-toggle" type="button" aria-expanded="false" aria-controls="unit-panel">Unit Panel</button>
+      </div>
+      <p id="unit-plot-instruction" class="plot-instruction"><span class="header-label">Instruction:</span> Click and drag to zoom. Double-click to reset zoom.</p>
+      <div class="plot-header">
+        <div id="unit-plot-title" class="plot-title"></div>
+      </div>
+      <div class="plot-area">
+        <div id="unit-plot"></div>
+      </div>
+    </section>
+    <aside id="unit-panel" class="card review" aria-labelledby="unit-panel-title">
+      <h2 id="unit-panel-title">Unit Panel</h2>
+      <div id="unit-list" class="unit-list"></div>
+      <div class="review-actions">
+        <button id="unit-confirm" type="button" disabled>Confirm units</button>
+      </div>
+      <p id="unit-message" class="message" role="status" hidden></p>
+    </aside>
+  </div>
 </main>
 <script src="{{ static_base }}/qc_tests.js"></script>
 <script>
@@ -610,8 +611,8 @@ function headerDate(iso) {
   const p=dayParts(iso);
   return p?MONTHS[p.m]+' '+p.d+', '+p.y:'';
 }
-function renderHeader() {
-  const sub=currentSubmission(),m=sub.meta||{};
+function titleNodes(sub) {
+  const m=sub.meta||{};
   const has=v=>v!==null&&v!==undefined&&String(v).trim()!=='';
   const type=has(m.sensor_type)?String(m.sensor_type).replace(/^[a-z]/,c=>c.toUpperCase()):'';
   const pieces=[['Estuary',m.estuary_name],['Station',m.station],['Sensor Type',type],['SensorID',m.sensor_id],
@@ -624,8 +625,9 @@ function renderHeader() {
     val.textContent=String(value)+(last?(m.more>0?', +'+m.more+' more':''):', ');
     nodes.push(name,val);
   }
-  $('plot-title').replaceChildren(...nodes);
+  return nodes;
 }
+function renderHeader() { $('plot-title').replaceChildren(...titleNodes(currentSubmission())); }
 function showSubmission() {
   for (const ui of Object.values(periodUi)) for (const state of Object.values(ui)) {state.on=false;state.start='';state.end='';}
   message('app-message',''); message('review-message','');closeParameterOptions();
@@ -900,15 +902,14 @@ function setDrawer(drawer) {
 }
 for (const name of ['controls','review']) $(name+'-toggle').onclick=()=>setDrawer($('workspace').dataset.drawer===name?'':name);
 $('instructions-toggle').onclick=e=>{const open=$('instructions').hidden;$('instructions').hidden=!open;e.currentTarget.setAttribute('aria-expanded',String(open));};
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('parameter-options').hidden){closeParameterOptions(true);return;}setDrawer('');$('instructions').hidden=true;$('instructions-toggle').setAttribute('aria-expanded','false');}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('parameter-options').hidden){closeParameterOptions(true);return;}setDrawer('');setUnitDrawer('');$('unit-instructions').hidden=true;$('unit-instructions-toggle').setAttribute('aria-expanded','false');$('instructions').hidden=true;$('instructions-toggle').setAttribute('aria-expanded','false');}});
 setReviewBusy(false);
 $('reviewer-email').textContent=LR_EMAIL;
 $('sign-out').onclick=()=>{
   fetch(LR_BASE+'/logger-review/api/logout',{method:'POST'}).catch(()=>{}).then(()=>{if(typeof location!=='undefined')location.href=LR_BASE+'/logger-review';});
 };
 // ---- Unit Review tab
-const U = {items:[], options:{}, factor:10, lastChecked:null, refresh:{}, loaded:false, loading:false};
-const UNIT_FILTERS = [['todo','To review'],['done','Reviewed'],['all','All']];
+const U = {items:[], options:{}, loaded:false, cache:{}, choice:{}, seq:0, plotDiv:null, defaults:{}};
 const ptDate = v => v ? new Date(v).toLocaleString('en-US',{timeZone:'America/Los_Angeles',dateStyle:'medium',timeStyle:'short'})+' PT' : '';
 function fmtNum(v) {
   if (v===null||v===undefined||!isFinite(v)) return '';
@@ -916,101 +917,165 @@ function fmtNum(v) {
   return a>=100?n.toFixed(0):a>=1?n.toFixed(2):a===0?'0':n.toPrecision(3);
 }
 function offText(ratio) {
-  if (!(ratio>0)) return {text:'opposite sign', cls:'off-low'};
+  if (!(ratio>0)) return 'opposite sign';
   const times=ratio>=1?ratio:1/ratio, text=times>=100?times.toFixed(0):times.toFixed(1);
-  return ratio>=1?{text:text+'× higher', cls:'off-high'}:{text:text+'× lower', cls:'off-low'};
+  return text+(ratio>=1?'× higher':'× lower');
 }
 function showTab(name) {
   const units=name==='units';
-  $('workspace').hidden=units; $('unit-review').hidden=!units;
+  $('workspace').hidden=units; $('unit-workspace').hidden=!units;
+  $('instructions').hidden=true; $('unit-instructions').hidden=true;
+  $('instructions-toggle').setAttribute('aria-expanded','false'); $('unit-instructions-toggle').setAttribute('aria-expanded','false');
   $('tab-expert').setAttribute('aria-selected',String(!units)); $('tab-units').setAttribute('aria-selected',String(units));
-  if (units) { message('app-message',''); if (!U.loaded) loadUnits(); }
+  if (units) { message('app-message',''); if (!U.loaded) loadUnits(); else drawCurrentUnit(); }
 }
-function unitFilter() { return $('unit-filter').value||'todo'; }
-function renderUnitFilter() {
-  const todo=U.items.filter(i=>!i.correctUnit), done=U.items.length-todo.length, subs=new Set(todo.map(i=>i.submissionId)).size;
-  populate($('unit-filter'),[['todo','To review ('+todo.length+' series, '+subs+' submissions)'],['done','Reviewed ('+done+')'],['all','All ('+U.items.length+')']],unitFilter());
+function unitSubmissions() {
+  const by={};
+  for (const i of U.items) { const s=by[i.submissionId]||(by[i.submissionId]={id:i.submissionId,todo:false}); if (!i.correctUnit) s.todo=true; }
+  return Object.values(by).sort((a,b)=>Number(b.id)-Number(a.id));
 }
-function cell(tr,text,cls) { const td=document.createElement('td'); td.textContent=text==null?'':String(text); if (cls) td.className=cls; tr.appendChild(td); return td; }
-function unitSelect(item) {
+function renderUnitSubmissions(preferred) {
+  const subs=unitSubmissions();
+  populate($('unit-submission'),subs.map(s=>[s.id,s.id+' ('+(s.todo?'To review':'Units confirmed')+')']),preferred);
+  return subs;
+}
+function chosenUnit(item) { return Object.prototype.hasOwnProperty.call(U.choice,item.id)?U.choice[item.id]:(item.correctUnit||''); }
+function confirmedText(items) {
+  if (!items.length||items.some(i=>!i.correctUnit)) return '';
+  const last=items.reduce((a,b)=>(b.reviewedDate||'')>(a.reviewedDate||'')?b:a);
+  return 'Units confirmed by '+(last.reviewerEmail||'')+', '+ptDate(last.reviewedDate)+'.';
+}
+function unitEntries(d) { return d.items.filter(i=>i.seriesKey&&d.submission.series[i.seriesKey]).map(i=>[i.seriesKey,d.submission.series[i.seriesKey],i]); }
+function unitPlotSpec(d) {
+  const entries=unitEntries(d), n=entries.length, sid=d.submission.id;
+  const layout={
+    font:{family:'Roboto, system-ui, sans-serif',color:'#202124',size:12},
+    margin:{l:AXIS_SLOT*Math.ceil(n/2),r:n>1?AXIS_SLOT*Math.floor(n/2):12,t:20,b:140},
+    paper_bgcolor:'#fff',plot_bgcolor:'#fff',hovermode:'closest',dragmode:'zoom',
+    legend:{orientation:'h',x:.5,xanchor:'center',y:-.22,yanchor:'top',borderwidth:0,itemwidth:40,font:{size:14}},
+    uirevision:sid,autosize:true
+  };
+  const defaults={}, traces=[];
+  const stamps=entries.flatMap(([,s])=>s.timestamps).filter(Boolean);
+  const zones=[...new Set(entries.flatMap(([,s])=>s.zones))];
+  layout.xaxis={type:'date',anchor:'y',domain:[0,1],showgrid:false,zeroline:false,automargin:true,title:zones.length===1?'Logger time ('+zones[0]+')':'Logger local time',uirevision:sid};
+  if (stamps.length) { defaults.xaxis=[stamps.reduce((a,b)=>b<a?b:a),stamps.reduce((a,b)=>b>a?b:a)]; layout.xaxis.range=defaults.xaxis.slice(); layout.xaxis.autorange=false; }
+  for (const [row,[key,s]] of entries.entries()) {
+    const suffix=row===0?'':String(row+1), color=PARAMETER_COLORS[s.parameter]||'#57758c', side=row%2===0?'left':'right';
+    layout['yaxis'+suffix]={anchor:row?'free':'x',domain:[0,1],side,title:{text:s.label+' ('+s.unit+')',font:{color},standoff:8},
+      tickfont:{color,size:12},tickcolor:color,linecolor:color,showline:true,gridcolor:'#edf0f2',showgrid:row===0,zeroline:false,automargin:false,uirevision:sid+'|'+key};
+    if (row) { const k=Math.floor(row/2); Object.assign(layout['yaxis'+suffix],{overlaying:'y',position:side==='left'?0:1,shift:side==='left'?-AXIS_SLOT*k:AXIS_SLOT*k}); }
+    const finite=s.x.filter(v=>v!==null&&Number.isFinite(v));
+    if (finite.length) {
+      const lo=finite.reduce((a,b)=>b<a?b:a), hi=finite.reduce((a,b)=>b>a?b:a), span=hi-lo;
+      const pad=span>0?span*.05:(Math.abs(hi)>0?Math.abs(hi)*.05:1);
+      defaults['yaxis'+suffix]=[lo-pad,hi+pad]; layout['yaxis'+suffix].range=defaults['yaxis'+suffix].slice(); layout['yaxis'+suffix].autorange=false;
+    }
+    traces.push({xaxis:'x',yaxis:'y'+suffix,x:s.timestamps,y:s.x,mode:'lines',name:s.label,showlegend:true,uid:key,line:{color,width:1.5},
+      text:s.timestamps.map((t,i)=>stampText(t)+(s.zones[i]?' '+s.zones[i]:'')+'<br>'+s.label+': '+s.x[i]+' '+s.unit),hovertemplate:'%{text}<extra></extra>'});
+  }
+  return {traces,layout,defaults};
+}
+function drawUnitPlot(d) {
+  if (U.plotDiv) { try { Plotly.purge(U.plotDiv); } catch (e) {} }
+  U.plotDiv=null; $('unit-plot').replaceChildren();
+  if (!d||!unitEntries(d).length) return Promise.resolve();
+  const {traces,layout,defaults}=unitPlotSpec(d);
+  U.defaults=defaults;
+  const child=document.createElement('div');
+  child.style.width='100%'; child.style.height='100%';
+  $('unit-plot').appendChild(child); U.plotDiv=child;
+  return Promise.resolve(Plotly.newPlot(child,traces,layout,PLOT_CONFIG)).then(()=>{
+    if (typeof child.on==='function') child.on('plotly_doubleclick',()=>{
+      const update={};
+      for (const [axis,range] of Object.entries(U.defaults)) update[axis+'.range']=range.slice();
+      return Plotly.relayout(child,update);
+    });
+  }).catch(err=>{ console.error(err); message('app-message','Plot failed: '+((err&&err.message)||err),true); });
+}
+function unitSeriesBlock(item) {
+  const box=document.createElement('div'); box.className='unit-series';
+  const name=document.createElement('span'); name.className='unit-name'; name.textContent=item.label;
+  name.style.color=PARAMETER_COLORS[item.parameter]||'';
+  box.appendChild(name);
+  for (const text of ['Recorded unit: '+item.recordedUnit,'Mean: '+fmtNum(item.mean),'Usual mean: '+fmtNum(item.usualMean)+' ('+offText(item.ratio)+')']) {
+    const p=document.createElement('p'); p.className='period-line'; p.textContent=text; box.appendChild(p);
+  }
+  const label=document.createElement('label'); label.textContent='Correct unit';
   const sel=document.createElement('select');
-  sel.setAttribute('aria-label','Correct unit for submission '+item.submissionId+' '+item.label);
+  sel.setAttribute('aria-label','Correct unit for '+item.label);
   sel.add(new Option('Choose unit',''));
   for (const u of U.options[item.parameter]||[]) sel.add(new Option(u===item.recordedUnit?u+' (as recorded)':u,u));
-  sel.value=item.correctUnit||'';
-  sel.disabled=!!item._saving;
-  sel.onchange=()=>saveUnit(item,sel.value);
-  return sel;
+  sel.value=chosenUnit(item);
+  sel.onchange=()=>{ U.choice[item.id]=sel.value; message('unit-message',''); };
+  label.appendChild(sel); box.appendChild(label);
+  return box;
 }
-function renderUnits() {
-  const f=unitFilter();
-  const shown=U.items.filter(i=>f==='all'||(f==='todo'?!i.correctUnit:!!i.correctUnit));
-  renderUnitFilter();
-  const rows=[]; let last=null;
-  for (const i of shown) {
-    const tr=document.createElement('tr');
-    if (i.submissionId!==last) tr.className='first-of-submission';
-    cell(tr,i.submissionId!==last?i.submissionId:'');
-    last=i.submissionId;
-    cell(tr,i.siteId); cell(tr,i.station); cell(tr,[i.sensorType,i.sensorId].filter(Boolean).join(' '));
-    cell(tr,i.label); cell(tr,i.recordedUnit);
-    cell(tr,fmtNum(i.mean),'num'); cell(tr,fmtNum(i.usualMean),'num');
-    const off=offText(i.ratio); cell(tr,off.text,'num '+off.cls);
-    cell(tr,'').appendChild(unitSelect(i));
-    cell(tr,i.correctUnit&&i.reviewerEmail?i.reviewerEmail+', '+ptDate(i.reviewedDate):'');
-    rows.push(tr);
+function renderUnitSubmission(id) {
+  const d=U.cache[id];
+  if (!d) { $('unit-list').replaceChildren(); $('unit-plot-title').replaceChildren(); $('unit-confirm').disabled=true; drawUnitPlot(null); return; }
+  $('unit-plot-title').replaceChildren(...titleNodes(d.submission));
+  $('unit-list').replaceChildren(...d.items.map(unitSeriesBlock));
+  $('unit-confirm').disabled=false;
+  message('unit-message',confirmedText(d.items));
+  return drawUnitPlot(d);
+}
+function drawCurrentUnit() { const id=$('unit-submission').value; if (id&&U.cache[id]) return drawUnitPlot(U.cache[id]); }
+async function selectUnitSubmission() {
+  const id=$('unit-submission').value, seq=++U.seq;
+  message('unit-message','');
+  if (!id) { renderUnitSubmission(null); return; }
+  if (!U.cache[id]) {
+    renderUnitSubmission(null); message('app-message','Loading submission '+id+'.');
+    try { const d=await api('GET','/unit-review/submissions/'+id); if (seq!==U.seq) return; U.cache[id]=d; }
+    catch (err) { if (seq===U.seq) message('app-message',err.message,true); return; }
+    message('app-message','');
   }
-  $('unit-rows').replaceChildren(...rows);
-  if (!U.items.length) message('unit-message','No flagged series yet. Select Refresh list to run the check. It takes about 3 minutes.');
-  else if (!shown.length) message('unit-message',f==='todo'?'Every flagged series has a unit.':'No series match this filter.');
-  else if (!U.refresh.running) message('unit-message','');
-  renderRefresh();
-}
-function renderRefresh() {
-  const r=U.refresh||{};
-  $('unit-refresh').disabled=!!r.running||U.loading;
-  $('unit-refresh').textContent=r.running?'Refreshing':'Refresh list';
-  if (r.running) message('unit-message','Checking every logger series. This takes about 3 minutes. You can keep recording units meanwhile.');
-  else if (r.error) message('unit-message',r.error,true);
+  return renderUnitSubmission(id);
 }
 async function loadUnits() {
-  U.loading=true; renderRefresh();
-  if (!U.loaded) message('unit-message','Loading the unit review list.');
+  message('app-message','Loading the unit review list.');
   try {
     const d=await api('GET','/unit-review');
-    const wasRunning=!!U.refresh.running;
-    const saving=new Set(U.items.filter(i=>i._saving).map(i=>i.id));
-    U.items=d.items.map(i=>saving.has(i.id)?{...i,_saving:true}:i);
-    U.options=d.options||{}; U.factor=d.factor||10; U.lastChecked=d.lastChecked; U.refresh=d.refresh||{}; U.loaded=true;
-    message('unit-message','');
-    U.justRefreshed=wasRunning&&!U.refresh.running&&!U.refresh.error;
-  } catch (err) { message('unit-message',err.message,true); U.loading=false; renderRefresh(); return; }
-  U.loading=false;
-  renderUnits();
-  if (U.justRefreshed) message('unit-message','List refreshed '+ptDate(U.refresh.finishedAt)+'. '+(U.refresh.flagged??0)+' series flagged.');
-  if (U.refresh.running) setTimeout(loadUnits,5000);
+    U.items=d.items||[]; U.options=d.options||{}; U.loaded=true;
+  } catch (err) { message('app-message',err.message,true); return; }
+  message('app-message','');
+  const subs=renderUnitSubmissions();
+  if (!subs.length) { message('app-message','No suspected submissions to review.'); renderUnitSubmission(null); return; }
+  const pick=subs.find(s=>s.todo)||subs[0];
+  $('unit-submission').value=pick.id;
+  return selectUnitSubmission();
 }
-async function saveUnit(item,unit) {
-  item._saving=true; renderUnits();
+async function confirmUnits() {
+  const id=$('unit-submission').value, d=U.cache[id];
+  if (!d) return;
+  const units={};
+  for (const i of d.items) { const u=chosenUnit(i); if (!u) { message('unit-message','Choose a unit for every parameter before confirming.',true); return; } units[String(i.id)]=u; }
+  $('unit-confirm').disabled=true;
   try {
-    const d=await api('PUT','/unit-review/'+item.id,{correctUnit:unit||null});
-    const fresh=d.item||{...item,correctUnit:null,reviewerEmail:null,reviewedDate:null};
-    Object.assign(item,fresh); item._saving=false; renderUnits();
-    message('unit-message',unit?'Saved '+unit+' for submission '+item.submissionId+', '+item.label+'.':'Cleared the unit for submission '+item.submissionId+', '+item.label+'.');
-  } catch (err) { item._saving=false; renderUnits(); message('unit-message','Not saved. '+err.message,true); }
+    const r=await api('PUT','/unit-review/submissions/'+id+'/confirm',{units});
+    const fresh=r.items||[];
+    for (const f of fresh) {
+      const item=d.items.find(i=>i.id===f.id); if (item) Object.assign(item,f,{seriesKey:item.seriesKey});
+      const row=U.items.find(i=>i.id===f.id); if (row) Object.assign(row,f);
+      delete U.choice[f.id];
+    }
+    renderUnitSubmissions(id);
+    message('unit-message',confirmedText(d.items));
+  } catch (err) { message('unit-message','Not saved. '+err.message,true); }
+  $('unit-confirm').disabled=false;
 }
-populate($('unit-filter'),UNIT_FILTERS,'todo');
-$('unit-filter').onchange=renderUnits;
+function setUnitDrawer(drawer) {
+  $('unit-workspace').dataset.drawer=drawer;
+  for (const [name,btn] of [['controls','unit-controls-toggle'],['review','unit-panel-toggle']]) $(btn).setAttribute('aria-expanded',String(drawer===name));
+}
+$('unit-controls-toggle').onclick=()=>setUnitDrawer($('unit-workspace').dataset.drawer==='controls'?'':'controls');
+$('unit-panel-toggle').onclick=()=>setUnitDrawer($('unit-workspace').dataset.drawer==='review'?'':'review');
+$('unit-submission').onchange=selectUnitSubmission;
+$('unit-confirm').onclick=confirmUnits;
 $('unit-instructions-toggle').onclick=e=>{const open=$('unit-instructions').hidden;$('unit-instructions').hidden=!open;e.currentTarget.setAttribute('aria-expanded',String(open));};
 $('tab-expert').onclick=()=>showTab('expert');
 $('tab-units').onclick=()=>showTab('units');
-$('unit-refresh').onclick=async()=>{
-  try {
-    const d=await api('POST','/unit-review/refresh');
-    U.refresh=d.refresh||{running:true}; renderRefresh();
-    setTimeout(loadUnits,d.refresh&&d.refresh.running?5000:0);
-  } catch (err) { message('unit-message',err.message,true); }
-};
 loadSubmissionList();
 </script>
 </body>

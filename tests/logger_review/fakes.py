@@ -145,3 +145,12 @@ class FakeUnitStore(FakeStore):
         r["reviewer_email"] = user if correct_unit else None
         r["reviewed_date"] = "2026-11-17T12:00:00+00:00" if correct_unit else None
         self.writes.append(("unit", objectid, correct_unit))
+
+    def save_units(self, updates, user):
+        self._need_tables()
+        for oid, unit in updates:
+            r = self.units[oid]
+            r["correct_unit"] = unit
+            r["reviewer_email"] = user if unit else None
+            r["reviewed_date"] = "2026-11-17T12:00:00+00:00" if unit else None
+        self.writes.append(("units", tuple(updates)))
