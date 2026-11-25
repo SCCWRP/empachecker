@@ -23,7 +23,7 @@ from flask import Blueprint, current_app, g, jsonify, redirect, render_template,
 
 from .logger_review_lib import removal, unit_review, validation
 from .logger_review_lib import series as sr
-from .logger_review_lib.store import ReviewTablesMissing, Store
+from .logger_review_lib.store import ReviewTablesMissing, Store, reviewed_column_missing
 from .logger_review_lib.validation import ValidationError
 
 logger_review = Blueprint("logger_review", __name__)
@@ -211,7 +211,7 @@ def row_limit():
 
 def empty_review():
     return {"exists": False, "status": "draft", "notes": "", "removeFails": False, "removedPeriods": [],
-            "keptPeriods": [], "thresholds": None, "reviewerEmail": None, "reviewedDate": None,
+            "keptPeriods": [], "reviewedParameters": [], "thresholds": None, "reviewerEmail": None, "reviewedDate": None,
             "secondReviewerEmail": None, "secondReviewedDate": None, "finalizedDate": None, "updatedDate": None,
             "decidedAt": None}
 
@@ -219,7 +219,7 @@ def empty_review():
 def review_json(saved):
     if saved is None:
         return empty_review()
-    r = {**saved, "exists": True}
+    r = {**saved, "exists": True, "reviewedParameters": saved.get("reviewedParameters") or []}
     r["decidedAt"] = None if saved["status"] == "draft" else (saved["secondReviewedDate"] or saved["reviewedDate"])
     return r
 
@@ -277,6 +277,29 @@ def load_rows(sid):
         raise ApiError(413, "too_many_rows",
                        f"Submission {sid} has more than {limit} rows, which is too large to review in the page yet.")
     return rows
+
+
+def require_all_reviewed(rows, reviewed, sites):
+    """409 unless every series of the submission is in the saved reviewed set. reviewed is None while the
+    reviewed_parameters column is missing in the database, and then the rule is not enforced here."""
+    if reviewed is None:
+        current_app.logger.warning("reviewed_parameters column missing; not enforcing the all-parameters-reviewed rule")
+        return
+    try:
+        norm = sr.normalize_rows(rows)
+        norm.sort(key=lambda r: (r["samplecollectiontimestamp"], r["objectid"]))   # same order as build_submission
+        series = sr.build_series(norm, default_thresholds(), sites)
+    except sr.DataError as e:
+        raise ApiError(422, "bad_data", str(e)) from None
+    done = set(reviewed)
+    missing = [s for s in series if s.key not in done]
+    if not missing:
+        return
+    counts = {}
+    for s in series:
+        counts[s.parameter] = counts.get(s.parameter, 0) + 1
+    names = [sr.LABELS.get(s.parameter, s.parameter) + (f" ({s.unit})" if counts[s.parameter] > 1 else "") for s in missing]
+    raise ApiError(409, "parameters_not_reviewed", "Review every parameter before finalizing: " + ", ".join(names) + ".")
 
 
 @logger_review.get("/logger-review/api/submissions")
@@ -342,6 +365,10 @@ def post_decision(sid):
     saved = store().get_review(sid)
     review = {k: saved[k] for k in ("notes", "removeFails", "removedPeriods", "keptPeriods", "thresholds")} if saved else \
         {"notes": "", "removeFails": False, "removedPeriods": [], "keptPeriods": [], "thresholds": None}
+    reviewed = saved.get("reviewedParameters") if saved else []
+    review["reviewedParameters"] = reviewed or []
+    if reviewed_column_missing():
+        reviewed = None   # column not deployed yet: the rule cannot be enforced on the server
     now = datetime.now(timezone.utc)
     final_rows = None
     if decision == "rejected":
@@ -349,6 +376,8 @@ def post_decision(sid):
             raise ApiError(400, "note_required", "Add a note before rejecting.")
         fields = {"status": "rejected", "reviewer_email": user, "reviewed_date": now}
     elif decision == "needs_another_qa":
+        raw = load_rows(sid)
+        require_all_reviewed(raw, reviewed, store().fetch_sites([r.get("siteid") for r in raw]))
         fields = {"status": "needs_another_qa", "reviewer_email": user, "reviewed_date": now}
     else:
         if saved and saved["status"] == "needs_another_qa":
@@ -360,6 +389,7 @@ def post_decision(sid):
         else:
             fields = {"status": "finalized", "reviewer_email": user, "reviewed_date": now, "finalized_date": now}
         raw = load_rows(sid)
+        require_all_reviewed(raw, reviewed, store().fetch_sites([r.get("siteid") for r in raw]))
         try:
             cfg = default_thresholds()
             sites = store().fetch_sites([r.get("siteid") for r in raw])

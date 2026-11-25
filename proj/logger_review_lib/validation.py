@@ -8,6 +8,8 @@ DECISIONS = ("finalized", "needs_another_qa", "rejected")
 LIST_STATUSES = STATUSES + ("not_reviewed",)
 MAX_PERIODS = 1000
 MAX_NOTES = 20000
+MAX_REVIEWED = 200
+MAX_KEY = 300
 THRESHOLD_FIELDS = {
     "range": ("fail_min", "suspect_min", "suspect_max", "fail_max"),
     "spike": ("suspect", "fail"),
@@ -94,8 +96,25 @@ def thresholds(value):
     return out
 
 
+def reviewed_parameters(value):
+    """A list of series keys the reviewer ticked as reviewed. Missing means none (old clients)."""
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise ValidationError("reviewedParameters must be a list")
+    if len(value) > MAX_REVIEWED:
+        raise ValidationError(f"reviewedParameters has more than {MAX_REVIEWED} entries")
+    out = []
+    for i, k in enumerate(value):
+        if not isinstance(k, str) or not k or len(k) > MAX_KEY:
+            raise ValidationError(f"reviewedParameters[{i}] must be a series key of at most {MAX_KEY} characters")
+        if k not in out:
+            out.append(k)
+    return out
+
+
 def review_body(body):
-    """The draft: notes, removeFails, removedPeriods, keptPeriods and optional thresholds."""
+    """The draft: notes, removeFails, removedPeriods, keptPeriods, optional reviewedParameters and thresholds."""
     if not isinstance(body, dict):
         raise ValidationError("The request body must be a JSON object")
     missing = [k for k in ("notes", "removeFails", "removedPeriods", "keptPeriods") if k not in body]
@@ -110,6 +129,7 @@ def review_body(body):
     return {"notes": body["notes"], "removeFails": body["removeFails"],
             "removedPeriods": periods(body["removedPeriods"], "removedPeriods"),
             "keptPeriods": periods(body["keptPeriods"], "keptPeriods"),
+            "reviewedParameters": reviewed_parameters(body.get("reviewedParameters")),
             "thresholds": thresholds(body.get("thresholds"))}
 
 

@@ -6,6 +6,7 @@ list, and it is checked against a strict name pattern.
 """
 import json
 import re
+import logging
 from contextlib import contextmanager
 from datetime import datetime, timezone
 
@@ -22,29 +23,50 @@ MIN_DATA_DATE = "2023-01-01"   # only submissions with a reading on or after thi
 COLUMN = re.compile(r"^[a-z_][a-z0-9_]*$")
 
 
+log = logging.getLogger(__name__)
+
+
 class ReviewTablesMissing(Exception):
     pass
 
 
+# The reviewed_parameters column is new. Until it exists in the database the store falls back to the
+# statements without it (the *_LEGACY ones). None = not known yet, True = column works, False = missing.
+_column = {"present": None}
+
+
+def reviewed_column_missing():
+    """True once an undefined-column error showed that reviewed_parameters does not exist yet."""
+    return _column["present"] is False
+
+
+def reset_column_state():
+    _column["present"] = None
+
+
 SQL_UPSERT_REVIEW = f"""
-INSERT INTO {REVIEW} (submissionid, status, notes, remove_fails, thresholds,
+INSERT INTO {REVIEW} (submissionid, status, notes, remove_fails, thresholds, reviewed_parameters,
                       reviewer_email, reviewed_date, second_reviewer_email, second_reviewed_date,
                       finalized_date, created_user, last_edited_user, last_edited_date)
-VALUES (:sid, :status, :notes, :remove_fails, CAST(:thresholds AS jsonb),
+VALUES (:sid, :status, :notes, :remove_fails, CAST(:thresholds AS jsonb), CAST(:reviewed_parameters AS jsonb),
         :reviewer_email, CAST(:reviewed_date AS timestamptz), :second_reviewer_email,
         CAST(:second_reviewed_date AS timestamptz), CAST(:finalized_date AS timestamptz), :user, :user, now())
 ON CONFLICT (submissionid) DO UPDATE SET
     status = EXCLUDED.status, notes = EXCLUDED.notes, remove_fails = EXCLUDED.remove_fails,
-    thresholds = EXCLUDED.thresholds, reviewer_email = EXCLUDED.reviewer_email,
+    thresholds = EXCLUDED.thresholds, reviewed_parameters = EXCLUDED.reviewed_parameters, reviewer_email = EXCLUDED.reviewer_email,
     reviewed_date = EXCLUDED.reviewed_date, second_reviewer_email = EXCLUDED.second_reviewer_email,
     second_reviewed_date = EXCLUDED.second_reviewed_date, finalized_date = EXCLUDED.finalized_date,
     last_edited_user = EXCLUDED.last_edited_user, last_edited_date = now()
 """
+# Same statement without reviewed_parameters, used while the column is missing in the database.
+SQL_UPSERT_REVIEW_LEGACY = SQL_UPSERT_REVIEW.replace(" reviewed_parameters,", "", 1) \
+    .replace(" CAST(:reviewed_parameters AS jsonb),", "", 1) \
+    .replace(" reviewed_parameters = EXCLUDED.reviewed_parameters,", "", 1)
 SQL_DELETE_PERIODS = f"DELETE FROM {PERIOD} WHERE submissionid = :sid"
 SQL_INSERT_PERIOD = (f"INSERT INTO {PERIOD} (submissionid, period_type, period_start, period_end, created_user) "
                      "VALUES (:sid, :period_type, CAST(:period_start AS timestamp), CAST(:period_end AS timestamp), :user)")
 SQL_DELETE_FINAL = f"DELETE FROM {FINAL} WHERE submissionid = :sid"
-WRITE_SQL = (SQL_UPSERT_REVIEW, SQL_DELETE_PERIODS, SQL_INSERT_PERIOD, SQL_DELETE_FINAL)
+WRITE_SQL = (SQL_UPSERT_REVIEW, SQL_UPSERT_REVIEW_LEGACY, SQL_DELETE_PERIODS, SQL_INSERT_PERIOD, SQL_DELETE_FINAL)
 
 # ---- unit review (sde.tbl_wq_logger_unit_review, one row per flagged sensor series)
 UNIT = "sde.tbl_wq_logger_unit_review"
@@ -77,9 +99,22 @@ def final_insert_sql(columns):
     return f"INSERT INTO {FINAL} ({names}) VALUES ({values})"
 
 
-def _is_missing_table(exc):
+def _detail(exc):
     orig = getattr(exc, "orig", None)
-    detail = " ".join(map(str, getattr(orig, "args", []))) + " " + str(exc)
+    # psycopg2 keeps the SQLSTATE in pgcode, not in the message; pg8000 puts it in args.
+    return " ".join(map(str, getattr(orig, "args", []))) + " " + str(getattr(orig, "pgcode", "") or "") + " " + str(exc)
+
+
+def _is_missing_reviewed_column(exc):
+    """Undefined column (42703) naming reviewed_parameters."""
+    detail = _detail(exc)
+    return "42703" in detail and "reviewed_parameters" in detail
+
+
+def _is_missing_table(exc):
+    detail = _detail(exc)
+    if "42703" in detail:   # undefined column, not a missing table
+        return False
     return "42P01" in detail or "does not exist" in detail
 
 
@@ -91,6 +126,19 @@ def _guard():
         if _is_missing_table(exc):
             raise ReviewTablesMissing() from None
         raise
+
+
+def _note_column_missing():
+    if _column["present"] is not False:
+        log.warning("sde.tbl_wq_logger_review.reviewed_parameters does not exist yet; saving reviews without it "
+                    "and not enforcing the all-parameters-reviewed rule on the server")
+    _column["present"] = False
+
+
+SQL_GET_REVIEW = f"""SELECT status, notes, remove_fails, thresholds, reviewed_parameters, reviewer_email, reviewed_date,
+        second_reviewer_email, second_reviewed_date, finalized_date, last_edited_date
+        FROM {REVIEW} WHERE submissionid = :sid"""
+SQL_GET_REVIEW_LEGACY = SQL_GET_REVIEW.replace(" reviewed_parameters,", "", 1)
 
 
 def _dt(v):
@@ -201,11 +249,20 @@ class Store:
         return sites
 
     def get_review(self, sid):
-        """The saved review as a dict, or None when none exists."""
+        """The saved review as a dict, or None when none exists. reviewedParameters is None when the
+        column does not exist in the database yet."""
+        if _column["present"] is not False:
+            try:
+                return self._get_review(sid, True)
+            except ProgrammingError as exc:
+                if not _is_missing_reviewed_column(exc):
+                    raise
+                _note_column_missing()
+        return self._get_review(sid, False)
+
+    def _get_review(self, sid, with_column):
         with _guard(), self.engine.connect() as c:
-            r = c.execute(text(f"""SELECT status, notes, remove_fails, thresholds, reviewer_email, reviewed_date,
-                    second_reviewer_email, second_reviewed_date, finalized_date, last_edited_date
-                    FROM {REVIEW} WHERE submissionid = :sid"""), {"sid": sid}).mappings().first()
+            r = c.execute(text(SQL_GET_REVIEW if with_column else SQL_GET_REVIEW_LEGACY), {"sid": sid}).mappings().first()
             if r is None:
                 return None
             ps = c.execute(text(f"SELECT period_type, period_start, period_end FROM {PERIOD} "
@@ -213,9 +270,15 @@ class Store:
         th = r["thresholds"]
         if isinstance(th, str):
             th = json.loads(th)
+        reviewed = None
+        if with_column:
+            reviewed = r["reviewed_parameters"]
+            if isinstance(reviewed, str):
+                reviewed = json.loads(reviewed)
+            reviewed = [k for k in (reviewed or []) if isinstance(k, str)]
         fmt = lambda v: v.strftime("%Y-%m-%dT%H:%M:%S")
         return {"status": r["status"], "notes": r["notes"] or "", "removeFails": bool(r["remove_fails"]),
-                "thresholds": th,
+                "thresholds": th, "reviewedParameters": reviewed,
                 "removedPeriods": [{"start": fmt(p["period_start"]), "end": fmt(p["period_end"])} for p in ps if p["period_type"] == "remove"],
                 "keptPeriods": [{"start": fmt(p["period_start"]), "end": fmt(p["period_end"])} for p in ps if p["period_type"] == "good"],
                 "reviewerEmail": r["reviewer_email"], "reviewedDate": _iso(r["reviewed_date"]),
@@ -292,30 +355,51 @@ class Store:
 
     # ---- writes
 
-    def _write_review(self, c, sid, review, user, fields):
-        c.execute(text(SQL_UPSERT_REVIEW), {
+    def _write_review(self, c, sid, review, user, fields, with_column=True):
+        params = {
             "sid": sid, "status": fields["status"], "notes": review["notes"], "remove_fails": review["removeFails"],
             "thresholds": None if review["thresholds"] is None else json.dumps(review["thresholds"]),
+            "reviewed_parameters": json.dumps(review.get("reviewedParameters") or []),
             "reviewer_email": fields.get("reviewer_email"), "reviewed_date": _dt(fields.get("reviewed_date")),
             "second_reviewer_email": fields.get("second_reviewer_email"),
             "second_reviewed_date": _dt(fields.get("second_reviewed_date")),
-            "finalized_date": _dt(fields.get("finalized_date")), "user": user})
+            "finalized_date": _dt(fields.get("finalized_date")), "user": user}
+        if not with_column:
+            del params["reviewed_parameters"]
+        c.execute(text(SQL_UPSERT_REVIEW if with_column else SQL_UPSERT_REVIEW_LEGACY), params)
         c.execute(text(SQL_DELETE_PERIODS), {"sid": sid})
         rows = [{"sid": sid, "period_type": t, "period_start": _dt(p["start"]), "period_end": _dt(p["end"]), "user": user}
                 for t, key in (("remove", "removedPeriods"), ("good", "keptPeriods")) for p in review[key]]
         if rows:
             c.execute(text(SQL_INSERT_PERIOD), rows)
 
+    def _with_column_fallback(self, write):
+        """Run write(with_column). If the database has no reviewed_parameters column yet, the failed
+        transaction is rolled back and the write runs again without it."""
+        if _column["present"] is not False:
+            try:
+                return write(True)
+            except ProgrammingError as exc:
+                if not _is_missing_reviewed_column(exc):
+                    raise
+                _note_column_missing()
+        return write(False)
+
     def save_draft(self, sid, review, user):
         """Status draft, reviewer fields cleared, and the submission's rows removed from final, in one transaction."""
-        with _guard(), self.engine.begin() as c:
-            self._write_review(c, sid, review, user, {"status": "draft"})
-            c.execute(text(SQL_DELETE_FINAL), {"sid": sid})
+        def write(with_column):
+            with _guard(), self.engine.begin() as c:
+                self._write_review(c, sid, review, user, {"status": "draft"}, with_column)
+                c.execute(text(SQL_DELETE_FINAL), {"sid": sid})
+        self._with_column_fallback(write)
 
     def save_decision(self, sid, review, user, fields, final_rows=None):
         """Save the decision. final_rows (finalized only) replace the submission's rows in final, in the same transaction."""
+        self._with_column_fallback(lambda with_column: self._save_decision(sid, review, user, fields, final_rows, with_column))
+
+    def _save_decision(self, sid, review, user, fields, final_rows, with_column):
         with _guard(), self.engine.begin() as c:
-            self._write_review(c, sid, review, user, fields)
+            self._write_review(c, sid, review, user, fields, with_column)
             c.execute(text(SQL_DELETE_FINAL), {"sid": sid})
             if final_rows:
                 columns = list(final_rows[0].keys())

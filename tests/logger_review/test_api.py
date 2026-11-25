@@ -143,6 +143,11 @@ def test_put_saves_draft_and_returns_review(store):
 
 
 @pytest.mark.parametrize("patch,fragment", [
+    ({"reviewedParameters": "x"}, "reviewedParameters must be a list"),
+    ({"reviewedParameters": [5]}, "reviewedParameters[0]"),
+    ({"reviewedParameters": [""]}, "reviewedParameters[0]"),
+    ({"reviewedParameters": ["k" * 301]}, "at most 300"),
+    ({"reviewedParameters": [f"k{i}" for i in range(201)]}, "more than 200"),
     ({"notes": 5}, "notes"), ({"removeFails": "yes"}, "removeFails"), ({"removedPeriods": "x"}, "removedPeriods"),
     ({"removedPeriods": [{"start": "2024-04-02T00:00:00", "end": "2024-04-01T00:00:00"}]}, "starts after"),
     ({"keptPeriods": [{"start": "bad", "end": "2024-04-01T00:00:00"}]}, "keptPeriods[0].start"),
@@ -206,6 +211,17 @@ def decide(c, decision, sid=SID):
     return c.post(f"/logger-review/api/submissions/{sid}/decision", json={"decision": decision})
 
 
+def series_keys(c, sid=SID):
+    return list(c.get(f"/logger-review/api/submissions/{sid}").get_json()["submission"]["series"])
+
+
+def ready(c, sid=SID, **kw):
+    """Save a draft with every parameter marked reviewed (the precondition for finalizing)."""
+    r = c.put(f"/logger-review/api/submissions/{sid}/review", json=draft(reviewedParameters=series_keys(c, sid), **kw))
+    assert r.status_code == 200
+    return r
+
+
 def test_decision_validation(store):
     c = make(store)
     assert c.post(f"/logger-review/api/submissions/{SID}/decision", json={"decision": "draft"}).status_code == 400
@@ -233,7 +249,7 @@ def test_finalize_builds_final_rows(store, raw):
     c = make(store)
     first = raw[SID][0]
     stamp = first["samplecollectiontimestamp"]
-    c.put(f"/logger-review/api/submissions/{SID}/review", json=draft(removedPeriods=[{"start": stamp, "end": stamp}]))
+    ready(c, removedPeriods=[{"start": stamp, "end": stamp}])
     r = decide(c, "finalized")
     assert r.status_code == 200
     j = r.get_json()
@@ -249,12 +265,15 @@ def test_finalize_builds_final_rows(store, raw):
 
 
 def test_finalize_without_saved_review(store):
-    j = decide(make(store), "finalized").get_json()
+    c = make(store)
+    ready(c, notes="")
+    j = decide(c, "finalized").get_json()
     assert j["review"]["status"] == "finalized" and len(store.final[SID]) == 360
 
 
 def test_draft_clears_final_rows(store):
     c = make(store)
+    ready(c)
     decide(c, "finalized")
     assert SID in store.final
     r = c.put(f"/logger-review/api/submissions/{SID}/review", json=draft(notes="changed"))
@@ -265,8 +284,9 @@ def test_draft_clears_final_rows(store):
 
 def test_reject_and_needs_qa_remove_final_rows(store):
     c = make(store)
+    ready(c)
     decide(c, "finalized")
-    c.put(f"/logger-review/api/submissions/{SID}/review", json=draft(notes="x"))
+    ready(c, notes="x")
     decide(c, "needs_another_qa")
     assert SID not in store.final
     decide(c, "finalized")  # same reviewer, see the conflict test: this one is refused
@@ -275,6 +295,7 @@ def test_reject_and_needs_qa_remove_final_rows(store):
 
 def test_needs_another_qa_then_second_reviewer(store):
     first = make(store, who=A)
+    ready(first)
     r = decide(first, "needs_another_qa")
     assert r.status_code == 200 and r.get_json()["review"]["status"] == "needs_another_qa"
     assert SID not in store.final
@@ -289,23 +310,29 @@ def test_needs_another_qa_then_second_reviewer(store):
 
 
 def test_second_reviewer_may_also_reject_or_ask_again(store):
-    decide(make(store, who=A), "needs_another_qa")
+    a = make(store, who=A)
+    ready(a)
+    decide(a, "needs_another_qa")
     c = make(store, who=B)
-    c.put(f"/logger-review/api/submissions/{SID}/review", json=draft(notes="problem"))  # an edit returns it to draft
+    ready(c, notes="problem")  # an edit returns it to draft
     assert store.reviews[SID]["status"] == "draft"
     assert decide(c, "finalized").get_json()["review"]["secondReviewerEmail"] is None
 
 
 def test_edit_after_finalize_by_anyone_returns_to_draft(store):
-    decide(make(store), "finalized")
+    c = make(store)
+    ready(c)
+    decide(c, "finalized")
     make(store, who=B).put(f"/logger-review/api/submissions/{SID}/review", json=draft())
     assert store.reviews[SID]["status"] == "draft" and SID not in store.final
 
 
 def test_transactions_are_all_or_nothing_in_the_fake_contract(store):
     # the finalize path computes everything before one save_decision call
-    decide(make(store), "finalized")
-    assert [w[0] for w in store.writes] == ["decision"]
+    c = make(store)
+    ready(c)
+    decide(c, "finalized")
+    assert [w[0] for w in store.writes] == ["draft", "decision"]
 
 
 # ---- missing tables
@@ -316,3 +343,56 @@ def test_missing_tables_error(store):
     for r in (c.get("/logger-review/api/submissions"), c.get(f"/logger-review/api/submissions/{SID}"),
               c.put(f"/logger-review/api/submissions/{SID}/review", json=draft()), decide(c, "finalized")):
         assert r.status_code == 503 and r.get_json()["error"]["code"] == "review_tables_missing"
+
+
+# ---- every parameter reviewed before finalizing
+
+def test_reviewed_parameters_round_trip_and_missing_means_empty(store):
+    c = make(store)
+    keys = series_keys(c)
+    rv = c.put(f"/logger-review/api/submissions/{SID}/review", json=draft(reviewedParameters=[keys[0], keys[0]])).get_json()["review"]
+    assert rv["reviewedParameters"] == [keys[0]]                      # duplicates dropped
+    assert c.get(f"/logger-review/api/submissions/{SID}").get_json()["review"]["reviewedParameters"] == [keys[0]]
+    assert c.get(f"/logger-review/api/submissions/{SID}").get_json()["submission"]["series"].keys() >= {keys[0]}
+    # an old client that does not send the field saves an empty set
+    assert c.put(f"/logger-review/api/submissions/{SID}/review", json=draft()).get_json()["review"]["reviewedParameters"] == []
+    other = make(store).get("/logger-review/api/submissions/1770672364").get_json()
+    assert other["review"]["reviewedParameters"] == []                # no saved review: empty
+
+
+@pytest.mark.parametrize("decision", ["finalized", "needs_another_qa"])
+def test_decision_needs_every_parameter_reviewed(store, decision):
+    c = make(store)
+    keys = series_keys(c)
+    labels = [c.get(f"/logger-review/api/submissions/{SID}").get_json()["submission"]["series"][k]["label"] for k in keys]
+    r = decide(c, decision)                                           # nothing saved at all
+    assert r.status_code == 409 and r.get_json()["error"]["code"] == "parameters_not_reviewed"
+    prefix = "Review every parameter before finalizing: "
+    msg = r.get_json()["error"]["message"]
+    assert msg.startswith(prefix) and msg.endswith(".") and sorted(msg[len(prefix):-1].split(", ")) == sorted(labels)
+    c.put(f"/logger-review/api/submissions/{SID}/review", json=draft(reviewedParameters=keys[:-1]))
+    r = decide(c, decision)
+    assert r.status_code == 409 and r.get_json()["error"]["message"] == f"Review every parameter before finalizing: {labels[-1]}."
+    assert store.reviews[SID]["status"] == "draft" and SID not in store.final
+    assert [w[0] for w in store.writes] == ["draft"]
+    c.put(f"/logger-review/api/submissions/{SID}/review", json=draft(reviewedParameters=keys + ["stale|key"]))
+    r = decide(c, decision)
+    assert r.status_code == 200 and r.get_json()["review"]["status"] == decision
+    assert r.get_json()["review"]["reviewedParameters"] == keys + ["stale|key"]
+
+
+def test_reject_does_not_need_parameters_reviewed(store):
+    c = make(store)
+    c.put(f"/logger-review/api/submissions/{SID}/review", json=draft(notes="dead sensor"))
+    r = decide(c, "rejected")
+    assert r.status_code == 200 and r.get_json()["review"]["status"] == "rejected"
+
+
+def test_rule_is_not_enforced_while_the_column_is_missing(store, caplog):
+    from proj.logger_review_lib import store as store_mod
+    store_mod._column["present"] = False
+    try:
+        r = decide(make(store), "finalized")
+        assert r.status_code == 200 and len(store.final[SID]) == 360
+    finally:
+        store_mod.reset_column_state()

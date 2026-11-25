@@ -69,6 +69,7 @@ class FakeStore:
         self.reviews[sid] = {
             "status": fields["status"], "notes": review["notes"], "removeFails": review["removeFails"],
             "thresholds": copy.deepcopy(review["thresholds"]),
+            "reviewedParameters": list(review.get("reviewedParameters") or []),
             "removedPeriods": copy.deepcopy(review["removedPeriods"]), "keptPeriods": copy.deepcopy(review["keptPeriods"]),
             "reviewerEmail": fields.get("reviewer_email"), "reviewedDate": stamp(fields.get("reviewed_date")),
             "secondReviewerEmail": fields.get("second_reviewer_email"), "secondReviewedDate": stamp(fields.get("second_reviewed_date")),

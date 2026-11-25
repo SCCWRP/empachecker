@@ -13,12 +13,7 @@
   * { box-sizing:border-box; }
   html, body { height:100%; }
   body { margin:0; height:100dvh; padding:10px; overflow:hidden; background:var(--bg); color:var(--ink); font:1rem/1.4 "Roboto", system-ui, sans-serif; }
-  main { height:100%; display:grid; grid-template-rows:auto minmax(0, 1fr); gap:8px; position:relative; }
-  .tabs { display:flex; gap:6px; }
-  .tabs button[aria-selected="true"] { background:var(--blue-dark); }
-  .unit-list { display:flex; flex-direction:column; gap:12px; flex:1; min-height:0; }
-  .unit-series { display:flex; flex-direction:column; gap:6px; min-width:0; padding-bottom:12px; border-bottom:1px solid var(--border); }
-  .unit-name { font-size:1rem; font-weight:500; line-height:1.3; }
+  main { height:100%; display:grid; grid-template-rows:minmax(0, 1fr); gap:8px; position:relative; }
   h1,h2,button { font-family:"Google Sans",system-ui,sans-serif; }
   h1 { margin:0; font-size:1.4rem; font-weight:500; }
   h2 { margin:0; font-size:1.2rem; font-weight:500; }
@@ -84,7 +79,7 @@
   .plot-header { min-width:0; padding:8px 4px 0; overflow-wrap:anywhere; }
   .plot-title { color:var(--ink); font-size:16px; font-weight:400; line-height:1.4; }
   .plot-title .header-label { font-weight:500; }
-  #plot,#unit-plot { min-width:0; min-height:0; width:100%; height:100%; }
+  #plot { min-width:0; min-height:0; width:100%; height:100%; }
   .review { display:flex; flex-direction:column; gap:10px; overflow-y:auto; }
   .notes-field { flex:1; min-height:0; }
   .switch-row { flex-direction:row; align-items:center; justify-content:space-between; gap:8px; min-height:32px; color:var(--ink); font-size:1rem; font-weight:400; cursor:pointer; }
@@ -112,8 +107,8 @@
   .review-actions button { width:100%; }
   .message { margin:0; border-radius:8px; padding:8px; background:#e8f0fe; font-size:.875rem; line-height:1.35; overflow-wrap:anywhere; }
   .message.error { background:#fce8e6; color:var(--red); }
-  #app-message { position:absolute; z-index:40; top:48px; left:calc(50% - min(300px, 45%)); width:min(600px, 90%); }
-  .instructions { position:absolute; z-index:30; top:48px; left:0; right:0; background:#e8f0fe; }
+  #app-message { position:absolute; z-index:40; top:0; left:calc(50% - min(300px, 45%)); width:min(600px, 90%); }
+  .instructions { position:absolute; z-index:30; top:0; left:0; right:0; background:#e8f0fe; }
   .instructions ul { padding-left:20px; margin:8px 0 0; }
   .instructions li+li { margin-top:6px; }
   .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
@@ -168,10 +163,6 @@
     </ul>
   </section>
   <p id="app-message" class="message" role="status" hidden></p>
-  <div class="tabs" role="tablist" aria-label="Review type">
-    <button id="tab-expert" type="button" role="tab" aria-selected="true" aria-controls="workspace">Expert Review</button>
-    <button id="tab-units" type="button" role="tab" aria-selected="false" aria-controls="unit-review">Unit Review</button>
-  </div>
   <div id="workspace" class="workspace" data-drawer="">
     <aside id="controls" class="card controls" data-section="data" aria-label="Submission controls">
       <div class="account"><span id="reviewer-email" class="account-email"></span><button id="sign-out" class="text-button" type="button">Sign out</button></div>
@@ -190,6 +181,10 @@
           <span id="threshold-title" class="group-label">Threshold table</span>
           <div id="threshold-panel" class="threshold-panel"></div>
         </div>
+      </div>
+      <div id="reviewed-picker" class="test-picker" hidden>
+        <span id="reviewed-label" class="group-label">Reviewed</span>
+        <div id="reviewed-options" class="test-options" role="group" aria-labelledby="reviewed-label"></div>
       </div>
       <div id="qc-controls" hidden>
         <button id="instructions-toggle" type="button" aria-expanded="false" aria-controls="instructions">Instructions</button>
@@ -245,43 +240,6 @@
       <p id="review-message" class="message" role="status" hidden></p>
     </aside>
   </div>
-  <section id="unit-instructions" class="card instructions" hidden aria-labelledby="unit-instructions-title">
-    <h2 id="unit-instructions-title">Instructions</h2>
-    <ul>
-      <li>Choose a Submission ID. The plot shows only the parameters whose mean is 10 times or more above or below the usual mean for that parameter and unit.</li>
-      <li>For each parameter, choose the correct unit in the Unit Panel. Choosing the unit as recorded means the recorded unit is right.</li>
-      <li>Select Confirm units to save every parameter of the submission. Raw data is not changed. You can change a unit and confirm again.</li>
-    </ul>
-  </section>
-  <div id="unit-workspace" class="workspace" data-drawer="" hidden>
-    <aside id="unit-controls" class="card controls" aria-label="Unit review controls">
-      <label class="selector-label" for="unit-submission">Submission ID <select id="unit-submission"></select></label>
-      <div>
-        <button id="unit-instructions-toggle" type="button" aria-expanded="false" aria-controls="unit-instructions">Instructions</button>
-      </div>
-    </aside>
-    <section class="card plot-card" aria-label="Flagged logger measurements">
-      <div class="actions">
-        <button class="drawer-button" id="unit-controls-toggle" type="button" aria-expanded="false" aria-controls="unit-controls">Controls</button>
-        <button class="drawer-button" id="unit-panel-toggle" type="button" aria-expanded="false" aria-controls="unit-panel">Unit Panel</button>
-      </div>
-      <p id="unit-plot-instruction" class="plot-instruction"><span class="header-label">Instruction:</span> Click and drag to zoom. Double-click to reset zoom.</p>
-      <div class="plot-header">
-        <div id="unit-plot-title" class="plot-title"></div>
-      </div>
-      <div class="plot-area">
-        <div id="unit-plot"></div>
-      </div>
-    </section>
-    <aside id="unit-panel" class="card review" aria-labelledby="unit-panel-title">
-      <h2 id="unit-panel-title">Unit Panel</h2>
-      <div id="unit-list" class="unit-list"></div>
-      <div class="review-actions">
-        <button id="unit-confirm" type="button" disabled>Confirm units</button>
-      </div>
-      <p id="unit-message" class="message" role="status" hidden></p>
-    </aside>
-  </div>
 </main>
 <script src="{{ static_base }}/qc_tests.js"></script>
 <script>
@@ -316,7 +274,7 @@ function thresholdsFor(id) {
   const key=seriesKey(id); return thresholds[key]||(thresholds[key]=clone(currentSubmission().series[id].defaults));
 }
 const STATUS_LABELS = {not_reviewed:'Not reviewed', draft:'Draft', needs_another_qa:'Needs another QA', finalized:'Finalized', rejected:'Rejected'};
-const emptyReview = () => ({notes:'', removeFails:false, removedPeriods:[], keptPeriods:[], status:'draft', exists:false, decidedAt:null, updatedAt:null});
+const emptyReview = () => ({notes:'', removeFails:false, removedPeriods:[], keptPeriods:[], reviewedParameters:[], status:'draft', exists:false, decidedAt:null, updatedAt:null});
 const submissionStatus = {};
 const NOTES_DELAY = 600;
 const fullStamp = v => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v||'') ? v+':00' : (v||'');
@@ -339,8 +297,22 @@ function readReview(id) {
 }
 const MULTI_MESSAGE='This submission has more than one sensor and cannot be finalized here yet.';
 const isMultiSensor = id => !!(D.submissions[id]&&D.submissions[id].meta&&D.submissions[id].meta.more>0);
+function seriesNames(id) {
+  const sub=D.submissions[id]; if (!sub) return [];
+  const entries=Object.entries(sub.series), count={};
+  for (const [,s] of entries) count[s.label]=(count[s.label]||0)+1;
+  return entries.map(([key,s])=>[key,count[s.label]>1?s.label+' ('+s.unit+')':s.label]);
+}
+function unreviewed(id) {
+  const done=new Set(readReview(id).reviewedParameters||[]);
+  return seriesNames(id).filter(([key])=>!done.has(key)).map(([,name])=>name);
+}
 function reviewStatus(review) {
-  const text=reviewStatusText(review);
+  let text=reviewStatusText(review);
+  if (loadedSubmission&&review.status!=='finalized'&&review.status!=='rejected') {
+    const missing=unreviewed(loadedSubmission);
+    if (missing.length) text=(text?text+' ':'')+'Review every parameter before finalizing: '+missing.join(', ')+'.';
+  }
   return loadedSubmission&&isMultiSensor(loadedSubmission)?(text?text+' ':'')+MULTI_MESSAGE:text;
 }
 function reviewStatusText(review) {
@@ -354,6 +326,7 @@ function reviewStatusText(review) {
 }
 function fromServer(r) {
   return {notes:r.notes||'', removeFails:r.removeFails===true, removedPeriods:cleanPeriods(r.removedPeriods), keptPeriods:cleanPeriods(r.keptPeriods),
+    reviewedParameters:Array.isArray(r.reviewedParameters)?r.reviewedParameters.filter(k=>typeof k==='string'):[],
     status:r.status, exists:!!r.exists, decidedAt:r.decidedAt||null, updatedAt:r.updatedDate||null, thresholds:r.thresholds||null};
 }
 async function api(method, url, body) {
@@ -394,7 +367,7 @@ function sendDraft(id) {
   review._inflight=(review._inflight||0)+1; delete review._error;
   if (loadedSubmission===id) message('review-message',reviewStatus(review));
   const run=()=>{
-    const body={notes:review.notes,removeFails:review.removeFails,removedPeriods:review.removedPeriods,keptPeriods:review.keptPeriods,thresholds:collectThresholds(id)};
+    const body={notes:review.notes,removeFails:review.removeFails,removedPeriods:review.removedPeriods,keptPeriods:review.keptPeriods,reviewedParameters:review.reviewedParameters||[],thresholds:collectThresholds(id)};
     return api('PUT','/submissions/'+id+'/review',body).then(data=>{
       review.exists=true; review.updatedAt=data.review.updatedDate||null;
       if (!saveTimers[id]) { review.status=data.review.status; review.decidedAt=null; }
@@ -539,7 +512,34 @@ async function finalize(status) {
   } finally { setReviewBusy(false); }
 }
 function setReviewBusy(busy) {
-  for (const b of ['finalize','finalize-qa','reject']) $(b).disabled=busy||!loadedSubmission||isMultiSensor(loadedSubmission);
+  for (const b of ['finalize','finalize-qa','reject']) {
+    const needsAll=b!=='reject'&&!!loadedSubmission&&unreviewed(loadedSubmission).length>0;
+    $(b).disabled=busy||!loadedSubmission||isMultiSensor(loadedSubmission)||needsAll;
+  }
+}
+function buildReviewedOptions() {
+  const id=loadedSubmission, box=$('reviewed-options'); box.replaceChildren();
+  const names=id?seriesNames(id):[], done=new Set(id?readReview(id).reviewedParameters||[]:[]);
+  $('reviewed-picker').hidden=!names.length;
+  for (const [key,name] of names) {
+    const label=document.createElement('label'); label.className='parameter-option';
+    const check=document.createElement('input'); check.type='checkbox'; check.value=key; check.checked=done.has(key);
+    check.setAttribute('aria-label','Reviewed: '+name);
+    const text=document.createElement('span'); text.textContent=name;
+    check.onchange=()=>{
+      saveReviewed(key,check.checked);
+    };
+    label.appendChild(check); label.appendChild(text); box.appendChild(label);
+  }
+}
+function saveReviewed(key,on) {
+  if (!loadedSubmission) return;
+  const review=readReview(loadedSubmission), set=new Set(review.reviewedParameters||[]);
+  if (on) set.add(key); else set.delete(key);
+  review.reviewedParameters=[...set];
+  scheduleSave(loadedSubmission,0);
+  message('review-message',reviewStatus(review),!!review._error);
+  setReviewBusy(false);
 }
 function populate(select,items,preferred) {
   select.innerHTML='';
@@ -638,7 +638,7 @@ function showSubmission() {
   const review=readReview(id); $('notes').value=review.notes;
   message('review-message',reviewStatus(review),!!review._error);
   setReviewBusy(false);
-  renderHeader(); renderRemoval(); buildParameterOptions(); syncTests();
+  renderHeader(); renderRemoval(); buildReviewedOptions(); buildParameterOptions(); syncTests();
 }
 let loadToken=0;
 async function selectSubmission() {
@@ -902,180 +902,12 @@ function setDrawer(drawer) {
 }
 for (const name of ['controls','review']) $(name+'-toggle').onclick=()=>setDrawer($('workspace').dataset.drawer===name?'':name);
 $('instructions-toggle').onclick=e=>{const open=$('instructions').hidden;$('instructions').hidden=!open;e.currentTarget.setAttribute('aria-expanded',String(open));};
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('parameter-options').hidden){closeParameterOptions(true);return;}setDrawer('');setUnitDrawer('');$('unit-instructions').hidden=true;$('unit-instructions-toggle').setAttribute('aria-expanded','false');$('instructions').hidden=true;$('instructions-toggle').setAttribute('aria-expanded','false');}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('parameter-options').hidden){closeParameterOptions(true);return;}setDrawer('');$('instructions').hidden=true;$('instructions-toggle').setAttribute('aria-expanded','false');}});
 setReviewBusy(false);
 $('reviewer-email').textContent=LR_EMAIL;
 $('sign-out').onclick=()=>{
   fetch(LR_BASE+'/logger-review/api/logout',{method:'POST'}).catch(()=>{}).then(()=>{if(typeof location!=='undefined')location.href=LR_BASE+'/logger-review';});
 };
-// ---- Unit Review tab
-const U = {items:[], options:{}, loaded:false, cache:{}, choice:{}, seq:0, plotDiv:null, defaults:{}};
-const ptDate = v => v ? new Date(v).toLocaleString('en-US',{timeZone:'America/Los_Angeles',dateStyle:'medium',timeStyle:'short'})+' PT' : '';
-function fmtNum(v) {
-  if (v===null||v===undefined||!isFinite(v)) return '';
-  const n=Number(v), a=Math.abs(n);
-  return a>=100?n.toFixed(0):a>=1?n.toFixed(2):a===0?'0':n.toPrecision(3);
-}
-function offText(ratio) {
-  if (!(ratio>0)) return 'opposite sign';
-  const times=ratio>=1?ratio:1/ratio, text=times>=100?times.toFixed(0):times.toFixed(1);
-  return text+(ratio>=1?'× higher':'× lower');
-}
-function showTab(name) {
-  const units=name==='units';
-  $('workspace').hidden=units; $('unit-workspace').hidden=!units;
-  $('instructions').hidden=true; $('unit-instructions').hidden=true;
-  $('instructions-toggle').setAttribute('aria-expanded','false'); $('unit-instructions-toggle').setAttribute('aria-expanded','false');
-  $('tab-expert').setAttribute('aria-selected',String(!units)); $('tab-units').setAttribute('aria-selected',String(units));
-  if (units) { message('app-message',''); if (!U.loaded) loadUnits(); else drawCurrentUnit(); }
-}
-function unitSubmissions() {
-  const by={};
-  for (const i of U.items) { const s=by[i.submissionId]||(by[i.submissionId]={id:i.submissionId,todo:false}); if (!i.correctUnit) s.todo=true; }
-  return Object.values(by).sort((a,b)=>Number(b.id)-Number(a.id));
-}
-function renderUnitSubmissions(preferred) {
-  const subs=unitSubmissions();
-  populate($('unit-submission'),subs.map(s=>[s.id,s.id+' ('+(s.todo?'To review':'Units confirmed')+')']),preferred);
-  return subs;
-}
-function chosenUnit(item) { return Object.prototype.hasOwnProperty.call(U.choice,item.id)?U.choice[item.id]:(item.correctUnit||''); }
-function confirmedText(items) {
-  if (!items.length||items.some(i=>!i.correctUnit)) return '';
-  const last=items.reduce((a,b)=>(b.reviewedDate||'')>(a.reviewedDate||'')?b:a);
-  return 'Units confirmed by '+(last.reviewerEmail||'')+', '+ptDate(last.reviewedDate)+'.';
-}
-function unitEntries(d) { return d.items.filter(i=>i.seriesKey&&d.submission.series[i.seriesKey]).map(i=>[i.seriesKey,d.submission.series[i.seriesKey],i]); }
-function unitPlotSpec(d) {
-  const entries=unitEntries(d), n=entries.length, sid=d.submission.id;
-  const layout={
-    font:{family:'Roboto, system-ui, sans-serif',color:'#202124',size:12},
-    margin:{l:AXIS_SLOT*Math.ceil(n/2),r:n>1?AXIS_SLOT*Math.floor(n/2):12,t:20,b:140},
-    paper_bgcolor:'#fff',plot_bgcolor:'#fff',hovermode:'closest',dragmode:'zoom',
-    legend:{orientation:'h',x:.5,xanchor:'center',y:-.22,yanchor:'top',borderwidth:0,itemwidth:40,font:{size:14}},
-    uirevision:sid,autosize:true
-  };
-  const defaults={}, traces=[];
-  const stamps=entries.flatMap(([,s])=>s.timestamps).filter(Boolean);
-  const zones=[...new Set(entries.flatMap(([,s])=>s.zones))];
-  layout.xaxis={type:'date',anchor:'y',domain:[0,1],showgrid:false,zeroline:false,automargin:true,title:zones.length===1?'Logger time ('+zones[0]+')':'Logger local time',uirevision:sid};
-  if (stamps.length) { defaults.xaxis=[stamps.reduce((a,b)=>b<a?b:a),stamps.reduce((a,b)=>b>a?b:a)]; layout.xaxis.range=defaults.xaxis.slice(); layout.xaxis.autorange=false; }
-  for (const [row,[key,s]] of entries.entries()) {
-    const suffix=row===0?'':String(row+1), color=PARAMETER_COLORS[s.parameter]||'#57758c', side=row%2===0?'left':'right';
-    layout['yaxis'+suffix]={anchor:row?'free':'x',domain:[0,1],side,title:{text:s.label+' ('+s.unit+')',font:{color},standoff:8},
-      tickfont:{color,size:12},tickcolor:color,linecolor:color,showline:true,gridcolor:'#edf0f2',showgrid:row===0,zeroline:false,automargin:false,uirevision:sid+'|'+key};
-    if (row) { const k=Math.floor(row/2); Object.assign(layout['yaxis'+suffix],{overlaying:'y',position:side==='left'?0:1,shift:side==='left'?-AXIS_SLOT*k:AXIS_SLOT*k}); }
-    const finite=s.x.filter(v=>v!==null&&Number.isFinite(v));
-    if (finite.length) {
-      const lo=finite.reduce((a,b)=>b<a?b:a), hi=finite.reduce((a,b)=>b>a?b:a), span=hi-lo;
-      const pad=span>0?span*.05:(Math.abs(hi)>0?Math.abs(hi)*.05:1);
-      defaults['yaxis'+suffix]=[lo-pad,hi+pad]; layout['yaxis'+suffix].range=defaults['yaxis'+suffix].slice(); layout['yaxis'+suffix].autorange=false;
-    }
-    traces.push({xaxis:'x',yaxis:'y'+suffix,x:s.timestamps,y:s.x,mode:'lines',name:s.label,showlegend:true,uid:key,line:{color,width:1.5},
-      text:s.timestamps.map((t,i)=>stampText(t)+(s.zones[i]?' '+s.zones[i]:'')+'<br>'+s.label+': '+s.x[i]+' '+s.unit),hovertemplate:'%{text}<extra></extra>'});
-  }
-  return {traces,layout,defaults};
-}
-function drawUnitPlot(d) {
-  if (U.plotDiv) { try { Plotly.purge(U.plotDiv); } catch (e) {} }
-  U.plotDiv=null; $('unit-plot').replaceChildren();
-  if (!d||!unitEntries(d).length) return Promise.resolve();
-  const {traces,layout,defaults}=unitPlotSpec(d);
-  U.defaults=defaults;
-  const child=document.createElement('div');
-  child.style.width='100%'; child.style.height='100%';
-  $('unit-plot').appendChild(child); U.plotDiv=child;
-  return Promise.resolve(Plotly.newPlot(child,traces,layout,PLOT_CONFIG)).then(()=>{
-    if (typeof child.on==='function') child.on('plotly_doubleclick',()=>{
-      const update={};
-      for (const [axis,range] of Object.entries(U.defaults)) update[axis+'.range']=range.slice();
-      return Plotly.relayout(child,update);
-    });
-  }).catch(err=>{ console.error(err); message('app-message','Plot failed: '+((err&&err.message)||err),true); });
-}
-function unitSeriesBlock(item) {
-  const box=document.createElement('div'); box.className='unit-series';
-  const name=document.createElement('span'); name.className='unit-name'; name.textContent=item.label;
-  name.style.color=PARAMETER_COLORS[item.parameter]||'';
-  box.appendChild(name);
-  for (const text of ['Recorded unit: '+item.recordedUnit,'Mean: '+fmtNum(item.mean),'Usual mean: '+fmtNum(item.usualMean)+' ('+offText(item.ratio)+')']) {
-    const p=document.createElement('p'); p.className='period-line'; p.textContent=text; box.appendChild(p);
-  }
-  const label=document.createElement('label'); label.textContent='Correct unit';
-  const sel=document.createElement('select');
-  sel.setAttribute('aria-label','Correct unit for '+item.label);
-  sel.add(new Option('Choose unit',''));
-  for (const u of U.options[item.parameter]||[]) sel.add(new Option(u===item.recordedUnit?u+' (as recorded)':u,u));
-  sel.value=chosenUnit(item);
-  sel.onchange=()=>{ U.choice[item.id]=sel.value; message('unit-message',''); };
-  label.appendChild(sel); box.appendChild(label);
-  return box;
-}
-function renderUnitSubmission(id) {
-  const d=U.cache[id];
-  if (!d) { $('unit-list').replaceChildren(); $('unit-plot-title').replaceChildren(); $('unit-confirm').disabled=true; drawUnitPlot(null); return; }
-  $('unit-plot-title').replaceChildren(...titleNodes(d.submission));
-  $('unit-list').replaceChildren(...d.items.map(unitSeriesBlock));
-  $('unit-confirm').disabled=false;
-  message('unit-message',confirmedText(d.items));
-  return drawUnitPlot(d);
-}
-function drawCurrentUnit() { const id=$('unit-submission').value; if (id&&U.cache[id]) return drawUnitPlot(U.cache[id]); }
-async function selectUnitSubmission() {
-  const id=$('unit-submission').value, seq=++U.seq;
-  message('unit-message','');
-  if (!id) { renderUnitSubmission(null); return; }
-  if (!U.cache[id]) {
-    renderUnitSubmission(null); message('app-message','Loading submission '+id+'.');
-    try { const d=await api('GET','/unit-review/submissions/'+id); if (seq!==U.seq) return; U.cache[id]=d; }
-    catch (err) { if (seq===U.seq) message('app-message',err.message,true); return; }
-    message('app-message','');
-  }
-  return renderUnitSubmission(id);
-}
-async function loadUnits() {
-  message('app-message','Loading the unit review list.');
-  try {
-    const d=await api('GET','/unit-review');
-    U.items=d.items||[]; U.options=d.options||{}; U.loaded=true;
-  } catch (err) { message('app-message',err.message,true); return; }
-  message('app-message','');
-  const subs=renderUnitSubmissions();
-  if (!subs.length) { message('app-message','No suspected submissions to review.'); renderUnitSubmission(null); return; }
-  const pick=subs.find(s=>s.todo)||subs[0];
-  $('unit-submission').value=pick.id;
-  return selectUnitSubmission();
-}
-async function confirmUnits() {
-  const id=$('unit-submission').value, d=U.cache[id];
-  if (!d) return;
-  const units={};
-  for (const i of d.items) { const u=chosenUnit(i); if (!u) { message('unit-message','Choose a unit for every parameter before confirming.',true); return; } units[String(i.id)]=u; }
-  $('unit-confirm').disabled=true;
-  try {
-    const r=await api('PUT','/unit-review/submissions/'+id+'/confirm',{units});
-    const fresh=r.items||[];
-    for (const f of fresh) {
-      const item=d.items.find(i=>i.id===f.id); if (item) Object.assign(item,f,{seriesKey:item.seriesKey});
-      const row=U.items.find(i=>i.id===f.id); if (row) Object.assign(row,f);
-      delete U.choice[f.id];
-    }
-    renderUnitSubmissions(id);
-    message('unit-message',confirmedText(d.items));
-  } catch (err) { message('unit-message','Not saved. '+err.message,true); }
-  $('unit-confirm').disabled=false;
-}
-function setUnitDrawer(drawer) {
-  $('unit-workspace').dataset.drawer=drawer;
-  for (const [name,btn] of [['controls','unit-controls-toggle'],['review','unit-panel-toggle']]) $(btn).setAttribute('aria-expanded',String(drawer===name));
-}
-$('unit-controls-toggle').onclick=()=>setUnitDrawer($('unit-workspace').dataset.drawer==='controls'?'':'controls');
-$('unit-panel-toggle').onclick=()=>setUnitDrawer($('unit-workspace').dataset.drawer==='review'?'':'review');
-$('unit-submission').onchange=selectUnitSubmission;
-$('unit-confirm').onclick=confirmUnits;
-$('unit-instructions-toggle').onclick=e=>{const open=$('unit-instructions').hidden;$('unit-instructions').hidden=!open;e.currentTarget.setAttribute('aria-expanded',String(open));};
-$('tab-expert').onclick=()=>showTab('expert');
-$('tab-units').onclick=()=>showTab('units');
 loadSubmissionList();
 </script>
 </body>

@@ -4,7 +4,10 @@ const { boot, sleep, html, assert } = require('./page_harness');
 const dir = process.argv[2];
 const payload = id => JSON.parse(fs.readFileSync(path.join(dir, 'payload_' + id + '.json'), 'utf8'));
 const IDS = ['1770678690', '1770672364', '1729879198'];
-const emptyReview = { exists: false, status: 'draft', notes: '', removeFails: false, removedPeriods: [], keptPeriods: [], thresholds: null };
+const emptyReview = { exists: false, status: 'draft', notes: '', removeFails: false, removedPeriods: [], keptPeriods: [], reviewedParameters: [], thresholds: null };
+const FIRST_KEYS = Object.keys(payload('1770678690').series);
+// the default review of the fake server has every parameter of the first submission reviewed
+const reviewedReview = { ...emptyReview, reviewedParameters: FIRST_KEYS };
 
 function makeRoutes(state) {
   return (method, url, body) => {
@@ -14,7 +17,7 @@ function makeRoutes(state) {
     const m = url.match(/^\/logger-review\/api\/submissions\/(\d+)(\/review|\/decision)?$/);
     if (method === 'GET' && m) {
       if (state.getError) return { status: state.getError, json: { error: { code: 'x', message: 'Submission is too large.' } } };
-      return { status: 200, json: { submission: payload(m[1]), review: state.review || emptyReview } };
+      return { status: 200, json: { submission: payload(m[1]), review: state.review || reviewedReview } };
     }
     if (method === 'PUT') {
       if (state.putError) return { status: 500, json: { error: { message: 'Database error.' } } };
@@ -95,6 +98,43 @@ const ok = (name) => { passed++; console.log('ok', name); };
   assert.equal(app.ids.finalize.disabled, false);
   ok('submission list with status, payload loaded from API');
 
+  // Reviewed checkboxes: one per series, buttons wait for all of them, state is saved with the draft
+  state = { review: emptyReview }; app = boot(makeRoutes(state)); await sleep(50);
+  const reviewedBoxes = () => app.ids['reviewed-options'].children.map(l => l.children[0]);
+  const names = app.get("Object.values(D.submissions['1770678690'].series).map(s=>s.label)");
+  assert.equal(app.ids['reviewed-picker'].hidden, false);
+  assert.deepEqual(app.ids['reviewed-options'].children.map(l => l.children[1].textContent), names);
+  assert.deepEqual(reviewedBoxes().map(b => b.value), FIRST_KEYS);
+  assert(reviewedBoxes().every(b => b.type === 'checkbox' && b.checked === false));
+  assert.equal(app.ids['review-message'].textContent, 'Review every parameter before finalizing: ' + names.join(', ') + '.');
+  assert.equal(app.ids.finalize.disabled, true); assert.equal(app.ids['finalize-qa'].disabled, true);
+  assert.equal(app.ids.reject.disabled, false, 'reject does not need every parameter reviewed');
+  for (const [i, b] of reviewedBoxes().entries()) {
+    b.checked = true; b.onchange(); await sleep(20);
+    const left = names.slice(i + 1);
+    assert.equal(app.ids.finalize.disabled, left.length > 0); assert.equal(app.ids['finalize-qa'].disabled, left.length > 0);
+    assert(left.length ? app.ids['review-message'].textContent.endsWith('before finalizing: ' + left.join(', ') + '.') : !app.ids['review-message'].textContent.includes('Review every parameter'));
+  }
+  assert.deepEqual(puts(app).at(-1).body.reviewedParameters, FIRST_KEYS);
+  assert.equal(puts(app).length, names.length);
+  reviewedBoxes()[0].checked = false; reviewedBoxes()[0].onchange(); await sleep(20);
+  assert.deepEqual(puts(app).at(-1).body.reviewedParameters, FIRST_KEYS.slice(1));
+  assert.equal(app.ids.finalize.disabled, true);
+  // reopening restores the saved ticks
+  state = { review: { ...emptyReview, exists: true, reviewedParameters: FIRST_KEYS.slice(0, 1) } }; app = boot(makeRoutes(state)); await sleep(50);
+  assert.deepEqual(reviewedBoxes().map(b => b.checked), FIRST_KEYS.map((k, i) => i === 0));
+  assert.equal(app.ids.finalize.disabled, true);
+  ok('reviewed checkboxes per series gate Finalize buttons, save with the draft and restore');
+
+  // server refusal is shown as the message
+  state = { review: reviewedReview, postError: { status: 409, json: { error: { code: 'parameters_not_reviewed', message: 'Review every parameter before finalizing: Salinity.' } } } };
+  app = boot(makeRoutes(state)); await sleep(50);
+  app.ids.finalize.onclick(); await sleep(30);
+  assert.equal(app.ids['review-message'].textContent, 'Review every parameter before finalizing: Salinity.');
+  ok('parameters_not_reviewed from the server is shown');
+
+  state = { statuses: { '1770672364': 'finalized' }, labels: { '1770672364': 'Finalized' } };
+  app = boot(makeRoutes(state)); await sleep(50);
   // notes debounce, then thresholds in the body
   app.ids.notes.value = 'a'; app.ids.notes.oninput(); app.ids.notes.value = 'ab'; app.ids.notes.oninput();
   assert.equal(puts(app).length, 0);
@@ -102,6 +142,7 @@ const ok = (name) => { passed++; console.log('ok', name); };
   assert.equal(puts(app).length, 1);
   const body = puts(app)[0].body;
   assert.equal(body.notes, 'ab');
+  assert.deepEqual(body.reviewedParameters, FIRST_KEYS);
   const keys = app.get("Object.keys(D.submissions['1770678690'].series)");
   assert.deepEqual(Object.keys(body.thresholds).sort(), [...keys].sort());
   assert.equal(app.ids['review-message'].textContent, 'Draft saved.');
@@ -158,7 +199,7 @@ const ok = (name) => { passed++; console.log('ok', name); };
   ok('first decision saves the draft then decides');
 
   // 409 message shown
-  state = { review: { ...emptyReview, exists: true, status: 'needs_another_qa', decidedAt: '2026-11-11T20:00:00Z' },
+  state = { review: { ...reviewedReview, exists: true, status: 'needs_another_qa', decidedAt: '2026-11-11T20:00:00Z' },
             postError: { status: 409, json: { error: { code: 'same_reviewer', message: 'A different reviewer must finalize a submission that needs another QA.' } } } };
   app = boot(makeRoutes(state)); await sleep(50);
   assert(/^Finalized\. Needs another QA\./.test(app.ids['review-message'].textContent));
@@ -208,7 +249,7 @@ const ok = (name) => { passed++; console.log('ok', name); };
   ok('hover shows only the timestamp and plotted values, removed readings omitted');
   // single choice test picker
   state = {}; app = boot(makeRoutes(state)); await sleep(50);
-  // the QC test picker is a single-choice radio group, not tabs (the page-level Expert/Unit Review tabs are separate)
+  // the QC test picker is a single-choice radio group, not tabs
   assert(!/test-tab/.test(html) && /id="test-options"[^>]*role="radiogroup"/.test(html) && !/id="test-options"[^>]*role="tab/.test(html));
   const radios = () => app.ids['test-options'].children.map(l => l.children[0]);
   const labels = () => app.ids['test-options'].children.map(l => l.children[1].textContent);
@@ -376,109 +417,13 @@ const ok = (name) => { passed++; console.log('ok', name); };
   assert(app.ids['app-message'].textContent.includes('sign-in ended'));
   ok('sign out control and expired sign-in message');
 
-  // Unit Review tab: lazy load, submission list, plot of flagged series, unit panel, confirm
-  const upay = payload('1770678690'), ukeys = Object.keys(upay.series);
-  const uone = upay.series[ukeys[0]], utwo = upay.series[ukeys[1]];
-  const mkItem = (id, sid, key, s, extra = {}) => ({ id, submissionId: sid, siteId: 'CC-PAJ', station: 1, sensorType: 'troll', sensorId: 'X1', parameter: s.parameter, label: s.label, recordedUnit: s.unit, mean: 10.47, usualMean: 0.945, ratio: 11.08, flagged: true, correctUnit: null, seriesKey: key, ...extra });
-  const unitItems = [
-    mkItem(1, '1770678690', ukeys[0], uone), mkItem(2, '1770678690', ukeys[1], utwo),
-    mkItem(3, '150', null, { parameter: 'do', label: 'Dissolved oxygen', unit: 'mg/L' }, { mean: 0.08, usualMean: 7.3, ratio: 0.011, correctUnit: 'mg/L', reviewerEmail: 'janw@sccwrp.org', reviewedDate: '2026-11-10T18:00:00Z' }),
-  ];
-  const optionsFor = { [uone.parameter]: [uone.unit, 'other'], [utwo.parameter]: [utwo.unit, 'other'], do: ['mg/L', 'percent'] };
-  const unitState = {};
-  const unitRoutes = (method, url, body) => {
-    if (url === '/logger-review/api/unit-review' && method === 'GET') return { status: 200, json: { items: unitItems, options: optionsFor, factor: 10, refresh: { running: false } } };
-    let m = url.match(/^\/logger-review\/api\/unit-review\/submissions\/(\d+)$/);
-    if (m && method === 'GET') {
-      if (m[1] === '150') return { status: 200, json: { submission: { ...upay, id: '150', series: {} }, items: unitItems.filter(i => i.submissionId === '150') } };
-      return { status: 200, json: { submission: upay, items: unitItems.filter(i => i.submissionId === m[1]).map(i => ({ ...i })) } };
-    }
-    m = url.match(/^\/logger-review\/api\/unit-review\/submissions\/(\d+)\/confirm$/);
-    if (m && method === 'PUT') {
-      if (unitState.confirmError) return { status: 400, json: { error: { message: 'Choose a unit for every parameter before confirming.' } } };
-      for (const i of unitItems.filter(x => x.submissionId === m[1])) Object.assign(i, { correctUnit: body.units[String(i.id)], reviewerEmail: 'duyn@sccwrp.org', reviewedDate: '2026-11-17T19:00:00Z' });
-      return { status: 200, json: { items: unitItems.filter(i => i.submissionId === m[1]).map(i => ({ ...i })) } };
-    }
-    return makeRoutes({})(method, url, body);
-  };
-  app = boot(unitRoutes); await sleep(50);
-  app.get('globalThis.__plots=[];Plotly.newPlot=(d,t,l)=>{__plots.push({t,l});return Promise.resolve()}');
-  const plots = () => JSON.parse(JSON.stringify(app.get('__plots')));
-  assert.equal(app.ids['unit-workspace'].hidden, true);
-  assert(!app.calls.some(c => c.url.includes('unit-review')), 'unit list loads only when the tab opens');
-  assert(!/unit-refresh|unit-filter|unit-rows|Refresh list/.test(html), 'no table, filter or refresh control');
-  assert(!/unit-review\/refresh/.test(html.replace(/<style>[\s\S]*?<\/style>/, '')), 'no UI calls the refresh endpoint');
-  app.ids['tab-units'].onclick(); await sleep(60);
-  assert.equal(app.ids.workspace.hidden, true); assert.equal(app.ids['unit-workspace'].hidden, false);
-  assert.equal(app.ids['tab-units'].attrs['aria-selected'], 'true');
-  const subSel = app.ids['unit-submission'];
-  assert.deepEqual(subSel.options.map(o => o.text), ['1770678690 (To review)', '150 (Units confirmed)']);
-  assert.equal(subSel.value, '1770678690', 'defaults to the first To review submission');
-  assert.equal(app.calls.filter(c => c.url.endsWith('/unit-review/submissions/1770678690')).length, 1);
-  // plot: flagged series only, one y axis each, titled with the recorded unit
-  const pl = plots(); assert.equal(pl.length, 1);
-  assert.equal(pl[0].t.length, 2);
-  assert.equal(pl[0].l.yaxis.title.text, uone.label + ' (' + uone.unit + ')');
-  assert.equal(pl[0].l.yaxis2.title.text, utwo.label + ' (' + utwo.unit + ')');
-  assert.deepEqual(pl[0].t[0].x, uone.timestamps); assert.equal(pl[0].t[0].mode, 'lines');
-  assert(!pl[0].l.shapes && pl[0].l.dragmode === 'zoom');
-  assert(html.includes('Click and drag to zoom. Double-click to reset zoom.'));
-  assert(app.ids['unit-plot-title'].children.length > 0);
-  // panel: one block per series with plain lines and a unit select
-  const blocks = app.ids['unit-list'].children;
-  assert.equal(blocks.length, 2);
-  const unitLines = blocks[0].children.slice(1, 4).map(p => p.textContent);
-  assert.deepEqual(unitLines, ['Recorded unit: ' + uone.unit, 'Mean: 10.47', 'Usual mean: 0.945 (11.1× higher)']);
-  const sel1 = blocks[0].children[4].children[0], sel2 = blocks[1].children[4].children[0];
-  assert.deepEqual(sel1.options.map(o => o.value), ['', uone.unit, 'other']);
-  assert.equal(sel1.options[0].text, 'Choose unit'); assert.equal(sel1.options[1].text, uone.unit + ' (as recorded)');
-  assert.equal(sel1.value, '');
-  assert.equal(app.ids['unit-confirm'].disabled, false);
-  // confirm with a missing unit: error, no write
-  sel1.value = uone.unit; sel1.onchange();
-  await app.ids['unit-confirm'].onclick(); await sleep(20);
-  assert.equal(app.ids['unit-message'].textContent, 'Choose a unit for every parameter before confirming.');
-  assert.equal(app.ids['unit-message'].classes.has('error'), true);
-  assert.equal(puts(app).length, 0);
-  // confirm sends one PUT with every unit
-  sel2.value = 'other'; sel2.onchange();
-  assert.equal(app.ids['unit-message'].hidden, true);
-  await app.ids['unit-confirm'].onclick(); await sleep(20);
-  assert.equal(puts(app).length, 1);
-  assert.equal(puts(app)[0].url, '/logger-review/api/unit-review/submissions/1770678690/confirm');
-  assert.deepEqual(puts(app)[0].body, { units: { 1: uone.unit, 2: 'other' } });
-  assert.equal(app.ids['unit-message'].textContent, 'Units confirmed by duyn@sccwrp.org, ' + new Date('2026-11-17T19:00:00Z').toLocaleString('en-US', { timeZone: 'America/Los_Angeles', dateStyle: 'medium', timeStyle: 'short' }) + ' PT.');
-  assert.equal(app.ids['unit-message'].classes.has('error'), false);
-  assert.deepEqual(subSel.options.map(o => o.text), ['1770678690 (Units confirmed)', '150 (Units confirmed)']);
-  // already confirmed submission shows the message on load, and confirming again re-saves
-  subSel.value = '150'; subSel.onchange(); await sleep(20);
-  assert(app.ids['unit-message'].textContent.startsWith('Units confirmed by janw@sccwrp.org, '));
-  assert.equal(app.ids['unit-list'].children[0].children[4].children[0].value, 'mg/L');
-  assert.equal(plots().length, 1, 'a submission without plottable series draws nothing');
-  subSel.value = '1770678690'; subSel.onchange(); await sleep(20);
-  assert.equal(app.ids['unit-list'].children[0].children[4].children[0].value, uone.unit, 'saved unit preselected');
-  assert(app.ids['unit-message'].textContent.startsWith('Units confirmed by duyn@sccwrp.org'));
-  // confirm failure shows the server message
-  unitState.confirmError = true;
-  await app.ids['unit-confirm'].onclick(); await sleep(20);
-  assert(app.ids['unit-message'].textContent.startsWith('Not saved.') && app.ids['unit-message'].classes.has('error'));
-  // mobile drawers
-  assert(html.includes('id="unit-controls-toggle"') && html.includes('id="unit-panel-toggle"') && />Unit Panel</.test(html));
-  app.ids['unit-panel-toggle'].onclick(); assert.equal(app.ids['unit-workspace'].dataset.drawer, 'review');
-  app.ids['unit-controls-toggle'].onclick(); assert.equal(app.ids['unit-workspace'].dataset.drawer, 'controls');
-  app.ids['unit-controls-toggle'].onclick(); assert.equal(app.ids['unit-workspace'].dataset.drawer, '');
-  // instructions toggle
-  app.ids['unit-instructions-toggle'].onclick({ currentTarget: app.ids['unit-instructions-toggle'] }); assert.equal(app.ids['unit-instructions'].hidden, false);
-  app.ids['tab-expert'].onclick();
-  assert.equal(app.ids.workspace.hidden, false); assert.equal(app.ids['unit-workspace'].hidden, true);
-  assert.equal(app.ids['unit-instructions'].hidden, true);
-  ok('unit review tab: lazy load, submission labels, flagged plot, unit panel, confirm, tab switch');
-  // empty list
-  app = boot((m, u, b) => u === '/logger-review/api/unit-review' ? { status: 200, json: { items: [], options: {} } } : makeRoutes({})(m, u, b)); await sleep(50);
-  app.ids['tab-units'].onclick(); await sleep(30);
-  assert.equal(app.ids['unit-submission'].options.length, 0); assert.equal(app.ids['unit-confirm'].disabled, true);
-  assert(app.ids['app-message'].textContent.includes('No suspected submissions'));
-  ok('unit review tab: empty list');
+  // The page is the Expert Review view only: no tab bar and no Unit Review panel.
+  const bare = html.replace(/<style>[\s\S]*?<\/style>/, '');
+  assert(!/role="tab"|id="tab-|class="tabs"|Unit Review|Expert Review|unit-workspace|unit-review/i.test(bare), 'no tabs and no unit review view');
+  app = boot(makeRoutes({})); await sleep(50);
+  assert.equal(app.ids.workspace.hidden, false); assert.equal(app.ids['tab-expert'], undefined); assert.equal(app.ids['tab-units'], undefined);
+  assert(!app.calls.some(c => c.url.includes('unit-review')), 'the page never calls the unit review API');
+  ok('page opens straight into the expert review view, no tabs');
   console.log('page tests passed', passed);
   process.exit(0);
 })().catch(e => { console.error(e); process.exit(1); });

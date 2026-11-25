@@ -73,6 +73,12 @@ which also serves the tests. Created by
 
 Review decisions and periods are saved in `sde.tbl_wq_logger_review` and
 `sde.tbl_wq_logger_review_period`; finalized copies go in `sde.tbl_wq_logger_final`.
+Every parameter (series) of a submission has a Reviewed checkbox, saved with the draft in the
+`reviewed_parameters` jsonb column of `sde.tbl_wq_logger_review` (a list of series keys). Finalize
+and Finalize but need another QA are disabled until all are checked, and the decision endpoint
+returns 409 `parameters_not_reviewed` otherwise; Reject needs no checks. Add the column with
+`database-admin/db/empa/logger-review-reviewed-parameters/add_reviewed_parameters.sql`; until it exists
+the app saves reviews without it and does not enforce the rule on the server (it logs a warning).
 Raw data are unchanged. The review tables, their audit triggers and
 `idx_tbl_wq_logger_raw_submissionid` must exist before use. The runtime role needs
 review/final table DML plus audit and identity-sequence privileges. Submissions with
